@@ -846,6 +846,7 @@ export type Database = {
       }
       vendors: {
         Row: {
+          assigned_categories: string[]
           created_at: string
           id: string
           is_active: boolean
@@ -855,8 +856,10 @@ export type Database = {
           store_name: string
           updated_at: string
           user_id: string | null
+          vendor_type: string
         }
         Insert: {
+          assigned_categories?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
@@ -866,8 +869,10 @@ export type Database = {
           store_name: string
           updated_at?: string
           user_id?: string | null
+          vendor_type?: string
         }
         Update: {
+          assigned_categories?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
@@ -877,6 +882,7 @@ export type Database = {
           store_name?: string
           updated_at?: string
           user_id?: string | null
+          vendor_type?: string
         }
         Relationships: [
           {
