@@ -427,7 +427,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
             .order("created_at", { ascending: false }),
           (supabaseAdmin as any)
             .from("carnet_payments")
-            .select("id, amount_paid, created_at")
+            .select("id, amount, created_at")
             .eq("vendor_id", vendor.id)
             .eq("customer_phone", data.customerPhone)
             .order("created_at", { ascending: false }),
@@ -453,7 +453,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
         id: `payment:${payment.id}`,
         createdAt: payment.created_at as string,
         description: "Payment Received",
-        amount: Number(payment.amount_paid ?? 0),
+        amount: Number(payment.amount ?? 0),
         kind: "payment" as const,
       }));
 
@@ -553,7 +553,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
             .order("created_at", { ascending: false }),
           (supabaseAdmin as any)
             .from("carnet_payments")
-            .select("id, amount_paid, created_at")
+            .select("id, amount, created_at")
             .in("vendor_id", vendorIds)
             .eq("customer_phone", data.customerPhone)
             .order("created_at", { ascending: false }),
@@ -579,7 +579,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         id: `payment:${payment.id}`,
         createdAt: payment.created_at as string,
         description: "Payment Received",
-        amount: Number(payment.amount_paid ?? 0),
+        amount: Number(payment.amount ?? 0),
         kind: "payment" as const,
       }));
 
