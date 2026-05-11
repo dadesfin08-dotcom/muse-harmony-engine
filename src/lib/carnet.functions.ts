@@ -429,7 +429,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
             .from("carnet_payments")
             .select("id, amount, created_at")
             .eq("vendor_id", vendor.id)
-            .eq("customer_phone", data.customerPhone)
+            .eq("vendor_carnet_id", customer.id)
             .order("created_at", { ascending: false }),
         ]);
 
@@ -519,7 +519,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
     try {
       const { data: carnetRows, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("vendor_id, customer_phone, current_debt, max_limit, status")
+        .select("id, vendor_id, customer_phone, current_debt, max_limit, status")
         .eq("customer_phone", data.customerPhone)
         .eq("status", "active")
         .order("updated_at", { ascending: false });
@@ -529,6 +529,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
       }
 
       const activeRows = (carnetRows ?? []) as Array<{
+        id?: string | null;
         vendor_id?: string | null;
         customer_phone?: string | null;
         current_debt?: number | null;
@@ -536,8 +537,9 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
       }>;
 
       const vendorIds = Array.from(new Set(activeRows.map((row) => row.vendor_id).filter(Boolean) as string[]));
+      const carnetIds = Array.from(new Set(activeRows.map((row) => row.id).filter(Boolean) as string[]));
 
-      if (vendorIds.length === 0) {
+      if (vendorIds.length === 0 || carnetIds.length === 0) {
         return { carnet: null, transactions: [] as Array<any> };
       }
 
@@ -554,8 +556,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
           (supabaseAdmin as any)
             .from("carnet_payments")
             .select("id, amount, created_at")
-            .in("vendor_id", vendorIds)
-            .eq("customer_phone", data.customerPhone)
+            .in("vendor_carnet_id", carnetIds)
             .order("created_at", { ascending: false }),
         ]);
 
