@@ -61,34 +61,27 @@ export type Database = {
       }
       carnet_payments: {
         Row: {
-          amount: number
+          amount_paid: number
           created_at: string
+          customer_phone: string
           id: string
-          vendor_carnet_id: string
           vendor_id: string
         }
         Insert: {
-          amount: number
+          amount_paid: number
           created_at?: string
+          customer_phone: string
           id?: string
-          vendor_carnet_id: string
           vendor_id: string
         }
         Update: {
-          amount?: number
+          amount_paid?: number
           created_at?: string
+          customer_phone?: string
           id?: string
-          vendor_carnet_id?: string
           vendor_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "carnet_payments_vendor_carnet_id_fkey"
-            columns: ["vendor_carnet_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_carnet"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "carnet_payments_vendor_id_fkey"
             columns: ["vendor_id"]
@@ -846,46 +839,42 @@ export type Database = {
       }
       vendors: {
         Row: {
+          assigned_categories: string[]
           created_at: string
           id: string
           is_active: boolean
-          neighborhood_id: string | null
           owner_name: string | null
           phone_number: string
           store_name: string
           updated_at: string
           user_id: string | null
+          vendor_type: Database["public"]["Enums"]["vendor_type"]
         }
         Insert: {
+          assigned_categories?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
-          neighborhood_id?: string | null
           owner_name?: string | null
           phone_number: string
           store_name: string
           updated_at?: string
           user_id?: string | null
+          vendor_type?: Database["public"]["Enums"]["vendor_type"]
         }
         Update: {
+          assigned_categories?: string[]
           created_at?: string
           id?: string
           is_active?: boolean
-          neighborhood_id?: string | null
           owner_name?: string | null
           phone_number?: string
           store_name?: string
           updated_at?: string
           user_id?: string | null
+          vendor_type?: Database["public"]["Enums"]["vendor_type"]
         }
         Relationships: [
-          {
-            foreignKeyName: "vendors_neighborhood_id_fkey"
-            columns: ["neighborhood_id"]
-            isOneToOne: false
-            referencedRelation: "neighborhoods"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "vendors_user_id_fkey"
             columns: ["user_id"]
@@ -900,11 +889,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      clear_vendor_carnet_debt: {
+        Args: { p_customer_phone: string; p_vendor_id: string }
+        Returns: undefined
+      }
+      complete_delivery_and_apply_payment: {
+        Args: { p_cyclist_id: string; p_order_id: string }
+        Returns: {
+          new_status: string
+          order_id: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      record_vendor_carnet_payment: {
+        Args: {
+          p_amount: number
+          p_customer_phone: string
+          p_vendor_id: string
+        }
+        Returns: {
+          payment_id: string
+          remaining_debt: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      measurement_unit: "Kg" | "Liter" | "Piece" | "Pack"
+      measurement_unit:
+        | "Kg"
+        | "Liter"
+        | "Piece"
+        | "Pack"
+        | "Gram"
+        | "Bunch"
+        | "Tray"
+        | "Box"
       order_status:
         | "new"
         | "preparing"
@@ -913,8 +938,21 @@ export type Database = {
         | "delivered"
         | "cancelled"
       payment_method: "COD" | "Carnet"
-      product_category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry"
+      product_category:
+        | "Vegetables"
+        | "Fruits"
+        | "Dairy"
+        | "Bakery"
+        | "Pantry"
+        | "Groceries"
+        | "Vegetables & Fruits"
+        | "Meat & Poultry"
+        | "Bakery & Pastry"
+        | "Dairy & Eggs"
+        | "Drinks & Water"
+        | "Cleaning Supplies"
       vendor_settlement_status: "pending" | "settled"
+      vendor_type: "general" | "specialized"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1043,7 +1081,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      measurement_unit: ["Kg", "Liter", "Piece", "Pack"],
+      measurement_unit: [
+        "Kg",
+        "Liter",
+        "Piece",
+        "Pack",
+        "Gram",
+        "Bunch",
+        "Tray",
+        "Box",
+      ],
       order_status: [
         "new",
         "preparing",
@@ -1053,8 +1100,22 @@ export const Constants = {
         "cancelled",
       ],
       payment_method: ["COD", "Carnet"],
-      product_category: ["Vegetables", "Fruits", "Dairy", "Bakery", "Pantry"],
+      product_category: [
+        "Vegetables",
+        "Fruits",
+        "Dairy",
+        "Bakery",
+        "Pantry",
+        "Groceries",
+        "Vegetables & Fruits",
+        "Meat & Poultry",
+        "Bakery & Pastry",
+        "Dairy & Eggs",
+        "Drinks & Water",
+        "Cleaning Supplies",
+      ],
       vendor_settlement_status: ["pending", "settled"],
+      vendor_type: ["general", "specialized"],
     },
   },
 } as const
