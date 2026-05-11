@@ -913,6 +913,17 @@ export type Database = {
           order_id: string
         }[]
       }
+      record_vendor_carnet_payment: {
+        Args: {
+          p_amount: number
+          p_customer_phone: string
+          p_vendor_id: string
+        }
+        Returns: {
+          payment_id: string
+          remaining_debt: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
