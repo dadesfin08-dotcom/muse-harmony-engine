@@ -10,7 +10,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,7 @@ import {
   Shapes,
   ChevronsUpDown,
   Users,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -151,6 +152,7 @@ import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/li
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { clearRoleSessions } from "@/lib/operational-auth";
 
 type AdminTab =
   | "overview"
@@ -271,6 +273,7 @@ export const Route = createFileRoute("/admin")({
 function AdminPage() {
   const { t } = useTranslation();
   const { tab } = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin" });
   const queryClient = useQueryClient();
   const fetchVendors = useServerFn(listVendors);
   const fetchCyclists = useServerFn(listCyclists);
@@ -1558,6 +1561,13 @@ function AdminPage() {
     }
   };
 
+  const handleLogout = async () => {
+    clearRoleSessions();
+    await supabase.auth.signOut();
+    toast.success("Logged out successfully.");
+    await navigate({ to: "/admin-login" });
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-muted/20">
@@ -1568,6 +1578,12 @@ function AdminPage() {
             <div>
               <h1 className="text-base font-bold tracking-tight text-foreground">Super-Admin Dashboard</h1>
               <p className="text-xs text-muted-foreground">Marketplace operations and control center</p>
+            </div>
+            <div className="ml-auto">
+              <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
+                <LogOut className="size-4" />
+                <span>تسجيل الخروج</span>
+              </Button>
             </div>
           </header>
 
