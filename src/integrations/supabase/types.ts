@@ -906,7 +906,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_delivery_and_apply_payment: {
+        Args: { p_cyclist_id: string; p_order_id: string }
+        Returns: {
+          new_status: string
+          order_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
