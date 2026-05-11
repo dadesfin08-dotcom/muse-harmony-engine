@@ -607,19 +607,26 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
       const pendingRows = (pendingSettlementRows ?? []) as Array<{
         total_price: number;
         delivery_fee: number;
-        payment_method: "COD" | "Carnet";
+        payment_method: string;
       }>;
 
-      const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingEarningsMad = pendingRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingCashRows = pendingRows.filter((row) => row.payment_method === "COD");
-      const pendingCarnetRows = pendingRows.filter((row) => row.payment_method === "Carnet");
+      const isCashPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "cash" || normalized === "cod";
+      };
 
-      const cashToRemitMad = pendingCashRows.reduce(
-        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
-        0,
-      );
-      const owedByVendorMad = pendingCarnetRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const isCreditPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "credit" || normalized === "carnet";
+      };
+
+      const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const pendingCashRows = pendingRows.filter((row) => isCashPayment(row.payment_method));
+      const pendingCreditRows = pendingRows.filter((row) => isCreditPayment(row.payment_method));
+
+      const pendingEarningsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const cashToRemitMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
+      const owedByVendorMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const netCashToHandoverMad = cashToRemitMad - owedByVendorMad;
 
       return {
@@ -634,7 +641,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         netCashToHandoverMad,
         pendingSettlementOrdersCount: pendingRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
-        pendingCarnetSettlementOrdersCount: pendingCarnetRows.length,
+        pendingCarnetSettlementOrdersCount: pendingCreditRows.length,
       } satisfies CyclistWalletSummary;
     } catch (error) {
       console.error("getCyclistWalletSummary failed:", error);
