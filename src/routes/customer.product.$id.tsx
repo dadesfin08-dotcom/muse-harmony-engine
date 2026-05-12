@@ -73,14 +73,14 @@ function ProductDetailPage() {
   }, [product, language, t]);
 
   const suggestionsQuery = useQuery({
-    queryKey: ["product-brand-suggestions", id, neighborhoodId, product?.brand],
-    enabled: Boolean(product?.brand && neighborhoodId),
+    queryKey: ["product-brand-suggestions", id, neighborhoodId, product?.brandId],
+    enabled: Boolean(product?.brandId && neighborhoodId),
     queryFn: () =>
       fetchBrandSuggestions({
         data: {
           productId: id,
           neighborhoodId: neighborhoodId!,
-          brand: product!.brand!,
+          brandId: product!.brandId!,
         },
       }),
   });
