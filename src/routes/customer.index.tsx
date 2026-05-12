@@ -10,8 +10,6 @@ import {
   Heart,
   Package,
   Minus,
-  Leaf,
-  Droplets,
   UserCircle2,
   Plus,
   X,
@@ -22,7 +20,6 @@ import {
   House,
   Gift,
   Sparkles,
-  ShieldCheck,
   MessageCircle,
   ClipboardList,
   BookOpen,
@@ -1429,7 +1426,7 @@ function Index() {
             {displayedProducts.map((product) => (
               <article
                 key={product.id}
-                className="signature-tilt group relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-2 shadow-sm"
+                className="signature-tilt group relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-1 shadow-sm"
               >
                 <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
                   <div className="relative">
@@ -1452,7 +1449,7 @@ function Index() {
                   <Heart className="size-4 text-teal-700" />
                 </button>
 
-                <div className="p-4">
+                <div className="p-3">
                   <span className="mb-2 inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
                     {getLocalizedText({
                       en: product.brandNameEn || product.brand || "",
@@ -1472,11 +1469,7 @@ function Index() {
                     </span>
                   </div>
 
-                  <p className="mt-1 text-sm text-gray-500">100% طبيعي | جودة عالية</p>
-
-                  <hr className="my-4 border-t border-dashed border-gray-200" />
-
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="text-3xl font-extrabold text-[#2A7543]">
                       {product.price} <span className="text-sm font-medium">MAD</span>
                     </p>
@@ -1514,20 +1507,6 @@ function Index() {
                   </div>
                 </div>
 
-                <div className="mx-4 mb-2 flex items-center justify-between rounded-xl bg-[#F7FBF8] p-2 text-[10px] text-green-800">
-                  <span className="inline-flex items-center gap-1">
-                    <Leaf className="size-3" />
-                    100% طبيعي
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Droplets className="size-3" />
-                    نقي وصحي
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <ShieldCheck className="size-3" />
-                    جودة مضمونة
-                  </span>
-                </div>
               </article>
             ))}
           </div>
