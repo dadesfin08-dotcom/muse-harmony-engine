@@ -20,7 +20,6 @@ import {
   Sparkles,
   ShieldCheck,
   MessageCircle,
-  ChevronDown,
   ClipboardList,
   BookOpen,
   Globe,
@@ -254,7 +253,6 @@ function Index() {
   const customerPanelView = useCustomerPanelStore((state) => state.customerPanelView);
   const setCustomerPanelView = useCustomerPanelStore((state) => state.setCustomerPanelView);
   const openCustomerPanel = useCustomerPanelStore((state) => state.openCustomerPanel);
-  const [expandedOrderIds, setExpandedOrderIds] = useState<Record<string, boolean>>({});
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("details");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"COD" | "Carnet">("COD");
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -817,13 +815,6 @@ function Index() {
   const getOrderStepIndex = (status: string) => {
     const index = statusSteps.findIndex((step) => step.statuses.includes(status));
     return index < 0 ? 0 : index;
-  };
-
-  const toggleOrderExpansion = (orderId: string) => {
-    setExpandedOrderIds((current) => ({
-      ...current,
-      [orderId]: !current[orderId],
-    }));
   };
 
   const addToCart = (product: Product) => {
@@ -1924,7 +1915,6 @@ function Index() {
                     <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                       {(customerOrdersQuery.data ?? []).map((order) => {
                         const activeStepIndex = getOrderStepIndex(order.status);
-                        const isExpanded = !!expandedOrderIds[order.id];
                         const orderDate = new Date(order.created_at);
 
                         return (
@@ -1932,7 +1922,9 @@ function Index() {
                             <button
                               type="button"
                               className="w-full text-left"
-                              onClick={() => toggleOrderExpansion(order.id)}
+                              onClick={() => {
+                                void navigate({ to: "/customer/order/$orderId", params: { orderId: order.id } });
+                              }}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -1959,43 +1951,8 @@ function Index() {
                                 })}
                               </div>
 
-                              {order.status === "delivering" ? (
-                                <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-4">
-                                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">Delivery Pass</p>
-                                  <div className="mt-3 flex justify-center">
-                                    <div className="rounded-xl bg-background p-3 shadow-sm">
-                                      <QRCodeSVG
-                                        value={JSON.stringify({ orderId: order.id, code: order.delivery_auth_code })}
-                                        size={192}
-                                        level="M"
-                                        includeMargin
-                                      />
-                                    </div>
-                                  </div>
-                                  <p className="mt-3 text-center text-lg font-semibold text-foreground">
-                                    PIN: {order.delivery_auth_code}
-                                  </p>
-                                </div>
-                              ) : null}
-
-                              <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                                {isExpanded ? "Hide details" : "View details"}
-                                <ChevronDown className={`size-3.5 transition ${isExpanded ? "rotate-180" : "rotate-0"}`} />
-                              </div>
+                              <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">Open digital receipt</div>
                             </button>
-
-                            {isExpanded ? (
-                              <div className="mt-3 space-y-2 border-t border-border pt-3">
-                                {(order.order_items ?? []).map((item, index) => (
-                                  <div key={`${order.id}-${index}`} className="flex items-center justify-between text-sm">
-                                    <p className="text-foreground">
-                                      {item.name} <span className="text-muted-foreground">x{item.quantity}</span>
-                                    </p>
-                                    <p className="font-medium text-foreground">{Number(item.unitPriceMad).toFixed(2)} MAD</p>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null}
                           </article>
                         );
                       })}
