@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -176,6 +177,13 @@
     color: var(--color-foreground);
     text-rendering: optimizelegibility;
     min-height: 100vh;
+  }
+
+  html[lang="ar"] body,
+  :lang(ar) {
+    font-family:
+      "IBM Plex Sans Arabic", "Plus Jakarta Sans", "Inter", "Avenir Next", "Segoe UI", "Helvetica Neue",
+      sans-serif;
   }
 
   html,
