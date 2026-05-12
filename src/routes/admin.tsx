@@ -910,7 +910,7 @@ function AdminPage() {
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
-      brand: productForm.brand.trim() || undefined,
+      brandId: productForm.brandId.trim() ? productForm.brandId : null,
       categoryId: productForm.categoryId,
       measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
@@ -965,7 +965,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
-          brand: productForm.brand.trim() || null,
+          brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
@@ -986,7 +986,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
-          brand: productForm.brand.trim() || null,
+          brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
@@ -1008,7 +1008,7 @@ function AdminPage() {
         name: "",
         nameFr: "",
         nameAr: "",
-        brand: "",
+        brandId: "",
         categoryId: "",
         measurementValue: "",
         measurementUnit: "Piece",
@@ -1063,7 +1063,7 @@ function AdminPage() {
       name: "",
       nameFr: "",
       nameAr: "",
-      brand: "",
+      brandId: "",
       categoryId: "",
       measurementValue: "",
       measurementUnit: "Piece",
@@ -1081,7 +1081,7 @@ function AdminPage() {
       name: product.name,
       nameFr: product.nameFr ?? product.name,
       nameAr: product.nameAr ?? product.name,
-      brand: product.brand ?? "",
+      brandId: product.brandId ?? "",
       categoryId: product.categoryId ?? "",
       measurementValue:
         product.measurementValue != null && Number.isFinite(product.measurementValue)
@@ -1708,6 +1708,9 @@ function AdminPage() {
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
                 />
+              ) : null}
+              {tab === "brands" ? (
+                <BrandsSection brands={brands} isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading} />
               ) : null}
               {tab === "categories" ? (
                 <CategoriesSection
@@ -2403,13 +2406,19 @@ function AdminPage() {
               <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
                 Brand (المركة)
               </label>
-              <input
+              <select
                 id="product-brand"
-                value={productForm.brand}
-                onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))}
-                placeholder="e.g. Lesieur"
+                value={productForm.brandId}
+                onChange={(event) => setProductForm((current) => ({ ...current, brandId: event.target.value }))}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              />
+              >
+                <option value="">No brand</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name_en}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -3043,7 +3052,7 @@ function CatalogSection({
               />
             </div>
             <p className="font-medium text-foreground">{product.name}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{product.brand || "—"}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{product.brandNameEn || "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">{categoryName}</p>
             <p className="mt-2 text-sm font-semibold text-primary">
               Unit: {product.measurementValue != null ? `${product.measurementValue} ` : ""}
