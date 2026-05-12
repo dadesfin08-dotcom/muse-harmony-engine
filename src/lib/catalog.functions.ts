@@ -678,7 +678,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -703,8 +703,10 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
+            brand: string | null;
             category_id: string | null;
             category: ProductCategory;
+            measurement_value: number | null;
             measurement_unit: MeasurementUnit;
             image_url: string | null;
             popularity_score: number;
@@ -719,8 +721,13 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
+            brand: row.master_products!.brand,
             categoryId: row.master_products!.category_id,
             category: row.master_products!.category,
+            measurementValue:
+              row.master_products!.measurement_value != null
+                ? Number(row.master_products!.measurement_value)
+                : null,
             measurementUnit: row.master_products!.measurement_unit,
             imageUrl: row.master_products!.image_url,
             popularityScore: Number(row.master_products!.popularity_score ?? 0),
@@ -751,7 +758,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -779,8 +786,13 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
+        brand: row.master_products.brand,
         categoryId: row.master_products.category_id,
         category: row.master_products.category,
+        measurementValue:
+          row.master_products.measurement_value != null
+            ? Number(row.master_products.measurement_value)
+            : null,
         measurementUnit: row.master_products.measurement_unit,
         imageUrl: row.master_products.image_url,
         popularityScore: Number(row.master_products.popularity_score ?? 0),
