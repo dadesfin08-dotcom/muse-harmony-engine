@@ -80,7 +80,7 @@ function ProductDetailPage() {
         data: {
           productId: id,
           neighborhoodId: neighborhoodId!,
-          brand: product!.brand,
+          brand: product!.brand!,
         },
       }),
   });
