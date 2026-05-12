@@ -22,7 +22,9 @@ const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  brand: z.string().trim().max(120).nullable(),
   categoryId: z.string().uuid(),
+  measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
   imageUrl: z.string().url().max(2000).nullable(),
@@ -50,7 +52,9 @@ const updateMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  brand: z.string().trim().max(120).nullable(),
   categoryId: z.string().uuid(),
+  measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
   imageUrl: z.string().url().max(2000).nullable(),
@@ -95,8 +99,10 @@ type MasterProductRow = {
   product_name: string;
   name_fr: string | null;
   name_ar: string | null;
+  brand: string | null;
   category_id: string | null;
   category: ProductCategory;
+  measurement_value: number | null;
   measurement_unit: MeasurementUnit;
   image_url: string | null;
   popularity_score: number;
