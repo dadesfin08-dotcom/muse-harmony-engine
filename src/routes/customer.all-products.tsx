@@ -21,6 +21,11 @@ type CatalogProduct = {
   name: string;
   nameFr: string | null;
   nameAr: string | null;
+  brand?: string | null;
+  brandNameEn?: string | null;
+  brandNameFr?: string | null;
+  brandNameAr?: string | null;
+  measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl: string | null;
   vendorPrice: number;
@@ -70,6 +75,12 @@ function AllProductsPage() {
     const rows = (catalogQuery.data?.pages.flatMap((page) => page.items ?? []) ?? []) as CatalogProduct[];
     return rows.map((item) => ({
       ...item,
+      localizedBrand:
+        language === "ar"
+          ? item.brandNameAr || item.brandNameEn || item.brand || ""
+          : language === "fr"
+            ? item.brandNameFr || item.brandNameEn || item.brand || ""
+            : item.brandNameEn || item.brand || "",
       localizedName:
         language === "ar"
           ? item.nameAr || item.name
@@ -158,16 +169,33 @@ function AllProductsPage() {
                   loading="lazy"
                 />
               </div>
-              <div className="space-y-1 p-3">
-                <h2 className="line-clamp-2 text-sm font-semibold text-foreground">{product.localizedName}</h2>
-                <p className="text-sm font-semibold text-primary">
-                  {Number(product.vendorPrice ?? 0)} MAD / {product.measurementUnit}
+              <div className="p-3 sm:p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/90">
+                  {product.localizedBrand || "—"}
                 </p>
+                <h2 className="mt-1 line-clamp-2 text-sm font-bold text-foreground sm:text-base">
+                  {product.localizedName}
+                </h2>
+                <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                  {product.measurementValue != null ? `${product.measurementValue} ` : ""}
+                  {product.measurementUnit}
+                </span>
+                <div className="mt-3 flex items-end justify-between">
+                  <p className="text-lg font-extrabold text-primary">
+                    {Number(product.vendorPrice ?? 0)}
+                    <span className="ml-1 text-xs font-semibold text-primary/80">MAD</span>
+                  </p>
+                </div>
               </div>
             </Link>
 
             <div className="px-3 pb-3">
-              <Button variant="soft" size="sm" className="w-full rounded-xl" onClick={() => addToCart(product)}>
+              <Button
+                variant="hero"
+                size="sm"
+                className="w-full rounded-xl shadow-sm transition-colors hover:opacity-95"
+                onClick={() => addToCart(product)}
+              >
                 <Plus className="size-4" />
                 {t("products.add")}
               </Button>
