@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ function CustomerOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate({ from: "/customer/order/$orderId" });
   const getDetails = useServerFn(getCustomerOrderDetails);
+  const { i18n } = useTranslation();
 
   const customerPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -36,18 +38,107 @@ function CustomerOrderDetailsPage() {
 
   const order = detailsQuery.data;
   const orderDate = order ? new Date(order.createdAt) : null;
+  const language = (i18n.resolvedLanguage || i18n.language || "en") as "en" | "fr" | "ar";
+  const isArabic = language === "ar";
+
+  const copy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        back: "رجوع إلى طلباتي",
+        title: "تفاصيل الطلب / الوصل الرقمي",
+        loadingOrder: "جاري تحميل الطلب...",
+        loadingReceipt: "جاري تحميل تفاصيل الوصل...",
+        loadError: "تعذر تحميل هذا الطلب.",
+        orderDate: "تاريخ الطلب",
+        product: "اسم المنتوج",
+        quantity: "الكمية",
+        unitPrice: "ثمن الوحدة",
+        lineTotal: "المجموع",
+        subtotal: "المجموع الفرعي",
+        deliveryFee: "ثمن التوصيل",
+        grandTotal: "المجموع الإجمالي",
+        paymentCash: "الدفع نقداً",
+        paymentCarnet: "كريدي / كارني",
+        statusPending: "قيد المعالجة",
+        statusOutForDelivery: "خرج للتوصيل",
+        statusDelivered: "تم التسليم",
+        statusCancelled: "ملغى",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        back: "Retour à mes commandes",
+        title: "Détails de commande / Reçu numérique",
+        loadingOrder: "Chargement de la commande...",
+        loadingReceipt: "Chargement des détails du reçu...",
+        loadError: "Impossible de charger cette commande.",
+        orderDate: "Date de commande",
+        product: "Nom du produit",
+        quantity: "Quantité",
+        unitPrice: "Prix unitaire",
+        lineTotal: "Total ligne",
+        subtotal: "Sous-total",
+        deliveryFee: "Frais de livraison",
+        grandTotal: "Total général",
+        paymentCash: "Paiement cash",
+        paymentCarnet: "Carnet / Crédit",
+        statusPending: "En attente",
+        statusOutForDelivery: "En livraison",
+        statusDelivered: "Livrée",
+        statusCancelled: "Annulée",
+      };
+    }
+
+    return {
+      back: "Back to My Orders",
+      title: "Order Details / Digital Receipt",
+      loadingOrder: "Loading order...",
+      loadingReceipt: "Loading receipt details...",
+      loadError: "Unable to load this order.",
+      orderDate: "Order Date",
+      product: "Product",
+      quantity: "Quantity",
+      unitPrice: "Unit Price",
+      lineTotal: "Total",
+      subtotal: "Subtotal",
+      deliveryFee: "Delivery",
+      grandTotal: "Grand Total",
+      paymentCash: "Cash",
+      paymentCarnet: "Carnet / Credit",
+      statusPending: "Pending",
+      statusOutForDelivery: "Out for Delivery",
+      statusDelivered: "Delivered",
+      statusCancelled: "Cancelled",
+    };
+  }, [language]);
 
   const statusBadge = useMemo(() => {
     const status = order?.status ?? "new";
-    if (status === "delivered") return { label: "Delivered", className: "bg-primary/15 text-primary border-primary/30" };
-    if (status === "delivering") return { label: "Out for Delivery", className: "bg-accent/30 text-foreground border-border" };
-    if (status === "preparing" || status === "ready") return { label: "Pending", className: "bg-secondary text-secondary-foreground border-border" };
-    if (status === "cancelled") return { label: "Cancelled", className: "bg-destructive/10 text-destructive border-destructive/30" };
-    return { label: "Pending", className: "bg-secondary text-secondary-foreground border-border" };
-  }, [order?.status]);
+    if (status === "delivered") return { label: copy.statusDelivered, className: "bg-primary/15 text-primary border-primary/30" };
+    if (status === "delivering") return { label: copy.statusOutForDelivery, className: "bg-accent/30 text-foreground border-border" };
+    if (status === "preparing" || status === "ready") return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
+    if (status === "cancelled") return { label: copy.statusCancelled, className: "bg-destructive/10 text-destructive border-destructive/30" };
+    return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
+  }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
+
+  const paymentBadge = useMemo(() => {
+    const normalized = String(order?.paymentMethod ?? "").trim().toLowerCase();
+    if (normalized === "carnet" || normalized === "credit") {
+      return {
+        label: copy.paymentCarnet,
+        className: "border-orange-300 bg-orange-100 text-orange-800",
+      };
+    }
+
+    return {
+      label: copy.paymentCash,
+      className: "border-success/30 bg-success/10 text-success",
+    };
+  }, [copy.paymentCarnet, copy.paymentCash, order?.paymentMethod]);
 
   return (
-    <main className="min-h-screen bg-muted/20 px-4 py-4">
+    <main dir={isArabic ? "rtl" : "ltr"} className="min-h-screen bg-muted/20 px-4 py-4">
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <Button
           variant="outline"
@@ -61,34 +152,39 @@ function CustomerOrderDetailsPage() {
           }}
         >
           <ArrowLeft className="size-4" />
-          Back to My Orders
+          {copy.back}
         </Button>
 
-        <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+        <section className="rounded-2xl border border-border bg-background p-4 shadow-sm sm:p-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
             <div>
-              <h1 className="text-lg font-semibold text-foreground">Order Details / Digital Receipt</h1>
-              <p className="text-sm text-muted-foreground">{order ? `Order #${order.id.slice(0, 8).toUpperCase()}` : "Loading order..."}</p>
+              <h1 className="text-lg font-semibold text-foreground">{copy.title}</h1>
+              <p className="text-sm text-muted-foreground">{order ? `Order #${order.id.slice(0, 8).toUpperCase()}` : copy.loadingOrder}</p>
             </div>
-            <Badge variant="outline" className={statusBadge.className}>
-              {statusBadge.label}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={paymentBadge.className}>
+                {paymentBadge.label}
+              </Badge>
+              <Badge variant="outline" className={statusBadge.className}>
+                {statusBadge.label}
+              </Badge>
+            </div>
           </div>
 
           {detailsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading receipt details...</p>
+            <p className="text-sm text-muted-foreground">{copy.loadingReceipt}</p>
           ) : detailsQuery.isError || !order ? (
-            <p className="text-sm text-destructive">Unable to load this order.</p>
+            <p className="text-sm text-destructive">{copy.loadError}</p>
           ) : (
             <>
               <div className="overflow-hidden rounded-md border border-border">
                 <Table className="border-collapse">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="border-r border-border font-semibold">Product Name (اسم المنتوج)</TableHead>
-                      <TableHead className="border-r border-border text-center font-semibold">Quantity (الكمية)</TableHead>
-                      <TableHead className="border-r border-border text-right font-semibold">Unit Price (ثمن الوحدة)</TableHead>
-                      <TableHead className="text-right font-semibold">Total Line Price (المجموع)</TableHead>
+                      <TableHead className="border-r border-border font-semibold">{copy.product}</TableHead>
+                      <TableHead className="border-r border-border text-center font-semibold">{copy.quantity}</TableHead>
+                      <TableHead className="border-r border-border text-right font-semibold">{copy.unitPrice}</TableHead>
+                      <TableHead className="text-right font-semibold">{copy.lineTotal}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -104,33 +200,37 @@ function CustomerOrderDetailsPage() {
                 </Table>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 border-t border-dashed border-border pt-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
-                    <span className="text-muted-foreground">Order Date</span>
-                    <span className="text-right text-foreground">
-                      {orderDate && !Number.isNaN(orderDate.getTime()) ? orderDate.toLocaleString() : "-"}
+                    <span className="text-muted-foreground">{copy.orderDate}</span>
+                    <span className={`text-foreground ${isArabic ? "text-left" : "text-right"}`}>
+                      {orderDate && !Number.isNaN(orderDate.getTime())
+                        ? orderDate.toLocaleString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-GB")
+                        : "-"}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Payment Method</span>
-                    <span className="font-medium text-foreground">{order.paymentMethod === "Carnet" ? "Carnet" : "Cash"}</span>
+                  <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-muted/30 px-3 py-2">
+                    <span className="text-muted-foreground">{copy.deliveryFee}</span>
+                    <span className="font-medium text-foreground">{order.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                 </div>
 
-                <div className="w-full space-y-2 border-t border-border pt-3 text-sm sm:ml-auto sm:max-w-sm sm:border-t-0 sm:border-l sm:pl-4 sm:pt-0">
+                <div className="w-full space-y-2 text-sm sm:ml-auto sm:max-w-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="text-muted-foreground">{copy.subtotal}</span>
                     <span>{order.subtotalMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Delivery Fee</span>
+                    <span className="text-muted-foreground">{copy.deliveryFee}</span>
                     <span>{order.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-border pt-2 text-base font-semibold">
-                    <span>Grand Total</span>
+                    <span>{copy.grandTotal}</span>
                     <span>{order.grandTotalMad.toFixed(2)} MAD</span>
                   </div>
+                </div>
                 </div>
               </div>
             </>
