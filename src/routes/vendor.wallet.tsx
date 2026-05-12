@@ -173,6 +173,7 @@ function VendorWalletPage() {
   const summary = settlementQuery.data;
   const hasSummary = Boolean(summary);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
+  const deliveredOrders = (dashboardQuery.data?.orders ?? []).filter((order) => order.status === "delivered").slice(0, 8);
 
   const confirmationLabel = useMemo(() => {
     if (!confirmPayload) return "";
@@ -243,6 +244,29 @@ function VendorWalletPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{formatMad(summary?.lifetimeEarningsMad)}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Delivered Orders · الطلبات المسلمة</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {deliveredOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No delivered orders yet.</p>
+            ) : (
+              deliveredOrders.map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => navigate({ to: "/vendor/order/$orderId", params: { orderId: order.id } })}
+                  className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left transition-colors hover:bg-muted/40"
+                >
+                  <span className="text-sm text-foreground">Order #{order.id.slice(0, 8)}</span>
+                  <span className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</span>
+                </button>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

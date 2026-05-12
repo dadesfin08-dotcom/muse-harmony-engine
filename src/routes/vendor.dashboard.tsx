@@ -150,7 +150,6 @@ function VendorDashboardPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [kpiFilter, setKpiFilter] = useState<HistoryFilter>("today");
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("today");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [inventoryDraft, setInventoryDraft] = useState<
     Record<string, { vendorPrice: string; isAvailable: boolean }>
@@ -581,10 +580,6 @@ function VendorDashboardPage() {
     };
   }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers]);
 
-  const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) ?? null,
-    [orders, selectedOrderId],
-  );
   const printableOrder = useMemo<ThermalReceiptOrder>(
     () =>
       printOrder
@@ -1034,7 +1029,7 @@ function VendorDashboardPage() {
                 queue={queue}
                 isLoading={isDashboardInitialLoading}
                 isUpdating={isUpdating}
-                onOpenOrder={(orderId) => setSelectedOrderId(orderId)}
+                onOpenOrder={(orderId) => navigate({ to: "/vendor/order/$orderId", params: { orderId } })}
                 onAcceptOrder={handleAcceptOrder}
                 onMarkReady={handleMarkReady}
                 onRejectOrder={handleRejectOrder}
@@ -1045,6 +1040,7 @@ function VendorDashboardPage() {
                 orders={queue.delivered}
                 filter={historyFilter}
                 onFilterChange={setHistoryFilter}
+                onOpenOrder={(orderId) => navigate({ to: "/vendor/order/$orderId", params: { orderId } })}
               />
             ) : mainView === "carnet" ? (
               <CarnetView
@@ -1242,56 +1238,6 @@ function VendorDashboardPage() {
               }}
             >
               {isSavingCarnet ? "Verifying..." : "Verify & Add to Carnet"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={selectedOrder !== null}
-        onOpenChange={(isOpen) => setSelectedOrderId(isOpen ? selectedOrderId : null)}
-      >
-        <DialogContent className="w-[95vw] max-w-lg rounded-2xl border border-border bg-card">
-          <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription>{selectedOrder ? `Order #${shortOrderId(selectedOrder.id)}` : ""}</DialogDescription>
-          </DialogHeader>
-
-          {selectedOrder ? (
-            <div className="space-y-3">
-              <div className="space-y-1 rounded-xl border border-border bg-muted/30 p-3">
-                <p className="text-sm text-muted-foreground">Customer</p>
-                <p className="text-sm font-medium text-foreground">{selectedOrder.customerName}</p>
-                <p className="text-xs text-muted-foreground">{selectedOrder.customerPhone}</p>
-                {selectedOrder.deliveryNotes ? (
-                  <p className="text-xs text-muted-foreground">{selectedOrder.deliveryNotes}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                {selectedOrder.items.map((item, index) => (
-                  <div
-                    key={`${selectedOrder.id}-${index}`}
-                    className="flex items-center justify-between rounded-xl border border-border p-3"
-                  >
-                    <p className="text-sm text-foreground">
-                      {item.quantity}x {item.name}
-                    </p>
-                    <p className="text-sm font-semibold text-foreground">{item.quantity * item.unitPriceMad} MAD</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between border-t border-border pt-2">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-base font-semibold text-foreground">{selectedOrder.totalMad} MAD</p>
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button variant="outline" className="w-full rounded-xl" onClick={() => setSelectedOrderId(null)}>
-              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1738,10 +1684,12 @@ function OrderHistoryView({
   orders,
   filter,
   onFilterChange,
+  onOpenOrder,
 }: {
   orders: DashboardOrder[];
   filter: HistoryFilter;
   onFilterChange: (filter: HistoryFilter) => void;
+  onOpenOrder: (orderId: string) => void;
 }) {
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -1829,7 +1777,7 @@ function OrderHistoryView({
                 tab="ready"
                 compact
                 isUpdating={false}
-                onOpenDetails={() => {}}
+                onOpenDetails={() => onOpenOrder(order.id)}
                 timeTick={Date.now()}
               />
             ))}
