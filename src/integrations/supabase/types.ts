@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      brands: {
+        Row: {
+          created_at: string
+          id: string
+          logo_url: string | null
+          name_ar: string | null
+          name_en: string
+          name_fr: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en: string
+          name_fr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name_ar?: string | null
+          name_en?: string
+          name_fr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       carnet_payments: {
         Row: {
           amount: number
@@ -348,7 +378,7 @@ export type Database = {
       }
       master_products: {
         Row: {
-          brand: string | null
+          brand_id: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id: string | null
           created_at: string
@@ -364,7 +394,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          brand?: string | null
+          brand_id?: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
           created_at?: string
@@ -380,7 +410,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          brand?: string | null
+          brand_id?: string | null
           category?: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
           created_at?: string
@@ -396,6 +426,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "master_products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "master_products_category_id_fkey"
             columns: ["category_id"]
