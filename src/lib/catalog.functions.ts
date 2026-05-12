@@ -440,7 +440,9 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
 
     const masterProductsQuery = (supabaseAdmin as any)
       .from("master_products")
-      .select("id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, created_at")
+      .select(
+        "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, created_at",
+      )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -478,7 +480,12 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
           name: masterProduct.product_name,
           nameFr: masterProduct.name_fr,
           nameAr: masterProduct.name_ar,
-          brand: masterProduct.brand,
+          brandId: masterProduct.brand_id,
+          brand: masterProduct.brands?.name_en ?? null,
+          brandNameEn: masterProduct.brands?.name_en ?? null,
+          brandNameFr: masterProduct.brands?.name_fr ?? null,
+          brandNameAr: masterProduct.brands?.name_ar ?? null,
+          brandLogoUrl: masterProduct.brands?.logo_url ?? null,
           categoryId: masterProduct.category_id,
           category: masterProduct.category,
           measurementValue: masterProduct.measurement_value != null ? Number(masterProduct.measurement_value) : null,
