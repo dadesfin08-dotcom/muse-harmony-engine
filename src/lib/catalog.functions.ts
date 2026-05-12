@@ -201,7 +201,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -242,7 +242,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
-          brand: data.brand,
+          brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
@@ -252,7 +252,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -340,7 +340,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
-          brand: data.brand,
+          brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
@@ -350,7 +350,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
