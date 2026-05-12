@@ -3,11 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { Minus, Package, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { MobileHeader } from "@/components/MobileHeader";
-import { Button } from "@/components/ui/button";
 import { listActiveFlashDeals } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -38,6 +37,9 @@ function FlashDealsPage() {
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const fetchFlashDeals = useServerFn(listActiveFlashDeals);
   const addCartItem = useCustomerCartStore((state) => state.addItem);
+  const increaseItem = useCustomerCartStore((state) => state.increaseItem);
+  const decreaseItem = useCustomerCartStore((state) => state.decreaseItem);
+  const cartItems = useCustomerCartStore((state) => state.items);
 
   useEffect(() => {
     try {
@@ -72,6 +74,9 @@ function FlashDealsPage() {
     }));
   }, [flashDealsQuery.data, language]);
 
+  const getCartQuantity = (productId: string) =>
+    cartItems.find((item) => item.id === productId)?.quantity ?? 0;
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-4xl px-4 pb-8 pt-0 sm:px-6">
       <MobileHeader title={t("flashDeals.title")} fallbackTo="/customer" />
@@ -90,46 +95,82 @@ function FlashDealsPage() {
       ) : (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {deals.map((deal) => (
-            <article key={deal.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-              <span className="ml-3 mt-3 inline-flex rounded-full bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
-                -{deal.discountPercent}%
-              </span>
-              <div className="aspect-square bg-muted/40 px-2 pb-2">
+            <article key={deal.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+              <div className="relative h-28 w-full bg-gray-50">
                 <img
                   src={deal.imageUrl || fallbackProductImage}
                   alt={deal.localizedName}
-                  className="h-full w-full object-contain object-center"
+                  className="h-full w-full object-contain object-center p-2"
                   loading="lazy"
                 />
+                <span className="absolute left-2 top-2 inline-flex rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  -{deal.discountPercent}%
+                </span>
               </div>
 
-              <div className="space-y-1 px-3 pb-3">
-                <h2 className="line-clamp-2 text-sm font-semibold text-foreground">{deal.localizedName}</h2>
-                <p className="text-sm font-bold text-destructive">{deal.flashSalePrice} MAD</p>
-                <p className="text-xs text-muted-foreground line-through">{deal.vendorPrice} MAD</p>
-                <Button
-                  variant="soft"
-                  size="sm"
-                  className="mt-1 w-full rounded-xl"
-                  onClick={() => {
-                    addCartItem({
-                      id: deal.id,
-                      name: deal.localizedName,
-                      price: Number(deal.flashSalePrice ?? 0),
-                      measurementUnit: deal.measurementUnit,
-                      image: deal.imageUrl || fallbackProductImage,
-                      alt: deal.localizedName,
-                    });
+              <div className="space-y-1.5 p-3">
+                <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
+                  {t("flashDeals.title", { defaultValue: "Flash Deal" })}
+                </span>
 
-                    toast.success(t("products.add"), {
-                      description: deal.localizedName,
-                      duration: 1200,
-                    });
-                  }}
-                >
-                  <Plus className="size-4" />
-                  {t("products.add")}
-                </Button>
+                <div className="flex items-start justify-between gap-1.5">
+                  <h2 className="line-clamp-1 min-w-0 flex-1 text-sm font-semibold text-gray-900">{deal.localizedName}</h2>
+                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
+                    <Package className="size-3" />
+                    {deal.measurementUnit}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-0">
+                  <p className="text-xl font-extrabold text-red-600">
+                    {Number(deal.flashSalePrice ?? 0)} <span className="text-xs font-medium text-gray-800">MAD</span>
+                  </p>
+
+                  {getCartQuantity(deal.id) > 0 ? (
+                    <div className="flex items-center gap-1 rounded-full border border-red-200 px-1.5 py-1">
+                      <button
+                        type="button"
+                        className="inline-flex size-6 items-center justify-center rounded-full bg-red-50 text-red-600"
+                        onClick={() => decreaseItem(deal.id)}
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="size-3" />
+                      </button>
+                      <span className="min-w-5 text-center text-xs font-semibold text-gray-900">{getCartQuantity(deal.id)}</span>
+                      <button
+                        type="button"
+                        className="inline-flex size-6 items-center justify-center rounded-full bg-red-50 text-red-600"
+                        onClick={() => increaseItem(deal.id)}
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="size-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700"
+                      onClick={() => {
+                        addCartItem({
+                          id: deal.id,
+                          name: deal.localizedName,
+                          price: Number(deal.flashSalePrice ?? 0),
+                          measurementUnit: deal.measurementUnit,
+                          image: deal.imageUrl || fallbackProductImage,
+                          alt: deal.localizedName,
+                        });
+
+                        toast.success(t("products.add"), {
+                          description: deal.localizedName,
+                          duration: 1200,
+                        });
+                      }}
+                    >
+                      <ShoppingCart className="size-3.5" />
+                      {t("products.add")}
+                    </button>
+                  )}
+                </div>
               </div>
             </article>
           ))}
