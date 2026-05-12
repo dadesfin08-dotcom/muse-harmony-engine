@@ -2546,19 +2546,51 @@ function AdminPage() {
               <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
                 Brand (المركة)
               </label>
-              <select
-                id="product-brand"
-                value={productForm.brandId}
-                onChange={(event) => setProductForm((current) => ({ ...current, brandId: event.target.value }))}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              >
-                <option value="">No brand</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name_en}
-                  </option>
-                ))}
-              </select>
+              <Popover open={brandPickerOpen} onOpenChange={setBrandPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={brandPickerOpen}
+                    className="h-10 w-full justify-between rounded-md"
+                  >
+                    <span className="truncate">
+                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || "No brand"}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search brand..." />
+                    <CommandList>
+                      <CommandEmpty>No brand found.</CommandEmpty>
+                      <CommandItem
+                        value="no-brand"
+                        onSelect={() => {
+                          setProductForm((current) => ({ ...current, brandId: "" }));
+                          setBrandPickerOpen(false);
+                        }}
+                      >
+                        No brand
+                      </CommandItem>
+                      {brands.map((brand) => (
+                        <CommandItem
+                          key={brand.id}
+                          value={`${brand.name_en} ${brand.name_fr ?? ""} ${brand.name_ar ?? ""}`}
+                          onSelect={() => {
+                            setProductForm((current) => ({ ...current, brandId: brand.id }));
+                            setBrandPickerOpen(false);
+                          }}
+                        >
+                          <span className="truncate">{brand.name_en}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
@@ -2652,6 +2684,82 @@ function AdminPage() {
               disabled={isUploadingProduct}
             >
               {isUploadingProduct ? "Uploading..." : editingProductId ? "Update Product" : "Save Product"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isBrandModalOpen}
+        onOpenChange={(open) => {
+          setIsBrandModalOpen(open);
+          if (!open) {
+            resetBrandForm();
+          }
+        }}
+      >
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingBrandId ? "Edit Brand" : "Add New Brand"}</DialogTitle>
+            <DialogDescription>Manage multilingual brand names and logo.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => brandLogoInputRef.current?.click()}
+              className="w-full rounded-md border border-dashed border-border bg-muted/40 p-4 text-center transition hover:border-primary/60"
+            >
+              <input
+                ref={brandLogoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleBrandLogoChange}
+              />
+              {brandLogoPreviewUrl ? (
+                <img
+                  src={brandLogoPreviewUrl}
+                  alt="Brand logo preview"
+                  className="mx-auto h-24 w-24 rounded-md border border-border bg-background object-contain p-2"
+                />
+              ) : (
+                <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <ImagePlus className="size-5" />
+                </span>
+              )}
+              <p className="mt-2 text-sm font-medium text-foreground">Upload brand logo</p>
+            </button>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (EN)</label>
+              <Input
+                value={brandForm.nameEn}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameEn: event.target.value }))}
+                placeholder="e.g. Lesieur"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (FR)</label>
+              <Input
+                value={brandForm.nameFr}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameFr: event.target.value }))}
+                placeholder="Ex: Lesieur"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (AR)</label>
+              <Input
+                value={brandForm.nameAr}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameAr: event.target.value }))}
+                placeholder="مثال: ليزيور"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="hero" className="w-full rounded-md" onClick={saveBrandHandler} disabled={isSavingBrand}>
+              {isSavingBrand ? "Saving..." : editingBrandId ? "Update Brand" : "Save Brand"}
             </Button>
           </DialogFooter>
         </DialogContent>
