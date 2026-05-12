@@ -2033,7 +2033,8 @@ function Index() {
                                   className="flex items-center justify-between rounded-xl border border-border bg-background p-3"
                                   onClick={() => {
                                     if (!isDebt) return;
-                                    void navigate({ to: "/customer/order/$orderId", params: { orderId: entry.id } });
+                                    const orderId = entry.id.startsWith("order:") ? entry.id.slice("order:".length) : entry.id;
+                                    void navigate({ to: "/customer/order/$orderId", params: { orderId } });
                                   }}
                                 >
                                   <div>
