@@ -61,6 +61,11 @@ const vendorSettlementSummaryInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
+const vendorOrderDetailsInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+  orderId: z.string().uuid(),
+});
+
 const settleCyclistCashHandoverInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
   cyclistId: z.string().uuid(),
@@ -98,6 +103,24 @@ export type VendorSettlementSummary = {
   totalReceivedTodayMad: number;
   lifetimeEarningsMad: number;
   pendingCyclistCount: number;
+};
+
+export type VendorOrderDetails = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  paymentMethod: "COD" | "Carnet";
+  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  createdAt: string;
+  deliveryFeeMad: number;
+  subtotalMad: number;
+  grandTotalMad: number;
+  items: Array<{
+    productName: string;
+    quantity: number;
+    unitPriceMad: number;
+    lineTotalMad: number;
+  }>;
 };
 
 async function resolveVendorByPhone(phoneNumber: string) {
@@ -421,6 +444,115 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("updateVendorOrderStatus failed:", error);
       throw new Error("Order status update failed.");
+    }
+  });
+
+export const getVendorOrderDetails = createServerFn({ method: "POST" })
+  .inputValidator((input) => vendorOrderDetailsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
+
+      const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, vendor_id, customer_name, customer_phone, payment_method, status, created_at, delivery_fee, order_items")
+        .eq("id", data.orderId)
+        .eq("vendor_id", vendor.id)
+        .maybeSingle();
+
+      if (orderError) {
+        throw new Error(orderError.message);
+      }
+
+      if (!orderRow?.id) {
+        throw new Error("Order not found.");
+      }
+
+      const rawItems = Array.isArray(orderRow.order_items) ? orderRow.order_items : [];
+
+      const productIds = Array.from(
+        new Set(
+          rawItems
+            .map((item: any) => (typeof item?.productId === "string" ? item.productId : null))
+            .filter((value: string | null): value is string => Boolean(value)),
+        ),
+      );
+
+      const productNames = Array.from(
+        new Set(
+          rawItems
+            .map((item: any) => (typeof item?.name === "string" ? item.name.trim() : null))
+            .filter((value: string | null): value is string => Boolean(value)),
+        ),
+      );
+
+      const [byIdQuery, byNameQuery] = await Promise.all([
+        productIds.length > 0
+          ? (supabaseAdmin as any).from("master_products").select("id, product_name").in("id", productIds)
+          : Promise.resolve({ data: [], error: null }),
+        productNames.length > 0
+          ? (supabaseAdmin as any)
+              .from("master_products")
+              .select("id, product_name")
+              .in("product_name", productNames)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (byIdQuery.error) {
+        throw new Error(byIdQuery.error.message);
+      }
+
+      if (byNameQuery.error) {
+        throw new Error(byNameQuery.error.message);
+      }
+
+      const productsById = new Map(
+        ((byIdQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [row.id, row.product_name]),
+      );
+      const productsByName = new Map(
+        ((byNameQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [
+          row.product_name.trim().toLowerCase(),
+          row.product_name,
+        ]),
+      );
+
+      const items = rawItems.map((item: any) => {
+        const quantity = Number(item?.quantity ?? 0);
+        const unitPriceMad = Number(item?.unitPriceMad ?? 0);
+        const fallbackName = typeof item?.name === "string" ? item.name.trim() : "-";
+        const normalizedFallbackName = fallbackName.toLowerCase();
+        const productName =
+          (typeof item?.productId === "string" ? productsById.get(item.productId) : null) ??
+          productsByName.get(normalizedFallbackName) ??
+          fallbackName;
+        const lineTotalMad = quantity * unitPriceMad;
+
+        return {
+          productName,
+          quantity,
+          unitPriceMad,
+          lineTotalMad,
+        };
+      });
+
+      const subtotalMad = items.reduce((sum, item) => sum + item.lineTotalMad, 0);
+      const deliveryFeeMad = Number(orderRow.delivery_fee ?? 0);
+
+      return {
+        id: String(orderRow.id),
+        customerName: String(orderRow.customer_name ?? "-"),
+        customerPhone: String(orderRow.customer_phone ?? "-"),
+        paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
+        status: (orderRow.status ?? "new") as "new" | "preparing" | "ready" | "delivering" | "delivered",
+        createdAt: String(orderRow.created_at ?? new Date().toISOString()),
+        deliveryFeeMad,
+        subtotalMad,
+        grandTotalMad: subtotalMad + deliveryFeeMad,
+        items,
+      } satisfies VendorOrderDetails;
+    } catch (error) {
+      console.error("getVendorOrderDetails failed:", error);
+      throw new Error("Failed to load order details.");
     }
   });
 
