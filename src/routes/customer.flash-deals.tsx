@@ -7,7 +7,6 @@ import { Minus, Package, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { MobileHeader } from "@/components/MobileHeader";
-import { Button } from "@/components/ui/button";
 import { listActiveFlashDeals } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
