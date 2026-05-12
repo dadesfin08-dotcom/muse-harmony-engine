@@ -1684,10 +1684,12 @@ function OrderHistoryView({
   orders,
   filter,
   onFilterChange,
+  onOpenOrder,
 }: {
   orders: DashboardOrder[];
   filter: HistoryFilter;
   onFilterChange: (filter: HistoryFilter) => void;
+  onOpenOrder: (orderId: string) => void;
 }) {
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -1775,7 +1777,7 @@ function OrderHistoryView({
                 tab="ready"
                 compact
                 isUpdating={false}
-                onOpenDetails={() => {}}
+                onOpenDetails={() => onOpenOrder(order.id)}
                 timeTick={Date.now()}
               />
             ))}
