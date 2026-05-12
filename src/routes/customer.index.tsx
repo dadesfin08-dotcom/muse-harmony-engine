@@ -103,9 +103,14 @@ type Product = {
   name: string;
   nameFr?: string | null;
   nameAr?: string | null;
+  brand?: string | null;
+  brandNameEn?: string | null;
+  brandNameFr?: string | null;
+  brandNameAr?: string | null;
   category: ProductCategory;
   categoryId?: string | null;
   price: number;
+  measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
   alt: string;
@@ -540,9 +545,14 @@ function Index() {
         name: localizedName,
         nameFr,
         nameAr,
+        brand: (item as { brand?: string | null }).brand ?? null,
+        brandNameEn: (item as { brandNameEn?: string | null }).brandNameEn ?? null,
+        brandNameFr: (item as { brandNameFr?: string | null }).brandNameFr ?? null,
+        brandNameAr: (item as { brandNameAr?: string | null }).brandNameAr ?? null,
         category: item.category,
         categoryId: (item as { categoryId?: string | null }).categoryId ?? null,
         price: item.vendorPrice,
+        measurementValue: (item as { measurementValue?: number | null }).measurementValue ?? null,
         measurementUnit: item.measurementUnit,
         image: item.imageUrl || productFallbackImage,
         alt: `${localizedName} product image`,
@@ -1423,19 +1433,33 @@ function Index() {
                     />
                   </div>
                   <div className="p-3 sm:p-4">
-                    <h3 className="line-clamp-2 text-sm font-semibold tracking-tight sm:text-base">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/90">
+                      {getLocalizedText({
+                        en: product.brandNameEn || product.brand || "",
+                        fr: product.brandNameFr || product.brandNameEn || product.brand || "",
+                        ar: product.brandNameAr || product.brandNameEn || product.brand || "",
+                      }) || "—"}
+                    </p>
+                    <h3 className="mt-1 line-clamp-2 text-sm font-bold tracking-tight text-foreground sm:text-base">
                       {product.name}
                     </h3>
-                    <p className="mt-1 text-sm font-semibold text-primary">
-                      {product.price} MAD / {product.measurementUnit}
-                    </p>
+                    <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                      {product.measurementValue != null ? `${product.measurementValue} ` : ""}
+                      {product.measurementUnit}
+                    </span>
+                    <div className="mt-3 flex items-end justify-between">
+                      <p className="text-lg font-extrabold text-primary">
+                        {product.price}
+                        <span className="ml-1 text-xs font-semibold text-primary/80">MAD</span>
+                      </p>
+                    </div>
                   </div>
                 </Link>
                 <div className="px-3 pb-3 sm:px-4 sm:pb-4">
                   <Button
-                    variant="soft"
+                    variant="hero"
                     size="sm"
-                    className="w-full rounded-xl"
+                    className="w-full rounded-xl shadow-sm transition-colors hover:opacity-95"
                     onClick={() => addToCart(product)}
                   >
                     <Plus className="size-4" />
