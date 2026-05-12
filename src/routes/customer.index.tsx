@@ -20,6 +20,7 @@ import {
   House,
   Gift,
   Sparkles,
+  ShieldCheck,
   MessageCircle,
   ClipboardList,
   BookOpen,
