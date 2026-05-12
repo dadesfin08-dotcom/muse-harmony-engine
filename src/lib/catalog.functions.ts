@@ -75,6 +75,12 @@ const customerProductDetailInputSchema = z.object({
   neighborhoodId: z.string().uuid().nullable().optional(),
 });
 
+const brandSuggestionsInputSchema = z.object({
+  productId: z.string().uuid(),
+  neighborhoodId: z.string().uuid(),
+  brand: z.string().trim().min(1).max(120),
+});
+
 const upsertVendorProductInputSchema = z.object({
   phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
   masterProductId: z.string().uuid(),
@@ -802,6 +808,87 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getCustomerProductDetail failed:", error);
       throw new Error("Failed to load product details.");
+    }
+  });
+
+export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST" })
+  .inputValidator((input) => brandSuggestionsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+      if (vendorIds.length === 0) {
+        return [] as Array<{
+          id: string;
+          vendorId: string;
+          name: string;
+          nameFr: string | null;
+          nameAr: string | null;
+          brand: string | null;
+          measurementValue: number | null;
+          measurementUnit: MeasurementUnit;
+          imageUrl: string | null;
+          vendorPrice: number;
+        }>;
+      }
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("vendor_products")
+        .select(
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, measurement_value, measurement_unit, image_url, is_active)",
+        )
+        .in("vendor_id", vendorIds)
+        .eq("is_available", true)
+        .eq("master_products.is_active", true)
+        .eq("master_products.brand", data.brand)
+        .neq("master_product_id", data.productId)
+        .order("popularity_score", { foreignTable: "master_products", ascending: false })
+        .order("created_at", { foreignTable: "master_products", ascending: false })
+        .limit(12);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const seen = new Set<string>();
+
+      return ((rows ?? []) as Array<{
+        vendor_id: string;
+        vendor_price: number;
+        is_available: boolean;
+        master_products: {
+          id: string;
+          product_name: string;
+          name_fr: string | null;
+          name_ar: string | null;
+          brand: string | null;
+          measurement_value: number | null;
+          measurement_unit: MeasurementUnit;
+          image_url: string | null;
+          is_active: boolean;
+        } | null;
+      }>)
+        .filter((row) => !!row.master_products && !seen.has(row.master_products.id))
+        .map((row) => {
+          seen.add(row.master_products!.id);
+          return {
+            id: row.master_products!.id,
+            vendorId: row.vendor_id,
+            name: row.master_products!.product_name,
+            nameFr: row.master_products!.name_fr,
+            nameAr: row.master_products!.name_ar,
+            brand: row.master_products!.brand,
+            measurementValue:
+              row.master_products!.measurement_value != null
+                ? Number(row.master_products!.measurement_value)
+                : null,
+            measurementUnit: row.master_products!.measurement_unit,
+            imageUrl: row.master_products!.image_url,
+            vendorPrice: Number(row.vendor_price ?? 0),
+          };
+        });
+    } catch (error) {
+      console.error("getBrandSuggestionsForNeighborhood failed:", error);
+      throw new Error("Failed to load suggested products.");
     }
   });
 
