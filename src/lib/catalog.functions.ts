@@ -217,6 +217,140 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
   }
 });
 
+export const listBrands = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { data, error } = await (supabaseAdmin as any)
+      .from("brands")
+      .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+      .order("name_en", { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data ?? []) as BrandRow[];
+  } catch (error) {
+    console.error("listBrands failed:", error);
+    throw new Error("Failed to load brands.");
+  }
+});
+
+export const createBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => createBrandInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: inserted, error } = await (supabaseAdmin as any)
+        .from("brands")
+        .insert({
+          name_en: data.nameEn,
+          name_ar: data.nameAr,
+          name_fr: data.nameFr,
+          logo_url: data.logoUrl,
+        })
+        .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+        .single();
+
+      if (error || !inserted?.id) {
+        throw createDbError(error ?? new Error("Brand insert failed."), "Brand insert failed.");
+      }
+
+      return inserted as BrandRow;
+    } catch (error) {
+      console.error("createBrand failed:", error);
+      throw createDbError(error, "Failed to create brand.");
+    }
+  });
+
+export const updateBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ id: z.string().uuid(), ...createBrandInputSchema.shape }).parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: updated, error } = await (supabaseAdmin as any)
+        .from("brands")
+        .update({
+          name_en: data.nameEn,
+          name_ar: data.nameAr,
+          name_fr: data.nameFr,
+          logo_url: data.logoUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.id)
+        .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+        .single();
+
+      if (error || !updated?.id) {
+        throw createDbError(error ?? new Error("Brand update failed."), "Brand update failed.");
+      }
+
+      return updated as BrandRow;
+    } catch (error) {
+      console.error("updateBrand failed:", error);
+      throw createDbError(error, "Failed to update brand.");
+    }
+  });
+
+export const deleteBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { error } = await (supabaseAdmin as any).from("brands").delete().eq("id", data.id);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return { ok: true };
+    } catch (error) {
+      console.error("deleteBrand failed:", error);
+      throw new Error("Failed to delete brand.");
+    }
+  });
+
+export const uploadBrandLogo = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadBrandLogoInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      if (!data.contentType.startsWith("image/")) {
+        throw new Error("Only image uploads are allowed.");
+      }
+
+      const commaIndex = data.dataUrl.indexOf(",");
+      if (commaIndex === -1) {
+        throw new Error("Invalid image payload.");
+      }
+
+      const base64Payload = data.dataUrl.slice(commaIndex + 1);
+      const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+      const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "jpg";
+      const safeBaseName = data.fileName
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 60);
+      const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "brand"}.${extensionFromName}`;
+      const path = `brands/${generatedFileName}`;
+
+      const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+        .from("products")
+        .upload(path, bytes, {
+          contentType: data.contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError || !uploadData?.path) {
+        throw new Error(uploadError?.message ?? "Image upload failed.");
+      }
+
+      const { data: publicUrlData } = (supabaseAdmin as any).storage.from("products").getPublicUrl(uploadData.path);
+
+      return {
+        path: uploadData.path,
+        publicUrl: publicUrlData.publicUrl,
+      };
+    } catch (error) {
+      console.error("uploadBrandLogo failed:", error);
+      throw createDbError(error, "Failed to upload brand logo.");
+    }
+  });
+
 export const createMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => createMasterProductInputSchema.parse(input))
   .handler(async ({ data }) => {
