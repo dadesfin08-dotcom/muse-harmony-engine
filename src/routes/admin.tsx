@@ -3011,8 +3011,12 @@ function CatalogSection({
               />
             </div>
             <p className="font-medium text-foreground">{product.name}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{product.brand || "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">{categoryName}</p>
-            <p className="mt-2 text-sm font-semibold text-primary">Unit: {product.measurementUnit}</p>
+            <p className="mt-2 text-sm font-semibold text-primary">
+              Unit: {product.measurementValue != null ? `${product.measurementValue} ` : ""}
+              {product.measurementUnit}
+            </p>
             <div className="mt-3 flex items-center gap-2">
               <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={() => onEditProduct(product)}>
                 Edit
