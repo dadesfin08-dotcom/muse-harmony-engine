@@ -253,6 +253,8 @@ function Index() {
   const queryClient = useQueryClient();
   const cartItems = useCustomerCartStore((state) => state.items);
   const addCartItem = useCustomerCartStore((state) => state.addItem);
+  const increaseItem = useCustomerCartStore((state) => state.increaseItem);
+  const decreaseItem = useCustomerCartStore((state) => state.decreaseItem);
   const clearCart = useCustomerCartStore((state) => state.clearCart);
   const openCart = useCustomerCartStore((state) => state.openCart);
   const closeCart = useCustomerCartStore((state) => state.closeCart);
