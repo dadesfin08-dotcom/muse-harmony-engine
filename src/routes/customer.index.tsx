@@ -1052,8 +1052,27 @@ function Index() {
   const hasVipCarnet = !!customerCarnet;
   const carnetCurrentDebt = Number(customerCarnet?.currentDebt ?? 0);
   const carnetMaxLimit = Number(customerCarnet?.maxLimit ?? 0);
-  const carnetAvailableCredit = Math.max(carnetMaxLimit - carnetCurrentDebt, 0);
   const carnetUsagePercent = carnetMaxLimit > 0 ? Math.min((carnetCurrentDebt / carnetMaxLimit) * 100, 100) : 0;
+  const carnetUtilizationLabel =
+    language === "ar"
+      ? "استهلاك الدين"
+      : language === "fr"
+        ? "Utilisation de la dette"
+        : "Debt Utilization";
+  const carnetDebtRatioLabel =
+    language === "ar"
+      ? `المُستَهلَك: ${carnetCurrentDebt.toFixed(2)} درهم / السقف: ${carnetMaxLimit.toFixed(2)} درهم`
+      : language === "fr"
+        ? `Utilisé: ${carnetCurrentDebt.toFixed(2)} / Limite: ${carnetMaxLimit.toFixed(2)} MAD`
+        : `Used: ${carnetCurrentDebt.toFixed(2)} / Limit: ${carnetMaxLimit.toFixed(2)} MAD`;
+  const carnetUsagePercentLabel =
+    language === "ar"
+      ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
+      : language === "fr"
+        ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
+        : `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`;
+  const carnetProgressIndicatorClassName =
+    carnetUsagePercent < 50 ? "bg-success" : carnetUsagePercent <= 80 ? "bg-accent" : "bg-destructive";
   const activeAnnouncements = (siteContentQuery.data?.announcements ?? []) as AnnouncementRow[];
   const tickerText =
     activeAnnouncements.length > 0
@@ -1984,30 +2003,26 @@ function Index() {
                   ) : (
                     <>
                       <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-xl border border-border bg-muted/30 p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              Your Current Balance
-                            </p>
-                            <p className="mt-1 text-xl font-semibold text-destructive">
-                              {carnetCurrentDebt.toFixed(2)} MAD
-                            </p>
-                          </div>
-                          <div className="rounded-xl border border-border bg-muted/30 p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              Available Credit
-                            </p>
-                            <p className="mt-1 text-xl font-semibold text-success">
-                              {carnetAvailableCredit.toFixed(2)} MAD
-                            </p>
-                          </div>
+                        <div className="rounded-xl border border-border bg-muted/30 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                          </p>
+                          <p className="mt-1 text-xl font-semibold text-destructive">
+                            {carnetCurrentDebt.toFixed(2)} MAD
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Credit usage</span>
+                            <span>{carnetUtilizationLabel}</span>
                             <span>{carnetUsagePercent.toFixed(0)}%</span>
                           </div>
-                          <Progress value={carnetUsagePercent} className="h-2" />
+                          <Progress
+                            value={carnetUsagePercent}
+                            className="h-2 bg-muted"
+                            indicatorClassName={carnetProgressIndicatorClassName}
+                            aria-label={carnetUsagePercentLabel}
+                          />
+                          <p className="text-xs text-muted-foreground">{carnetDebtRatioLabel}</p>
                         </div>
                       </section>
 
