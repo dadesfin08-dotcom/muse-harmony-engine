@@ -1823,6 +1823,16 @@ function Index() {
                   <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
                     View & Edit Profile
                   </Button>
+                  <Button
+                    variant="soft"
+                    className="w-full rounded-xl"
+                    onClick={() => {
+                      setIsCustomerAuthModalOpen(false);
+                      void navigate({ to: "/customer/carnet" });
+                    }}
+                  >
+                    Carnet Details
+                  </Button>
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
                     Close
                   </Button>
