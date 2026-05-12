@@ -201,7 +201,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -210,7 +210,33 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
       throw new Error(error.message);
     }
 
-    return (data ?? []) as MasterProductRow[];
+    const masterProducts = (data ?? []) as Array<Omit<MasterProductRow, "brands">>;
+
+    const brandIds = Array.from(
+      new Set(masterProducts.map((row) => row.brand_id).filter((value): value is string => Boolean(value))),
+    );
+
+    const brandsById = new Map<string, MasterProductRow["brands"]>();
+
+    if (brandIds.length > 0) {
+      const { data: brands, error: brandsError } = await (supabaseAdmin as any)
+        .from("brands")
+        .select("id, name_en, name_fr, name_ar, logo_url")
+        .in("id", brandIds);
+
+      if (brandsError) {
+        throw new Error(brandsError.message);
+      }
+
+      for (const brand of (brands ?? []) as NonNullable<MasterProductRow["brands"]>[]) {
+        brandsById.set(brand.id, brand);
+      }
+    }
+
+    return masterProducts.map((row) => ({
+      ...row,
+      brands: row.brand_id ? (brandsById.get(row.brand_id) ?? null) : null,
+    })) as MasterProductRow[];
   } catch (error) {
     console.error("listMasterProducts failed:", error);
     throw new Error("Failed to load master products.");
