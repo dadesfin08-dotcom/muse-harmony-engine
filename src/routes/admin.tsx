@@ -1844,7 +1844,13 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "brands" ? (
-                <BrandsSection brands={brands} isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading} />
+                <BrandsSection
+                  brands={brands}
+                  isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading}
+                  onAddBrand={openCreateBrandModal}
+                  onEditBrand={openEditBrandModal}
+                  onDeleteBrand={deleteBrandHandler}
+                />
               ) : null}
               {tab === "categories" ? (
                 <CategoriesSection
