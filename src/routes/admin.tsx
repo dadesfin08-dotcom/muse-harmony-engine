@@ -3215,6 +3215,98 @@ function CatalogSection({
   );
 }
 
+function BrandsSection({
+  brands,
+  isLoading,
+  onAddBrand,
+  onEditBrand,
+  onDeleteBrand,
+}: {
+  brands: BrandAdminRow[];
+  isLoading: boolean;
+  onAddBrand: () => void;
+  onEditBrand: (brand: BrandAdminRow) => void;
+  onDeleteBrand: (brand: BrandAdminRow) => void;
+}) {
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Brands · الماركات</h2>
+          <p className="text-sm text-muted-foreground">Centralized multilingual brand registry for all products.</p>
+        </div>
+        <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
+          + Add New Brand
+        </Button>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[680px] text-sm">
+          <thead className="bg-muted/40 text-left text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Logo</th>
+              <th className="px-3 py-2 font-medium">English</th>
+              <th className="px-3 py-2 font-medium">Français</th>
+              <th className="px-3 py-2 font-medium">العربية</th>
+              <th className="px-3 py-2 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>
+                  Loading brands...
+                </td>
+              </tr>
+            ) : brands.length === 0 ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>
+                  No brands yet.
+                </td>
+              </tr>
+            ) : (
+              brands.map((brand) => (
+                <tr key={brand.id} className="border-t border-border">
+                  <td className="px-3 py-2">
+                    {brand.logo_url ? (
+                      <img
+                        src={brand.logo_url}
+                        alt={`${brand.name_en} logo`}
+                        className="h-10 w-10 rounded-md border border-border object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 font-medium text-foreground">{brand.name_en}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{brand.name_fr || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{brand.name_ar || "—"}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => onEditBrand(brand)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-md"
+                        onClick={() => onDeleteBrand(brand)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function CategoriesSection({
   categories,
   isLoading,
