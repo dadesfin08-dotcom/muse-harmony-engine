@@ -150,7 +150,6 @@ function VendorDashboardPage() {
   const [isOnline, setIsOnline] = useState(true);
   const [kpiFilter, setKpiFilter] = useState<HistoryFilter>("today");
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("today");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [inventoryDraft, setInventoryDraft] = useState<
     Record<string, { vendorPrice: string; isAvailable: boolean }>
@@ -581,10 +580,6 @@ function VendorDashboardPage() {
     };
   }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers]);
 
-  const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) ?? null,
-    [orders, selectedOrderId],
-  );
   const printableOrder = useMemo<ThermalReceiptOrder>(
     () =>
       printOrder
