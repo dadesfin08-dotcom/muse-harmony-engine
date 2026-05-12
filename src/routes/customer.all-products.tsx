@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { Search, ShoppingCart, Plus } from "lucide-react";
+import { Droplets, Heart, Leaf, Minus, Package, Search, ShieldCheck, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,8 @@ function AllProductsPage() {
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const fetchCatalogByNeighborhood = useServerFn(getCustomerCatalogByNeighborhood);
   const addCartItem = useCustomerCartStore((state) => state.addItem);
+  const increaseItem = useCustomerCartStore((state) => state.increaseItem);
+  const decreaseItem = useCustomerCartStore((state) => state.decreaseItem);
   const cartItems = useCustomerCartStore((state) => state.items);
   const openCart = useCustomerCartStore((state) => state.openCart);
 
@@ -121,6 +123,9 @@ function AllProductsPage() {
     });
   };
 
+  const getCartQuantity = (productId: string) =>
+    cartItems.find((item) => item.id === productId)?.quantity ?? 0;
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-8 pt-0 sm:px-6">
       <MobileHeader
@@ -159,46 +164,97 @@ function AllProductsPage() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {displayedProducts.map((product) => (
-          <article key={product.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-            <Link to="/product/$id" params={{ id: product.id }} className="block">
-              <div className="aspect-square overflow-hidden rounded-xl bg-muted/40">
+          <article key={product.id} className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-2 shadow-sm">
+            <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
+              <div className="relative">
                 <img
                   src={product.imageUrl || fallbackProductImage}
                   alt={product.localizedName}
-                  className="h-full w-full object-contain object-center p-2"
+                  className="h-full w-full object-contain object-center"
                   loading="lazy"
                 />
               </div>
-              <div className="p-3 sm:p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/90">
-                  {product.localizedBrand || "—"}
-                </p>
-                <h2 className="mt-1 line-clamp-2 text-sm font-bold text-foreground sm:text-base">
-                  {product.localizedName}
-                </h2>
-                <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+            </Link>
+
+            <button
+              type="button"
+              aria-label="Wishlist"
+              className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white shadow-sm"
+            >
+              <Heart className="size-4 text-teal-700" />
+            </button>
+
+            <div className="p-4">
+              <span className="mb-2 inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                {product.localizedBrand || "—"}
+              </span>
+
+              <div className="flex items-start justify-between gap-2">
+                <Link to="/customer/product/$id" params={{ id: product.id }} className="min-w-0 flex-1">
+                  <h2 className="line-clamp-2 text-lg font-bold text-gray-900">{product.localizedName}</h2>
+                </Link>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm text-gray-700">
+                  <Package className="size-3.5" />
                   {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                   {product.measurementUnit}
                 </span>
-                <div className="mt-3 flex items-end justify-between">
-                  <p className="text-lg font-extrabold text-primary">
-                    {Number(product.vendorPrice ?? 0)}
-                    <span className="ml-1 text-xs font-semibold text-primary/80">MAD</span>
-                  </p>
-                </div>
               </div>
-            </Link>
 
-            <div className="px-3 pb-3">
-              <Button
-                variant="hero"
-                size="sm"
-                className="w-full rounded-xl shadow-sm transition-colors hover:opacity-95"
-                onClick={() => addToCart(product)}
-              >
-                <Plus className="size-4" />
-                {t("products.add")}
-              </Button>
+              <p className="mt-1 text-sm text-gray-500">100% طبيعي | جودة عالية</p>
+
+              <hr className="my-4 border-t border-dashed border-gray-200" />
+
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-3xl font-extrabold text-[#2A7543]">
+                  {Number(product.vendorPrice ?? 0)} <span className="text-sm font-medium">MAD</span>
+                </p>
+
+                {getCartQuantity(product.id) > 0 ? (
+                  <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
+                    <button
+                      type="button"
+                      className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                      onClick={() => decreaseItem(product.id)}
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="size-4" />
+                    </button>
+                    <span className="min-w-7 text-center text-base font-medium text-gray-900">{getCartQuantity(product.id)}</span>
+                    <button
+                      type="button"
+                      className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                      onClick={() => increaseItem(product.id)}
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800"
+                    onClick={() => addToCart(product)}
+                  >
+                    <ShoppingCart className="size-4" />
+                    {t("products.add")}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mx-4 mb-2 flex items-center justify-between rounded-xl bg-[#F7FBF8] p-2 text-[10px] text-green-800">
+              <span className="inline-flex items-center gap-1">
+                <Leaf className="size-3" />
+                100% طبيعي
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Droplets className="size-3" />
+                نقي وصحي
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <ShieldCheck className="size-3" />
+                جودة مضمونة
+              </span>
             </div>
           </article>
         ))}
