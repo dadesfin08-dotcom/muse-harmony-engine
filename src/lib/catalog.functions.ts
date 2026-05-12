@@ -866,26 +866,42 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           image_url: string | null;
           is_active: boolean;
         } | null;
-      }>)
-        .filter((row) => !!row.master_products && !seen.has(row.master_products.id))
-        .map((row) => {
-          seen.add(row.master_products!.id);
-          return {
-            id: row.master_products!.id,
-            vendorId: row.vendor_id,
-            name: row.master_products!.product_name,
-            nameFr: row.master_products!.name_fr,
-            nameAr: row.master_products!.name_ar,
-            brand: row.master_products!.brand,
-            measurementValue:
-              row.master_products!.measurement_value != null
-                ? Number(row.master_products!.measurement_value)
-                : null,
-            measurementUnit: row.master_products!.measurement_unit,
-            imageUrl: row.master_products!.image_url,
-            vendorPrice: Number(row.vendor_price ?? 0),
-          };
+      }>).reduce<
+        Array<{
+          id: string;
+          vendorId: string;
+          name: string;
+          nameFr: string | null;
+          nameAr: string | null;
+          brand: string | null;
+          measurementValue: number | null;
+          measurementUnit: MeasurementUnit;
+          imageUrl: string | null;
+          vendorPrice: number;
+        }>
+      >((acc, row) => {
+        if (!row.master_products || seen.has(row.master_products.id)) {
+          return acc;
+        }
+
+        seen.add(row.master_products.id);
+        acc.push({
+          id: row.master_products.id,
+          vendorId: row.vendor_id,
+          name: row.master_products.product_name,
+          nameFr: row.master_products.name_fr,
+          nameAr: row.master_products.name_ar,
+          brand: row.master_products.brand,
+          measurementValue:
+            row.master_products.measurement_value != null
+              ? Number(row.master_products.measurement_value)
+              : null,
+          measurementUnit: row.master_products.measurement_unit,
+          imageUrl: row.master_products.image_url,
+          vendorPrice: Number(row.vendor_price ?? 0),
         });
+        return acc;
+      }, []);
     } catch (error) {
       console.error("getBrandSuggestionsForNeighborhood failed:", error);
       throw new Error("Failed to load suggested products.");
