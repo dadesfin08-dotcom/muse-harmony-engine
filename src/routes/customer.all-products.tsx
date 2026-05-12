@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { Droplets, Leaf, Minus, Package, Plus, Search, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Minus, Package, Plus, Search, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -176,7 +176,7 @@ function AllProductsPage() {
               </div>
             </Link>
 
-            <div className="space-y-2 p-3">
+            <div className="space-y-1.5 p-3">
               <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
                 {product.localizedBrand || "—"}
               </span>
@@ -192,7 +192,7 @@ function AllProductsPage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-0.5">
+              <div className="flex items-center justify-between gap-2 pt-0">
                 <p className="text-xl font-extrabold text-[#2A7543]">
                   {Number(product.vendorPrice ?? 0)} <span className="text-xs font-medium">MAD</span>
                 </p>
@@ -229,20 +229,6 @@ function AllProductsPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between rounded-lg bg-[#F7FBF8] px-1.5 py-1 text-[9px] text-green-800">
-                <span className="inline-flex items-center gap-0.5">
-                  <Leaf className="size-2.5" />
-                100% طبيعي
-                </span>
-                <span className="inline-flex items-center gap-0.5">
-                  <Droplets className="size-2.5" />
-                نقي وصحي
-                </span>
-                <span className="inline-flex items-center gap-0.5">
-                  <ShieldCheck className="size-2.5" />
-                جودة مضمونة
-                </span>
-              </div>
             </div>
           </article>
         ))}
