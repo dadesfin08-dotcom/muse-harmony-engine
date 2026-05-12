@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { Droplets, Heart, Leaf, Minus, Package, Search, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Droplets, Leaf, Minus, Package, Plus, Search, ShieldCheck, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -164,97 +164,85 @@ function AllProductsPage() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {displayedProducts.map((product) => (
-          <article key={product.id} className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-2 shadow-sm">
+          <article key={product.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
             <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
-              <div className="relative">
+              <div className="relative h-28 w-full bg-gray-50">
                 <img
                   src={product.imageUrl || fallbackProductImage}
                   alt={product.localizedName}
-                  className="h-full w-full object-contain object-center"
+                  className="h-full w-full object-contain object-center p-2"
                   loading="lazy"
                 />
               </div>
             </Link>
 
-            <button
-              type="button"
-              aria-label="Wishlist"
-              className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white shadow-sm"
-            >
-              <Heart className="size-4 text-teal-700" />
-            </button>
-
-            <div className="p-4">
-              <span className="mb-2 inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+            <div className="space-y-2 p-3">
+              <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
                 {product.localizedBrand || "—"}
               </span>
 
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-1.5">
                 <Link to="/customer/product/$id" params={{ id: product.id }} className="min-w-0 flex-1">
-                  <h2 className="line-clamp-2 text-lg font-bold text-gray-900">{product.localizedName}</h2>
+                  <h2 className="line-clamp-1 text-sm font-semibold text-gray-900">{product.localizedName}</h2>
                 </Link>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm text-gray-700">
-                  <Package className="size-3.5" />
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
+                  <Package className="size-3" />
                   {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                   {product.measurementUnit}
                 </span>
               </div>
 
-              <p className="mt-1 text-sm text-gray-500">100% طبيعي | جودة عالية</p>
-
-              <hr className="my-4 border-t border-dashed border-gray-200" />
-
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-3xl font-extrabold text-[#2A7543]">
-                  {Number(product.vendorPrice ?? 0)} <span className="text-sm font-medium">MAD</span>
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                <p className="text-xl font-extrabold text-[#2A7543]">
+                  {Number(product.vendorPrice ?? 0)} <span className="text-xs font-medium">MAD</span>
                 </p>
 
                 {getCartQuantity(product.id) > 0 ? (
-                  <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
+                  <div className="flex items-center gap-1 rounded-full border border-gray-200 px-1.5 py-1">
                     <button
                       type="button"
-                      className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                      className="inline-flex size-6 items-center justify-center rounded-full bg-gray-100 text-[#2A7543]"
                       onClick={() => decreaseItem(product.id)}
                       aria-label="Decrease quantity"
                     >
-                      <Minus className="size-4" />
+                      <Minus className="size-3" />
                     </button>
-                    <span className="min-w-7 text-center text-base font-medium text-gray-900">{getCartQuantity(product.id)}</span>
+                    <span className="min-w-5 text-center text-xs font-semibold text-gray-900">{getCartQuantity(product.id)}</span>
                     <button
                       type="button"
-                      className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                      className="inline-flex size-6 items-center justify-center rounded-full bg-gray-100 text-[#2A7543]"
                       onClick={() => increaseItem(product.id)}
                       aria-label="Increase quantity"
                     >
-                      +
+                      <Plus className="size-3" />
                     </button>
                   </div>
                 ) : (
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#2A7543] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800"
                     onClick={() => addToCart(product)}
                   >
-                    <ShoppingCart className="size-4" />
+                    <ShoppingCart className="size-3.5" />
                     {t("products.add")}
                   </button>
                 )}
               </div>
-            </div>
 
-            <div className="mx-4 mb-2 flex items-center justify-between rounded-xl bg-[#F7FBF8] p-2 text-[10px] text-green-800">
-              <span className="inline-flex items-center gap-1">
-                <Leaf className="size-3" />
+              <div className="flex items-center justify-between rounded-lg bg-[#F7FBF8] px-1.5 py-1 text-[9px] text-green-800">
+                <span className="inline-flex items-center gap-0.5">
+                  <Leaf className="size-2.5" />
                 100% طبيعي
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Droplets className="size-3" />
+                </span>
+                <span className="inline-flex items-center gap-0.5">
+                  <Droplets className="size-2.5" />
                 نقي وصحي
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <ShieldCheck className="size-3" />
+                </span>
+                <span className="inline-flex items-center gap-0.5">
+                  <ShieldCheck className="size-2.5" />
                 جودة مضمونة
-              </span>
+                </span>
+              </div>
             </div>
           </article>
         ))}
