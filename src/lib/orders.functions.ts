@@ -530,15 +530,25 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         id: string;
         total_price: number;
         delivery_fee: number;
-        payment_method: "COD" | "Carnet";
+        payment_method: string;
       }>;
 
+      const isCashPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "cash" || normalized === "cod";
+      };
+
+      const isCreditPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "credit" || normalized === "carnet";
+      };
+
       const cashToRemitMad = rows
-        .filter((row) => row.payment_method === "COD")
+        .filter((row) => isCashPayment(row.payment_method))
         .reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
 
       const owedByVendorMad = rows
-        .filter((row) => row.payment_method === "Carnet")
+        .filter((row) => isCreditPayment(row.payment_method))
         .reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
 
       const computedAmount = cashToRemitMad - owedByVendorMad;
