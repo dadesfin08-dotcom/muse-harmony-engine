@@ -871,11 +871,16 @@ function AdminPage() {
   };
 
   const saveMasterProduct = async () => {
+    const parsedMeasurementValue = productForm.measurementValue.trim()
+      ? Number(productForm.measurementValue)
+      : null;
     const parsedForm = masterProductFormSchema.safeParse({
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
+      brand: productForm.brand.trim() || undefined,
       categoryId: productForm.categoryId,
+      measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
       popularityScore: Number(productForm.popularityScore),
     });
@@ -928,7 +933,9 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          brand: productForm.brand.trim() || null,
           categoryId: productForm.categoryId,
+          measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
           imageUrl: imageUrl ?? null,
@@ -947,7 +954,9 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          brand: productForm.brand.trim() || null,
           categoryId: productForm.categoryId,
+          measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
           imageUrl: imageUrl ?? null,
@@ -967,7 +976,9 @@ function AdminPage() {
         name: "",
         nameFr: "",
         nameAr: "",
+        brand: "",
         categoryId: "",
+        measurementValue: "",
         measurementUnit: "Piece",
         popularityScore: "0",
       });
@@ -1020,7 +1031,9 @@ function AdminPage() {
       name: "",
       nameFr: "",
       nameAr: "",
+      brand: "",
       categoryId: "",
+      measurementValue: "",
       measurementUnit: "Piece",
       popularityScore: "0",
     });
@@ -1036,7 +1049,12 @@ function AdminPage() {
       name: product.name,
       nameFr: product.nameFr ?? product.name,
       nameAr: product.nameAr ?? product.name,
+      brand: product.brand ?? "",
       categoryId: product.categoryId ?? "",
+      measurementValue:
+        product.measurementValue != null && Number.isFinite(product.measurementValue)
+          ? String(product.measurementValue)
+          : "",
       measurementUnit: product.measurementUnit,
       popularityScore: String(Math.max(0, Math.trunc(product.popularityScore ?? 0))),
     });
