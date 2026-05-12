@@ -208,7 +208,16 @@ type CategoryAdminRow = {
   is_active: boolean;
   created_at: string;
 };
+type BrandAdminRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  logo_url: string | null;
+  created_at: string;
+};
 const initialCategories: CategoryAdminRow[] = [];
+const initialBrands: BrandAdminRow[] = [];
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -257,6 +266,7 @@ export const Route = createFileRoute("/admin")({
         "cyclists",
         "service-zones",
         "catalog",
+        "brands",
         "categories",
         "ads-content",
         "settings",
@@ -297,6 +307,7 @@ function AdminPage() {
   const editCommune = useServerFn(updateCommune);
   const editNeighborhood = useServerFn(updateNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
+  const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
   const fetchSiteAds = useServerFn(listSiteAds);
   const fetchAnnouncements = useServerFn(listAnnouncements);
@@ -312,6 +323,10 @@ function AdminPage() {
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
+  const createBrandInDatabase = useServerFn(createBrand);
+  const updateBrandInDatabase = useServerFn(updateBrand);
+  const deleteBrandInDatabase = useServerFn(deleteBrand);
+  const uploadBrandLogoToStorage = useServerFn(uploadBrandLogo);
   const createCategoryInDatabase = useServerFn(createCategory);
   const updateCategoryInDatabase = useServerFn(updateCategory);
   const createSiteAdInDatabase = useServerFn(createSiteAd);
@@ -346,6 +361,11 @@ function AdminPage() {
     queryKey: ["admin", "master-products"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchMasterProducts(),
+  });
+  const brandsQuery = useQuery({
+    queryKey: ["admin", "brands"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchBrands(),
   });
   const siteAdsQuery = useQuery({
     queryKey: ["admin", "site-ads"],
@@ -401,7 +421,11 @@ function AdminPage() {
         name: row.product_name,
         nameFr: row.name_fr,
         nameAr: row.name_ar,
-        brand: row.brand,
+        brandId: row.brand_id,
+        brandNameEn: row.brands?.name_en,
+        brandNameFr: row.brands?.name_fr,
+        brandNameAr: row.brands?.name_ar,
+        brandLogoUrl: row.brands?.logo_url,
         categoryId: row.category_id,
         category: row.category,
         measurementValue: row.measurement_value != null ? Number(row.measurement_value) : null,
@@ -425,6 +449,7 @@ function AdminPage() {
         }>
       | undefined) ?? [];
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
+  const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const activeCategories = categories.filter((category) => category.is_active);
 
   const [isVendorPanelOpen, setIsVendorPanelOpen] = useState(false);
@@ -468,7 +493,7 @@ function AdminPage() {
     name: "",
     nameFr: "",
     nameAr: "",
-    brand: "",
+    brandId: "",
     categoryId: "",
     measurementValue: "",
     measurementUnit: "Piece" as MeasurementUnit,
