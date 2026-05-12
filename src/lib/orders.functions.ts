@@ -82,6 +82,7 @@ export type CustomerOrderRow = OrderRow;
 
 export type VendorSettlementSummary = {
   unsettledCashWithCyclistsMad: number;
+  owedToCyclistMad: number;
   totalReceivedTodayMad: number;
   lifetimeEarningsMad: number;
   pendingCyclistCount: number;
@@ -416,6 +417,17 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const vendor = await resolveVendorByPhone(data.phoneNumber);
+
+      const isCashPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "cash" || normalized === "cod";
+      };
+
+      const isCreditPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "credit" || normalized === "carnet";
+      };
+
       const [
         { data: pendingRows, error: pendingError },
         { data: receivedRows, error: receivedError },
@@ -423,27 +435,24 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
       ] = await Promise.all([
         (supabaseAdmin as any)
           .from("orders")
-          .select("cyclist_id, total_price, delivery_fee")
+          .select("cyclist_id, total_price, delivery_fee, payment_method")
           .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
-          .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "pending")
           .not("cyclist_id", "is", null),
         (supabaseAdmin as any)
           .from("orders")
-          .select("total_price, delivery_fee")
+          .select("total_price, payment_method")
           .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
-          .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled")
           .gte("updated_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
           .lt("updated_at", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
         (supabaseAdmin as any)
           .from("orders")
-          .select("total_price, delivery_fee")
+          .select("total_price, payment_method")
           .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
-          .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled"),
       ]);
 
@@ -459,22 +468,29 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         throw new Error(lifetimeError.message);
       }
 
-      const pending = (pendingRows ?? []) as Array<{ cyclist_id: string | null; total_price: number; delivery_fee: number }>;
-      const received = (receivedRows ?? []) as Array<{ total_price: number; delivery_fee: number }>;
-      const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; delivery_fee: number }>;
+      const pending = (pendingRows ?? []) as Array<{
+        cyclist_id: string | null;
+        total_price: number;
+        delivery_fee: number;
+        payment_method: string;
+      }>;
+      const received = (receivedRows ?? []) as Array<{ total_price: number; payment_method: string }>;
+      const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; payment_method: string }>;
 
-      const unsettledCashWithCyclistsMad = pending.reduce(
-        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
-        0,
-      );
+      const pendingCashRows = pending.filter((row) => isCashPayment(row.payment_method));
+      const pendingCreditRows = pending.filter((row) => isCreditPayment(row.payment_method));
+
+      const unsettledCashWithCyclistsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
+
+      const owedToCyclistMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
 
       const totalReceivedTodayMad = received.reduce(
-        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
+        (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
       const lifetimeEarningsMad = lifetime.reduce(
-        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
+        (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
@@ -482,6 +498,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
 
       return {
         unsettledCashWithCyclistsMad,
+        owedToCyclistMad,
         totalReceivedTodayMad,
         lifetimeEarningsMad,
         pendingCyclistCount,
@@ -518,7 +535,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
 
       const cashToRemitMad = rows
         .filter((row) => row.payment_method === "COD")
-        .reduce((sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0), 0);
+        .reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
 
       const owedByVendorMad = rows
         .filter((row) => row.payment_method === "Carnet")
