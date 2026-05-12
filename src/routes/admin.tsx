@@ -101,8 +101,13 @@ import {
 } from "@/lib/locations.functions";
 import {
   archiveMasterProduct,
+  createBrand,
   createMasterProduct,
+  deleteBrand,
+  listBrands,
   listMasterProducts,
+  updateBrand,
+  uploadBrandLogo,
   uploadMasterProductImage,
   updateMasterProduct,
   type MeasurementUnit,
@@ -162,6 +167,7 @@ type AdminTab =
   | "cyclists"
   | "service-zones"
   | "catalog"
+  | "brands"
   | "categories"
   | "ads-content"
   | "settings";
@@ -174,6 +180,7 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "Cyclists", tab: "cyclists", icon: Bike },
   { label: "Service Zones", tab: "service-zones", icon: MapPin },
   { label: "Global Catalog", tab: "catalog", icon: Boxes },
+  { label: "Brands الماركات", tab: "brands", icon: Shapes },
   { label: "Categories", tab: "categories", icon: Shapes },
   { label: "Ads & Content", tab: "ads-content", icon: Megaphone },
   { label: "Settings", tab: "settings", icon: Settings },
@@ -224,7 +231,7 @@ const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
-  brand: z.string().trim().max(120).optional(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
