@@ -210,7 +210,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
       throw new Error(error.message);
     }
 
-    const masterProducts = ((data ?? []) as Array<Omit<MasterProductRow, "brands">>) ?? [];
+    const masterProducts = (data ?? []) as Array<Omit<MasterProductRow, "brands">>;
 
     const brandIds = Array.from(
       new Set(masterProducts.map((row) => row.brand_id).filter((value): value is string => Boolean(value))),
