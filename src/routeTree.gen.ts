@@ -24,7 +24,6 @@ import { Route as CyclistLoginRouteImport } from './routes/cyclist.login'
 import { Route as CyclistDashboardRouteImport } from './routes/cyclist.dashboard'
 import { Route as CustomerFlashDealsRouteImport } from './routes/customer.flash-deals'
 import { Route as CustomerCategoriesRouteImport } from './routes/customer.categories'
-import { Route as CustomerCarnetRouteImport } from './routes/customer.carnet'
 import { Route as CustomerAllProductsRouteImport } from './routes/customer.all-products'
 import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
 import { Route as VendorOrderOrderIdRouteImport } from './routes/vendor.order.$orderId'
@@ -107,11 +106,6 @@ const CustomerCategoriesRoute = CustomerCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => CustomerRoute,
 } as any)
-const CustomerCarnetRoute = CustomerCarnetRouteImport.update({
-  id: '/carnet',
-  path: '/carnet',
-  getParentRoute: () => CustomerRoute,
-} as any)
 const CustomerAllProductsRoute = CustomerAllProductsRouteImport.update({
   id: '/all-products',
   path: '/all-products',
@@ -152,7 +146,6 @@ export interface FileRoutesByFullPath {
   '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
-  '/customer/carnet': typeof CustomerCarnetRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
   '/customer/flash-deals': typeof CustomerFlashDealsRoute
   '/cyclist/dashboard': typeof CyclistDashboardRoute
@@ -175,7 +168,6 @@ export interface FileRoutesByTo {
   '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
-  '/customer/carnet': typeof CustomerCarnetRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
   '/customer/flash-deals': typeof CustomerFlashDealsRoute
   '/cyclist/dashboard': typeof CyclistDashboardRoute
@@ -200,7 +192,6 @@ export interface FileRoutesById {
   '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
-  '/customer/carnet': typeof CustomerCarnetRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
   '/customer/flash-deals': typeof CustomerFlashDealsRoute
   '/cyclist/dashboard': typeof CyclistDashboardRoute
@@ -226,7 +217,6 @@ export interface FileRouteTypes {
     | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
-    | '/customer/carnet'
     | '/customer/categories'
     | '/customer/flash-deals'
     | '/cyclist/dashboard'
@@ -249,7 +239,6 @@ export interface FileRouteTypes {
     | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
-    | '/customer/carnet'
     | '/customer/categories'
     | '/customer/flash-deals'
     | '/cyclist/dashboard'
@@ -273,7 +262,6 @@ export interface FileRouteTypes {
     | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
-    | '/customer/carnet'
     | '/customer/categories'
     | '/customer/flash-deals'
     | '/cyclist/dashboard'
@@ -412,13 +400,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomerCategoriesRouteImport
       parentRoute: typeof CustomerRoute
     }
-    '/customer/carnet': {
-      id: '/customer/carnet'
-      path: '/carnet'
-      fullPath: '/customer/carnet'
-      preLoaderRoute: typeof CustomerCarnetRouteImport
-      parentRoute: typeof CustomerRoute
-    }
     '/customer/all-products': {
       id: '/customer/all-products'
       path: '/all-products'
@@ -489,7 +470,6 @@ const CustomerCategoriesRouteWithChildren =
 
 interface CustomerRouteChildren {
   CustomerAllProductsRoute: typeof CustomerAllProductsRoute
-  CustomerCarnetRoute: typeof CustomerCarnetRoute
   CustomerCategoriesRoute: typeof CustomerCategoriesRouteWithChildren
   CustomerFlashDealsRoute: typeof CustomerFlashDealsRoute
   CustomerIndexRoute: typeof CustomerIndexRoute
@@ -499,7 +479,6 @@ interface CustomerRouteChildren {
 
 const CustomerRouteChildren: CustomerRouteChildren = {
   CustomerAllProductsRoute: CustomerAllProductsRoute,
-  CustomerCarnetRoute: CustomerCarnetRoute,
   CustomerCategoriesRoute: CustomerCategoriesRouteWithChildren,
   CustomerFlashDealsRoute: CustomerFlashDealsRoute,
   CustomerIndexRoute: CustomerIndexRoute,

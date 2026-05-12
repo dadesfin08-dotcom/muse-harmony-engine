@@ -1827,8 +1827,7 @@ function Index() {
                     variant="soft"
                     className="w-full rounded-xl"
                     onClick={() => {
-                      setIsCustomerAuthModalOpen(false);
-                      void navigate({ to: "/customer/carnet" });
+                      setCustomerPanelView("carnet");
                     }}
                   >
                     Carnet Details
@@ -2032,6 +2031,10 @@ function Index() {
                                 <article
                                   key={entry.id}
                                   className="flex items-center justify-between rounded-xl border border-border bg-background p-3"
+                                  onClick={() => {
+                                    if (!isDebt) return;
+                                    void navigate({ to: "/customer/order/$orderId", params: { orderId: entry.id } });
+                                  }}
                                 >
                                   <div>
                                     <p className="text-sm font-medium text-foreground">{entry.description}</p>
