@@ -101,8 +101,13 @@ import {
 } from "@/lib/locations.functions";
 import {
   archiveMasterProduct,
+  createBrand,
   createMasterProduct,
+  deleteBrand,
+  listBrands,
   listMasterProducts,
+  updateBrand,
+  uploadBrandLogo,
   uploadMasterProductImage,
   updateMasterProduct,
   type MeasurementUnit,
@@ -162,6 +167,7 @@ type AdminTab =
   | "cyclists"
   | "service-zones"
   | "catalog"
+  | "brands"
   | "categories"
   | "ads-content"
   | "settings";
@@ -174,6 +180,7 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "Cyclists", tab: "cyclists", icon: Bike },
   { label: "Service Zones", tab: "service-zones", icon: MapPin },
   { label: "Global Catalog", tab: "catalog", icon: Boxes },
+  { label: "Brands الماركات", tab: "brands", icon: Shapes },
   { label: "Categories", tab: "categories", icon: Shapes },
   { label: "Ads & Content", tab: "ads-content", icon: Megaphone },
   { label: "Settings", tab: "settings", icon: Settings },
@@ -201,7 +208,16 @@ type CategoryAdminRow = {
   is_active: boolean;
   created_at: string;
 };
+type BrandAdminRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  logo_url: string | null;
+  created_at: string;
+};
 const initialCategories: CategoryAdminRow[] = [];
+const initialBrands: BrandAdminRow[] = [];
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -224,7 +240,7 @@ const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
-  brand: z.string().trim().max(120).optional(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
@@ -250,6 +266,7 @@ export const Route = createFileRoute("/admin")({
         "cyclists",
         "service-zones",
         "catalog",
+        "brands",
         "categories",
         "ads-content",
         "settings",
@@ -290,6 +307,7 @@ function AdminPage() {
   const editCommune = useServerFn(updateCommune);
   const editNeighborhood = useServerFn(updateNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
+  const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
   const fetchSiteAds = useServerFn(listSiteAds);
   const fetchAnnouncements = useServerFn(listAnnouncements);
@@ -305,6 +323,10 @@ function AdminPage() {
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
+  const createBrandInDatabase = useServerFn(createBrand);
+  const updateBrandInDatabase = useServerFn(updateBrand);
+  const deleteBrandInDatabase = useServerFn(deleteBrand);
+  const uploadBrandLogoToStorage = useServerFn(uploadBrandLogo);
   const createCategoryInDatabase = useServerFn(createCategory);
   const updateCategoryInDatabase = useServerFn(updateCategory);
   const createSiteAdInDatabase = useServerFn(createSiteAd);
@@ -339,6 +361,11 @@ function AdminPage() {
     queryKey: ["admin", "master-products"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchMasterProducts(),
+  });
+  const brandsQuery = useQuery({
+    queryKey: ["admin", "brands"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchBrands(),
   });
   const siteAdsQuery = useQuery({
     queryKey: ["admin", "site-ads"],
@@ -394,7 +421,11 @@ function AdminPage() {
         name: row.product_name,
         nameFr: row.name_fr,
         nameAr: row.name_ar,
-        brand: row.brand,
+        brandId: row.brand_id,
+        brandNameEn: row.brands?.name_en,
+        brandNameFr: row.brands?.name_fr,
+        brandNameAr: row.brands?.name_ar,
+        brandLogoUrl: row.brands?.logo_url,
         categoryId: row.category_id,
         category: row.category,
         measurementValue: row.measurement_value != null ? Number(row.measurement_value) : null,
@@ -418,6 +449,7 @@ function AdminPage() {
         }>
       | undefined) ?? [];
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
+  const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const activeCategories = categories.filter((category) => category.is_active);
 
   const [isVendorPanelOpen, setIsVendorPanelOpen] = useState(false);
@@ -461,7 +493,7 @@ function AdminPage() {
     name: "",
     nameFr: "",
     nameAr: "",
-    brand: "",
+    brandId: "",
     categoryId: "",
     measurementValue: "",
     measurementUnit: "Piece" as MeasurementUnit,
@@ -488,6 +520,19 @@ function AdminPage() {
   const [currentProductImageUrl, setCurrentProductImageUrl] = useState<string | null>(null);
   const [isUploadingProduct, setIsUploadingProduct] = useState(false);
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [brandForm, setBrandForm] = useState({
+    nameEn: "",
+    nameFr: "",
+    nameAr: "",
+    logoUrl: "",
+  });
+  const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
+  const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
     storeName: "",
@@ -878,7 +923,7 @@ function AdminPage() {
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
-      brand: productForm.brand.trim() || undefined,
+      brandId: productForm.brandId.trim() ? productForm.brandId : null,
       categoryId: productForm.categoryId,
       measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
@@ -933,7 +978,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
-          brand: productForm.brand.trim() || null,
+          brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
@@ -954,7 +999,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
-          brand: productForm.brand.trim() || null,
+          brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
@@ -976,7 +1021,7 @@ function AdminPage() {
         name: "",
         nameFr: "",
         nameAr: "",
-        brand: "",
+        brandId: "",
         categoryId: "",
         measurementValue: "",
         measurementUnit: "Piece",
@@ -1031,7 +1076,7 @@ function AdminPage() {
       name: "",
       nameFr: "",
       nameAr: "",
-      brand: "",
+      brandId: "",
       categoryId: "",
       measurementValue: "",
       measurementUnit: "Piece",
@@ -1049,7 +1094,7 @@ function AdminPage() {
       name: product.name,
       nameFr: product.nameFr ?? product.name,
       nameAr: product.nameAr ?? product.name,
-      brand: product.brand ?? "",
+      brandId: product.brandId ?? "",
       categoryId: product.categoryId ?? "",
       measurementValue:
         product.measurementValue != null && Number.isFinite(product.measurementValue)
@@ -1062,6 +1107,127 @@ function AdminPage() {
     setCurrentProductImageUrl(product.imageUrl ?? null);
     setProductImagePreviewUrl(product.imageUrl ?? fallbackProductImage);
     setIsProductModalOpen(true);
+  };
+
+  const resetBrandForm = () => {
+    setEditingBrandId(null);
+    setBrandForm({ nameEn: "", nameFr: "", nameAr: "", logoUrl: "" });
+    setBrandLogoFile(null);
+    setBrandLogoPreviewUrl(null);
+  };
+
+  const openCreateBrandModal = () => {
+    resetBrandForm();
+    setIsBrandModalOpen(true);
+  };
+
+  const openEditBrandModal = (brand: BrandAdminRow) => {
+    setEditingBrandId(brand.id);
+    setBrandForm({
+      nameEn: brand.name_en,
+      nameFr: brand.name_fr ?? "",
+      nameAr: brand.name_ar ?? "",
+      logoUrl: brand.logo_url ?? "",
+    });
+    setBrandLogoFile(null);
+    setBrandLogoPreviewUrl(brand.logo_url ?? null);
+    setIsBrandModalOpen(true);
+  };
+
+  const applyBrandLogoFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBrandLogoFile(file);
+      setBrandLogoPreviewUrl(typeof reader.result === "string" ? reader.result : null);
+    };
+    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.readAsDataURL(file);
+  };
+
+  const handleBrandLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    applyBrandLogoFile(event.target.files?.[0] ?? null);
+  };
+
+  const saveBrandHandler = async () => {
+    if (!brandForm.nameEn.trim()) {
+      toast.error("Brand English name is required.");
+      return;
+    }
+
+    try {
+      setIsSavingBrand(true);
+      let logoUrl = brandForm.logoUrl.trim() || null;
+
+      if (brandLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(brandLogoFile);
+        });
+
+        const uploaded = await uploadBrandLogoToStorage({
+          data: {
+            fileName: brandLogoFile.name,
+            contentType: brandLogoFile.type || "image/jpeg",
+            dataUrl: imageDataUrl,
+          },
+        });
+        logoUrl = uploaded.publicUrl;
+      }
+
+      if (editingBrandId) {
+        await updateBrandInDatabase({
+          data: {
+            id: editingBrandId,
+            nameEn: brandForm.nameEn.trim(),
+            nameFr: brandForm.nameFr.trim() || null,
+            nameAr: brandForm.nameAr.trim() || null,
+            logoUrl,
+          },
+        });
+      } else {
+        await createBrandInDatabase({
+          data: {
+            nameEn: brandForm.nameEn.trim(),
+            nameFr: brandForm.nameFr.trim() || null,
+            nameAr: brandForm.nameAr.trim() || null,
+            logoUrl,
+          },
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      toast.success(editingBrandId ? "Brand updated." : "Brand created.");
+      setIsBrandModalOpen(false);
+      resetBrandForm();
+    } catch (error) {
+      console.error("Failed to save brand:", error);
+      toast.error("Failed to save brand.");
+    } finally {
+      setIsSavingBrand(false);
+    }
+  };
+
+  const deleteBrandHandler = async (brand: BrandAdminRow) => {
+    if (!window.confirm(`Delete ${brand.name_en}?`)) return;
+    try {
+      await deleteBrandInDatabase({ data: { id: brand.id } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
+      toast.success("Brand deleted.");
+    } catch (error) {
+      console.error("Failed to delete brand:", error);
+      toast.error("Failed to delete brand.");
+    }
   };
 
   const archiveProduct = async (product: MasterProductEntity) => {
@@ -1675,6 +1841,15 @@ function AdminPage() {
                   onAddProduct={openCreateProductModal}
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
+                />
+              ) : null}
+              {tab === "brands" ? (
+                <BrandsSection
+                  brands={brands}
+                  isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading}
+                  onAddBrand={openCreateBrandModal}
+                  onEditBrand={openEditBrandModal}
+                  onDeleteBrand={deleteBrandHandler}
                 />
               ) : null}
               {tab === "categories" ? (
@@ -2371,13 +2546,51 @@ function AdminPage() {
               <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
                 Brand (المركة)
               </label>
-              <input
-                id="product-brand"
-                value={productForm.brand}
-                onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))}
-                placeholder="e.g. Lesieur"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              />
+              <Popover open={brandPickerOpen} onOpenChange={setBrandPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={brandPickerOpen}
+                    className="h-10 w-full justify-between rounded-md"
+                  >
+                    <span className="truncate">
+                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || "No brand"}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search brand..." />
+                    <CommandList>
+                      <CommandEmpty>No brand found.</CommandEmpty>
+                      <CommandItem
+                        value="no-brand"
+                        onSelect={() => {
+                          setProductForm((current) => ({ ...current, brandId: "" }));
+                          setBrandPickerOpen(false);
+                        }}
+                      >
+                        No brand
+                      </CommandItem>
+                      {brands.map((brand) => (
+                        <CommandItem
+                          key={brand.id}
+                          value={`${brand.name_en} ${brand.name_fr ?? ""} ${brand.name_ar ?? ""}`}
+                          onSelect={() => {
+                            setProductForm((current) => ({ ...current, brandId: brand.id }));
+                            setBrandPickerOpen(false);
+                          }}
+                        >
+                          <span className="truncate">{brand.name_en}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
@@ -2471,6 +2684,82 @@ function AdminPage() {
               disabled={isUploadingProduct}
             >
               {isUploadingProduct ? "Uploading..." : editingProductId ? "Update Product" : "Save Product"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isBrandModalOpen}
+        onOpenChange={(open) => {
+          setIsBrandModalOpen(open);
+          if (!open) {
+            resetBrandForm();
+          }
+        }}
+      >
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingBrandId ? "Edit Brand" : "Add New Brand"}</DialogTitle>
+            <DialogDescription>Manage multilingual brand names and logo.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => brandLogoInputRef.current?.click()}
+              className="w-full rounded-md border border-dashed border-border bg-muted/40 p-4 text-center transition hover:border-primary/60"
+            >
+              <input
+                ref={brandLogoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleBrandLogoChange}
+              />
+              {brandLogoPreviewUrl ? (
+                <img
+                  src={brandLogoPreviewUrl}
+                  alt="Brand logo preview"
+                  className="mx-auto h-24 w-24 rounded-md border border-border bg-background object-contain p-2"
+                />
+              ) : (
+                <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <ImagePlus className="size-5" />
+                </span>
+              )}
+              <p className="mt-2 text-sm font-medium text-foreground">Upload brand logo</p>
+            </button>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (EN)</label>
+              <Input
+                value={brandForm.nameEn}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameEn: event.target.value }))}
+                placeholder="e.g. Lesieur"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (FR)</label>
+              <Input
+                value={brandForm.nameFr}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameFr: event.target.value }))}
+                placeholder="Ex: Lesieur"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Name (AR)</label>
+              <Input
+                value={brandForm.nameAr}
+                onChange={(event) => setBrandForm((current) => ({ ...current, nameAr: event.target.value }))}
+                placeholder="مثال: ليزيور"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="hero" className="w-full rounded-md" onClick={saveBrandHandler} disabled={isSavingBrand}>
+              {isSavingBrand ? "Saving..." : editingBrandId ? "Update Brand" : "Save Brand"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3011,7 +3300,7 @@ function CatalogSection({
               />
             </div>
             <p className="font-medium text-foreground">{product.name}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{product.brand || "—"}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{product.brandNameEn || "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">{categoryName}</p>
             <p className="mt-2 text-sm font-semibold text-primary">
               Unit: {product.measurementValue != null ? `${product.measurementValue} ` : ""}
@@ -3029,6 +3318,98 @@ function CatalogSection({
             );
           })
         )}
+      </div>
+    </section>
+  );
+}
+
+function BrandsSection({
+  brands,
+  isLoading,
+  onAddBrand,
+  onEditBrand,
+  onDeleteBrand,
+}: {
+  brands: BrandAdminRow[];
+  isLoading: boolean;
+  onAddBrand: () => void;
+  onEditBrand: (brand: BrandAdminRow) => void;
+  onDeleteBrand: (brand: BrandAdminRow) => void;
+}) {
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Brands · الماركات</h2>
+          <p className="text-sm text-muted-foreground">Centralized multilingual brand registry for all products.</p>
+        </div>
+        <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
+          + Add New Brand
+        </Button>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[680px] text-sm">
+          <thead className="bg-muted/40 text-left text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Logo</th>
+              <th className="px-3 py-2 font-medium">English</th>
+              <th className="px-3 py-2 font-medium">Français</th>
+              <th className="px-3 py-2 font-medium">العربية</th>
+              <th className="px-3 py-2 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>
+                  Loading brands...
+                </td>
+              </tr>
+            ) : brands.length === 0 ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>
+                  No brands yet.
+                </td>
+              </tr>
+            ) : (
+              brands.map((brand) => (
+                <tr key={brand.id} className="border-t border-border">
+                  <td className="px-3 py-2">
+                    {brand.logo_url ? (
+                      <img
+                        src={brand.logo_url}
+                        alt={`${brand.name_en} logo`}
+                        className="h-10 w-10 rounded-md border border-border object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 font-medium text-foreground">{brand.name_en}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{brand.name_fr || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground">{brand.name_ar || "—"}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => onEditBrand(brand)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-md"
+                        onClick={() => onDeleteBrand(brand)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   );

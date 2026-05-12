@@ -22,7 +22,7 @@ const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
-  brand: z.string().trim().max(120).nullable(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
@@ -52,7 +52,7 @@ const updateMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
-  brand: z.string().trim().max(120).nullable(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
@@ -78,7 +78,20 @@ const customerProductDetailInputSchema = z.object({
 const brandSuggestionsInputSchema = z.object({
   productId: z.string().uuid(),
   neighborhoodId: z.string().uuid(),
-  brand: z.string().trim().min(1).max(120),
+  brandId: z.string().uuid(),
+});
+
+const createBrandInputSchema = z.object({
+  nameEn: z.string().trim().min(1).max(120),
+  nameAr: z.string().trim().max(120).nullable(),
+  nameFr: z.string().trim().max(120).nullable(),
+  logoUrl: z.string().url().max(2000).nullable(),
+});
+
+const uploadBrandLogoInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(180),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1),
 });
 
 const upsertVendorProductInputSchema = z.object({
@@ -105,7 +118,14 @@ type MasterProductRow = {
   product_name: string;
   name_fr: string | null;
   name_ar: string | null;
-  brand: string | null;
+  brand_id: string | null;
+  brands: {
+    id: string;
+    name_en: string;
+    name_fr: string | null;
+    name_ar: string | null;
+    logo_url: string | null;
+  } | null;
   category_id: string | null;
   category: ProductCategory;
   measurement_value: number | null;
@@ -124,6 +144,15 @@ type VendorProductRow = {
   is_flash_sale: boolean;
   flash_sale_price: number | null;
   flash_sale_end_time: string | null;
+};
+
+type BrandRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  logo_url: string | null;
+  created_at: string;
 };
 
 type VendorRow = {
@@ -172,7 +201,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -187,6 +216,140 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     throw new Error("Failed to load master products.");
   }
 });
+
+export const listBrands = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { data, error } = await (supabaseAdmin as any)
+      .from("brands")
+      .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+      .order("name_en", { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data ?? []) as BrandRow[];
+  } catch (error) {
+    console.error("listBrands failed:", error);
+    throw new Error("Failed to load brands.");
+  }
+});
+
+export const createBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => createBrandInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: inserted, error } = await (supabaseAdmin as any)
+        .from("brands")
+        .insert({
+          name_en: data.nameEn,
+          name_ar: data.nameAr,
+          name_fr: data.nameFr,
+          logo_url: data.logoUrl,
+        })
+        .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+        .single();
+
+      if (error || !inserted?.id) {
+        throw createDbError(error ?? new Error("Brand insert failed."), "Brand insert failed.");
+      }
+
+      return inserted as BrandRow;
+    } catch (error) {
+      console.error("createBrand failed:", error);
+      throw createDbError(error, "Failed to create brand.");
+    }
+  });
+
+export const updateBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ id: z.string().uuid(), ...createBrandInputSchema.shape }).parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: updated, error } = await (supabaseAdmin as any)
+        .from("brands")
+        .update({
+          name_en: data.nameEn,
+          name_ar: data.nameAr,
+          name_fr: data.nameFr,
+          logo_url: data.logoUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.id)
+        .select("id, name_en, name_fr, name_ar, logo_url, created_at")
+        .single();
+
+      if (error || !updated?.id) {
+        throw createDbError(error ?? new Error("Brand update failed."), "Brand update failed.");
+      }
+
+      return updated as BrandRow;
+    } catch (error) {
+      console.error("updateBrand failed:", error);
+      throw createDbError(error, "Failed to update brand.");
+    }
+  });
+
+export const deleteBrand = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { error } = await (supabaseAdmin as any).from("brands").delete().eq("id", data.id);
+      if (error) {
+        throw new Error(error.message);
+      }
+      return { ok: true };
+    } catch (error) {
+      console.error("deleteBrand failed:", error);
+      throw new Error("Failed to delete brand.");
+    }
+  });
+
+export const uploadBrandLogo = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadBrandLogoInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      if (!data.contentType.startsWith("image/")) {
+        throw new Error("Only image uploads are allowed.");
+      }
+
+      const commaIndex = data.dataUrl.indexOf(",");
+      if (commaIndex === -1) {
+        throw new Error("Invalid image payload.");
+      }
+
+      const base64Payload = data.dataUrl.slice(commaIndex + 1);
+      const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+      const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "jpg";
+      const safeBaseName = data.fileName
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 60);
+      const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "brand"}.${extensionFromName}`;
+      const path = `brands/${generatedFileName}`;
+
+      const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+        .from("products")
+        .upload(path, bytes, {
+          contentType: data.contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError || !uploadData?.path) {
+        throw new Error(uploadError?.message ?? "Image upload failed.");
+      }
+
+      const { data: publicUrlData } = (supabaseAdmin as any).storage.from("products").getPublicUrl(uploadData.path);
+
+      return {
+        path: uploadData.path,
+        publicUrl: publicUrlData.publicUrl,
+      };
+    } catch (error) {
+      console.error("uploadBrandLogo failed:", error);
+      throw createDbError(error, "Failed to upload brand logo.");
+    }
+  });
 
 export const createMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => createMasterProductInputSchema.parse(input))
@@ -213,7 +376,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
-          brand: data.brand,
+          brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
@@ -223,7 +386,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -311,7 +474,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
-          brand: data.brand,
+          brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
@@ -321,7 +484,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -411,7 +574,9 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
 
     const masterProductsQuery = (supabaseAdmin as any)
       .from("master_products")
-      .select("id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, created_at")
+      .select(
+        "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, created_at",
+      )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -449,7 +614,12 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
           name: masterProduct.product_name,
           nameFr: masterProduct.name_fr,
           nameAr: masterProduct.name_ar,
-          brand: masterProduct.brand,
+          brandId: masterProduct.brand_id,
+          brand: masterProduct.brands?.name_en ?? null,
+          brandNameEn: masterProduct.brands?.name_en ?? null,
+          brandNameFr: masterProduct.brands?.name_fr ?? null,
+          brandNameAr: masterProduct.brands?.name_ar ?? null,
+          brandLogoUrl: masterProduct.brands?.logo_url ?? null,
           categoryId: masterProduct.category_id,
           category: masterProduct.category,
           measurementValue: masterProduct.measurement_value != null ? Number(masterProduct.measurement_value) : null,
@@ -684,7 +854,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -709,7 +879,14 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
-            brand: string | null;
+            brand_id: string | null;
+            brands: {
+              id: string;
+              name_en: string;
+              name_fr: string | null;
+              name_ar: string | null;
+              logo_url: string | null;
+            } | null;
             category_id: string | null;
             category: ProductCategory;
             measurement_value: number | null;
@@ -727,7 +904,12 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
-            brand: row.master_products!.brand,
+            brandId: row.master_products!.brand_id,
+            brand: row.master_products!.brands?.name_en ?? null,
+            brandNameEn: row.master_products!.brands?.name_en ?? null,
+            brandNameFr: row.master_products!.brands?.name_fr ?? null,
+            brandNameAr: row.master_products!.brands?.name_ar ?? null,
+            brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
             categoryId: row.master_products!.category_id,
             category: row.master_products!.category,
             measurementValue:
@@ -764,7 +946,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -792,7 +974,12 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
-        brand: row.master_products.brand,
+        brandId: row.master_products.brand_id,
+        brand: row.master_products.brands?.name_en ?? null,
+        brandNameEn: row.master_products.brands?.name_en ?? null,
+        brandNameFr: row.master_products.brands?.name_fr ?? null,
+        brandNameAr: row.master_products.brands?.name_ar ?? null,
+        brandLogoUrl: row.master_products.brands?.logo_url ?? null,
         categoryId: row.master_products.category_id,
         category: row.master_products.category,
         measurementValue:
@@ -823,7 +1010,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: string;
           nameFr: string | null;
           nameAr: string | null;
+          brandId: string | null;
           brand: string | null;
+          brandNameEn: string | null;
+          brandNameFr: string | null;
+          brandNameAr: string | null;
+          brandLogoUrl: string | null;
           measurementValue: number | null;
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
@@ -834,12 +1026,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, measurement_value, measurement_unit, image_url, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), measurement_value, measurement_unit, image_url, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
         .eq("master_products.is_active", true)
-        .eq("master_products.brand", data.brand)
+        .eq("master_products.brand_id", data.brandId)
         .neq("master_product_id", data.productId)
         .order("popularity_score", { foreignTable: "master_products", ascending: false })
         .order("created_at", { foreignTable: "master_products", ascending: false })
@@ -860,7 +1052,14 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           product_name: string;
           name_fr: string | null;
           name_ar: string | null;
-          brand: string | null;
+          brand_id: string | null;
+          brands: {
+            id: string;
+            name_en: string;
+            name_fr: string | null;
+            name_ar: string | null;
+            logo_url: string | null;
+          } | null;
           measurement_value: number | null;
           measurement_unit: MeasurementUnit;
           image_url: string | null;
@@ -873,7 +1072,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: string;
           nameFr: string | null;
           nameAr: string | null;
+          brandId: string | null;
           brand: string | null;
+          brandNameEn: string | null;
+          brandNameFr: string | null;
+          brandNameAr: string | null;
+          brandLogoUrl: string | null;
           measurementValue: number | null;
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
@@ -891,7 +1095,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: row.master_products.product_name,
           nameFr: row.master_products.name_fr,
           nameAr: row.master_products.name_ar,
-          brand: row.master_products.brand,
+          brandId: row.master_products.brand_id,
+          brand: row.master_products.brands?.name_en ?? null,
+          brandNameEn: row.master_products.brands?.name_en ?? null,
+          brandNameFr: row.master_products.brands?.name_fr ?? null,
+          brandNameAr: row.master_products.brands?.name_ar ?? null,
+          brandLogoUrl: row.master_products.brands?.logo_url ?? null,
           measurementValue:
             row.master_products.measurement_value != null
               ? Number(row.master_products.measurement_value)
