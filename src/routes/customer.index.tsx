@@ -2030,9 +2030,7 @@ function Index() {
                               return (
                                 <article
                                   key={entry.id}
-                                  className={`flex items-center justify-between rounded-xl border border-border bg-background p-3 ${
-                                    isDebt ? "cursor-pointer transition hover:bg-muted/20" : ""
-                                  }`}
+                                  className="flex items-center justify-between rounded-xl border border-border bg-background p-3"
                                   onClick={() => {
                                     if (!isDebt) return;
                                     void navigate({ to: "/customer/order/$orderId", params: { orderId: entry.id } });
