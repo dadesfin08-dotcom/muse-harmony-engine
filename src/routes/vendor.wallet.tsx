@@ -171,6 +171,8 @@ function VendorWalletPage() {
   }, [isScannerOpen]);
 
   const summary = settlementQuery.data;
+  const hasSummary = Boolean(summary);
+  const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
 
   const confirmationLabel = useMemo(() => {
     if (!confirmPayload) return "";
@@ -199,8 +201,23 @@ function VendorWalletPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">{(summary?.unsettledCashWithCyclistsMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-muted-foreground">Cyclists with pending remittance: {summary?.pendingCyclistCount ?? 0}</p>
+            <p className="text-2xl font-semibold">{formatMad(summary?.unsettledCashWithCyclistsMad)}</p>
+            <p className="text-xs text-muted-foreground">
+              Cyclists with pending remittance: {hasSummary ? summary?.pendingCyclistCount ?? 0 : "--"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="size-4 text-primary" />
+              Owed to Cyclist · مستحقات التوصيل
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{formatMad(summary?.owedToCyclistMad)}</p>
+            <p className="text-xs text-muted-foreground">Pending credit/carnet delivery fees.</p>
           </CardContent>
         </Card>
 
@@ -209,7 +226,7 @@ function VendorWalletPage() {
             <CardTitle className="text-base">Total Received Today · مجموع المستلم اليوم</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-2xl font-semibold">{(summary?.totalReceivedTodayMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-2xl font-semibold">{formatMad(summary?.totalReceivedTodayMad)}</p>
             <Button className="w-full" onClick={() => setIsScannerOpen(true)}>
               <QrCode className="size-4" />
               Receive Cash / Scan QR · استلام النقود / مسح الرمز
@@ -225,7 +242,7 @@ function VendorWalletPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">{(summary?.lifetimeEarningsMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-2xl font-semibold">{formatMad(summary?.lifetimeEarningsMad)}</p>
           </CardContent>
         </Card>
       </div>
