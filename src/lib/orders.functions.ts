@@ -2,6 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  formatMoroccoPhoneForPayload,
+  normalizeMoroccoPhoneInput,
+} from "@/lib/morocco-phone";
+
+const moroccoPhoneSchema = z
+  .string()
+  .trim()
+  .transform((value) => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(value)))
+  .refine((value) => /^\+212[0-9]{9}$/.test(value), {
+    message: "Invalid phone number",
+  });
 
 const orderItemSchema = z.object({
   productId: z.string().uuid().optional(),
@@ -13,7 +25,7 @@ const orderItemSchema = z.object({
 
 const createCustomerOrderInputSchema = z.object({
   customerName: z.string().trim().min(1).max(120),
-  customerPhone: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  customerPhone: moroccoPhoneSchema,
   neighborhoodId: z.string().uuid(),
   deliveryNotes: z.string().max(600),
   paymentMethod: z.enum(["COD", "Carnet"]).default("COD"),
@@ -24,17 +36,17 @@ const createCustomerOrderInputSchema = z.object({
 });
 
 const vendorDashboardInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
 });
 
 const updateOrderStatusInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
   orderId: z.string().uuid(),
   nextStatus: z.enum(["preparing", "ready"]),
 });
 
 const upsertCustomerProfileInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
   fullName: z.string().trim().min(1).max(120),
   address: z.string().trim().max(220),
   savedInstructions: z.string().trim().max(600).optional(),
@@ -42,15 +54,15 @@ const upsertCustomerProfileInputSchema = z.object({
 });
 
 const getCustomerOrdersInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
 });
 
 const vendorSettlementSummaryInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
 });
 
 const settleCyclistCashHandoverInputSchema = z.object({
-  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  phoneNumber: moroccoPhoneSchema,
   cyclistId: z.string().uuid(),
   expectedAmount: z.number(),
 });
