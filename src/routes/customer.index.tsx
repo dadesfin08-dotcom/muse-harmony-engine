@@ -848,6 +848,9 @@ function Index() {
     });
   };
 
+  const getCartQuantity = (productId: string) =>
+    cartItems.find((item) => item.id === productId)?.quantity ?? 0;
+
   const addFlashDealToCart = (deal: {
     id: string;
     name: string;
