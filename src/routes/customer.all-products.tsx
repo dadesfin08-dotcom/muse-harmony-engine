@@ -21,7 +21,7 @@ type CatalogProduct = {
   name: string;
   nameFr: string | null;
   nameAr: string | null;
-  brand: string | null;
+  brand?: string | null;
   brandNameEn?: string | null;
   brandNameFr?: string | null;
   brandNameAr?: string | null;
