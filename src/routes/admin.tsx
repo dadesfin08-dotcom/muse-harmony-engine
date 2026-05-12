@@ -520,6 +520,19 @@ function AdminPage() {
   const [currentProductImageUrl, setCurrentProductImageUrl] = useState<string | null>(null);
   const [isUploadingProduct, setIsUploadingProduct] = useState(false);
   const productImageInputRef = useRef<HTMLInputElement | null>(null);
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [brandForm, setBrandForm] = useState({
+    nameEn: "",
+    nameFr: "",
+    nameAr: "",
+    logoUrl: "",
+  });
+  const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
+  const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
+  const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
     storeName: "",
