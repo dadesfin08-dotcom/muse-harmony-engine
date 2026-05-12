@@ -66,6 +66,11 @@ const vendorOrderDetailsInputSchema = z.object({
   orderId: z.string().uuid(),
 });
 
+const customerOrderDetailsInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+  orderId: z.string().uuid(),
+});
+
 const settleCyclistCashHandoverInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
   cyclistId: z.string().uuid(),
@@ -111,6 +116,22 @@ export type VendorOrderDetails = {
   customerPhone: string;
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  createdAt: string;
+  deliveryFeeMad: number;
+  subtotalMad: number;
+  grandTotalMad: number;
+  items: Array<{
+    productName: string;
+    quantity: number;
+    unitPriceMad: number;
+    lineTotalMad: number;
+  }>;
+};
+
+export type CustomerOrderDetails = {
+  id: string;
+  paymentMethod: "COD" | "Carnet";
+  status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
