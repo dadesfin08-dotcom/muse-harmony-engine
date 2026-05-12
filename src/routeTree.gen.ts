@@ -28,6 +28,7 @@ import { Route as CustomerAllProductsRouteImport } from './routes/customer.all-p
 import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
 import { Route as VendorOrderOrderIdRouteImport } from './routes/vendor.order.$orderId'
 import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
+import { Route as CustomerOrderOrderIdRouteImport } from './routes/customer.order.$orderId'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 
 const StaffPortalRoute = StaffPortalRouteImport.update({
@@ -125,6 +126,11 @@ const CustomerProductIdRoute = CustomerProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => CustomerRoute,
 } as any)
+const CustomerOrderOrderIdRoute = CustomerOrderOrderIdRouteImport.update({
+  id: '/order/$orderId',
+  path: '/order/$orderId',
+  getParentRoute: () => CustomerRoute,
+} as any)
 const CustomerCategoriesIdRoute = CustomerCategoriesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer': typeof CustomerIndexRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer/'
     | '/customer/categories/$id'
+    | '/customer/order/$orderId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   fileRoutesByTo: FileRoutesByTo
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer'
     | '/customer/categories/$id'
+    | '/customer/order/$orderId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   id:
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer/'
     | '/customer/categories/$id'
+    | '/customer/order/$orderId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   fileRoutesById: FileRoutesById
@@ -416,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomerProductIdRouteImport
       parentRoute: typeof CustomerRoute
     }
+    '/customer/order/$orderId': {
+      id: '/customer/order/$orderId'
+      path: '/order/$orderId'
+      fullPath: '/customer/order/$orderId'
+      preLoaderRoute: typeof CustomerOrderOrderIdRouteImport
+      parentRoute: typeof CustomerRoute
+    }
     '/customer/categories/$id': {
       id: '/customer/categories/$id'
       path: '/$id'
@@ -454,6 +473,7 @@ interface CustomerRouteChildren {
   CustomerCategoriesRoute: typeof CustomerCategoriesRouteWithChildren
   CustomerFlashDealsRoute: typeof CustomerFlashDealsRoute
   CustomerIndexRoute: typeof CustomerIndexRoute
+  CustomerOrderOrderIdRoute: typeof CustomerOrderOrderIdRoute
   CustomerProductIdRoute: typeof CustomerProductIdRoute
 }
 
@@ -462,6 +482,7 @@ const CustomerRouteChildren: CustomerRouteChildren = {
   CustomerCategoriesRoute: CustomerCategoriesRouteWithChildren,
   CustomerFlashDealsRoute: CustomerFlashDealsRoute,
   CustomerIndexRoute: CustomerIndexRoute,
+  CustomerOrderOrderIdRoute: CustomerOrderOrderIdRoute,
   CustomerProductIdRoute: CustomerProductIdRoute,
 }
 

@@ -66,6 +66,11 @@ const vendorOrderDetailsInputSchema = z.object({
   orderId: z.string().uuid(),
 });
 
+const customerOrderDetailsInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+  orderId: z.string().uuid(),
+});
+
 const settleCyclistCashHandoverInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
   cyclistId: z.string().uuid(),
@@ -111,6 +116,22 @@ export type VendorOrderDetails = {
   customerPhone: string;
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  createdAt: string;
+  deliveryFeeMad: number;
+  subtotalMad: number;
+  grandTotalMad: number;
+  items: Array<{
+    productName: string;
+    quantity: number;
+    unitPriceMad: number;
+    lineTotalMad: number;
+  }>;
+};
+
+export type CustomerOrderDetails = {
+  id: string;
+  paymentMethod: "COD" | "Carnet";
+  status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
@@ -552,6 +573,127 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
       } satisfies VendorOrderDetails;
     } catch (error) {
       console.error("getVendorOrderDetails failed:", error);
+      throw new Error("Failed to load order details.");
+    }
+  });
+
+export const getCustomerOrderDetails = createServerFn({ method: "POST" })
+  .inputValidator((input) => customerOrderDetailsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: profile, error: profileError } = await (supabaseAdmin as any)
+        .from("profiles")
+        .select("id")
+        .eq("phone", data.phoneNumber)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      const customerUserId = profile?.id ? String(profile.id) : null;
+      if (!customerUserId) {
+        throw new Error("Customer session is invalid.");
+      }
+
+      const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, customer_user_id, payment_method, status, created_at, delivery_fee, order_items")
+        .eq("id", data.orderId)
+        .eq("customer_user_id", customerUserId)
+        .maybeSingle();
+
+      if (orderError) {
+        throw new Error(orderError.message);
+      }
+
+      if (!orderRow?.id) {
+        throw new Error("Order not found.");
+      }
+
+      const rawItems = Array.isArray(orderRow.order_items) ? orderRow.order_items : [];
+
+      const productIds = Array.from(
+        new Set(
+          rawItems
+            .map((item: any) => (typeof item?.productId === "string" ? item.productId : null))
+            .filter((value: string | null): value is string => Boolean(value)),
+        ),
+      );
+
+      const productNames = Array.from(
+        new Set(
+          rawItems
+            .map((item: any) => (typeof item?.name === "string" ? item.name.trim() : null))
+            .filter((value: string | null): value is string => Boolean(value)),
+        ),
+      );
+
+      const [byIdQuery, byNameQuery] = await Promise.all([
+        productIds.length > 0
+          ? (supabaseAdmin as any).from("master_products").select("id, product_name").in("id", productIds)
+          : Promise.resolve({ data: [], error: null }),
+        productNames.length > 0
+          ? (supabaseAdmin as any)
+              .from("master_products")
+              .select("id, product_name")
+              .in("product_name", productNames)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (byIdQuery.error) {
+        throw new Error(byIdQuery.error.message);
+      }
+
+      if (byNameQuery.error) {
+        throw new Error(byNameQuery.error.message);
+      }
+
+      const productsById = new Map(
+        ((byIdQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [row.id, row.product_name]),
+      );
+      const productsByName = new Map(
+        ((byNameQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [
+          row.product_name.trim().toLowerCase(),
+          row.product_name,
+        ]),
+      );
+
+      const items: CustomerOrderDetails["items"] = rawItems.map((item: any) => {
+        const quantity = Number(item?.quantity ?? 0);
+        const unitPriceMad = Number(item?.unitPriceMad ?? 0);
+        const fallbackName = typeof item?.name === "string" ? item.name.trim() : "-";
+        const normalizedFallbackName = fallbackName.toLowerCase();
+        const productName =
+          (typeof item?.productId === "string" ? productsById.get(item.productId) : null) ??
+          productsByName.get(normalizedFallbackName) ??
+          fallbackName;
+        const lineTotalMad = quantity * unitPriceMad;
+
+        return {
+          productName,
+          quantity,
+          unitPriceMad,
+          lineTotalMad,
+        };
+      });
+
+      const subtotalMad = items.reduce((sum, item) => sum + item.lineTotalMad, 0);
+      const deliveryFeeMad = Number(orderRow.delivery_fee ?? 0);
+      const normalizedStatus = String(orderRow.status ?? "new").toLowerCase();
+
+      return {
+        id: String(orderRow.id),
+        paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
+        status: (normalizedStatus === "cancelled" ? "cancelled" : orderRow.status ?? "new") as CustomerOrderDetails["status"],
+        createdAt: String(orderRow.created_at ?? new Date().toISOString()),
+        deliveryFeeMad,
+        subtotalMad,
+        grandTotalMad: subtotalMad + deliveryFeeMad,
+        items,
+      } satisfies CustomerOrderDetails;
+    } catch (error) {
+      console.error("getCustomerOrderDetails failed:", error);
       throw new Error("Failed to load order details.");
     }
   });
