@@ -1109,6 +1109,127 @@ function AdminPage() {
     setIsProductModalOpen(true);
   };
 
+  const resetBrandForm = () => {
+    setEditingBrandId(null);
+    setBrandForm({ nameEn: "", nameFr: "", nameAr: "", logoUrl: "" });
+    setBrandLogoFile(null);
+    setBrandLogoPreviewUrl(null);
+  };
+
+  const openCreateBrandModal = () => {
+    resetBrandForm();
+    setIsBrandModalOpen(true);
+  };
+
+  const openEditBrandModal = (brand: BrandAdminRow) => {
+    setEditingBrandId(brand.id);
+    setBrandForm({
+      nameEn: brand.name_en,
+      nameFr: brand.name_fr ?? "",
+      nameAr: brand.name_ar ?? "",
+      logoUrl: brand.logo_url ?? "",
+    });
+    setBrandLogoFile(null);
+    setBrandLogoPreviewUrl(brand.logo_url ?? null);
+    setIsBrandModalOpen(true);
+  };
+
+  const applyBrandLogoFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBrandLogoFile(file);
+      setBrandLogoPreviewUrl(typeof reader.result === "string" ? reader.result : null);
+    };
+    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.readAsDataURL(file);
+  };
+
+  const handleBrandLogoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    applyBrandLogoFile(event.target.files?.[0] ?? null);
+  };
+
+  const saveBrandHandler = async () => {
+    if (!brandForm.nameEn.trim()) {
+      toast.error("Brand English name is required.");
+      return;
+    }
+
+    try {
+      setIsSavingBrand(true);
+      let logoUrl = brandForm.logoUrl.trim() || null;
+
+      if (brandLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(brandLogoFile);
+        });
+
+        const uploaded = await uploadBrandLogoToStorage({
+          data: {
+            fileName: brandLogoFile.name,
+            contentType: brandLogoFile.type || "image/jpeg",
+            dataUrl: imageDataUrl,
+          },
+        });
+        logoUrl = uploaded.publicUrl;
+      }
+
+      if (editingBrandId) {
+        await updateBrandInDatabase({
+          data: {
+            id: editingBrandId,
+            nameEn: brandForm.nameEn.trim(),
+            nameFr: brandForm.nameFr.trim() || null,
+            nameAr: brandForm.nameAr.trim() || null,
+            logoUrl,
+          },
+        });
+      } else {
+        await createBrandInDatabase({
+          data: {
+            nameEn: brandForm.nameEn.trim(),
+            nameFr: brandForm.nameFr.trim() || null,
+            nameAr: brandForm.nameAr.trim() || null,
+            logoUrl,
+          },
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      toast.success(editingBrandId ? "Brand updated." : "Brand created.");
+      setIsBrandModalOpen(false);
+      resetBrandForm();
+    } catch (error) {
+      console.error("Failed to save brand:", error);
+      toast.error("Failed to save brand.");
+    } finally {
+      setIsSavingBrand(false);
+    }
+  };
+
+  const deleteBrandHandler = async (brand: BrandAdminRow) => {
+    if (!window.confirm(`Delete ${brand.name_en}?`)) return;
+    try {
+      await deleteBrandInDatabase({ data: { id: brand.id } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
+      toast.success("Brand deleted.");
+    } catch (error) {
+      console.error("Failed to delete brand:", error);
+      toast.error("Failed to delete brand.");
+    }
+  };
+
   const archiveProduct = async (product: MasterProductEntity) => {
     setPendingArchiveProduct(product);
   };
