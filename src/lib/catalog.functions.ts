@@ -812,7 +812,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -840,7 +840,12 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
-        brand: row.master_products.brand,
+        brandId: row.master_products.brand_id,
+        brand: row.master_products.brands?.name_en ?? null,
+        brandNameEn: row.master_products.brands?.name_en ?? null,
+        brandNameFr: row.master_products.brands?.name_fr ?? null,
+        brandNameAr: row.master_products.brands?.name_ar ?? null,
+        brandLogoUrl: row.master_products.brands?.logo_url ?? null,
         categoryId: row.master_products.category_id,
         category: row.master_products.category,
         measurementValue:
@@ -871,7 +876,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: string;
           nameFr: string | null;
           nameAr: string | null;
+          brandId: string | null;
           brand: string | null;
+          brandNameEn: string | null;
+          brandNameFr: string | null;
+          brandNameAr: string | null;
+          brandLogoUrl: string | null;
           measurementValue: number | null;
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
@@ -882,12 +892,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, measurement_value, measurement_unit, image_url, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), measurement_value, measurement_unit, image_url, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
         .eq("master_products.is_active", true)
-        .eq("master_products.brand", data.brand)
+        .eq("master_products.brand_id", data.brandId)
         .neq("master_product_id", data.productId)
         .order("popularity_score", { foreignTable: "master_products", ascending: false })
         .order("created_at", { foreignTable: "master_products", ascending: false })
@@ -908,7 +918,14 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           product_name: string;
           name_fr: string | null;
           name_ar: string | null;
-          brand: string | null;
+          brand_id: string | null;
+          brands: {
+            id: string;
+            name_en: string;
+            name_fr: string | null;
+            name_ar: string | null;
+            logo_url: string | null;
+          } | null;
           measurement_value: number | null;
           measurement_unit: MeasurementUnit;
           image_url: string | null;
@@ -921,7 +938,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: string;
           nameFr: string | null;
           nameAr: string | null;
+          brandId: string | null;
           brand: string | null;
+          brandNameEn: string | null;
+          brandNameFr: string | null;
+          brandNameAr: string | null;
+          brandLogoUrl: string | null;
           measurementValue: number | null;
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
@@ -939,7 +961,12 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           name: row.master_products.product_name,
           nameFr: row.master_products.name_fr,
           nameAr: row.master_products.name_ar,
-          brand: row.master_products.brand,
+          brandId: row.master_products.brand_id,
+          brand: row.master_products.brands?.name_en ?? null,
+          brandNameEn: row.master_products.brands?.name_en ?? null,
+          brandNameFr: row.master_products.brands?.name_fr ?? null,
+          brandNameAr: row.master_products.brands?.name_ar ?? null,
+          brandLogoUrl: row.master_products.brands?.logo_url ?? null,
           measurementValue:
             row.master_products.measurement_value != null
               ? Number(row.master_products.measurement_value)
