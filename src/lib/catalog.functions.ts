@@ -720,7 +720,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -745,7 +745,14 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
-            brand: string | null;
+            brand_id: string | null;
+            brands: {
+              id: string;
+              name_en: string;
+              name_fr: string | null;
+              name_ar: string | null;
+              logo_url: string | null;
+            } | null;
             category_id: string | null;
             category: ProductCategory;
             measurement_value: number | null;
@@ -763,7 +770,12 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
-            brand: row.master_products!.brand,
+            brandId: row.master_products!.brand_id,
+            brand: row.master_products!.brands?.name_en ?? null,
+            brandNameEn: row.master_products!.brands?.name_en ?? null,
+            brandNameFr: row.master_products!.brands?.name_fr ?? null,
+            brandNameAr: row.master_products!.brands?.name_ar ?? null,
+            brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
             categoryId: row.master_products!.category_id,
             category: row.master_products!.category,
             measurementValue:
