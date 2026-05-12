@@ -348,6 +348,7 @@ export type Database = {
       }
       master_products: {
         Row: {
+          brand: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id: string | null
           created_at: string
@@ -355,6 +356,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           measurement_unit: Database["public"]["Enums"]["measurement_unit"]
+          measurement_value: number | null
           name_ar: string | null
           name_fr: string | null
           popularity_score: number
@@ -362,6 +364,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand?: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
           created_at?: string
@@ -369,6 +372,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           measurement_unit: Database["public"]["Enums"]["measurement_unit"]
+          measurement_value?: number | null
           name_ar?: string | null
           name_fr?: string | null
           popularity_score?: number
@@ -376,6 +380,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand?: string | null
           category?: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
           created_at?: string
@@ -383,6 +388,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           measurement_unit?: Database["public"]["Enums"]["measurement_unit"]
+          measurement_value?: number | null
           name_ar?: string | null
           name_fr?: string | null
           popularity_score?: number

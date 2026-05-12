@@ -40,6 +40,9 @@ const resources = {
         back: "Back",
         addToCart: "Add to Cart",
         notFound: "Product not found",
+        moreFromBrand: "More from this brand",
+        quickAdd: "Quick Add",
+        unitFallback: "Unit",
       },
       flashDeals: {
         title: "Flash Deals",
@@ -129,6 +132,9 @@ const resources = {
         back: "Retour",
         addToCart: "Ajouter au panier",
         notFound: "Produit introuvable",
+        moreFromBrand: "Plus de cette marque",
+        quickAdd: "Ajout rapide",
+        unitFallback: "Unité",
       },
       flashDeals: {
         title: "Offres Flash",
@@ -218,6 +224,9 @@ const resources = {
         back: "رجوع",
         addToCart: "إضافة إلى السلة",
         notFound: "المنتج غير موجود",
+        moreFromBrand: "منتجات أكثر من نفس العلامة",
+        quickAdd: "إضافة سريعة",
+        unitFallback: "الوحدة",
       },
       flashDeals: {
         title: "همزة اليوم",

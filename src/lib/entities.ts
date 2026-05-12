@@ -16,8 +16,10 @@ export interface MasterProductEntity extends EntityBase {
   name: string;
   nameFr?: string | null;
   nameAr?: string | null;
+  brand?: string | null;
   categoryId?: string | null;
   category: string;
+  measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   popularityScore?: number;
   imageUrl?: string | null;

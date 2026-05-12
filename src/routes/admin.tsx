@@ -224,7 +224,9 @@ const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
+  brand: z.string().trim().max(120).optional(),
   categoryId: z.string().uuid(),
+  measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
@@ -392,8 +394,10 @@ function AdminPage() {
         name: row.product_name,
         nameFr: row.name_fr,
         nameAr: row.name_ar,
+        brand: row.brand,
         categoryId: row.category_id,
         category: row.category,
+        measurementValue: row.measurement_value != null ? Number(row.measurement_value) : null,
         measurementUnit: row.measurement_unit,
         popularityScore: row.popularity_score,
         imageUrl: row.image_url,
@@ -457,7 +461,9 @@ function AdminPage() {
     name: "",
     nameFr: "",
     nameAr: "",
+    brand: "",
     categoryId: "",
+    measurementValue: "",
     measurementUnit: "Piece" as MeasurementUnit,
     popularityScore: "0",
   });
@@ -865,11 +871,16 @@ function AdminPage() {
   };
 
   const saveMasterProduct = async () => {
+    const parsedMeasurementValue = productForm.measurementValue.trim()
+      ? Number(productForm.measurementValue)
+      : null;
     const parsedForm = masterProductFormSchema.safeParse({
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
+      brand: productForm.brand.trim() || undefined,
       categoryId: productForm.categoryId,
+      measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
       popularityScore: Number(productForm.popularityScore),
     });
@@ -922,7 +933,9 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          brand: productForm.brand.trim() || null,
           categoryId: productForm.categoryId,
+          measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
           imageUrl: imageUrl ?? null,
@@ -941,7 +954,9 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          brand: productForm.brand.trim() || null,
           categoryId: productForm.categoryId,
+          measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
           imageUrl: imageUrl ?? null,
@@ -961,7 +976,9 @@ function AdminPage() {
         name: "",
         nameFr: "",
         nameAr: "",
+        brand: "",
         categoryId: "",
+        measurementValue: "",
         measurementUnit: "Piece",
         popularityScore: "0",
       });
@@ -1014,7 +1031,9 @@ function AdminPage() {
       name: "",
       nameFr: "",
       nameAr: "",
+      brand: "",
       categoryId: "",
+      measurementValue: "",
       measurementUnit: "Piece",
       popularityScore: "0",
     });
@@ -1030,7 +1049,12 @@ function AdminPage() {
       name: product.name,
       nameFr: product.nameFr ?? product.name,
       nameAr: product.nameAr ?? product.name,
+      brand: product.brand ?? "",
       categoryId: product.categoryId ?? "",
+      measurementValue:
+        product.measurementValue != null && Number.isFinite(product.measurementValue)
+          ? String(product.measurementValue)
+          : "",
       measurementUnit: product.measurementUnit,
       popularityScore: String(Math.max(0, Math.trunc(product.popularityScore ?? 0))),
     });
@@ -2344,6 +2368,19 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
+              <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
+                Brand (المركة)
+              </label>
+              <input
+                id="product-brand"
+                value={productForm.brand}
+                onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))}
+                placeholder="e.g. Lesieur"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-medium text-foreground">
                 Category
               </label>
@@ -2368,26 +2405,41 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="measurement-unit" className="text-sm font-medium text-foreground">
-                Measurement Unit
-              </label>
-              <select
-                id="measurement-unit"
-                value={productForm.measurementUnit}
-                onChange={(event) =>
-                  setProductForm((current) => ({
-                    ...current,
-                    measurementUnit: event.target.value as MeasurementUnit,
-                  }))
-                }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              >
-                {measurementUnits.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
+              <label className="text-sm font-medium text-foreground">Measurement</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  id="measurement-value"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={productForm.measurementValue}
+                  onChange={(event) =>
+                    setProductForm((current) => ({
+                      ...current,
+                      measurementValue: event.target.value,
+                    }))
+                  }
+                  placeholder="2"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                />
+                <select
+                  id="measurement-unit"
+                  value={productForm.measurementUnit}
+                  onChange={(event) =>
+                    setProductForm((current) => ({
+                      ...current,
+                      measurementUnit: event.target.value as MeasurementUnit,
+                    }))
+                  }
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                >
+                  {measurementUnits.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -2959,8 +3011,12 @@ function CatalogSection({
               />
             </div>
             <p className="font-medium text-foreground">{product.name}</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{product.brand || "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">{categoryName}</p>
-            <p className="mt-2 text-sm font-semibold text-primary">Unit: {product.measurementUnit}</p>
+            <p className="mt-2 text-sm font-semibold text-primary">
+              Unit: {product.measurementValue != null ? `${product.measurementValue} ` : ""}
+              {product.measurementUnit}
+            </p>
             <div className="mt-3 flex items-center gap-2">
               <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={() => onEditProduct(product)}>
                 Edit

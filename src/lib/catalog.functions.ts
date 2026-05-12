@@ -22,7 +22,9 @@ const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  brand: z.string().trim().max(120).nullable(),
   categoryId: z.string().uuid(),
+  measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
   imageUrl: z.string().url().max(2000).nullable(),
@@ -50,7 +52,9 @@ const updateMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  brand: z.string().trim().max(120).nullable(),
   categoryId: z.string().uuid(),
+  measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
   imageUrl: z.string().url().max(2000).nullable(),
@@ -69,6 +73,12 @@ const customerCatalogInputSchema = z.object({
 const customerProductDetailInputSchema = z.object({
   productId: z.string().uuid(),
   neighborhoodId: z.string().uuid().nullable().optional(),
+});
+
+const brandSuggestionsInputSchema = z.object({
+  productId: z.string().uuid(),
+  neighborhoodId: z.string().uuid(),
+  brand: z.string().trim().min(1).max(120),
 });
 
 const upsertVendorProductInputSchema = z.object({
@@ -95,8 +105,10 @@ type MasterProductRow = {
   product_name: string;
   name_fr: string | null;
   name_ar: string | null;
+  brand: string | null;
   category_id: string | null;
   category: ProductCategory;
+  measurement_value: number | null;
   measurement_unit: MeasurementUnit;
   image_url: string | null;
   popularity_score: number;
@@ -160,7 +172,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -201,15 +213,17 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
+          brand: data.brand,
           category_id: data.categoryId,
           category: parsedCategory.data,
+          measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
           popularity_score: data.popularityScore,
           image_url: data.imageUrl,
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -297,15 +311,17 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
+          brand: data.brand,
           category_id: data.categoryId,
           category: parsedCategory.data,
+          measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
           popularity_score: data.popularityScore,
           image_url: data.imageUrl,
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -395,7 +411,7 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
 
     const masterProductsQuery = (supabaseAdmin as any)
       .from("master_products")
-      .select("id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, created_at")
+      .select("id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, created_at")
       .eq("is_active", true)
       .order("created_at", { ascending: false });
 
@@ -433,8 +449,10 @@ export const getVendorInventoryData = createServerFn({ method: "POST" })
           name: masterProduct.product_name,
           nameFr: masterProduct.name_fr,
           nameAr: masterProduct.name_ar,
+          brand: masterProduct.brand,
           categoryId: masterProduct.category_id,
           category: masterProduct.category,
+          measurementValue: masterProduct.measurement_value != null ? Number(masterProduct.measurement_value) : null,
           measurementUnit: masterProduct.measurement_unit,
           imageUrl: masterProduct.image_url,
           vendorProductId: linked?.id ?? null,
@@ -666,7 +684,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -691,8 +709,10 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
+            brand: string | null;
             category_id: string | null;
             category: ProductCategory;
+            measurement_value: number | null;
             measurement_unit: MeasurementUnit;
             image_url: string | null;
             popularity_score: number;
@@ -707,8 +727,13 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
+            brand: row.master_products!.brand,
             categoryId: row.master_products!.category_id,
             category: row.master_products!.category,
+            measurementValue:
+              row.master_products!.measurement_value != null
+                ? Number(row.master_products!.measurement_value)
+                : null,
             measurementUnit: row.master_products!.measurement_unit,
             imageUrl: row.master_products!.image_url,
             popularityScore: Number(row.master_products!.popularity_score ?? 0),
@@ -739,7 +764,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -767,8 +792,13 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
+        brand: row.master_products.brand,
         categoryId: row.master_products.category_id,
         category: row.master_products.category,
+        measurementValue:
+          row.master_products.measurement_value != null
+            ? Number(row.master_products.measurement_value)
+            : null,
         measurementUnit: row.master_products.measurement_unit,
         imageUrl: row.master_products.image_url,
         popularityScore: Number(row.master_products.popularity_score ?? 0),
@@ -778,6 +808,103 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getCustomerProductDetail failed:", error);
       throw new Error("Failed to load product details.");
+    }
+  });
+
+export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST" })
+  .inputValidator((input) => brandSuggestionsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+      if (vendorIds.length === 0) {
+        return [] as Array<{
+          id: string;
+          vendorId: string;
+          name: string;
+          nameFr: string | null;
+          nameAr: string | null;
+          brand: string | null;
+          measurementValue: number | null;
+          measurementUnit: MeasurementUnit;
+          imageUrl: string | null;
+          vendorPrice: number;
+        }>;
+      }
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("vendor_products")
+        .select(
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand, measurement_value, measurement_unit, image_url, is_active)",
+        )
+        .in("vendor_id", vendorIds)
+        .eq("is_available", true)
+        .eq("master_products.is_active", true)
+        .eq("master_products.brand", data.brand)
+        .neq("master_product_id", data.productId)
+        .order("popularity_score", { foreignTable: "master_products", ascending: false })
+        .order("created_at", { foreignTable: "master_products", ascending: false })
+        .limit(12);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const seen = new Set<string>();
+
+      return ((rows ?? []) as Array<{
+        vendor_id: string;
+        vendor_price: number;
+        is_available: boolean;
+        master_products: {
+          id: string;
+          product_name: string;
+          name_fr: string | null;
+          name_ar: string | null;
+          brand: string | null;
+          measurement_value: number | null;
+          measurement_unit: MeasurementUnit;
+          image_url: string | null;
+          is_active: boolean;
+        } | null;
+      }>).reduce<
+        Array<{
+          id: string;
+          vendorId: string;
+          name: string;
+          nameFr: string | null;
+          nameAr: string | null;
+          brand: string | null;
+          measurementValue: number | null;
+          measurementUnit: MeasurementUnit;
+          imageUrl: string | null;
+          vendorPrice: number;
+        }>
+      >((acc, row) => {
+        if (!row.master_products || seen.has(row.master_products.id)) {
+          return acc;
+        }
+
+        seen.add(row.master_products.id);
+        acc.push({
+          id: row.master_products.id,
+          vendorId: row.vendor_id,
+          name: row.master_products.product_name,
+          nameFr: row.master_products.name_fr,
+          nameAr: row.master_products.name_ar,
+          brand: row.master_products.brand,
+          measurementValue:
+            row.master_products.measurement_value != null
+              ? Number(row.master_products.measurement_value)
+              : null,
+          measurementUnit: row.master_products.measurement_unit,
+          imageUrl: row.master_products.image_url,
+          vendorPrice: Number(row.vendor_price ?? 0),
+        });
+        return acc;
+      }, []);
+    } catch (error) {
+      console.error("getBrandSuggestionsForNeighborhood failed:", error);
+      throw new Error("Failed to load suggested products.");
     }
   });
 
