@@ -3,7 +3,6 @@ import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { QRCodeSVG } from "qrcode.react";
 import {
   Bike,
   Search,
