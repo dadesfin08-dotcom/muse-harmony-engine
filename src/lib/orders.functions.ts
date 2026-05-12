@@ -516,7 +516,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         ]),
       );
 
-      const items = rawItems.map((item: any) => {
+      const items: VendorOrderDetails["items"] = rawItems.map((item: any) => {
         const quantity = Number(item?.quantity ?? 0);
         const unitPriceMad = Number(item?.unitPriceMad ?? 0);
         const fallbackName = typeof item?.name === "string" ? item.name.trim() : "-";
