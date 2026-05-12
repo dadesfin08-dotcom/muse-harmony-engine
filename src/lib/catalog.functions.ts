@@ -22,7 +22,7 @@ const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
-  brand: z.string().trim().max(120).nullable(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
@@ -52,7 +52,7 @@ const updateMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
-  brand: z.string().trim().max(120).nullable(),
+  brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
@@ -78,7 +78,20 @@ const customerProductDetailInputSchema = z.object({
 const brandSuggestionsInputSchema = z.object({
   productId: z.string().uuid(),
   neighborhoodId: z.string().uuid(),
-  brand: z.string().trim().min(1).max(120),
+  brandId: z.string().uuid(),
+});
+
+const createBrandInputSchema = z.object({
+  nameEn: z.string().trim().min(1).max(120),
+  nameAr: z.string().trim().max(120).nullable(),
+  nameFr: z.string().trim().max(120).nullable(),
+  logoUrl: z.string().url().max(2000).nullable(),
+});
+
+const uploadBrandLogoInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(180),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1),
 });
 
 const upsertVendorProductInputSchema = z.object({
@@ -105,7 +118,14 @@ type MasterProductRow = {
   product_name: string;
   name_fr: string | null;
   name_ar: string | null;
-  brand: string | null;
+  brand_id: string | null;
+  brands: {
+    id: string;
+    name_en: string;
+    name_fr: string | null;
+    name_ar: string | null;
+    logo_url: string | null;
+  } | null;
   category_id: string | null;
   category: ProductCategory;
   measurement_value: number | null;
@@ -124,6 +144,15 @@ type VendorProductRow = {
   is_flash_sale: boolean;
   flash_sale_price: number | null;
   flash_sale_end_time: string | null;
+};
+
+type BrandRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  logo_url: string | null;
+  created_at: string;
 };
 
 type VendorRow = {
