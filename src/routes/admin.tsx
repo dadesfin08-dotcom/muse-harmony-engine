@@ -2368,6 +2368,19 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
+              <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
+                Brand (المركة)
+              </label>
+              <input
+                id="product-brand"
+                value={productForm.brand}
+                onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))}
+                placeholder="e.g. Lesieur"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+              />
+            </div>
+
+            <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-medium text-foreground">
                 Category
               </label>
@@ -2392,26 +2405,41 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="measurement-unit" className="text-sm font-medium text-foreground">
-                Measurement Unit
-              </label>
-              <select
-                id="measurement-unit"
-                value={productForm.measurementUnit}
-                onChange={(event) =>
-                  setProductForm((current) => ({
-                    ...current,
-                    measurementUnit: event.target.value as MeasurementUnit,
-                  }))
-                }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              >
-                {measurementUnits.map((unit) => (
-                  <option key={unit} value={unit}>
-                    {unit}
-                  </option>
-                ))}
-              </select>
+              <label className="text-sm font-medium text-foreground">Measurement</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  id="measurement-value"
+                  type="number"
+                  min={0.01}
+                  step={0.01}
+                  value={productForm.measurementValue}
+                  onChange={(event) =>
+                    setProductForm((current) => ({
+                      ...current,
+                      measurementValue: event.target.value,
+                    }))
+                  }
+                  placeholder="2"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                />
+                <select
+                  id="measurement-unit"
+                  value={productForm.measurementUnit}
+                  onChange={(event) =>
+                    setProductForm((current) => ({
+                      ...current,
+                      measurementUnit: event.target.value as MeasurementUnit,
+                    }))
+                  }
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                >
+                  {measurementUnits.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">
