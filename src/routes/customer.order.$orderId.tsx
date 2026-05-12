@@ -133,7 +133,7 @@ function CustomerOrderDetailsPage() {
 
     return {
       label: copy.paymentCash,
-      className: "border-primary/30 bg-primary/10 text-primary",
+      className: "border-success/30 bg-success/10 text-success",
     };
   }, [copy.paymentCarnet, copy.paymentCash, order?.paymentMethod]);
 
