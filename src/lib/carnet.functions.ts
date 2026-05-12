@@ -62,6 +62,10 @@ const getCustomerCarnetBalanceInputSchema = z.object({
   customerPhone: moroccoPhoneSchema,
 });
 
+const getCustomerCarnetStatementInputSchema = z.object({
+  customerPhone: moroccoPhoneSchema,
+});
+
 type VendorCarnetRow = {
   id: string;
   customer_phone: string;
@@ -510,6 +514,91 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("recordVendorCarnetPayment failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to record payment.");
+    }
+  });
+
+export const getCustomerCarnetStatement = createServerFn({ method: "POST" })
+  .inputValidator((input) => getCustomerCarnetStatementInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: profile, error: profileError } = await (supabaseAdmin as any)
+        .from("profiles")
+        .select("id")
+        .eq("phone", data.customerPhone)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      const customerUserId = profile?.id ? String(profile.id) : null;
+      if (!customerUserId) {
+        throw new Error("Customer session is invalid.");
+      }
+
+      const { data: orderRows, error: ordersError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, vendor_id, customer_user_id, payment_method, status, total_price, delivery_fee, created_at")
+        .eq("customer_user_id", customerUserId)
+        .eq("status", "delivered")
+        .order("created_at", { ascending: false });
+
+      if (ordersError) {
+        throw new Error(ordersError.message);
+      }
+
+      const isCreditPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "credit" || normalized === "carnet";
+      };
+
+      const creditRows = ((orderRows ?? []) as Array<{
+        id: string;
+        vendor_id: string | null;
+        payment_method: string | null;
+        total_price: number | null;
+        delivery_fee: number | null;
+        created_at: string;
+      }>).filter((row) => isCreditPayment(row.payment_method));
+
+      const vendorIds = Array.from(new Set(creditRows.map((row) => row.vendor_id).filter(Boolean) as string[]));
+      const vendorNameMap = new Map<string, string>();
+
+      if (vendorIds.length > 0) {
+        const { data: vendors, error: vendorsError } = await (supabaseAdmin as any)
+          .from("vendors")
+          .select("id, store_name")
+          .in("id", vendorIds);
+
+        if (vendorsError) {
+          throw new Error(vendorsError.message);
+        }
+
+        for (const row of (vendors ?? []) as Array<{ id: string; store_name: string | null }>) {
+          vendorNameMap.set(row.id, row.store_name?.trim() || "Unknown Store");
+        }
+      }
+
+      const entries = creditRows.map((row) => {
+        const amountMad = Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0);
+        return {
+          orderId: row.id,
+          orderDate: row.created_at,
+          vendorName: row.vendor_id ? vendorNameMap.get(row.vendor_id) ?? "Unknown Store" : "Unknown Store",
+          amountMad,
+          status: "unpaid" as const,
+        };
+      });
+
+      const totalOutstandingDebtMad = entries.reduce((sum, row) => sum + row.amountMad, 0);
+
+      return {
+        totalOutstandingDebtMad,
+        entries,
+      };
+    } catch (error) {
+      console.error("getCustomerCarnetStatement failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to load customer carnet statement.");
     }
   });
 
