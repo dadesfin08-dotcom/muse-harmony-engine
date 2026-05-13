@@ -51,6 +51,11 @@ export function ProductCard({
             className="h-full w-full object-contain object-center p-2"
             loading="lazy"
           />
+          {isFlashDeal && discountPercent > 0 ? (
+            <span className="absolute left-2 top-2 inline-flex rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              -{discountPercent}%
+            </span>
+          ) : null}
         </div>
       </Link>
 
@@ -71,10 +76,10 @@ export function ProductCard({
         </div>
 
         <div className="flex items-center justify-between gap-2 pt-0">
-          <div className="flex items-center gap-1.5">
+          <div className={cn("flex items-center gap-1.5", isFlashDeal && "flex flex-wrap")}>
             <p className={cn("text-xl font-extrabold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
               {Number(price ?? 0)}{" "}
-              <span className="text-xs font-medium">MAD</span>
+              <span className={cn("text-xs font-medium", isFlashDeal && "text-gray-800")}>MAD</span>
             </p>
 
             {isFlashDeal && oldPrice != null ? (
