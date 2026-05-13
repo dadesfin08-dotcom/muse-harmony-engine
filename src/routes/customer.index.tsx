@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import {
   Bike,
+  Check,
+  ChevronsUpDown,
   Search,
   ShoppingCart,
   Heart,
@@ -30,6 +32,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import {
@@ -49,7 +52,13 @@ import {
 import { getCheckoutPaymentOptions, getCustomerCarnetOverview } from "@/lib/carnet.functions";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getActiveAdsAndAnnouncements } from "@/lib/ads-content.functions";
-import { listServiceZones } from "@/lib/locations.functions";
+import {
+  getLocationByNeighborhoodId,
+  searchCommunes,
+  searchNeighborhoodsByCommune,
+  type CommuneSearchResult,
+  type NeighborhoodSearchResult,
+} from "@/lib/locations.functions";
 import { createCustomerOrder, getCustomerOrders, upsertCustomerProfile } from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
@@ -70,6 +79,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -211,7 +221,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 type PersistedLocation = {
   communeId: string;
   neighborhoodId: string;
-  locationLabel: string;
+  locationLabel?: string;
 };
 
 type CustomerAuthStep = "phone" | "otp";
@@ -227,6 +237,19 @@ const languageOptions: Array<{ code: AppLanguage; label: string }> = [
   { code: "fr", label: "🇫🇷 Français" },
   { code: "en", label: "🇬🇧 English" },
 ];
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedValue(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
 
 function useCustomerCarnet(
   customerPhone: string | null,
@@ -280,6 +303,12 @@ function Index() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [selectedCommuneId, setSelectedCommuneId] = useState("");
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
+  const [selectedCommuneOption, setSelectedCommuneOption] = useState<CommuneSearchResult | null>(null);
+  const [selectedNeighborhoodOption, setSelectedNeighborhoodOption] = useState<NeighborhoodSearchResult | null>(null);
+  const [isCommuneComboboxOpen, setIsCommuneComboboxOpen] = useState(false);
+  const [isNeighborhoodComboboxOpen, setIsNeighborhoodComboboxOpen] = useState(false);
+  const [communeSearchInput, setCommuneSearchInput] = useState("");
+  const [neighborhoodSearchInput, setNeighborhoodSearchInput] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
@@ -322,7 +351,9 @@ function Index() {
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
-  const fetchServiceZones = useServerFn(listServiceZones);
+  const fetchCommuneSearchResults = useServerFn(searchCommunes);
+  const fetchNeighborhoodSearchResults = useServerFn(searchNeighborhoodsByCommune);
+  const fetchLocationByNeighborhoodId = useServerFn(getLocationByNeighborhoodId);
   const fetchCatalogByNeighborhood = useServerFn(getCustomerCatalogByNeighborhood);
   const fetchCustomerProfileByPhone = useServerFn(getCustomerProfileByPhone);
   const syncCustomerNeighborhood = useServerFn(upsertCustomerNeighborhood);
@@ -334,9 +365,30 @@ function Index() {
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
-  const serviceZonesQuery = useQuery({
-    queryKey: ["customer", "service-zones"],
-    queryFn: () => fetchServiceZones(),
+  const debouncedCommuneSearch = useDebouncedValue(communeSearchInput, 300);
+  const debouncedNeighborhoodSearch = useDebouncedValue(neighborhoodSearchInput, 300);
+  const normalizedCommuneSearch = normalizeSearchText(debouncedCommuneSearch);
+  const normalizedNeighborhoodSearch = normalizeSearchText(debouncedNeighborhoodSearch);
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
+  const communeSearchQuery = useQuery({
+    queryKey: ["customer", "commune-search", normalizedCommuneSearch],
+    queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
+    enabled: isLocationModalOpen && hasEnoughCommuneChars,
+    staleTime: 15_000,
+  });
+  const neighborhoodSearchQuery = useQuery({
+    queryKey: ["customer", "neighborhood-search", selectedCommuneId, normalizedNeighborhoodSearch],
+    queryFn: () =>
+      fetchNeighborhoodSearchResults({
+        data: {
+          communeId: selectedCommuneId,
+          query: normalizedNeighborhoodSearch,
+          limit: 30,
+        },
+      }),
+    enabled: isLocationModalOpen && !!selectedCommuneId && hasEnoughNeighborhoodChars,
+    staleTime: 15_000,
   });
   const globalSettingsQuery = useQuery({
     queryKey: ["customer", "global-settings"],
@@ -454,17 +506,18 @@ function Index() {
     }
   }, [customerOrdersQuery.data]);
 
-  const serviceZones = serviceZonesQuery.data ?? [];
-  const neighborhoodOptions =
-    serviceZones.find((zone) => zone.id === selectedCommuneId)?.neighborhoods ?? [];
-  const selectedNeighborhood = useMemo(() => {
-    if (!selectedCommuneId || !selectedNeighborhoodId) {
-      return null;
-    }
+  const selectedCommune = selectedCommuneOption;
+  const selectedNeighborhood = selectedNeighborhoodOption;
+  const filteredCommuneOptions = communeSearchQuery.data ?? [];
+  const filteredNeighborhoodOptions = neighborhoodSearchQuery.data ?? [];
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    return commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId) ?? null;
-  }, [selectedCommuneId, selectedNeighborhoodId, serviceZones]);
+  useEffect(() => {
+    if (!selectedNeighborhoodOption) return;
+    if (selectedNeighborhoodOption.communeId !== selectedCommuneId) {
+      setSelectedNeighborhoodId("");
+      setSelectedNeighborhoodOption(null);
+    }
+  }, [selectedCommuneId, selectedNeighborhoodOption]);
   const globalDeliveryFeeMad = Number(globalSettingsQuery.data?.global_delivery_fee ?? 10);
   const minimumOrderMad = Number(globalSettingsQuery.data?.minimum_order_amount ?? 50);
   const freeDeliveryThresholdMad = Number(globalSettingsQuery.data?.free_delivery_threshold ?? 500);
@@ -474,40 +527,40 @@ function Index() {
       return t("header.locationFallback");
     }
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    const neighborhood = commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId);
-
-    if (!commune || !neighborhood) {
+    if (!selectedCommune || !selectedNeighborhood) {
       return t("header.locationFallback");
     }
 
-    return `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`;
-  }, [selectedCommuneId, selectedNeighborhoodId, serviceZones, t]);
-
-  const resolveLocationByNeighborhoodId = (neighborhoodId: string) => {
-    for (const commune of serviceZones) {
-      const neighborhood = commune.neighborhoods.find((zone) => zone.id === neighborhoodId);
-      if (neighborhood) {
-        return {
-          communeId: commune.id,
-          neighborhoodId: neighborhood.id,
-          locationLabel: `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`,
-        } satisfies PersistedLocation;
-      }
-    }
-
-    return null;
-  };
+    return `${getLocalizedCommuneName(selectedCommune)} / ${getLocalizedNeighborhoodName(selectedNeighborhood)}`;
+  }, [selectedCommune, selectedNeighborhood, selectedCommuneId, selectedNeighborhoodId, t]);
 
   const persistLocation = (location: PersistedLocation) => {
     localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
   };
 
-  const applyLocation = (location: PersistedLocation) => {
+  const applyLocation = (location: Pick<PersistedLocation, "communeId" | "neighborhoodId">) => {
     setSelectedCommuneId(location.communeId);
     setSelectedNeighborhoodId(location.neighborhoodId);
-    persistLocation(location);
     setIsLocationModalOpen(false);
+  };
+
+  const resolveLocationAndApply = async (neighborhoodId: string) => {
+    const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId } });
+    if (!resolved) {
+      return null;
+    }
+
+    const location = {
+      communeId: resolved.commune.id,
+      neighborhoodId: resolved.neighborhood.id,
+      locationLabel: `${getLocalizedCommuneName(resolved.commune)} / ${getLocalizedNeighborhoodName(resolved.neighborhood)}`,
+    } satisfies PersistedLocation;
+
+    setSelectedCommuneOption(resolved.commune);
+    setSelectedNeighborhoodOption(resolved.neighborhood);
+    applyLocation(location);
+    persistLocation(location);
+    return location;
   };
 
   const readPersistedLocation = () => {
@@ -528,16 +581,7 @@ function Index() {
         return null;
       }
 
-      const resolved = resolveLocationByNeighborhoodId(parsed.neighborhoodId);
-      if (!resolved) {
-        return null;
-      }
-
-      if (!parsed.communeId || parsed.communeId !== resolved.communeId) {
-        persistLocation(resolved);
-      }
-
-      return resolved;
+      return { neighborhoodId: parsed.neighborhoodId, communeId: parsed.communeId ?? "" };
     } catch {
       localStorage.removeItem(LOCATION_STORAGE_KEY);
       return null;
@@ -656,20 +700,24 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (serviceZones.length === 0) {
+    if (selectedNeighborhoodId) {
       return;
     }
 
     const persistedLocation = readPersistedLocation();
-    if (persistedLocation) {
-      applyLocation(persistedLocation);
+    if (!persistedLocation?.neighborhoodId) {
+      if (!customerSession?.phoneNumber) {
+        setIsLocationModalOpen(true);
+      }
       return;
     }
 
-    if (!customerSession?.phoneNumber && !selectedNeighborhoodId) {
-      setIsLocationModalOpen(true);
-    }
-  }, [serviceZones, customerSession?.phoneNumber]);
+    void resolveLocationAndApply(persistedLocation.neighborhoodId).then((resolved) => {
+      if (!resolved && !customerSession?.phoneNumber) {
+        setIsLocationModalOpen(true);
+      }
+    });
+  }, [customerSession?.phoneNumber, selectedNeighborhoodId]);
 
   useEffect(() => {
     if (customerSession?.phoneNumber) {
@@ -690,8 +738,8 @@ function Index() {
     }
 
     const persistedLocation = readPersistedLocation();
-    if (persistedLocation) {
-      applyLocation(persistedLocation);
+    if (persistedLocation?.neighborhoodId) {
+      void resolveLocationAndApply(persistedLocation.neighborhoodId);
 
       if (
         customerSession?.phoneNumber &&
@@ -719,11 +767,8 @@ function Index() {
       setDeliveryNotes(profile.savedInstructions ?? "");
 
       if (profile.neighborhoodId) {
-        const profileLocation = resolveLocationByNeighborhoodId(profile.neighborhoodId);
-        if (profileLocation) {
-          applyLocation(profileLocation);
-          return;
-        }
+        void resolveLocationAndApply(profile.neighborhoodId);
+        return;
       }
     }
 
@@ -732,7 +777,6 @@ function Index() {
     customerProfileQuery.data,
     customerProfileQuery.isLoading,
     customerSession?.phoneNumber,
-    serviceZones,
     syncCustomerNeighborhood,
   ]);
 
@@ -1134,8 +1178,18 @@ function Index() {
       return;
     }
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    const neighborhood = commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId);
+    let commune = selectedCommuneOption;
+    let neighborhood = selectedNeighborhoodOption;
+
+    if (!commune || !neighborhood || neighborhood.id !== selectedNeighborhoodId || commune.id !== selectedCommuneId) {
+      const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: selectedNeighborhoodId } });
+      if (resolved) {
+        commune = resolved.commune;
+        neighborhood = resolved.neighborhood;
+        setSelectedCommuneOption(resolved.commune);
+        setSelectedNeighborhoodOption(resolved.neighborhood);
+      }
+    }
 
     if (!commune || !neighborhood) {
       toast.error("Invalid location selection. Please try again.");
@@ -2270,45 +2324,137 @@ function Index() {
 
               <div className="mt-4 space-y-3">
                 <div className="space-y-2">
-                  <label htmlFor="location-commune" className="text-xs font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Jamaa Tourabiya
                   </label>
-                  <select
-                    id="location-commune"
-                    value={selectedCommuneId}
-                    onChange={(event) => {
-                      setSelectedCommuneId(event.target.value);
-                      setSelectedNeighborhoodId("");
-                    }}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-                  >
-                    <option value="">Select commune</option>
-                    {serviceZones.map((commune) => (
-                      <option key={commune.id} value={commune.id}>
-                        {getLocalizedCommuneName(commune)}
-                      </option>
-                    ))}
-                  </select>
+                  <Popover open={isCommuneComboboxOpen} onOpenChange={setIsCommuneComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isCommuneComboboxOpen}
+                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
+                      >
+                        <span className="truncate text-left">
+                          {selectedCommune ? getLocalizedCommuneName(selectedCommune) : "Type 3+ characters to find a commune"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search commune (EN / FR / AR)..."
+                          value={communeSearchInput}
+                          onValueChange={setCommuneSearchInput}
+                        />
+                        <CommandList>
+                          {!hasEnoughCommuneChars ? (
+                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
+                          ) : null}
+                          {hasEnoughCommuneChars ? (
+                            <>
+                              <CommandEmpty>No commune found.</CommandEmpty>
+                              <CommandGroup>
+                                {filteredCommuneOptions.map((commune) => (
+                                  <CommandItem
+                                    key={commune.id}
+                                    value={commune.id}
+                                    onSelect={() => {
+                                      const nextCommuneId = commune.id;
+                                      const communeHasChanged = nextCommuneId !== selectedCommuneId;
+                                      setSelectedCommuneId(nextCommuneId);
+                                      setSelectedCommuneOption(commune);
+                                      if (communeHasChanged) {
+                                        setSelectedNeighborhoodId("");
+                                        setSelectedNeighborhoodOption(null);
+                                        setNeighborhoodSearchInput("");
+                                      }
+                                      setIsCommuneComboboxOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <span className="truncate">{getLocalizedCommuneName(commune)}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          ) : null}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="location-neighborhood" className="text-xs font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Hay / Douar
                   </label>
-                  <select
-                    id="location-neighborhood"
-                    value={selectedNeighborhoodId}
-                    onChange={(event) => setSelectedNeighborhoodId(event.target.value)}
-                    disabled={!selectedCommuneId}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60 focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                  <Popover
+                    open={isNeighborhoodComboboxOpen}
+                    onOpenChange={(open) => setIsNeighborhoodComboboxOpen(selectedCommuneId ? open : false)}
                   >
-                    <option value="">Select neighborhood</option>
-                    {neighborhoodOptions.map((neighborhood) => (
-                      <option key={neighborhood.id} value={neighborhood.id}>
-                        {getLocalizedNeighborhoodName(neighborhood)}
-                      </option>
-                    ))}
-                  </select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isNeighborhoodComboboxOpen}
+                        disabled={!selectedCommuneId}
+                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
+                      >
+                        <span className="truncate text-left">
+                          {selectedNeighborhood
+                            ? `${getLocalizedNeighborhoodName(selectedNeighborhood)} (+${Number(selectedNeighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`
+                            : selectedCommuneId
+                              ? "Type 3+ characters to find a douar"
+                              : "Select a commune first"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search douar (EN / FR / AR)..."
+                          value={neighborhoodSearchInput}
+                          onValueChange={setNeighborhoodSearchInput}
+                        />
+                        <CommandList>
+                          {!selectedCommuneId ? <CommandEmpty>Select a commune first.</CommandEmpty> : null}
+                          {selectedCommuneId && !hasEnoughNeighborhoodChars ? (
+                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
+                          ) : null}
+                          {selectedCommuneId && hasEnoughNeighborhoodChars ? (
+                            <>
+                              <CommandEmpty>No douar found in this commune.</CommandEmpty>
+                              <CommandGroup>
+                                {filteredNeighborhoodOptions.map((neighborhood) => (
+                                  <CommandItem
+                                    key={neighborhood.id}
+                                    value={neighborhood.id}
+                                    onSelect={() => {
+                                      setSelectedNeighborhoodId(neighborhood.id);
+                                      setSelectedNeighborhoodOption(neighborhood);
+                                      setIsNeighborhoodComboboxOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <span className="truncate">
+                                      {getLocalizedNeighborhoodName(neighborhood)} (+{Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          ) : null}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
@@ -2316,7 +2462,7 @@ function Index() {
                 variant="hero"
                 className="mt-5 w-full rounded-xl"
                 onClick={saveLocationSelection}
-                disabled={!selectedCommuneId || !selectedNeighborhoodId || serviceZonesQuery.isLoading}
+                disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
               >
                 Confirm Location
               </Button>

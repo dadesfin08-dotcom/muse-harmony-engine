@@ -36,6 +36,21 @@ const getCommuneByIdInputSchema = z.object({
   communeId: z.string().uuid(),
 });
 
+const searchCommunesInputSchema = z.object({
+  query: z.string().trim().min(3).max(120),
+  limit: z.coerce.number().int().min(1).max(25).default(15),
+});
+
+const searchNeighborhoodsByCommuneInputSchema = z.object({
+  communeId: z.string().uuid(),
+  query: z.string().trim().min(3).max(120),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const getLocationByNeighborhoodIdInputSchema = z.object({
+  neighborhoodId: z.string().uuid(),
+});
+
 const deleteNeighborhoodInputSchema = z.object({
   id: z.string().uuid(),
 });
@@ -126,6 +141,25 @@ export type ServiceZoneExportRow = {
   deliveryFee: number;
 };
 
+export type CommuneSearchResult = {
+  id: string;
+  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
+};
+
+export type NeighborhoodSearchResult = {
+  id: string;
+  zoneCode: string;
+  communeId: string;
+  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
+  deliveryFee: number;
+};
+
 const createCommuneLookupKey = (nameEn: string, nameFr: string | null, nameAr: string | null) =>
   `${nameEn.trim().toLowerCase()}|${nameFr?.trim().toLowerCase() ?? ""}|${nameAr?.trim().toLowerCase() ?? ""}`;
 
@@ -162,6 +196,121 @@ const mapNeighborhoodRow = (neighborhood: NeighborhoodRow) => ({
   deliveryFee: Number(neighborhood.delivery_fee ?? 0),
   vendorId: neighborhood.vendor_id,
 });
+
+export const searchCommunes = createServerFn({ method: "GET" })
+  .inputValidator((input) => searchCommunesInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const query = data.query.trim();
+      const pattern = `%${query}%`;
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("communes")
+        .select("id, name_en, name_fr, name_ar")
+        .or(`name_en.ilike.${pattern},name_fr.ilike.${pattern},name_ar.ilike.${pattern}`)
+        .order("name_en", { ascending: true })
+        .limit(data.limit);
+
+      if (error) throw new Error(error.message);
+
+      return ((rows ?? []) as CommuneRow[]).map(
+        (commune) =>
+          ({
+            id: commune.id,
+            name: commune.name_en,
+            nameEn: commune.name_en,
+            nameFr: commune.name_fr,
+            nameAr: commune.name_ar,
+          }) satisfies CommuneSearchResult,
+      );
+    } catch (error) {
+      console.error("searchCommunes failed:", error);
+      throw new Error("Failed to search communes.");
+    }
+  });
+
+export const searchNeighborhoodsByCommune = createServerFn({ method: "GET" })
+  .inputValidator((input) => searchNeighborhoodsByCommuneInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const query = data.query.trim();
+      const pattern = `%${query}%`;
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("neighborhoods")
+        .select("id, zone_code, name_en, name_fr, name_ar, commune_id, delivery_fee")
+        .eq("commune_id", data.communeId)
+        .or(`name_en.ilike.${pattern},name_fr.ilike.${pattern},name_ar.ilike.${pattern}`)
+        .order("name_en", { ascending: true })
+        .limit(data.limit);
+
+      if (error) throw new Error(error.message);
+
+      return ((rows ?? []) as NeighborhoodRow[]).map(
+        (row) =>
+          ({
+            id: row.id,
+            zoneCode: row.zone_code,
+            communeId: row.commune_id,
+            name: row.name_en,
+            nameEn: row.name_en,
+            nameFr: row.name_fr,
+            nameAr: row.name_ar,
+            deliveryFee: Number(row.delivery_fee ?? 0),
+          }) satisfies NeighborhoodSearchResult,
+      );
+    } catch (error) {
+      console.error("searchNeighborhoodsByCommune failed:", error);
+      throw new Error("Failed to search neighborhoods.");
+    }
+  });
+
+export const getLocationByNeighborhoodId = createServerFn({ method: "GET" })
+  .inputValidator((input) => getLocationByNeighborhoodIdInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
+        .from("neighborhoods")
+        .select("id, zone_code, name_en, name_fr, name_ar, commune_id, delivery_fee")
+        .eq("id", data.neighborhoodId)
+        .maybeSingle();
+
+      if (neighborhoodError) throw new Error(neighborhoodError.message);
+      if (!neighborhood?.id) return null;
+
+      const { data: commune, error: communeError } = await (supabaseAdmin as any)
+        .from("communes")
+        .select("id, name_en, name_fr, name_ar")
+        .eq("id", (neighborhood as NeighborhoodRow).commune_id)
+        .maybeSingle();
+
+      if (communeError) throw new Error(communeError.message);
+      if (!commune?.id) return null;
+
+      return {
+        commune: {
+          id: (commune as CommuneRow).id,
+          name: (commune as CommuneRow).name_en,
+          nameEn: (commune as CommuneRow).name_en,
+          nameFr: (commune as CommuneRow).name_fr,
+          nameAr: (commune as CommuneRow).name_ar,
+        } satisfies CommuneSearchResult,
+        neighborhood: {
+          id: (neighborhood as NeighborhoodRow).id,
+          zoneCode: (neighborhood as NeighborhoodRow).zone_code,
+          communeId: (neighborhood as NeighborhoodRow).commune_id,
+          name: (neighborhood as NeighborhoodRow).name_en,
+          nameEn: (neighborhood as NeighborhoodRow).name_en,
+          nameFr: (neighborhood as NeighborhoodRow).name_fr,
+          nameAr: (neighborhood as NeighborhoodRow).name_ar,
+          deliveryFee: Number((neighborhood as NeighborhoodRow).delivery_fee ?? 0),
+        } satisfies NeighborhoodSearchResult,
+      };
+    } catch (error) {
+      console.error("getLocationByNeighborhoodId failed:", error);
+      throw new Error("Failed to resolve location.");
+    }
+  });
 
 export const listServiceZones = createServerFn({ method: "GET" }).handler(async () => {
   try {
