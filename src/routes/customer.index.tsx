@@ -579,7 +579,6 @@ function Index() {
   const applyLocation = (location: Pick<PersistedLocation, "communeId" | "neighborhoodId">) => {
     setSelectedCommuneId(location.communeId);
     setSelectedNeighborhoodId(location.neighborhoodId);
-    setIsLocationModalOpen(false);
   };
 
   const resolveLocationAndApply = async (neighborhoodId: string) => {
@@ -738,6 +737,10 @@ function Index() {
   }, []);
 
   useEffect(() => {
+    if (isLocationModalOpen) {
+      return;
+    }
+
     if (selectedNeighborhoodId) {
       return;
     }
@@ -755,7 +758,7 @@ function Index() {
         setIsLocationModalOpen(true);
       }
     });
-  }, [customerSession?.phoneNumber, selectedNeighborhoodId]);
+  }, [customerSession?.phoneNumber, isLocationModalOpen, selectedNeighborhoodId]);
 
   useEffect(() => {
     if (customerSession?.phoneNumber) {
