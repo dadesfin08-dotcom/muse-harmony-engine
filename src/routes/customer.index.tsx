@@ -232,6 +232,19 @@ const languageOptions: Array<{ code: AppLanguage; label: string }> = [
   { code: "en", label: "🇬🇧 English" },
 ];
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedValue(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debouncedValue;
+}
+
+const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
+
 function useCustomerCarnet(
   customerPhone: string | null,
   fetchCustomerCarnetOverview: (input: { data: { customerPhone: string } }) => Promise<any>,
@@ -284,6 +297,10 @@ function Index() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [selectedCommuneId, setSelectedCommuneId] = useState("");
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
+  const [isCommuneComboboxOpen, setIsCommuneComboboxOpen] = useState(false);
+  const [isNeighborhoodComboboxOpen, setIsNeighborhoodComboboxOpen] = useState(false);
+  const [communeSearchInput, setCommuneSearchInput] = useState("");
+  const [neighborhoodSearchInput, setNeighborhoodSearchInput] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
@@ -459,16 +476,44 @@ function Index() {
   }, [customerOrdersQuery.data]);
 
   const serviceZones = serviceZonesQuery.data ?? [];
-  const neighborhoodOptions =
-    serviceZones.find((zone) => zone.id === selectedCommuneId)?.neighborhoods ?? [];
+  const selectedCommune = useMemo(
+    () => serviceZones.find((zone) => zone.id === selectedCommuneId) ?? null,
+    [serviceZones, selectedCommuneId],
+  );
+  const neighborhoodOptions = selectedCommune?.neighborhoods ?? [];
+  const debouncedCommuneSearch = useDebouncedValue(communeSearchInput, 300);
+  const debouncedNeighborhoodSearch = useDebouncedValue(neighborhoodSearchInput, 300);
+  const normalizedCommuneSearch = normalizeSearchText(debouncedCommuneSearch);
+  const normalizedNeighborhoodSearch = normalizeSearchText(debouncedNeighborhoodSearch);
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
+  const filteredCommuneOptions = useMemo(() => {
+    if (!hasEnoughCommuneChars) return [];
+
+    return serviceZones.filter((commune) => {
+      const en = normalizeSearchText(commune.nameEn ?? commune.name ?? "");
+      const fr = normalizeSearchText(commune.nameFr ?? "");
+      const ar = normalizeSearchText(commune.nameAr ?? "");
+      return en.includes(normalizedCommuneSearch) || fr.includes(normalizedCommuneSearch) || ar.includes(normalizedCommuneSearch);
+    });
+  }, [serviceZones, hasEnoughCommuneChars, normalizedCommuneSearch]);
+  const filteredNeighborhoodOptions = useMemo(() => {
+    if (!selectedCommuneId || !hasEnoughNeighborhoodChars) return [];
+
+    return neighborhoodOptions.filter((neighborhood) => {
+      const en = normalizeSearchText(neighborhood.nameEn ?? neighborhood.name ?? "");
+      const fr = normalizeSearchText(neighborhood.nameFr ?? "");
+      const ar = normalizeSearchText(neighborhood.nameAr ?? "");
+      return en.includes(normalizedNeighborhoodSearch) || fr.includes(normalizedNeighborhoodSearch) || ar.includes(normalizedNeighborhoodSearch);
+    });
+  }, [selectedCommuneId, neighborhoodOptions, hasEnoughNeighborhoodChars, normalizedNeighborhoodSearch]);
   const selectedNeighborhood = useMemo(() => {
     if (!selectedCommuneId || !selectedNeighborhoodId) {
       return null;
     }
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    return commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId) ?? null;
-  }, [selectedCommuneId, selectedNeighborhoodId, serviceZones]);
+    return selectedCommune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId) ?? null;
+  }, [selectedCommune, selectedCommuneId, selectedNeighborhoodId]);
   const globalDeliveryFeeMad = Number(globalSettingsQuery.data?.global_delivery_fee ?? 10);
   const minimumOrderMad = Number(globalSettingsQuery.data?.minimum_order_amount ?? 50);
   const freeDeliveryThresholdMad = Number(globalSettingsQuery.data?.free_delivery_threshold ?? 500);
