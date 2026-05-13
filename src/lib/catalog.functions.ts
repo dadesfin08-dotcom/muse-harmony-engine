@@ -436,6 +436,8 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
       }
 
       const warnings: string[] = [];
+      const missingCategoryRows: Array<{ rowNumber: number; category: string }> = [];
+      const missingBrandRows: Array<{ rowNumber: number; brand: string }> = [];
       const dedupedRowsByBarcode = new Map<string, (typeof normalizedRows)[number]>();
       for (const row of normalizedRows) {
         const normalizedBarcode = row.barcode?.trim().toLowerCase() ?? "";
@@ -515,6 +517,10 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         const matchedCategory = categoriesByLabel.get(normalizeLookupKey(row.categoryLabel));
         if (!matchedCategory) {
           warnings.push(`Row ${row.rowNumber}: category '${row.categoryLabel}' not found.`);
+          missingCategoryRows.push({
+            rowNumber: row.rowNumber,
+            category: row.categoryLabel,
+          });
           continue;
         }
 
@@ -529,6 +535,10 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           const matchedBrand = brandsByLabel.get(normalizeLookupKey(row.brandLabel));
           if (!matchedBrand) {
             warnings.push(`Row ${row.rowNumber}: brand '${row.brandLabel}' not found.`);
+            missingBrandRows.push({
+              rowNumber: row.rowNumber,
+              brand: row.brandLabel,
+            });
             continue;
           }
           matchedBrandId = matchedBrand.id;
@@ -614,6 +624,8 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         updatedCount,
         skippedCount: warnings.length,
         warnings,
+        missingCategoryRows,
+        missingBrandRows,
       };
     } catch (error) {
       console.error("importMasterProductsBulk failed:", error);
