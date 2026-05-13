@@ -1238,6 +1238,81 @@ function AdminPage() {
     }
   };
 
+  const downloadBrandsCsvTemplate = () => {
+    const csvContent = `${BRANDS_CSV_HEADERS.join(",")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "brands-template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importBrandsFromCsv = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please upload a CSV file.");
+      return;
+    }
+
+    try {
+      setIsImportingBrands(true);
+
+      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+        Papa.parse<Record<string, string>>(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: resolve,
+          error: reject,
+        });
+      });
+
+      const uploadedHeaders = parsed.meta.fields ?? [];
+      const missingHeaders = BRANDS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
+
+      if (missingHeaders.length > 0) {
+        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const preparedRows = parsed.data
+        .map((row) => ({
+          nameAr: row.Brand_Name_AR?.trim() || null,
+          nameEn: row.Brand_Name_EN?.trim() || "",
+          nameFr: row.Brand_Name_FR?.trim() || null,
+          logoUrl: row.Logo_URL?.trim() || null,
+        }))
+        .filter((row) => row.nameEn.length > 0);
+
+      if (preparedRows.length === 0) {
+        toast.error("No valid rows found. Fill at least Brand_Name_EN in one row.");
+        return;
+      }
+
+      const result = await importBrandsBulkInDatabase({ data: { rows: preparedRows } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      toast.success(
+        `Brands imported: ${result.totalProcessed} (${result.insertedCount} new, ${result.updatedCount} updated).`,
+      );
+    } catch (error) {
+      console.error("Failed to import brands CSV:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import brands CSV.");
+    } finally {
+      setIsImportingBrands(false);
+      if (brandCsvInputRef.current) {
+        brandCsvInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleBrandsCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    await importBrandsFromCsv(file);
+  };
+
   const archiveProduct = async (product: MasterProductEntity) => {
     setPendingArchiveProduct(product);
   };
