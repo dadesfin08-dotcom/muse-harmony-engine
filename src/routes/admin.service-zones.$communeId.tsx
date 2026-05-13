@@ -347,13 +347,23 @@ function CommuneProfilePage() {
           {isEditingCommuneName ? (
             <div className="flex w-full flex-col gap-2 md:max-w-md">
               <Input
-                value={communeNameDraft}
-                onChange={(event) => setCommuneNameDraft(event.target.value)}
-                placeholder="Commune name"
+                value={communeNameEnDraft}
+                onChange={(event) => setCommuneNameEnDraft(event.target.value)}
+                placeholder="Commune name (EN)"
+              />
+              <Input
+                value={communeNameFrDraft}
+                onChange={(event) => setCommuneNameFrDraft(event.target.value)}
+                placeholder="Commune name (FR)"
+              />
+              <Input
+                value={communeNameArDraft}
+                onChange={(event) => setCommuneNameArDraft(event.target.value)}
+                placeholder="Commune name (AR)"
               />
               <div className="flex gap-2">
                 <Button className="rounded-md" onClick={saveCommuneName} disabled={isSavingCommuneName}>
-                  {isSavingCommuneName ? "Saving..." : "Save name"}
+                  {isSavingCommuneName ? "Saving..." : "Save names"}
                 </Button>
                 <Button
                   variant="outline"
@@ -367,7 +377,7 @@ function CommuneProfilePage() {
             </div>
           ) : (
             <div>
-              <h1 className="text-2xl font-bold text-foreground">{commune.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{localizedCommuneName(commune)}</h1>
               <p className="text-sm text-muted-foreground">Manage douars and delivery fees for this commune.</p>
             </div>
           )}
