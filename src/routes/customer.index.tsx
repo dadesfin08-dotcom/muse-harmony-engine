@@ -307,9 +307,13 @@ function Index() {
     fr?: string | null;
     ar?: string | null;
   }) => {
-    if (language === "ar") return ar?.trim() || en;
-    if (language === "fr") return fr?.trim() || en;
-    return en;
+    const normalizedEn = en?.trim() || "";
+    const normalizedFr = fr?.trim() || "";
+    const normalizedAr = ar?.trim() || "";
+
+    if (language === "ar") return normalizedAr || normalizedFr || normalizedEn;
+    if (language === "fr") return normalizedFr || normalizedEn || normalizedAr;
+    return normalizedEn || normalizedFr || normalizedAr;
   };
   const getLocalizedNeighborhoodName = (zone: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
