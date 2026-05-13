@@ -39,6 +39,7 @@ import {
   LogOut,
   Download,
   FileUp,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -161,6 +162,7 @@ import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { clearRoleSessions } from "@/lib/operational-auth";
 
@@ -486,6 +488,7 @@ function AdminPage() {
         name: row.product_name,
         nameFr: row.name_fr,
         nameAr: row.name_ar,
+        barcode: row.barcode,
         brandId: row.brand_id,
         brandNameEn: row.brands?.name_en,
         brandNameFr: row.brands?.name_fr,
@@ -516,6 +519,24 @@ function AdminPage() {
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const activeCategories = categories.filter((category) => category.is_active);
+  const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
+  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
+  const [catalogBrandFilter, setCatalogBrandFilter] = useState("all");
+  const filteredMasterProducts = useMemo(() => {
+    const searchTerm = catalogSearchTerm.trim().toLowerCase();
+
+    return masterProducts.filter((product) => {
+      const categoryMatch = catalogCategoryFilter === "all" || product.categoryId === catalogCategoryFilter;
+      const brandMatch = catalogBrandFilter === "all" || product.brandId === catalogBrandFilter;
+
+      if (!categoryMatch || !brandMatch) return false;
+      if (!searchTerm) return true;
+
+      return [product.name, product.nameFr ?? "", product.nameAr ?? "", product.barcode ?? ""].some((value) =>
+        value.toLowerCase().includes(searchTerm),
+      );
+    });
+  }, [masterProducts, catalogSearchTerm, catalogCategoryFilter, catalogBrandFilter]);
 
   const [isVendorPanelOpen, setIsVendorPanelOpen] = useState(false);
   const [isCyclistPanelOpen, setIsCyclistPanelOpen] = useState(false);
@@ -2223,10 +2244,18 @@ function AdminPage() {
               ) : null}
               {tab === "catalog" ? (
                 <CatalogSection
-                  products={masterProducts}
+                  products={filteredMasterProducts}
+                  allProductsCount={masterProducts.length}
                   categories={categories}
+                  brands={brands}
                   isLoading={dbHealthQuery.isLoading || masterProductsQuery.isLoading}
                   isImporting={isImportingMasterProducts}
+                  searchTerm={catalogSearchTerm}
+                  selectedCategoryId={catalogCategoryFilter}
+                  selectedBrandId={catalogBrandFilter}
+                  onSearchTermChange={setCatalogSearchTerm}
+                  onCategoryChange={setCatalogCategoryFilter}
+                  onBrandChange={setCatalogBrandFilter}
                   masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
                   onDownloadTemplate={downloadMasterProductsCatalogExport}
@@ -3672,9 +3701,17 @@ function ServiceZonesSection({
 
 function CatalogSection({
   products,
+  allProductsCount,
   categories,
+  brands,
   isLoading,
   isImporting,
+  searchTerm,
+  selectedCategoryId,
+  selectedBrandId,
+  onSearchTermChange,
+  onCategoryChange,
+  onBrandChange,
   masterProductsCsvInputRef,
   onAddProduct,
   onDownloadTemplate,
@@ -3684,9 +3721,17 @@ function CatalogSection({
   onArchiveProduct,
 }: {
   products: MasterProductEntity[];
+  allProductsCount: number;
   categories: CategoryAdminRow[];
+  brands: BrandAdminRow[];
   isLoading: boolean;
   isImporting: boolean;
+  searchTerm: string;
+  selectedCategoryId: string;
+  selectedBrandId: string;
+  onSearchTermChange: Dispatch<SetStateAction<string>>;
+  onCategoryChange: Dispatch<SetStateAction<string>>;
+  onBrandChange: Dispatch<SetStateAction<string>>;
   masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
   onDownloadTemplate: () => void | Promise<void>;
@@ -3735,13 +3780,61 @@ function CatalogSection({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(event) => onSearchTermChange(event.target.value)}
+            placeholder="Search by name (EN/FR/AR) or barcode"
+            className="pl-9"
+          />
+        </div>
+
+        <Select value={selectedCategoryId} onValueChange={onCategoryChange}>
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name_en}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedBrandId} onValueChange={onBrandChange}>
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="All Brands" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Brands</SelectItem>
+            {brands.map((brand) => (
+              <SelectItem key={brand.id} value={brand.id}>
+                {brand.name_en}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <p className="text-xs text-muted-foreground">Showing {products.length} of {allProductsCount} products</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {isLoading ? (
           <AppEmptyState title="Loading products..." subtitle="Syncing the master product catalog." className="col-span-full" />
-        ) : products.length === 0 ? (
+        ) : allProductsCount === 0 ? (
           <AppEmptyState
             title="No master products yet."
             subtitle="Add your first shared product."
+            className="col-span-full"
+          />
+        ) : products.length === 0 ? (
+          <AppEmptyState
+            title="No products match these filters."
+            subtitle="Try changing the search text, category, or brand."
             className="col-span-full"
           />
         ) : (
@@ -3750,28 +3843,28 @@ function CatalogSection({
 
             return (
               <article key={product.id} className="rounded-md border border-border bg-background p-3 transition hover:-translate-y-0.5 hover:shadow-sm">
-            <div className="mb-3 aspect-square overflow-hidden rounded-md border border-border bg-muted/40">
+            <div className="mb-2 h-32 overflow-hidden rounded-md border border-border bg-muted/40">
               <img
                 src={product.imageUrl || fallbackProductImage}
                 alt={`${product.name} product image`}
-                className="h-full w-full object-contain object-center p-2"
+                className="h-full w-full object-contain object-center p-1.5"
                 loading="lazy"
                 width={480}
                 height={240}
               />
             </div>
-            <p className="font-medium text-foreground">{product.name}</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{product.brandNameEn || "—"}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{categoryName}</p>
-            <p className="mt-2 text-sm font-semibold text-primary">
+            <p className="line-clamp-2 text-sm font-medium text-foreground">{product.name}</p>
+            <p className="mt-1 text-xs font-medium text-foreground">{product.brandNameEn || "—"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{categoryName}</p>
+            <p className="mt-2 text-xs font-semibold text-primary">
               Unit: {product.measurementValue != null ? `${product.measurementValue} ` : ""}
               {product.measurementUnit}
             </p>
-            <div className="mt-3 flex items-center gap-2">
-              <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={() => onEditProduct(product)}>
+            <div className="mt-2 flex items-center gap-2">
+              <Button type="button" size="sm" variant="outline" className="h-8 rounded-md px-2 text-xs" onClick={() => onEditProduct(product)}>
                 Edit
               </Button>
-              <Button type="button" size="sm" variant="destructive" className="rounded-md" onClick={() => onArchiveProduct(product)}>
+              <Button type="button" size="sm" variant="destructive" className="h-8 rounded-md px-2 text-xs" onClick={() => onArchiveProduct(product)}>
                 Archive
               </Button>
             </div>
