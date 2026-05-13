@@ -1401,23 +1401,26 @@ function AdminPage() {
           toast.error(warning);
         }
 
-        if (result.missingCategoryRows.length > 0) {
-          const categoryDetails = result.missingCategoryRows
+        const missingCategoryRows = result.missingCategoryRows ?? [];
+        const missingBrandRows = result.missingBrandRows ?? [];
+
+        if (missingCategoryRows.length > 0) {
+          const categoryDetails = missingCategoryRows
             .slice(0, 8)
             .map((item) => `L${item.rowNumber}: ${item.category}`)
             .join(" | ");
           toast.error(
-            `Missing Category (${result.missingCategoryRows.length}): ${categoryDetails}${result.missingCategoryRows.length > 8 ? " | ..." : ""}`,
+            `Missing Category (${missingCategoryRows.length}): ${categoryDetails}${missingCategoryRows.length > 8 ? " | ..." : ""}`,
           );
         }
 
-        if (result.missingBrandRows.length > 0) {
-          const brandDetails = result.missingBrandRows
+        if (missingBrandRows.length > 0) {
+          const brandDetails = missingBrandRows
             .slice(0, 8)
             .map((item) => `L${item.rowNumber}: ${item.brand}`)
             .join(" | ");
           toast.error(
-            `Missing Brand (${result.missingBrandRows.length}): ${brandDetails}${result.missingBrandRows.length > 8 ? " | ..." : ""}`,
+            `Missing Brand (${missingBrandRows.length}): ${brandDetails}${missingBrandRows.length > 8 ? " | ..." : ""}`,
           );
         }
 
