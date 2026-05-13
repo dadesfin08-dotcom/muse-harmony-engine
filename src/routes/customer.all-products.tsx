@@ -3,14 +3,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { Minus, Package, Plus, Search, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { MobileHeader } from "@/components/MobileHeader";
+import { ProductCard } from "@/components/ProductCard";
 import { getCustomerCatalogByNeighborhood } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
-import fallbackProductImage from "@/assets/product-vegetables.jpg";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
@@ -164,73 +164,21 @@ function AllProductsPage() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {displayedProducts.map((product) => (
-          <article key={product.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-            <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
-              <div className="relative h-28 w-full bg-gray-50">
-                <img
-                  src={product.imageUrl || fallbackProductImage}
-                  alt={product.localizedName}
-                  className="h-full w-full object-contain object-center p-2"
-                  loading="lazy"
-                />
-              </div>
-            </Link>
-
-            <div className="space-y-1.5 p-3">
-              <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
-                {product.localizedBrand || "—"}
-              </span>
-
-              <div className="flex items-start justify-between gap-1.5">
-                <Link to="/customer/product/$id" params={{ id: product.id }} className="min-w-0 flex-1">
-                  <h2 className="line-clamp-1 text-sm font-semibold text-gray-900">{product.localizedName}</h2>
-                </Link>
-                <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
-                  <Package className="size-3" />
-                  {product.measurementValue != null ? `${product.measurementValue} ` : ""}
-                  {product.measurementUnit}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 pt-0">
-                <p className="text-xl font-extrabold text-[#2A7543]">
-                  {Number(product.vendorPrice ?? 0)} <span className="text-xs font-medium">MAD</span>
-                </p>
-
-                {getCartQuantity(product.id) > 0 ? (
-                  <div className="flex items-center gap-1 rounded-full border border-gray-200 px-1.5 py-1">
-                    <button
-                      type="button"
-                      className="inline-flex size-6 items-center justify-center rounded-full bg-gray-100 text-[#2A7543]"
-                      onClick={() => decreaseItem(product.id)}
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="size-3" />
-                    </button>
-                    <span className="min-w-5 text-center text-xs font-semibold text-gray-900">{getCartQuantity(product.id)}</span>
-                    <button
-                      type="button"
-                      className="inline-flex size-6 items-center justify-center rounded-full bg-gray-100 text-[#2A7543]"
-                      onClick={() => increaseItem(product.id)}
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="size-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[#2A7543] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-800"
-                    onClick={() => addToCart(product)}
-                  >
-                    <ShoppingCart className="size-3.5" />
-                    {t("products.add")}
-                  </button>
-                )}
-              </div>
-
-            </div>
-          </article>
+          <ProductCard
+            key={product.id}
+            id={product.id}
+            name={product.localizedName}
+            brand={product.localizedBrand || "—"}
+            measurementValue={product.measurementValue}
+            measurementUnit={product.measurementUnit}
+            imageUrl={product.imageUrl}
+            price={Number(product.vendorPrice ?? 0)}
+            cartQuantity={getCartQuantity(product.id)}
+            addLabel={t("products.add")}
+            onAdd={() => addToCart(product)}
+            onIncrease={() => increaseItem(product.id)}
+            onDecrease={() => decreaseItem(product.id)}
+          />
         ))}
       </section>
 
