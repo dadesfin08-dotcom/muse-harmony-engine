@@ -538,11 +538,29 @@ function Index() {
     localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
   };
 
-  const applyLocation = (location: PersistedLocation) => {
+  const applyLocation = (location: Pick<PersistedLocation, "communeId" | "neighborhoodId">) => {
     setSelectedCommuneId(location.communeId);
     setSelectedNeighborhoodId(location.neighborhoodId);
-    persistLocation(location);
     setIsLocationModalOpen(false);
+  };
+
+  const resolveLocationAndApply = async (neighborhoodId: string) => {
+    const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId } });
+    if (!resolved) {
+      return null;
+    }
+
+    const location = {
+      communeId: resolved.commune.id,
+      neighborhoodId: resolved.neighborhood.id,
+      locationLabel: `${getLocalizedCommuneName(resolved.commune)} / ${getLocalizedNeighborhoodName(resolved.neighborhood)}`,
+    } satisfies PersistedLocation;
+
+    setSelectedCommuneOption(resolved.commune);
+    setSelectedNeighborhoodOption(resolved.neighborhood);
+    applyLocation(location);
+    persistLocation(location);
+    return location;
   };
 
   const readPersistedLocation = () => {
@@ -682,20 +700,24 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    if (serviceZones.length === 0) {
+    if (selectedNeighborhoodId) {
       return;
     }
 
     const persistedLocation = readPersistedLocation();
-    if (persistedLocation) {
-      applyLocation(persistedLocation);
+    if (!persistedLocation?.neighborhoodId) {
+      if (!customerSession?.phoneNumber) {
+        setIsLocationModalOpen(true);
+      }
       return;
     }
 
-    if (!customerSession?.phoneNumber && !selectedNeighborhoodId) {
-      setIsLocationModalOpen(true);
-    }
-  }, [serviceZones, customerSession?.phoneNumber]);
+    void resolveLocationAndApply(persistedLocation.neighborhoodId).then((resolved) => {
+      if (!resolved && !customerSession?.phoneNumber) {
+        setIsLocationModalOpen(true);
+      }
+    });
+  }, [customerSession?.phoneNumber, selectedNeighborhoodId]);
 
   useEffect(() => {
     if (customerSession?.phoneNumber) {
@@ -716,8 +738,8 @@ function Index() {
     }
 
     const persistedLocation = readPersistedLocation();
-    if (persistedLocation) {
-      applyLocation(persistedLocation);
+    if (persistedLocation?.neighborhoodId) {
+      void resolveLocationAndApply(persistedLocation.neighborhoodId);
 
       if (
         customerSession?.phoneNumber &&
@@ -745,11 +767,8 @@ function Index() {
       setDeliveryNotes(profile.savedInstructions ?? "");
 
       if (profile.neighborhoodId) {
-        const profileLocation = resolveLocationByNeighborhoodId(profile.neighborhoodId);
-        if (profileLocation) {
-          applyLocation(profileLocation);
-          return;
-        }
+        void resolveLocationAndApply(profile.neighborhoodId);
+        return;
       }
     }
 
@@ -758,7 +777,6 @@ function Index() {
     customerProfileQuery.data,
     customerProfileQuery.isLoading,
     customerSession?.phoneNumber,
-    serviceZones,
     syncCustomerNeighborhood,
   ]);
 
