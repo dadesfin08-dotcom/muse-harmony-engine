@@ -1378,6 +1378,23 @@ function AdminPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadMasterProductsExampleCsv = () => {
+    const csvRows = [
+      MASTER_PRODUCTS_CSV_HEADERS.join(";"),
+      ...MASTER_PRODUCTS_CSV_EXAMPLE_ROWS.map((row) => row.join(";")),
+    ];
+    const csvContent = `\uFEFF${csvRows.join("\n")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "master-products-example.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const importMasterProductsFromCsv = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
       toast.error("Please upload a CSV file.");
