@@ -579,7 +579,6 @@ function Index() {
   const applyLocation = (location: Pick<PersistedLocation, "communeId" | "neighborhoodId">) => {
     setSelectedCommuneId(location.communeId);
     setSelectedNeighborhoodId(location.neighborhoodId);
-    setIsLocationModalOpen(false);
   };
 
   const resolveLocationAndApply = async (neighborhoodId: string) => {
@@ -738,6 +737,10 @@ function Index() {
   }, []);
 
   useEffect(() => {
+    if (isLocationModalOpen) {
+      return;
+    }
+
     if (selectedNeighborhoodId) {
       return;
     }
@@ -755,7 +758,7 @@ function Index() {
         setIsLocationModalOpen(true);
       }
     });
-  }, [customerSession?.phoneNumber, selectedNeighborhoodId]);
+  }, [customerSession?.phoneNumber, isLocationModalOpen, selectedNeighborhoodId]);
 
   useEffect(() => {
     if (customerSession?.phoneNumber) {
@@ -2383,6 +2386,11 @@ function Index() {
                             }
                             if (!isCommuneComboboxOpen) setIsCommuneComboboxOpen(true);
                           }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                            }
+                          }}
                           onFocus={() => setIsCommuneComboboxOpen(true)}
                           placeholder="Search commune (EN / FR / AR)..."
                           className="h-10 rounded-xl pl-9 pr-3 text-sm"
@@ -2416,7 +2424,6 @@ function Index() {
                                         setNeighborhoodSearchInput("");
                                       }
                                       setCommuneSearchInput(getLocalizedCommuneName(commune));
-                                      setIsCommuneComboboxOpen(false);
                                     }}
                                   >
                                     <Check
@@ -2458,6 +2465,11 @@ function Index() {
                               setIsNeighborhoodComboboxOpen(true);
                             }
                           }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                            }
+                          }}
                           onFocus={() => {
                             if (selectedCommuneId) {
                               setIsNeighborhoodComboboxOpen(true);
@@ -2492,7 +2504,6 @@ function Index() {
                                       setNeighborhoodSearchInput(
                                         `${getLocalizedNeighborhoodName(neighborhood)} (+${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`,
                                       );
-                                      setIsNeighborhoodComboboxOpen(false);
                                     }}
                                   >
                                     <Check
