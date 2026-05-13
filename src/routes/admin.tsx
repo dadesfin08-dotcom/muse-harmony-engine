@@ -2417,10 +2417,14 @@ function AdminPage() {
                 <ServiceZonesSection
                   zones={serviceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
+                  isImporting={isImportingServiceZones}
                   form={serviceZoneForm}
                   onFormChange={setServiceZoneForm}
                   onSaveCommune={saveCommuneHandler}
                   onSaveNeighborhood={saveNeighborhoodHandler}
+                  onDownloadExport={downloadServiceZonesExport}
+                  serviceZonesCsvInputRef={serviceZonesCsvInputRef}
+                  onImportCsv={handleServiceZonesCsvUpload}
                   onOpenCommuneProfile={openCommuneProfile}
                   localizeCommuneName={getLocalizedCommuneName}
                 />
@@ -3696,15 +3700,20 @@ function CyclistsSection({
 function ServiceZonesSection({
   zones,
   isLoading,
+  isImporting,
   form,
   onFormChange,
   onSaveCommune,
   onSaveNeighborhood,
+  onDownloadExport,
+  serviceZonesCsvInputRef,
+  onImportCsv,
   onOpenCommuneProfile,
   localizeCommuneName,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
+  isImporting: boolean;
   form: {
     communeNameEn: string;
     communeNameFr: string;
@@ -3729,6 +3738,9 @@ function ServiceZonesSection({
   >;
   onSaveCommune: () => void;
   onSaveNeighborhood: () => void;
+  onDownloadExport: () => void | Promise<void>;
+  serviceZonesCsvInputRef: RefObject<HTMLInputElement | null>;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
 }) {
@@ -3744,6 +3756,29 @@ function ServiceZonesSection({
       <div>
         <h2 className="text-base font-semibold text-foreground">Service Zones</h2>
         <p className="text-sm text-muted-foreground">Define communes and neighborhoods for strict routing.</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" className="rounded-md" onClick={onDownloadExport}>
+          <Download className="size-4" />
+          Download / Export Service Zones (XLSX)
+        </Button>
+        <input
+          ref={serviceZonesCsvInputRef}
+          type="file"
+          accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          className="hidden"
+          onChange={onImportCsv}
+        />
+        <Button
+          variant="outline"
+          className="rounded-md"
+          onClick={() => serviceZonesCsvInputRef.current?.click()}
+          disabled={isImporting}
+        >
+          <FileUp className="size-4" />
+          {isImporting ? "Importing..." : "Import Bulk Service Zones"}
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
