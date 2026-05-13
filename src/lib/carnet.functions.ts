@@ -2,8 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  formatMoroccoPhoneForPayload,
+  normalizeMoroccoPhoneInput,
+} from "@/lib/morocco-phone";
 
-const moroccoPhoneSchema = z.string().trim().regex(/^\+212[0-9]{9}$/);
+const moroccoPhoneSchema = z
+  .string()
+  .trim()
+  .transform((value) => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(value)))
+  .refine((value) => /^\+212[0-9]{9}$/.test(value), {
+    message: "Invalid phone number",
+  });
 const customerCinSchema = z.string().trim().regex(/^[A-Za-z0-9-]{4,30}$/);
 
 const upsertCarnetCustomerInputSchema = z.object({
