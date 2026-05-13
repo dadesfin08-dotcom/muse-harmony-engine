@@ -1400,6 +1400,31 @@ function AdminPage() {
         for (const warning of result.warnings.slice(0, 5)) {
           toast.error(warning);
         }
+
+        const missingCategoryRows = result.missingCategoryRows ?? [];
+        const missingBrandRows = result.missingBrandRows ?? [];
+
+        if (missingCategoryRows.length > 0) {
+          const categoryDetails = missingCategoryRows
+            .slice(0, 8)
+            .map((item) => `L${item.rowNumber}: ${item.category}`)
+            .join(" | ");
+          toast.error(
+            `Missing Category (${missingCategoryRows.length}): ${categoryDetails}${missingCategoryRows.length > 8 ? " | ..." : ""}`,
+          );
+        }
+
+        if (missingBrandRows.length > 0) {
+          const brandDetails = missingBrandRows
+            .slice(0, 8)
+            .map((item) => `L${item.rowNumber}: ${item.brand}`)
+            .join(" | ");
+          toast.error(
+            `Missing Brand (${missingBrandRows.length}): ${brandDetails}${missingBrandRows.length > 8 ? " | ..." : ""}`,
+          );
+        }
+
+        toast.warning(`Total skipped rows: ${result.skippedCount}`);
         if (result.warnings.length > 5) {
           toast(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
         }
