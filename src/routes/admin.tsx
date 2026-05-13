@@ -2218,6 +2218,7 @@ function AdminPage() {
                   onSaveCommune={saveCommuneHandler}
                   onSaveNeighborhood={saveNeighborhoodHandler}
                   onOpenCommuneProfile={openCommuneProfile}
+                  localizeCommuneName={getLocalizedCommuneName}
                 />
               ) : null}
               {tab === "catalog" ? (
@@ -2416,7 +2417,7 @@ function AdminPage() {
                 <option value="">Select commune</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
-                    {commune.name}
+                    {getLocalizedCommuneName(commune)}
                   </option>
                 ))}
               </select>
@@ -2547,7 +2548,7 @@ function AdminPage() {
                 <option value="">Select commune</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
-                    {commune.name}
+                    {getLocalizedCommuneName(commune)}
                   </option>
                 ))}
               </select>
@@ -2720,7 +2721,7 @@ function AdminPage() {
                       <option value="">Select commune</option>
                       {communeOptions.map((commune) => (
                         <option key={commune.id} value={commune.id}>
-                          {commune.name}
+                          {getLocalizedCommuneName(commune)}
                         </option>
                       ))}
                     </select>
