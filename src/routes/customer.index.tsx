@@ -514,6 +514,14 @@ function Index() {
 
     return selectedCommune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId) ?? null;
   }, [selectedCommune, selectedCommuneId, selectedNeighborhoodId]);
+
+  useEffect(() => {
+    if (!selectedNeighborhoodId) return;
+    const belongsToSelectedCommune = neighborhoodOptions.some((zone) => zone.id === selectedNeighborhoodId);
+    if (!belongsToSelectedCommune) {
+      setSelectedNeighborhoodId("");
+    }
+  }, [selectedNeighborhoodId, neighborhoodOptions]);
   const globalDeliveryFeeMad = Number(globalSettingsQuery.data?.global_delivery_fee ?? 10);
   const minimumOrderMad = Number(globalSettingsQuery.data?.minimum_order_amount ?? 50);
   const freeDeliveryThresholdMad = Number(globalSettingsQuery.data?.free_delivery_threshold ?? 500);
