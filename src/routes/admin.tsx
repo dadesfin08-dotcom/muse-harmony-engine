@@ -1958,6 +1958,10 @@ function AdminPage() {
     await navigate({ to: "/admin-login" });
   };
 
+  const openCommuneProfile = (communeId: string) => {
+    navigate({ to: "/admin/service-zones/$communeId", params: { communeId } });
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-muted/20">
@@ -2023,14 +2027,11 @@ function AdminPage() {
                 <ServiceZonesSection
                   zones={serviceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
-                  isRenamingCommuneId={isRenamingCommuneId}
-                  isRenamingNeighborhoodId={isRenamingNeighborhoodId}
                   form={serviceZoneForm}
                   onFormChange={setServiceZoneForm}
                   onSaveCommune={saveCommuneHandler}
                   onSaveNeighborhood={saveNeighborhoodHandler}
-                  onEditCommune={renameCommune}
-                  onEditNeighborhood={renameNeighborhood}
+                  onOpenCommuneProfile={openCommuneProfile}
                 />
               ) : null}
               {tab === "catalog" ? (
