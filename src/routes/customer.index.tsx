@@ -506,53 +506,18 @@ function Index() {
     }
   }, [customerOrdersQuery.data]);
 
-  const serviceZones = serviceZonesQuery.data ?? [];
-  const selectedCommune = useMemo(
-    () => serviceZones.find((zone) => zone.id === selectedCommuneId) ?? null,
-    [serviceZones, selectedCommuneId],
-  );
-  const neighborhoodOptions = selectedCommune?.neighborhoods ?? [];
-  const debouncedCommuneSearch = useDebouncedValue(communeSearchInput, 300);
-  const debouncedNeighborhoodSearch = useDebouncedValue(neighborhoodSearchInput, 300);
-  const normalizedCommuneSearch = normalizeSearchText(debouncedCommuneSearch);
-  const normalizedNeighborhoodSearch = normalizeSearchText(debouncedNeighborhoodSearch);
-  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
-  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
-  const filteredCommuneOptions = useMemo(() => {
-    if (!hasEnoughCommuneChars) return [];
-
-    return serviceZones.filter((commune) => {
-      const en = normalizeSearchText(commune.nameEn ?? commune.name ?? "");
-      const fr = normalizeSearchText(commune.nameFr ?? "");
-      const ar = normalizeSearchText(commune.nameAr ?? "");
-      return en.includes(normalizedCommuneSearch) || fr.includes(normalizedCommuneSearch) || ar.includes(normalizedCommuneSearch);
-    });
-  }, [serviceZones, hasEnoughCommuneChars, normalizedCommuneSearch]);
-  const filteredNeighborhoodOptions = useMemo(() => {
-    if (!selectedCommuneId || !hasEnoughNeighborhoodChars) return [];
-
-    return neighborhoodOptions.filter((neighborhood) => {
-      const en = normalizeSearchText(neighborhood.nameEn ?? neighborhood.name ?? "");
-      const fr = normalizeSearchText(neighborhood.nameFr ?? "");
-      const ar = normalizeSearchText(neighborhood.nameAr ?? "");
-      return en.includes(normalizedNeighborhoodSearch) || fr.includes(normalizedNeighborhoodSearch) || ar.includes(normalizedNeighborhoodSearch);
-    });
-  }, [selectedCommuneId, neighborhoodOptions, hasEnoughNeighborhoodChars, normalizedNeighborhoodSearch]);
-  const selectedNeighborhood = useMemo(() => {
-    if (!selectedCommuneId || !selectedNeighborhoodId) {
-      return null;
-    }
-
-    return selectedCommune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId) ?? null;
-  }, [selectedCommune, selectedCommuneId, selectedNeighborhoodId]);
+  const selectedCommune = selectedCommuneOption;
+  const selectedNeighborhood = selectedNeighborhoodOption;
+  const filteredCommuneOptions = communeSearchQuery.data ?? [];
+  const filteredNeighborhoodOptions = neighborhoodSearchQuery.data ?? [];
 
   useEffect(() => {
-    if (!selectedNeighborhoodId) return;
-    const belongsToSelectedCommune = neighborhoodOptions.some((zone) => zone.id === selectedNeighborhoodId);
-    if (!belongsToSelectedCommune) {
+    if (!selectedNeighborhoodOption) return;
+    if (selectedNeighborhoodOption.communeId !== selectedCommuneId) {
       setSelectedNeighborhoodId("");
+      setSelectedNeighborhoodOption(null);
     }
-  }, [selectedNeighborhoodId, neighborhoodOptions]);
+  }, [selectedCommuneId, selectedNeighborhoodOption]);
   const globalDeliveryFeeMad = Number(globalSettingsQuery.data?.global_delivery_fee ?? 10);
   const minimumOrderMad = Number(globalSettingsQuery.data?.minimum_order_amount ?? 50);
   const freeDeliveryThresholdMad = Number(globalSettingsQuery.data?.free_delivery_threshold ?? 500);
@@ -562,30 +527,12 @@ function Index() {
       return t("header.locationFallback");
     }
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    const neighborhood = commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId);
-
-    if (!commune || !neighborhood) {
+    if (!selectedCommune || !selectedNeighborhood) {
       return t("header.locationFallback");
     }
 
-    return `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`;
-  }, [selectedCommuneId, selectedNeighborhoodId, serviceZones, t]);
-
-  const resolveLocationByNeighborhoodId = (neighborhoodId: string) => {
-    for (const commune of serviceZones) {
-      const neighborhood = commune.neighborhoods.find((zone) => zone.id === neighborhoodId);
-      if (neighborhood) {
-        return {
-          communeId: commune.id,
-          neighborhoodId: neighborhood.id,
-          locationLabel: `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`,
-        } satisfies PersistedLocation;
-      }
-    }
-
-    return null;
-  };
+    return `${getLocalizedCommuneName(selectedCommune)} / ${getLocalizedNeighborhoodName(selectedNeighborhood)}`;
+  }, [selectedCommune, selectedNeighborhood, selectedCommuneId, selectedNeighborhoodId, t]);
 
   const persistLocation = (location: PersistedLocation) => {
     localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
@@ -616,16 +563,7 @@ function Index() {
         return null;
       }
 
-      const resolved = resolveLocationByNeighborhoodId(parsed.neighborhoodId);
-      if (!resolved) {
-        return null;
-      }
-
-      if (!parsed.communeId || parsed.communeId !== resolved.communeId) {
-        persistLocation(resolved);
-      }
-
-      return resolved;
+      return { neighborhoodId: parsed.neighborhoodId, communeId: parsed.communeId ?? "" };
     } catch {
       localStorage.removeItem(LOCATION_STORAGE_KEY);
       return null;
