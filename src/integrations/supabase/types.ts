@@ -378,6 +378,7 @@ export type Database = {
       }
       master_products: {
         Row: {
+          barcode: string | null
           brand_id: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id: string | null
@@ -394,6 +395,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          barcode?: string | null
           brand_id?: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
@@ -410,6 +412,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          barcode?: string | null
           brand_id?: string | null
           category?: Database["public"]["Enums"]["product_category"]
           category_id?: string | null

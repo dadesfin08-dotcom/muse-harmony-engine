@@ -106,6 +106,7 @@ import {
   archiveMasterProduct,
   createBrand,
   createMasterProduct,
+  importMasterProductsBulk,
   deleteBrand,
   importBrandsBulk,
   listBrands,
@@ -223,6 +224,17 @@ type BrandAdminRow = {
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
 const BRANDS_CSV_HEADERS = ["Logo", "English", "Français", "العربية"] as const;
+const MASTER_PRODUCTS_CSV_HEADERS = [
+  "Image_URL",
+  "Name_EN",
+  "Name_FR",
+  "Name_AR",
+  "Category",
+  "Brand",
+  "Measurement_Value",
+  "Measurement_Unit",
+  "Barcode",
+] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -325,6 +337,7 @@ function AdminPage() {
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
+  const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
@@ -538,8 +551,10 @@ function AdminPage() {
   const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [isImportingBrands, setIsImportingBrands] = useState(false);
+  const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
+  const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
@@ -1315,6 +1330,99 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
+  const downloadMasterProductsCsvTemplate = () => {
+    const csvContent = `\uFEFF${MASTER_PRODUCTS_CSV_HEADERS.join(";")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "master-products-template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importMasterProductsFromCsv = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please upload a CSV file.");
+      return;
+    }
+
+    try {
+      setIsImportingMasterProducts(true);
+
+      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+        Papa.parse<Record<string, string>>(file, {
+          header: true,
+          delimiter: ";",
+          transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
+          skipEmptyLines: true,
+          complete: resolve,
+          error: reject,
+        });
+      });
+
+      const uploadedHeaders = parsed.meta.fields ?? [];
+      const missingHeaders = MASTER_PRODUCTS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
+
+      if (missingHeaders.length > 0) {
+        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const preparedRows = parsed.data
+        .map((row) => ({
+          imageUrl: row.Image_URL?.trim() || null,
+          nameEn: row.Name_EN?.trim() || "",
+          nameFr: row.Name_FR?.trim() || null,
+          nameAr: row.Name_AR?.trim() || null,
+          category: row.Category?.trim() || "",
+          brand: row.Brand?.trim() || null,
+          measurementValue: row.Measurement_Value?.trim() || null,
+          measurementUnit: row.Measurement_Unit?.trim() || "",
+          barcode: row.Barcode?.trim() || null,
+        }))
+        .filter((row) => row.nameEn.length > 0 && row.category.length > 0);
+
+      if (preparedRows.length === 0) {
+        toast.error("No valid rows found. Fill at least Name_EN and Category in one row.");
+        return;
+      }
+
+      const result = await importMasterProductsBulkInDatabase({ data: { rows: preparedRows } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
+
+      const summary = `Imported ${result.totalProcessed}: ${result.insertedCount} new, ${result.updatedCount} updated${result.skippedCount > 0 ? `, ${result.skippedCount} skipped` : ""}.`;
+
+      if (result.skippedCount > 0) {
+        toast.warning(summary);
+        for (const warning of result.warnings.slice(0, 5)) {
+          toast.error(warning);
+        }
+        if (result.warnings.length > 5) {
+          toast(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
+        }
+      } else {
+        toast.success(summary);
+      }
+    } catch (error) {
+      console.error("Failed to import master products CSV:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import master products CSV.");
+    } finally {
+      setIsImportingMasterProducts(false);
+      if (masterProductsCsvInputRef.current) {
+        masterProductsCsvInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleMasterProductsCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    await importMasterProductsFromCsv(file);
+  };
+
   const archiveProduct = async (product: MasterProductEntity) => {
     setPendingArchiveProduct(product);
   };
@@ -1923,7 +2031,11 @@ function AdminPage() {
                   products={masterProducts}
                   categories={categories}
                   isLoading={dbHealthQuery.isLoading || masterProductsQuery.isLoading}
+                  isImporting={isImportingMasterProducts}
+                  masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
+                  onDownloadTemplate={downloadMasterProductsCsvTemplate}
+                  onImportCsv={handleMasterProductsCsvUpload}
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
                 />
@@ -3338,14 +3450,22 @@ function CatalogSection({
   products,
   categories,
   isLoading,
+  isImporting,
+  masterProductsCsvInputRef,
   onAddProduct,
+  onDownloadTemplate,
+  onImportCsv,
   onEditProduct,
   onArchiveProduct,
 }: {
   products: MasterProductEntity[];
   categories: CategoryAdminRow[];
   isLoading: boolean;
+  isImporting: boolean;
+  masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
+  onDownloadTemplate: () => void;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
 }) {
@@ -3358,9 +3478,31 @@ function CatalogSection({
             Add standard grocery items once for shared vendor distribution.
           </p>
         </div>
-        <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
-          + Add Master Product
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
+            <Download className="size-4" />
+            Download CSV Template
+          </Button>
+          <input
+            ref={masterProductsCsvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onImportCsv}
+          />
+          <Button
+            variant="outline"
+            className="rounded-md"
+            onClick={() => masterProductsCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <FileUp className="size-4" />
+            {isImporting ? "Importing..." : "Import Bulk Products"}
+          </Button>
+          <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
+            + Add Master Product
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -102,6 +102,25 @@ const bulkImportBrandsInputSchema = z.object({
     .max(5000),
 });
 
+const bulkImportMasterProductsInputSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        imageUrl: z.string().trim().max(2000).nullable(),
+        nameEn: z.string().trim().min(1).max(140),
+        nameFr: z.string().trim().max(140).nullable(),
+        nameAr: z.string().trim().max(140).nullable(),
+        category: z.string().trim().min(1).max(140),
+        brand: z.string().trim().max(140).nullable(),
+        measurementValue: z.string().trim().max(40).nullable(),
+        measurementUnit: z.string().trim().min(1).max(30),
+        barcode: z.string().trim().max(120).nullable(),
+      }),
+    )
+    .min(1)
+    .max(5000),
+});
+
 const uploadBrandLogoInputSchema = z.object({
   fileName: z.string().trim().min(1).max(180),
   contentType: z.string().trim().min(1).max(120),
@@ -390,6 +409,214 @@ export const importBrandsBulk = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("importBrandsBulk failed:", error);
       throw createDbError(error, "Failed to bulk import brands.");
+    }
+  });
+
+export const importMasterProductsBulk = createServerFn({ method: "POST" })
+  .inputValidator((input) => bulkImportMasterProductsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const normalizedRows = data.rows
+        .map((row, index) => ({
+          rowNumber: index + 2,
+          imageUrl: row.imageUrl?.trim() ? row.imageUrl.trim() : null,
+          nameEn: row.nameEn.trim(),
+          nameFr: row.nameFr?.trim() ? row.nameFr.trim() : null,
+          nameAr: row.nameAr?.trim() ? row.nameAr.trim() : null,
+          categoryLabel: row.category.trim(),
+          brandLabel: row.brand?.trim() ? row.brand.trim() : null,
+          measurementValueRaw: row.measurementValue?.trim() ? row.measurementValue.trim() : null,
+          measurementUnitRaw: row.measurementUnit.trim(),
+          barcode: row.barcode?.trim() ? row.barcode.trim() : null,
+        }))
+        .filter((row) => row.nameEn.length > 0);
+
+      if (normalizedRows.length === 0) {
+        throw new Error("No valid master product rows found in the uploaded CSV.");
+      }
+
+      const dedupedRowsByKey = new Map<string, (typeof normalizedRows)[number]>();
+      for (const row of normalizedRows) {
+        const key = row.barcode ? `barcode:${row.barcode.toLowerCase()}` : `name:${row.nameEn.toLowerCase()}`;
+        dedupedRowsByKey.set(key, row);
+      }
+
+      const uniqueRows = Array.from(dedupedRowsByKey.values());
+
+      const [{ data: categories, error: categoriesError }, { data: brands, error: brandsError }, { data: existingProducts, error: existingProductsError }] =
+        await Promise.all([
+          (supabaseAdmin as any).from("categories").select("id, name_en, name_fr, name_ar").eq("is_active", true),
+          (supabaseAdmin as any).from("brands").select("id, name_en, name_fr, name_ar"),
+          (supabaseAdmin as any).from("master_products").select("id, product_name, barcode"),
+        ]);
+
+      if (categoriesError) {
+        throw new Error(categoriesError.message);
+      }
+
+      if (brandsError) {
+        throw new Error(brandsError.message);
+      }
+
+      if (existingProductsError) {
+        throw new Error(existingProductsError.message);
+      }
+
+      const normalizeLookupKey = (value: string | null | undefined) => value?.trim().toLowerCase() ?? "";
+
+      const categoriesByLabel = new Map<string, { id: string; name_en: string }>();
+      for (const category of (categories ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>) {
+        for (const label of [category.name_en, category.name_fr, category.name_ar]) {
+          const key = normalizeLookupKey(label);
+          if (key && !categoriesByLabel.has(key)) {
+            categoriesByLabel.set(key, { id: category.id, name_en: category.name_en });
+          }
+        }
+      }
+
+      const brandsByLabel = new Map<string, { id: string }>();
+      for (const brand of (brands ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>) {
+        for (const label of [brand.name_en, brand.name_fr, brand.name_ar]) {
+          const key = normalizeLookupKey(label);
+          if (key && !brandsByLabel.has(key)) {
+            brandsByLabel.set(key, { id: brand.id });
+          }
+        }
+      }
+
+      const productsByBarcode = new Map<string, { id: string }>();
+      const productsByName = new Map<string, { id: string }>();
+      for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null }>) {
+        const normalizedName = normalizeLookupKey(product.product_name);
+        if (normalizedName && !productsByName.has(normalizedName)) {
+          productsByName.set(normalizedName, { id: product.id });
+        }
+
+        const normalizedBarcode = normalizeLookupKey(product.barcode);
+        if (normalizedBarcode && !productsByBarcode.has(normalizedBarcode)) {
+          productsByBarcode.set(normalizedBarcode, { id: product.id });
+        }
+      }
+
+      const warnings: string[] = [];
+      let insertedCount = 0;
+      let updatedCount = 0;
+
+      for (const row of uniqueRows) {
+        const matchedCategory = categoriesByLabel.get(normalizeLookupKey(row.categoryLabel));
+        if (!matchedCategory) {
+          warnings.push(`Row ${row.rowNumber}: category '${row.categoryLabel}' not found.`);
+          continue;
+        }
+
+        const parsedCategory = productCategorySchema.safeParse(matchedCategory.name_en);
+        if (!parsedCategory.success) {
+          warnings.push(`Row ${row.rowNumber}: category '${matchedCategory.name_en}' is not supported.`);
+          continue;
+        }
+
+        let matchedBrandId: string | null = null;
+        if (row.brandLabel) {
+          const matchedBrand = brandsByLabel.get(normalizeLookupKey(row.brandLabel));
+          if (!matchedBrand) {
+            warnings.push(`Row ${row.rowNumber}: brand '${row.brandLabel}' not found.`);
+            continue;
+          }
+          matchedBrandId = matchedBrand.id;
+        }
+
+        const parsedMeasurementUnit = measurementUnitSchema.safeParse(row.measurementUnitRaw);
+        if (!parsedMeasurementUnit.success) {
+          warnings.push(`Row ${row.rowNumber}: measurement unit '${row.measurementUnitRaw}' is invalid.`);
+          continue;
+        }
+
+        let parsedMeasurementValue: number | null = null;
+        if (row.measurementValueRaw) {
+          const numericValue = Number(row.measurementValueRaw.replace(",", "."));
+          if (!Number.isFinite(numericValue) || numericValue <= 0 || numericValue > 10_000) {
+            warnings.push(`Row ${row.rowNumber}: measurement value '${row.measurementValueRaw}' is invalid.`);
+            continue;
+          }
+          parsedMeasurementValue = numericValue;
+        }
+
+        if (row.imageUrl) {
+          const imageUrlValidation = z.string().url().safeParse(row.imageUrl);
+          if (!imageUrlValidation.success) {
+            warnings.push(`Row ${row.rowNumber}: image URL is invalid.`);
+            continue;
+          }
+        }
+
+        const normalizedBarcode = normalizeLookupKey(row.barcode);
+        const normalizedName = normalizeLookupKey(row.nameEn);
+        const existingProduct =
+          (normalizedBarcode ? productsByBarcode.get(normalizedBarcode) : null) ?? productsByName.get(normalizedName) ?? null;
+
+        const payload = {
+          product_name: row.nameEn,
+          name_fr: row.nameFr,
+          name_ar: row.nameAr,
+          category_id: matchedCategory.id,
+          category: parsedCategory.data,
+          brand_id: matchedBrandId,
+          measurement_value: parsedMeasurementValue,
+          measurement_unit: parsedMeasurementUnit.data,
+          image_url: row.imageUrl,
+          barcode: row.barcode,
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existingProduct?.id) {
+          const { error: updateError } = await (supabaseAdmin as any)
+            .from("master_products")
+            .update(payload)
+            .eq("id", existingProduct.id);
+
+          if (updateError) {
+            warnings.push(`Row ${row.rowNumber}: failed to update (${updateError.message}).`);
+            continue;
+          }
+
+          updatedCount += 1;
+          productsByName.set(normalizedName, { id: existingProduct.id });
+          if (normalizedBarcode) {
+            productsByBarcode.set(normalizedBarcode, { id: existingProduct.id });
+          }
+          continue;
+        }
+
+        const { data: inserted, error: insertError } = await (supabaseAdmin as any)
+          .from("master_products")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (insertError || !inserted?.id) {
+          warnings.push(`Row ${row.rowNumber}: failed to insert (${insertError?.message ?? "unknown error"}).`);
+          continue;
+        }
+
+        insertedCount += 1;
+        productsByName.set(normalizedName, { id: inserted.id });
+        if (normalizedBarcode) {
+          productsByBarcode.set(normalizedBarcode, { id: inserted.id });
+        }
+      }
+
+      return {
+        ok: true,
+        totalProcessed: uniqueRows.length,
+        insertedCount,
+        updatedCount,
+        skippedCount: warnings.length,
+        warnings,
+      };
+    } catch (error) {
+      console.error("importMasterProductsBulk failed:", error);
+      throw createDbError(error, "Failed to bulk import master products.");
     }
   });
 
