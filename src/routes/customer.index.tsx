@@ -584,10 +584,15 @@ function Index() {
 
     return rows.map((row) => {
       const localizedName = getLocalizedText({ en: row.name, fr: row.nameFr, ar: row.nameAr });
-      const discountPercent = Math.max(
-        1,
-        Math.round(((Number(row.vendorPrice) - Number(row.flashSalePrice)) / Number(row.vendorPrice || 1)) * 100),
-      );
+      const discountPercent =
+        Number(row.vendorPrice) > 0
+          ? Math.max(
+              0,
+              Math.round(
+                ((Number(row.vendorPrice) - Number(row.flashSalePrice)) / Number(row.vendorPrice)) * 100,
+              ),
+            )
+          : 0;
 
       return {
         id: row.id,
@@ -1560,12 +1565,48 @@ function Index() {
             opts={{ loop: flashDeals.length > 1, align: "start", skipSnaps: false, dragFree: false }}
             plugins={flashDeals.length > 1 ? [flashDealsAutoplayRef.current] : []}
             className="mb-5"
-            onPointerDownCapture={() => flashDealsAutoplayRef.current.stop()}
-            onPointerUpCapture={() => flashDealsAutoplayRef.current.play()}
-            onTouchStartCapture={() => flashDealsAutoplayRef.current.stop()}
-            onTouchEndCapture={() => flashDealsAutoplayRef.current.play()}
-            onMouseEnter={() => flashDealsAutoplayRef.current.stop()}
-            onMouseLeave={() => flashDealsAutoplayRef.current.play()}
+            onPointerDownCapture={() => {
+              try {
+                flashDealsAutoplayRef.current.stop();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
+            onPointerUpCapture={() => {
+              try {
+                flashDealsAutoplayRef.current.play();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
+            onTouchStartCapture={() => {
+              try {
+                flashDealsAutoplayRef.current.stop();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
+            onTouchEndCapture={() => {
+              try {
+                flashDealsAutoplayRef.current.play();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
+            onMouseEnter={() => {
+              try {
+                flashDealsAutoplayRef.current.stop();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
+            onMouseLeave={() => {
+              try {
+                flashDealsAutoplayRef.current.play();
+              } catch {
+                // ignore autoplay lifecycle race conditions
+              }
+            }}
           >
             <CarouselContent className="-ml-0 gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {flashDeals.map((product) => (
