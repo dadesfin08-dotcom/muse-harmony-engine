@@ -732,11 +732,16 @@ export const updateVendorFlashSale = createServerFn({ method: "POST" })
             flash_sale_end_time: null,
           };
 
-      const { error } = await (supabaseAdmin as any)
-        .from("vendor_products")
-        .update(updatePayload)
-        .eq("vendor_id", (vendor as VendorRow).id)
-        .eq("master_product_id", data.masterProductId);
+      const { error } = await (supabaseAdmin as any).from("vendor_products").upsert(
+        {
+          vendor_id: (vendor as VendorRow).id,
+          master_product_id: data.masterProductId,
+          ...updatePayload,
+        },
+        {
+          onConflict: "vendor_id,master_product_id",
+        },
+      );
 
       if (error) {
         throw new Error(error.message);
