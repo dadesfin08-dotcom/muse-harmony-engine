@@ -222,3 +222,76 @@ export const updateNeighborhood = createServerFn({ method: "POST" })
       throw new Error("Failed to update neighborhood.");
     }
   });
+
+export const getCommuneById = createServerFn({ method: "GET" })
+  .inputValidator((input) => getCommuneByIdInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const [{ data: commune, error: communeError }, { data: neighborhoods, error: neighborhoodsError }] =
+        await Promise.all([
+          (supabaseAdmin as any).from("communes").select("id, name").eq("id", data.communeId).single(),
+          (supabaseAdmin as any)
+            .from("neighborhoods")
+            .select("id, name, commune_id, delivery_fee, vendor_id")
+            .eq("commune_id", data.communeId)
+            .order("name", { ascending: true }),
+        ]);
+
+      if (communeError || !commune?.id) {
+        throw new Error(communeError?.message ?? "Commune not found.");
+      }
+
+      if (neighborhoodsError) {
+        throw new Error(neighborhoodsError.message);
+      }
+
+      return {
+        id: (commune as CommuneRow).id,
+        name: (commune as CommuneRow).name,
+        neighborhoods: ((neighborhoods ?? []) as NeighborhoodRow[]).map((neighborhood) => ({
+          id: neighborhood.id,
+          name: neighborhood.name,
+          communeId: neighborhood.commune_id,
+          deliveryFee: Number(neighborhood.delivery_fee ?? 0),
+          vendorId: neighborhood.vendor_id,
+        })),
+      } satisfies CommuneProfile;
+    } catch (error) {
+      console.error("getCommuneById failed:", error);
+      throw new Error("Failed to load commune profile.");
+    }
+  });
+
+export const deleteNeighborhood = createServerFn({ method: "POST" })
+  .inputValidator((input) => deleteNeighborhoodInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { error } = await (supabaseAdmin as any).from("neighborhoods").delete().eq("id", data.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("deleteNeighborhood failed:", error);
+      throw new Error("Failed to delete neighborhood.");
+    }
+  });
+
+export const deleteCommune = createServerFn({ method: "POST" })
+  .inputValidator((input) => deleteCommuneInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { error } = await (supabaseAdmin as any).from("communes").delete().eq("id", data.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("deleteCommune failed:", error);
+      throw new Error("Failed to delete commune.");
+    }
+  });
