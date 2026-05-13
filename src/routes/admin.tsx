@@ -235,6 +235,41 @@ const MASTER_PRODUCTS_CSV_HEADERS = [
   "Measurement_Unit",
   "Barcode",
 ] as const;
+const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
+  [
+    "https://example.com/products/olive-oil.jpg",
+    "Olive Oil",
+    "Huile d'olive",
+    "زيت الزيتون",
+    "Groceries",
+    "Lesieur",
+    "1",
+    "Liter",
+    "6111000010012",
+  ],
+  [
+    "https://example.com/products/bananas.jpg",
+    "Banana",
+    "Banane",
+    "موز",
+    "Vegetables & Fruits",
+    "Dole",
+    "1",
+    "Kg",
+    "6111000010013",
+  ],
+  [
+    "https://example.com/products/eggs.jpg",
+    "Eggs 12 Pack",
+    "Oeufs 12 unités",
+    "بيض 12 حبة",
+    "Dairy & Eggs",
+    "Local Farm",
+    "12",
+    "Piece",
+    "6111000010014",
+  ],
+] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -1343,6 +1378,23 @@ function AdminPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadMasterProductsExampleCsv = () => {
+    const csvRows = [
+      MASTER_PRODUCTS_CSV_HEADERS.join(";"),
+      ...MASTER_PRODUCTS_CSV_EXAMPLE_ROWS.map((row) => row.join(";")),
+    ];
+    const csvContent = `\uFEFF${csvRows.join("\n")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "master-products-example.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const importMasterProductsFromCsv = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
       toast.error("Please upload a CSV file.");
@@ -2060,6 +2112,7 @@ function AdminPage() {
                   masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
                   onDownloadTemplate={downloadMasterProductsCsvTemplate}
+                  onDownloadExample={downloadMasterProductsExampleCsv}
                   onImportCsv={handleMasterProductsCsvUpload}
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
@@ -3479,6 +3532,7 @@ function CatalogSection({
   masterProductsCsvInputRef,
   onAddProduct,
   onDownloadTemplate,
+  onDownloadExample,
   onImportCsv,
   onEditProduct,
   onArchiveProduct,
@@ -3490,6 +3544,7 @@ function CatalogSection({
   masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
   onDownloadTemplate: () => void;
+  onDownloadExample: () => void;
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
@@ -3507,6 +3562,10 @@ function CatalogSection({
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
             Download CSV Template
+          </Button>
+          <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
+            <Download className="size-4" />
+            Download Example CSV
           </Button>
           <input
             ref={masterProductsCsvInputRef}
