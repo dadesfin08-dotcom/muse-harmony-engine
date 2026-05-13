@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { normalizeBarcodeInput } from "@/lib/barcode-normalization";
+import { buildBarcodeUpsertPlan } from "@/lib/barcode-upsert-planner";
 
 const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]);
 const productCategorySchema = z.enum([
@@ -524,29 +526,6 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
       const warnings: string[] = [];
       const missingCategoryRows: Array<{ rowNumber: number; category: string }> = [];
       const missingBrandRows: Array<{ rowNumber: number; brand: string }> = [];
-      const dedupedRowsByBarcode = new Map<string, (typeof normalizedRows)[number]>();
-      for (const row of normalizedRows) {
-        const normalizedBarcode = row.barcode?.trim().toLowerCase() ?? "";
-        if (!normalizedBarcode) {
-          warnings.push(`Row ${row.rowNumber}: barcode is required for duplicate-safe import.`);
-          continue;
-        }
-
-        dedupedRowsByBarcode.set(normalizedBarcode, row);
-      }
-
-      const uniqueRows = Array.from(dedupedRowsByBarcode.values());
-
-      if (uniqueRows.length === 0) {
-        return {
-          ok: true,
-          totalProcessed: 0,
-          insertedCount: 0,
-          updatedCount: 0,
-          skippedCount: warnings.length,
-          warnings,
-        };
-      }
 
       const [{ data: categories, error: categoriesError }, { data: brands, error: brandsError }, { data: existingProducts, error: existingProductsError }] =
         await Promise.all([
@@ -568,6 +547,23 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
       }
 
       const normalizeLookupKey = (value: string | null | undefined) => value?.trim().toLowerCase() ?? "";
+      const barcodeUpsertPlan = buildBarcodeUpsertPlan({
+        rows: normalizedRows,
+        existingRecords: (existingProducts ?? []) as Array<{ id: string; barcode: string | null }>,
+      });
+      warnings.push(...barcodeUpsertPlan.warnings);
+      const uniqueRows = barcodeUpsertPlan.uniqueRows;
+
+      if (uniqueRows.length === 0) {
+        return {
+          ok: true,
+          totalProcessed: 0,
+          insertedCount: 0,
+          updatedCount: 0,
+          skippedCount: warnings.length,
+          warnings,
+        };
+      }
 
       const categoriesByLabel = new Map<string, { id: string; name_en: string }>();
       for (const category of (categories ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>) {
@@ -591,7 +587,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
 
       const productsByBarcode = new Map<string, { id: string; image_url: string | null; is_active: boolean }>();
       for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null; image_url: string | null; is_active: boolean }>) {
-        const normalizedBarcode = normalizeLookupKey(product.barcode);
+        const normalizedBarcode = normalizeBarcodeInput(product.barcode);
         if (normalizedBarcode && !productsByBarcode.has(normalizedBarcode)) {
           productsByBarcode.set(normalizedBarcode, {
             id: product.id,
@@ -658,7 +654,11 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           }
         }
 
-        const normalizedBarcode = normalizeLookupKey(row.barcode);
+        const normalizedBarcode = normalizeBarcodeInput(row.barcode);
+        if (!normalizedBarcode) {
+          warnings.push(`Row ${row.rowNumber}: barcode is required for duplicate-safe import.`);
+          continue;
+        }
         const existingProduct = productsByBarcode.get(normalizedBarcode) ?? null;
 
         const payload = {
