@@ -99,7 +99,9 @@ import {
 import {
   createCommune,
   createNeighborhood,
+  importServiceZonesBulk,
   listServiceZones,
+  listServiceZonesForExport,
   type ServiceZoneTree,
 } from "@/lib/locations.functions";
 import {
@@ -271,6 +273,16 @@ const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
     "Piece",
     "6111000010014",
   ],
+] as const;
+const SERVICE_ZONES_BULK_HEADERS = [
+  "Zone_Code",
+  "Commune_EN",
+  "Commune_FR",
+  "Commune_AR",
+  "Douar_EN",
+  "Douar_FR",
+  "Douar_AR",
+  "Delivery_Fee",
 ] as const;
 const initialAdminOrders: Array<{
   id: string;
