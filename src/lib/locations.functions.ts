@@ -865,19 +865,21 @@ export const getCommuneById = createServerFn({ method: "GET" })
   .inputValidator((input) => getCommuneByIdInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const [{ data: commune, error: communeError }, { data: neighborhoods, error: neighborhoodsError }] =
+      const [{ data: communeRows, error: communeError }, { data: neighborhoods, error: neighborhoodsError }] =
         await Promise.all([
           (supabaseAdmin as any)
             .from("communes")
             .select("id, name_en, name_fr, name_ar")
             .eq("id", data.communeId)
-            .single(),
+            .limit(2),
           (supabaseAdmin as any)
             .from("neighborhoods")
             .select("id, zone_code, name_en, name_fr, name_ar, commune_id, delivery_fee, vendor_id")
             .eq("commune_id", data.communeId)
             .order("name_en", { ascending: true }),
         ]);
+
+      const commune = ((communeRows ?? []) as CommuneRow[])[0] ?? null;
 
       if (communeError || !commune?.id) {
         throw new Error(communeError?.message ?? "Commune not found.");
