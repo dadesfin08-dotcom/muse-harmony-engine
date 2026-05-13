@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/admin/service-zones/$communeId")({
 });
 
 function CommuneProfilePage() {
+  const { i18n } = useTranslation();
   const { communeId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -48,22 +50,34 @@ function CommuneProfilePage() {
   });
 
   const commune = communeQuery.data;
-  const sortedNeighborhoods = useMemo(
-    () => [...(commune?.neighborhoods ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
-    [commune?.neighborhoods],
-  );
+  const localizedNeighborhoodName = (neighborhood: { nameEn: string; nameFr: string | null; nameAr: string | null }) => {
+    const lang = i18n.resolvedLanguage || i18n.language || "en";
+    if (lang === "ar") return neighborhood.nameAr?.trim() || neighborhood.nameFr?.trim() || neighborhood.nameEn;
+    if (lang === "fr") return neighborhood.nameFr?.trim() || neighborhood.nameEn;
+    return neighborhood.nameEn;
+  };
+
+  const sortedNeighborhoods = useMemo(() => {
+    return [...(commune?.neighborhoods ?? [])].sort((a, b) =>
+      localizedNeighborhoodName(a).localeCompare(localizedNeighborhoodName(b)),
+    );
+  }, [commune?.neighborhoods, i18n.language, i18n.resolvedLanguage]);
 
   const [isEditingCommuneName, setIsEditingCommuneName] = useState(false);
   const [communeNameDraft, setCommuneNameDraft] = useState("");
   const [isSavingCommuneName, setIsSavingCommuneName] = useState(false);
 
   const [editingNeighborhoodId, setEditingNeighborhoodId] = useState<string | null>(null);
-  const [editingNeighborhoodName, setEditingNeighborhoodName] = useState("");
+  const [editingNeighborhoodNameEn, setEditingNeighborhoodNameEn] = useState("");
+  const [editingNeighborhoodNameFr, setEditingNeighborhoodNameFr] = useState("");
+  const [editingNeighborhoodNameAr, setEditingNeighborhoodNameAr] = useState("");
   const [editingNeighborhoodFee, setEditingNeighborhoodFee] = useState("");
   const [isSavingNeighborhood, setIsSavingNeighborhood] = useState(false);
   const [deletingNeighborhoodId, setDeletingNeighborhoodId] = useState<string | null>(null);
 
-  const [newDouarName, setNewDouarName] = useState("");
+  const [newDouarNameEn, setNewDouarNameEn] = useState("");
+  const [newDouarNameFr, setNewDouarNameFr] = useState("");
+  const [newDouarNameAr, setNewDouarNameAr] = useState("");
   const [newDouarFee, setNewDouarFee] = useState("0");
   const [isAddingDouar, setIsAddingDouar] = useState(false);
 
@@ -108,20 +122,28 @@ function CommuneProfilePage() {
     }
   };
 
-  const startEditNeighborhood = (id: string, currentName: string, currentFee: number) => {
+  const startEditNeighborhood = (
+    id: string,
+    currentNameEn: string,
+    currentNameFr: string | null,
+    currentNameAr: string | null,
+    currentFee: number,
+  ) => {
     setEditingNeighborhoodId(id);
-    setEditingNeighborhoodName(currentName);
+    setEditingNeighborhoodNameEn(currentNameEn);
+    setEditingNeighborhoodNameFr(currentNameFr ?? "");
+    setEditingNeighborhoodNameAr(currentNameAr ?? "");
     setEditingNeighborhoodFee(String(currentFee));
   };
 
   const saveNeighborhood = async () => {
     if (!editingNeighborhoodId) return;
 
-    const nextName = editingNeighborhoodName.trim();
+    const nextNameEn = editingNeighborhoodNameEn.trim();
     const nextFee = Number(editingNeighborhoodFee);
 
-    if (!nextName) {
-      toast.error("Douar name is required.");
+    if (!nextNameEn) {
+      toast.error("Douar name (EN) is required.");
       return;
     }
     if (Number.isNaN(nextFee) || nextFee < 0) {
@@ -134,7 +156,9 @@ function CommuneProfilePage() {
       const updated = await editNeighborhood({
         data: {
           id: editingNeighborhoodId,
-          name: nextName,
+          nameEn: nextNameEn,
+          nameFr: editingNeighborhoodNameFr.trim() || null,
+          nameAr: editingNeighborhoodNameAr.trim() || null,
           deliveryFee: nextFee,
         },
       });
@@ -145,7 +169,14 @@ function CommuneProfilePage() {
           ...current,
           neighborhoods: current.neighborhoods.map((douar) =>
             douar.id === editingNeighborhoodId
-              ? { ...douar, name: updated.name, deliveryFee: Number(updated.deliveryFee ?? 0) }
+              ? {
+                  ...douar,
+                  name: updated.name,
+                  nameEn: updated.nameEn,
+                  nameFr: updated.nameFr,
+                  nameAr: updated.nameAr,
+                  deliveryFee: Number(updated.deliveryFee ?? 0),
+                }
               : douar,
           ),
         };
@@ -154,7 +185,9 @@ function CommuneProfilePage() {
 
       toast.success("Douar updated.");
       setEditingNeighborhoodId(null);
-      setEditingNeighborhoodName("");
+      setEditingNeighborhoodNameEn("");
+      setEditingNeighborhoodNameFr("");
+      setEditingNeighborhoodNameAr("");
       setEditingNeighborhoodFee("");
     } catch (error) {
       console.error("Failed to update douar:", error);
@@ -188,11 +221,11 @@ function CommuneProfilePage() {
   };
 
   const handleQuickAddDouar = async () => {
-    const nextName = newDouarName.trim();
+    const nextNameEn = newDouarNameEn.trim();
     const nextFee = Number(newDouarFee);
 
-    if (!nextName) {
-      toast.error("Douar name is required.");
+    if (!nextNameEn) {
+      toast.error("Douar name (EN) is required.");
       return;
     }
     if (Number.isNaN(nextFee) || nextFee < 0) {
@@ -205,7 +238,9 @@ function CommuneProfilePage() {
       const inserted = await addNeighborhood({
         data: {
           communeId,
-          name: nextName,
+          nameEn: nextNameEn,
+          nameFr: newDouarNameFr.trim() || null,
+          nameAr: newDouarNameAr.trim() || null,
           deliveryFee: nextFee,
         },
       });
@@ -219,7 +254,9 @@ function CommuneProfilePage() {
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      setNewDouarName("");
+      setNewDouarNameEn("");
+      setNewDouarNameFr("");
+      setNewDouarNameAr("");
       setNewDouarFee("0");
       toast.success("Douar added.");
     } catch (error) {
@@ -348,12 +385,25 @@ function CommuneProfilePage() {
                       <td className="px-4 py-2 align-middle">
                         {isEditing ? (
                           <Input
-                            value={editingNeighborhoodName}
-                            onChange={(event) => setEditingNeighborhoodName(event.target.value)}
+                            value={editingNeighborhoodNameEn}
+                            onChange={(event) => setEditingNeighborhoodNameEn(event.target.value)}
                             className="h-9"
+                            placeholder="Name (EN)"
+                          />
+                          <Input
+                            value={editingNeighborhoodNameFr}
+                            onChange={(event) => setEditingNeighborhoodNameFr(event.target.value)}
+                            className="mt-1 h-9"
+                            placeholder="Name (FR)"
+                          />
+                          <Input
+                            value={editingNeighborhoodNameAr}
+                            onChange={(event) => setEditingNeighborhoodNameAr(event.target.value)}
+                            className="mt-1 h-9"
+                            placeholder="Name (AR)"
                           />
                         ) : (
-                          <span className="text-foreground">{douar.name}</span>
+                          <span className="text-foreground">{localizedNeighborhoodName(douar)}</span>
                         )}
                       </td>
                       <td className="px-4 py-2 align-middle">
@@ -398,7 +448,15 @@ function CommuneProfilePage() {
                                 size="sm"
                                 variant="outline"
                                 className="rounded-md"
-                                onClick={() => startEditNeighborhood(douar.id, douar.name, Number(douar.deliveryFee ?? 0))}
+                                onClick={() =>
+                                  startEditNeighborhood(
+                                    douar.id,
+                                    douar.nameEn,
+                                    douar.nameFr,
+                                    douar.nameAr,
+                                    Number(douar.deliveryFee ?? 0),
+                                  )
+                                }
                               >
                                 Edit
                               </Button>
@@ -409,7 +467,7 @@ function CommuneProfilePage() {
                                 disabled={deletingNeighborhoodId === douar.id}
                                 onClick={() => {
                                   const confirmed = window.confirm(
-                                    `Delete douar \"${douar.name}\"? This action cannot be undone.`,
+                                      `Delete douar \"${localizedNeighborhoodName(douar)}\"? This action cannot be undone.`,
                                   );
                                   if (confirmed) {
                                     confirmDeleteNeighborhood(douar.id);
@@ -435,9 +493,19 @@ function CommuneProfilePage() {
           <p className="mb-2 text-sm font-medium text-foreground">Quick Add Douar</p>
           <div className="grid gap-2 md:grid-cols-[1fr_180px_auto]">
             <Input
-              value={newDouarName}
-              onChange={(event) => setNewDouarName(event.target.value)}
-              placeholder="Douar name"
+              value={newDouarNameEn}
+              onChange={(event) => setNewDouarNameEn(event.target.value)}
+              placeholder="Douar name (EN)"
+            />
+            <Input
+              value={newDouarNameFr}
+              onChange={(event) => setNewDouarNameFr(event.target.value)}
+              placeholder="Douar name (FR)"
+            />
+            <Input
+              value={newDouarNameAr}
+              onChange={(event) => setNewDouarNameAr(event.target.value)}
+              placeholder="Douar name (AR)"
             />
             <Input
               type="number"
