@@ -106,6 +106,7 @@ import {
   createBrand,
   createMasterProduct,
   importMasterProductsBulk,
+  listMasterProductsForExport,
   deleteBrand,
   importBrandsBulk,
   listBrands,
@@ -357,6 +358,7 @@ function AdminPage() {
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
+  const fetchMasterProductsForExport = useServerFn(listMasterProductsForExport);
   const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
   const fetchSiteAds = useServerFn(listSiteAds);
