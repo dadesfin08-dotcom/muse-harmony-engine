@@ -1541,9 +1541,17 @@ function Index() {
               <Flame className="size-4 text-destructive" />
               {t("flashDeals.title")}
             </h2>
-            <div className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
-              <Clock3 className="size-3.5" />
-              <span>{t("flashDeals.endsIn")}: {countdownLabel}</span>
+            <div className="inline-flex items-center gap-2">
+              <Link
+                to="/customer/flash-deals"
+                className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
+              >
+                {t("categories.viewAll", { defaultValue: "View All" })}
+              </Link>
+              <div className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
+                <Clock3 className="size-3.5" />
+                <span>{t("flashDeals.endsIn")}: {countdownLabel}</span>
+              </div>
             </div>
           </div>
 
