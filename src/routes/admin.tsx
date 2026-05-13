@@ -1383,17 +1383,17 @@ function AdminPage() {
           measurementUnit: row.Measurement_Unit?.trim() || "",
           barcode: row.Barcode?.trim() || null,
         }))
-        .filter((row) => row.nameEn.length > 0 && row.category.length > 0);
+        .filter((row) => row.nameEn.length > 0 && row.category.length > 0 && (row.barcode?.length ?? 0) > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least Name_EN and Category in one row.");
+        toast.error("No valid rows found. Fill at least Name_EN, Category and Barcode in one row.");
         return;
       }
 
       const result = await importMasterProductsBulkInDatabase({ data: { rows: preparedRows } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
 
-      const summary = `Imported ${result.totalProcessed}: ${result.insertedCount} new, ${result.updatedCount} updated${result.skippedCount > 0 ? `, ${result.skippedCount} skipped` : ""}.`;
+      const summary = `Bulk import done — New inserts: ${result.insertedCount}, Updated existing: ${result.updatedCount}${result.skippedCount > 0 ? `, Skipped: ${result.skippedCount}` : ""}.`;
 
       if (result.skippedCount > 0) {
         toast.warning(summary);
