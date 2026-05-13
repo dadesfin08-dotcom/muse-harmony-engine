@@ -537,7 +537,9 @@ function AdminPage() {
   const [serviceZoneForm, setServiceZoneForm] = useState({
     communeName: "",
     neighborhoodCommuneId: "",
-    neighborhoodName: "",
+    neighborhoodNameEn: "",
+    neighborhoodNameFr: "",
+    neighborhoodNameAr: "",
     neighborhoodDeliveryFee: "0",
   });
 
@@ -946,11 +948,11 @@ function AdminPage() {
 
     if (
       !serviceZoneForm.neighborhoodCommuneId ||
-      !serviceZoneForm.neighborhoodName.trim() ||
+      !serviceZoneForm.neighborhoodNameEn.trim() ||
       Number.isNaN(parsedDeliveryFee) ||
       parsedDeliveryFee < 0
     ) {
-      toast.error("Please select a commune and enter a neighborhood name.");
+      toast.error("Please select a commune and enter at least Neighborhood Name (EN).");
       return;
     }
 
@@ -958,12 +960,20 @@ function AdminPage() {
       await saveNeighborhood({
         data: {
           communeId: serviceZoneForm.neighborhoodCommuneId,
-          name: serviceZoneForm.neighborhoodName.trim(),
+          nameEn: serviceZoneForm.neighborhoodNameEn.trim(),
+          nameFr: serviceZoneForm.neighborhoodNameFr.trim() || null,
+          nameAr: serviceZoneForm.neighborhoodNameAr.trim() || null,
           deliveryFee: parsedDeliveryFee,
         },
       });
       await serviceZonesQuery.refetch();
-      setServiceZoneForm((current) => ({ ...current, neighborhoodName: "", neighborhoodDeliveryFee: "0" }));
+      setServiceZoneForm((current) => ({
+        ...current,
+        neighborhoodNameEn: "",
+        neighborhoodNameFr: "",
+        neighborhoodNameAr: "",
+        neighborhoodDeliveryFee: "0",
+      }));
       toast.success("Neighborhood created successfully.");
     } catch (error) {
       console.error("Failed to create neighborhood:", error);
