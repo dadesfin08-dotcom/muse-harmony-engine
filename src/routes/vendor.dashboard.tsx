@@ -195,6 +195,14 @@ function VendorDashboardPage() {
       return "";
     }
   }, []);
+  const normalizedVendorPhoneNumber = useMemo(
+    () => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
+    [vendorPhoneNumber],
+  );
+  const hasValidVendorPhoneSession = useMemo(
+    () => isValidMoroccoPhone(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
+    [vendorPhoneNumber],
+  );
 
   const fetchDashboardData = useServerFn(getVendorDashboardData);
   const fetchInvoiceSettings = useServerFn(getInvoiceSettings);
@@ -255,9 +263,10 @@ function VendorDashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const invoiceSettingsQuery = useQuery({
@@ -268,26 +277,32 @@ function VendorDashboardPage() {
 
   const inventoryQuery = useQuery({
     queryKey: ["vendor", "inventory"],
-    queryFn: () => {
-      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("bzaf.vendorSession") : null;
-      const phoneNumber = rawSession ? (JSON.parse(rawSession) as { phoneNumber?: string }).phoneNumber : undefined;
-      return fetchInventoryData({ data: { phoneNumber } });
-    },
+    queryFn: () => fetchInventoryData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const carnetQuery = useQuery({
     queryKey: ["vendor", "carnet"],
-    queryFn: () => fetchVendorCarnetData({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryFn: () => fetchVendorCarnetData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 5_000,
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const ledgerQuery = useQuery({
     queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone],
-    queryFn: () => fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone!, phoneNumber: vendorPhoneNumber } }),
-    enabled: !!selectedCarnetPhone,
+    queryFn: () =>
+      fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone!, phoneNumber: normalizedVendorPhoneNumber } }),
+    enabled: !!selectedCarnetPhone && hasValidVendorPhoneSession,
   });
+
+  useEffect(() => {
+    if (hasValidVendorPhoneSession) return;
+    toast.error("Vendor session invalid. Please log in again.");
+    clearRoleSessions();
+    void navigate({ to: "/vendor/login" });
+  }, [hasValidVendorPhoneSession, navigate]);
 
   const isDashboardInitialLoading = dashboardQuery.isLoading && !dashboardQuery.data;
   const isInventoryInitialLoading = inventoryQuery.isLoading && !inventoryQuery.data;
@@ -727,7 +742,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "preparing" } });
+      await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "preparing" } });
       await dashboardQuery.refetch();
       toast.success("Order moved to preparing.");
     } catch (error) {
@@ -756,7 +771,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "ready" } });
+      await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "ready" } });
       await dashboardQuery.refetch();
       toast.success("Order marked as ready.");
 
@@ -788,7 +803,7 @@ function VendorDashboardPage() {
       setIsSavingInventoryFor(item.id);
       await saveInventoryItem({
         data: {
-          phoneNumber: vendorPhoneNumber,
+          phoneNumber: normalizedVendorPhoneNumber,
           masterProductId: item.id,
           vendorPrice,
           isAvailable,
@@ -882,8 +897,11 @@ function VendorDashboardPage() {
         return vendorPhoneNumber;
       }
     })();
+    const normalizedActiveVendorPhone = formatMoroccoPhoneForPayload(
+      normalizeMoroccoPhoneInput(activeVendorPhone),
+    );
 
-    if (!activeVendorPhone) {
+    if (!isValidMoroccoPhone(normalizeMoroccoPhoneInput(activeVendorPhone))) {
       toast.error("Vendor session missing. Please log in again.");
       return;
     }
@@ -893,7 +911,7 @@ function VendorDashboardPage() {
       toast.loading("Saving flash sale...", { id: `flash-save-${item.id}` });
       await saveFlashSale({
         data: {
-          phoneNumber: activeVendorPhone,
+          phoneNumber: normalizedActiveVendorPhone,
           masterProductId: item.id,
           enabled: draft.enabled,
           flashSalePrice: draft.enabled ? numericFlashPrice : null,
