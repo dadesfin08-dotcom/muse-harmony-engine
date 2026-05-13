@@ -384,24 +384,26 @@ function CommuneProfilePage() {
                     <tr key={douar.id} className="border-t border-border">
                       <td className="px-4 py-2 align-middle">
                         {isEditing ? (
-                          <Input
-                            value={editingNeighborhoodNameEn}
-                            onChange={(event) => setEditingNeighborhoodNameEn(event.target.value)}
-                            className="h-9"
-                            placeholder="Name (EN)"
-                          />
-                          <Input
-                            value={editingNeighborhoodNameFr}
-                            onChange={(event) => setEditingNeighborhoodNameFr(event.target.value)}
-                            className="mt-1 h-9"
-                            placeholder="Name (FR)"
-                          />
-                          <Input
-                            value={editingNeighborhoodNameAr}
-                            onChange={(event) => setEditingNeighborhoodNameAr(event.target.value)}
-                            className="mt-1 h-9"
-                            placeholder="Name (AR)"
-                          />
+                          <div className="space-y-1">
+                            <Input
+                              value={editingNeighborhoodNameEn}
+                              onChange={(event) => setEditingNeighborhoodNameEn(event.target.value)}
+                              className="h-9"
+                              placeholder="Name (EN)"
+                            />
+                            <Input
+                              value={editingNeighborhoodNameFr}
+                              onChange={(event) => setEditingNeighborhoodNameFr(event.target.value)}
+                              className="h-9"
+                              placeholder="Name (FR)"
+                            />
+                            <Input
+                              value={editingNeighborhoodNameAr}
+                              onChange={(event) => setEditingNeighborhoodNameAr(event.target.value)}
+                              className="h-9"
+                              placeholder="Name (AR)"
+                            />
+                          </div>
                         ) : (
                           <span className="text-foreground">{localizedNeighborhoodName(douar)}</span>
                         )}
