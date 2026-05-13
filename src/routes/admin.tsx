@@ -222,6 +222,7 @@ type BrandAdminRow = {
 };
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
+const BRANDS_CSV_HEADERS = ["Brand_Name_AR", "Brand_Name_EN", "Brand_Name_FR", "Logo_URL"] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
