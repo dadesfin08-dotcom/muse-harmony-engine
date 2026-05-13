@@ -720,11 +720,28 @@ export const updateVendorFlashSale = createServerFn({ method: "POST" })
         }
       }
 
+      const { data: existingVendorProduct, error: existingVendorProductError } = await (supabaseAdmin as any)
+        .from("vendor_products")
+        .select("vendor_price, is_available")
+        .eq("vendor_id", (vendor as VendorRow).id)
+        .eq("master_product_id", data.masterProductId)
+        .maybeSingle();
+
+      if (existingVendorProductError) {
+        throw new Error(existingVendorProductError.message);
+      }
+
+      if (!data.enabled && !existingVendorProduct) {
+        return { ok: true };
+      }
+
       const updatePayload = data.enabled
         ? {
             is_flash_sale: true,
             flash_sale_price: data.flashSalePrice,
             flash_sale_end_time: data.flashSaleEndTime,
+            vendor_price: Number(existingVendorProduct?.vendor_price ?? data.flashSalePrice ?? 0),
+            is_available: existingVendorProduct?.is_available ?? true,
           }
         : {
             is_flash_sale: false,
