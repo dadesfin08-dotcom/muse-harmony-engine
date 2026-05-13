@@ -235,6 +235,41 @@ const MASTER_PRODUCTS_CSV_HEADERS = [
   "Measurement_Unit",
   "Barcode",
 ] as const;
+const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
+  [
+    "https://example.com/products/olive-oil.jpg",
+    "Olive Oil",
+    "Huile d'olive",
+    "زيت الزيتون",
+    "Groceries",
+    "Lesieur",
+    "1",
+    "Liter",
+    "6111000010012",
+  ],
+  [
+    "https://example.com/products/bananas.jpg",
+    "Banana",
+    "Banane",
+    "موز",
+    "Vegetables & Fruits",
+    "Dole",
+    "1",
+    "Kg",
+    "6111000010013",
+  ],
+  [
+    "https://example.com/products/eggs.jpg",
+    "Eggs 12 Pack",
+    "Oeufs 12 unités",
+    "بيض 12 حبة",
+    "Dairy & Eggs",
+    "Local Farm",
+    "12",
+    "Piece",
+    "6111000010014",
+  ],
+] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
