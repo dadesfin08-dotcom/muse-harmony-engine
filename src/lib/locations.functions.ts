@@ -36,6 +36,21 @@ const getCommuneByIdInputSchema = z.object({
   communeId: z.string().uuid(),
 });
 
+const searchCommunesInputSchema = z.object({
+  query: z.string().trim().min(3).max(120),
+  limit: z.coerce.number().int().min(1).max(25).default(15),
+});
+
+const searchNeighborhoodsByCommuneInputSchema = z.object({
+  communeId: z.string().uuid(),
+  query: z.string().trim().min(3).max(120),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const getLocationByNeighborhoodIdInputSchema = z.object({
+  neighborhoodId: z.string().uuid(),
+});
+
 const deleteNeighborhoodInputSchema = z.object({
   id: z.string().uuid(),
 });
@@ -123,6 +138,25 @@ export type ServiceZoneExportRow = {
   douarEn: string;
   douarFr: string | null;
   douarAr: string | null;
+  deliveryFee: number;
+};
+
+export type CommuneSearchResult = {
+  id: string;
+  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
+};
+
+export type NeighborhoodSearchResult = {
+  id: string;
+  zoneCode: string;
+  communeId: string;
+  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   deliveryFee: number;
 };
 
