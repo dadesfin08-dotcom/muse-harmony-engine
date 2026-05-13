@@ -73,7 +73,9 @@ type NeighborhoodRow = {
 
 type CommuneRow = {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
 };
 
 type OrderRow = {
@@ -154,7 +156,7 @@ async function buildServiceZoneMaps() {
   const [{ data: neighborhoods, error: neighborhoodsError }, { data: communes, error: communesError }] =
     await Promise.all([
       (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id"),
-      (supabaseAdmin as any).from("communes").select("id, name"),
+      (supabaseAdmin as any).from("communes").select("id, name_en, name_fr, name_ar"),
     ]);
 
   if (neighborhoodsError) {
@@ -164,7 +166,7 @@ async function buildServiceZoneMaps() {
     throw new Error(communesError.message);
   }
 
-  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((row) => [row.id, row.name]));
+  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((row) => [row.id, row.name_en]));
   const neighborhoodMap = new Map(
     ((neighborhoods ?? []) as NeighborhoodRow[]).map((row) => [row.id, row]),
   );
