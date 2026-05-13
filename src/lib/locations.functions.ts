@@ -777,7 +777,12 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
           continue;
         }
 
-        neighborhoodsByZoneCode.set(zoneCodeToUse, insertedNeighborhood as NeighborhoodRow);
+        const insertedRow = insertedNeighborhood as NeighborhoodRow;
+        neighborhoodsByZoneCode.set(zoneCodeToUse, insertedRow);
+        neighborhoodsByCommuneAndNames.set(
+          createNeighborhoodLookupKey(insertedRow.commune_id, insertedRow.name_en, insertedRow.name_fr, insertedRow.name_ar),
+          insertedRow,
+        );
         reservedZoneCodes.add(zoneCodeToUse);
         insertedCount += 1;
       }
