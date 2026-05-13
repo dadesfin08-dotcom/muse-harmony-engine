@@ -3427,7 +3427,7 @@ function BrandsSection({
   brandCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddBrand: () => void;
   onDownloadTemplate: () => void;
-  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditBrand: (brand: BrandAdminRow) => void;
   onDeleteBrand: (brand: BrandAdminRow) => void;
 }) {
