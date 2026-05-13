@@ -3475,14 +3475,18 @@ function ServiceZonesSection({
   form: {
     communeName: string;
     neighborhoodCommuneId: string;
-    neighborhoodName: string;
+    neighborhoodNameEn: string;
+    neighborhoodNameFr: string;
+    neighborhoodNameAr: string;
     neighborhoodDeliveryFee: string;
   };
   onFormChange: Dispatch<
     SetStateAction<{
       communeName: string;
       neighborhoodCommuneId: string;
-      neighborhoodName: string;
+      neighborhoodNameEn: string;
+      neighborhoodNameFr: string;
+      neighborhoodNameAr: string;
       neighborhoodDeliveryFee: string;
     }>
   >;
@@ -3538,9 +3542,21 @@ function ServiceZonesSection({
           </select>
           <input
             id="new-neighborhood"
-            value={form.neighborhoodName}
-            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodName: event.target.value }))}
-            placeholder="e.g. Hay El Farah"
+            value={form.neighborhoodNameEn}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameEn: event.target.value }))}
+            placeholder="Neighborhood Name (EN)"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.neighborhoodNameFr}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameFr: event.target.value }))}
+            placeholder="Neighborhood Name (FR)"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.neighborhoodNameAr}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameAr: event.target.value }))}
+            placeholder="Neighborhood Name (AR) - مثال: حي الفرح"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
