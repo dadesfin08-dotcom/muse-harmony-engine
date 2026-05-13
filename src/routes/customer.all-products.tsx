@@ -11,6 +11,7 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { getCustomerCatalogByNeighborhood } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
+import fallbackProductImage from "@/assets/product-vegetables.jpg";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
