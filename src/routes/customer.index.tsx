@@ -83,6 +83,9 @@ import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { type CustomerPanelView, useCustomerPanelStore } from "@/lib/customer-panel-store";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -309,6 +312,7 @@ function Index() {
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
   const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
+  const isMobile = useIsMobile();
   const isArabic = language === "ar";
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
   const [isBottomPromoDismissed, setIsBottomPromoDismissed] = useState(false);
@@ -2069,21 +2073,31 @@ function Index() {
       ) : null}
 
       {isCustomerAuthModalOpen ? (
-        <div className="fixed inset-0 z-[120]">
-          <div className="absolute inset-0 bg-black/50" />
-          <section className="absolute inset-0 flex items-end justify-center px-0 sm:items-center sm:px-4">
-            <div className="h-[92vh] w-[95vw] max-w-md overflow-y-auto rounded-t-2xl border border-border bg-background p-5 shadow-2xl sm:h-auto sm:rounded-2xl">
-              <h2 className="text-lg font-semibold text-foreground">
-                {customerSession ? "Account" : "Customer Login"}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {customerSession
-                  ? "You are currently signed in."
-                  : "Sign in with your WhatsApp OTP to continue."}
-              </p>
+        isMobile ? (
+          <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
+            <DrawerContent className="rounded-t-3xl border-border bg-background px-6 pb-6 pt-2">
+              <div className="relative flex flex-col gap-5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsCustomerAuthModalOpen(false)}
+                  aria-label="Close login prompt"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
 
-              {customerSession && customerPanelView === "account" ? (
-                <div className="mt-4 space-y-3">
+                <div className="pt-4 text-center">
+                  <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
+                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
+                  </p>
+                </div>
+
+                {customerSession && customerPanelView === "account" ? (
+                  <div className="space-y-3">
                   <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
                     <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
@@ -2106,9 +2120,9 @@ function Index() {
                   <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
                     Logout
                   </Button>
-                </div>
-              ) : customerSession && customerPanelView === "profile" ? (
-                <div className="mt-4 space-y-3">
+                  </div>
+                ) : customerSession && customerPanelView === "profile" ? (
+                  <div className="space-y-3">
                   <div className="space-y-2">
                     <label htmlFor="profile-full-name" className="text-xs font-medium text-muted-foreground">
                       Full Name
@@ -2176,9 +2190,9 @@ function Index() {
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
                     Back to Account
                   </Button>
-                </div>
-              ) : customerSession && customerPanelView === "orders" ? (
-                <div className="mt-4 space-y-3">
+                  </div>
+                ) : customerSession && customerPanelView === "orders" ? (
+                  <div className="space-y-3">
                   {customerOrdersQuery.isLoading ? (
                     <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
                   ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
@@ -2238,9 +2252,9 @@ function Index() {
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
                     Back to Account
                   </Button>
-                </div>
-              ) : customerSession && customerPanelView === "carnet" ? (
-                <div className="mt-4 space-y-3">
+                  </div>
+                ) : customerSession && customerPanelView === "carnet" ? (
+                  <div className="space-y-3">
                   {customerCarnetQuery.isLoading ? (
                     <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
                   ) : !customerCarnet ? (
@@ -2323,14 +2337,14 @@ function Index() {
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
                     Back to Account
                   </Button>
-                </div>
-              ) : authStep === "phone" ? (
-                <div className="mt-4 space-y-3">
+                  </div>
+                ) : authStep === "phone" ? (
+                  <div className="space-y-3">
                   <div className="space-y-2">
                     <label htmlFor="customer-auth-phone" className="text-xs font-medium text-muted-foreground">
                       Phone Number
                     </label>
-                    <div className="flex h-11 items-center overflow-hidden rounded-xl border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-ring/30">
+                    <div className="flex h-14 items-center overflow-hidden rounded-xl border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
                       <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
                       <input
                         id="customer-auth-phone"
@@ -2339,23 +2353,23 @@ function Index() {
                         placeholder="6XXXXXXXX"
                         inputMode="numeric"
                         autoComplete="tel"
-                        className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-sm outline-none"
+                        className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-lg outline-none"
                       />
                     </div>
                   </div>
 
                   <Button
                     variant="hero"
-                    className="w-full rounded-xl"
+                    className="h-12 w-full rounded-xl font-semibold"
                     onClick={sendCustomerOtp}
                     disabled={!isAuthPhoneValid || isSendingAuthCode}
                   >
                     <MessageCircle className="size-4" />
                     {isSendingAuthCode ? "Sending..." : "Send Code via WhatsApp"}
                   </Button>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                   <p className="text-center text-sm text-muted-foreground">Enter the 4-digit code sent to WhatsApp</p>
                   <div className="flex justify-center">
                     <InputOTP
@@ -2393,11 +2407,350 @@ function Index() {
                   >
                     Change phone number
                   </Button>
+                  </div>
+                )}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        ) : (
+          <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
+            <DialogContent className="[&>button]:hidden w-[95vw] max-w-md rounded-2xl border border-border bg-background p-8 shadow-2xl">
+              <div className="relative flex flex-col gap-5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsCustomerAuthModalOpen(false)}
+                  aria-label="Close login prompt"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+
+                <div className="text-center">
+                  <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
+                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
+                  </p>
                 </div>
-              )}
-            </div>
-          </section>
-        </div>
+
+                {customerSession && customerPanelView === "account" ? (
+                  <div className="space-y-3">
+                    <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
+                      <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
+                    </section>
+                    <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
+                      View & Edit Profile
+                    </Button>
+                    <Button
+                      variant="soft"
+                      className="w-full rounded-xl"
+                      onClick={() => {
+                        setCustomerPanelView("carnet");
+                      }}
+                    >
+                      Carnet Details
+                    </Button>
+                    <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
+                      Close
+                    </Button>
+                    <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
+                      Logout
+                    </Button>
+                  </div>
+                ) : customerSession && customerPanelView === "profile" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label htmlFor="profile-full-name" className="text-xs font-medium text-muted-foreground">
+                        Full Name
+                      </label>
+                      <input
+                        id="profile-full-name"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        placeholder="Enter your full name"
+                        className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="profile-phone" className="text-xs font-medium text-muted-foreground">
+                        Phone Number
+                      </label>
+                      <input
+                        id="profile-phone"
+                        value={phoneNumber}
+                        readOnly
+                        className="h-10 w-full rounded-xl border border-input bg-muted/50 px-3 text-sm text-foreground outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="profile-address" className="text-xs font-medium text-muted-foreground">
+                        Address
+                      </label>
+                      <textarea
+                        id="profile-address"
+                        value={address}
+                        onChange={(event) => setAddress(event.target.value)}
+                        placeholder="Street, building, apartment..."
+                        className="min-h-24 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                      />
+                    </div>
+                    <Button
+                      variant="hero"
+                      className="w-full rounded-xl"
+                      onClick={async () => {
+                        if (!customerSession?.phoneNumber || !fullName.trim()) {
+                          toast.error("Please complete profile details first.");
+                          return;
+                        }
+
+                        try {
+                          await saveCustomerProfile({
+                            data: {
+                              phoneNumber: customerSession.phoneNumber,
+                              fullName: fullName.trim(),
+                              address: address.trim(),
+                              savedInstructions: deliveryNotes.trim(),
+                              neighborhoodId: selectedNeighborhoodId || null,
+                            },
+                          });
+                          toast.success("Profile updated.");
+                          setCustomerPanelView("account");
+                        } catch (error) {
+                          console.error("Failed to update customer profile:", error);
+                          toast.error("Failed to update profile.");
+                        }
+                      }}
+                    >
+                      Save Profile
+                    </Button>
+                    <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
+                      Back to Account
+                    </Button>
+                  </div>
+                ) : customerSession && customerPanelView === "orders" ? (
+                  <div className="space-y-3">
+                    {customerOrdersQuery.isLoading ? (
+                      <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
+                    ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
+                      <AppEmptyState
+                        title="No orders yet."
+                        subtitle="Your order history will appear here after checkout."
+                        className="p-5"
+                      />
+                    ) : (
+                      <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+                        {(customerOrdersQuery.data ?? []).map((order) => {
+                          const activeStepIndex = getOrderStepIndex(order.status);
+                          const orderDate = new Date(order.created_at);
+
+                          return (
+                            <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
+                              <button
+                                type="button"
+                                className="w-full text-left"
+                                onClick={() => {
+                                  void navigate({ to: "/customer/order/$orderId", params: { orderId: order.id } });
+                                }}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
+                                  </div>
+                                </div>
+
+                                <div className="mt-4 grid grid-cols-4 gap-2">
+                                  {statusSteps.map((step, index) => {
+                                    const reached = index <= activeStepIndex;
+                                    return (
+                                      <div key={step.label} className="space-y-1">
+                                        <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
+                                        <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                          {step.label}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">Open digital receipt</div>
+                              </button>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
+                      Back to Account
+                    </Button>
+                  </div>
+                ) : customerSession && customerPanelView === "carnet" ? (
+                  <div className="space-y-3">
+                    {customerCarnetQuery.isLoading ? (
+                      <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
+                    ) : !customerCarnet ? (
+                      <AppEmptyState
+                        title="No active carnet found for your account."
+                        subtitle="Ask your vendor to enable carnet access for your phone number."
+                        className="p-5"
+                      />
+                    ) : (
+                      <>
+                        <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                          <div className="rounded-xl border border-border bg-muted/30 p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                            </p>
+                            <p className="mt-1 text-xl font-semibold text-destructive">
+                              {carnetCurrentDebt.toFixed(2)} MAD
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>{carnetUtilizationLabel}</span>
+                              <span>{carnetUsagePercent.toFixed(0)}%</span>
+                            </div>
+                            <Progress
+                              value={carnetUsagePercent}
+                              className="h-2 bg-muted"
+                              indicatorClassName={carnetProgressIndicatorClassName}
+                              aria-label={carnetUsagePercentLabel}
+                            />
+                            <p className="text-xs text-muted-foreground">{carnetDebtRatioLabel}</p>
+                          </div>
+                        </section>
+
+                        <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                          <h3 className="text-sm font-semibold text-foreground">Transaction History</h3>
+                          <div className="max-h-[36vh] space-y-2 overflow-y-auto pr-1">
+                            {(customerCarnetQuery.data?.transactions ?? []).length === 0 ? (
+                              <p className="rounded-xl border border-dashed border-border bg-muted/30 p-3 text-center text-sm text-muted-foreground">
+                                No carnet transactions yet.
+                              </p>
+                            ) : (
+                              (customerCarnetQuery.data?.transactions ?? []).map((entry: {
+                                id: string;
+                                kind: "debt" | "payment";
+                                description: string;
+                                createdAt: string;
+                                amount: number;
+                              }) => {
+                                const isDebt = entry.kind === "debt";
+                                return (
+                                  <article
+                                    key={entry.id}
+                                    className="flex items-center justify-between rounded-xl border border-border bg-background p-3"
+                                    onClick={() => {
+                                      if (!isDebt) return;
+                                      const orderId = entry.id.startsWith("order:") ? entry.id.slice("order:".length) : entry.id;
+                                      void navigate({ to: "/customer/order/$orderId", params: { orderId } });
+                                    }}
+                                  >
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{entry.description}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {new Date(entry.createdAt).toLocaleString()}
+                                      </p>
+                                    </div>
+                                    <p className={`text-sm font-semibold ${isDebt ? "text-destructive" : "text-success"}`}>
+                                      {isDebt ? "+" : "-"}
+                                      {Number(entry.amount ?? 0).toFixed(2)} MAD
+                                    </p>
+                                  </article>
+                                );
+                              })
+                            )}
+                          </div>
+                        </section>
+                      </>
+                    )}
+
+                    <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
+                      Back to Account
+                    </Button>
+                  </div>
+                ) : authStep === "phone" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label htmlFor="customer-auth-phone" className="text-xs font-medium text-muted-foreground">
+                        Phone Number
+                      </label>
+                      <div className="flex h-14 items-center overflow-hidden rounded-xl border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
+                        <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
+                        <input
+                          id="customer-auth-phone"
+                          value={authPhoneInput}
+                          onChange={(event) => setAuthPhoneInput(normalizeMoroccoPhoneInput(event.target.value))}
+                          placeholder="6XXXXXXXX"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-lg outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="hero"
+                      className="h-12 w-full rounded-xl font-semibold"
+                      onClick={sendCustomerOtp}
+                      disabled={!isAuthPhoneValid || isSendingAuthCode}
+                    >
+                      <MessageCircle className="size-4" />
+                      {isSendingAuthCode ? "Sending..." : "Send Code via WhatsApp"}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-center text-sm text-muted-foreground">Enter the 4-digit code sent to WhatsApp</p>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        value={authOtpCode}
+                        onChange={(value) => setAuthOtpCode(value.replace(/\D/g, "").slice(0, 4))}
+                        maxLength={4}
+                        inputMode="numeric"
+                      >
+                        <InputOTPGroup className="gap-2">
+                          <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                          <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                          <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                          <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
+
+                    <Button
+                      variant="hero"
+                      className="w-full rounded-xl"
+                      onClick={verifyCustomerOtpAndLogin}
+                      disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
+                    >
+                      {isVerifyingAuthOtp ? "Verifying..." : "Verify & Login"}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => {
+                        setAuthStep("phone");
+                        setAuthPhoneForOtp("");
+                        setAuthOtpCode("");
+                      }}
+                    >
+                      Change phone number
+                    </Button>
+                  </div>
+                </div>
+            </DialogContent>
+          </Dialog>
+        )
       ) : null}
 
       {isLocationModalOpen ? (
