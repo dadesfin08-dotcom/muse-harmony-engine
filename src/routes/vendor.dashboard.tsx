@@ -277,12 +277,9 @@ function VendorDashboardPage() {
 
   const inventoryQuery = useQuery({
     queryKey: ["vendor", "inventory"],
-    queryFn: () => {
-      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("bzaf.vendorSession") : null;
-      const phoneNumber = rawSession ? (JSON.parse(rawSession) as { phoneNumber?: string }).phoneNumber : undefined;
-      return fetchInventoryData({ data: { phoneNumber } });
-    },
+    queryFn: () => fetchInventoryData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const carnetQuery = useQuery({
