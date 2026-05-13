@@ -50,6 +50,12 @@ function CommuneProfilePage() {
   });
 
   const commune = communeQuery.data;
+  const localizedCommuneName = (value: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) => {
+    const lang = i18n.resolvedLanguage || i18n.language || "en";
+    if (lang === "ar") return value.nameAr?.trim() || value.nameFr?.trim() || value.nameEn || value.name;
+    if (lang === "fr") return value.nameFr?.trim() || value.nameEn || value.name;
+    return value.nameEn || value.name;
+  };
   const localizedNeighborhoodName = (neighborhood: { nameEn: string; nameFr: string | null; nameAr: string | null }) => {
     const lang = i18n.resolvedLanguage || i18n.language || "en";
     if (lang === "ar") return neighborhood.nameAr?.trim() || neighborhood.nameFr?.trim() || neighborhood.nameEn;
@@ -64,7 +70,9 @@ function CommuneProfilePage() {
   }, [commune?.neighborhoods, i18n.language, i18n.resolvedLanguage]);
 
   const [isEditingCommuneName, setIsEditingCommuneName] = useState(false);
-  const [communeNameDraft, setCommuneNameDraft] = useState("");
+  const [communeNameEnDraft, setCommuneNameEnDraft] = useState("");
+  const [communeNameFrDraft, setCommuneNameFrDraft] = useState("");
+  const [communeNameArDraft, setCommuneNameArDraft] = useState("");
   const [isSavingCommuneName, setIsSavingCommuneName] = useState(false);
 
   const [editingNeighborhoodId, setEditingNeighborhoodId] = useState<string | null>(null);
@@ -86,29 +94,46 @@ function CommuneProfilePage() {
 
   const startEditCommuneName = () => {
     if (!commune) return;
-    setCommuneNameDraft(commune.name);
+    setCommuneNameEnDraft(commune.nameEn || commune.name);
+    setCommuneNameFrDraft(commune.nameFr ?? "");
+    setCommuneNameArDraft(commune.nameAr ?? "");
     setIsEditingCommuneName(true);
   };
 
   const saveCommuneName = async () => {
     if (!commune) return;
 
-    const nextName = communeNameDraft.trim();
-    if (!nextName) {
-      toast.error("Commune name is required.");
+    const nextNameEn = communeNameEnDraft.trim();
+    const nextNameFr = communeNameFrDraft.trim() || null;
+    const nextNameAr = communeNameArDraft.trim() || null;
+
+    if (!nextNameEn) {
+      toast.error("Commune name (EN) is required.");
       return;
     }
-    if (nextName === commune.name) {
+    if (
+      nextNameEn === (commune.nameEn || commune.name) &&
+      nextNameFr === (commune.nameFr ?? null) &&
+      nextNameAr === (commune.nameAr ?? null)
+    ) {
       setIsEditingCommuneName(false);
       return;
     }
 
     try {
       setIsSavingCommuneName(true);
-      await editCommune({ data: { id: commune.id, name: nextName } });
+      await editCommune({ data: { id: commune.id, nameEn: nextNameEn, nameFr: nextNameFr, nameAr: nextNameAr } });
 
       queryClient.setQueryData(["admin", "service-zones", "commune", communeId], (current: typeof commune | undefined) =>
-        current ? { ...current, name: nextName } : current,
+        current
+          ? {
+              ...current,
+              name: nextNameEn,
+              nameEn: nextNameEn,
+              nameFr: nextNameFr,
+              nameAr: nextNameAr,
+            }
+          : current,
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
