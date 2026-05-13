@@ -3629,7 +3629,7 @@ function CatalogSection({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download XLSX Template
+            Download / Export Catalog (XLSX)
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
