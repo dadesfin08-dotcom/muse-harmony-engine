@@ -10,7 +10,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -340,6 +340,11 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
+  const location = useLocation();
+  if (location.pathname !== "/admin") {
+    return <Outlet />;
+  }
+
   const { t } = useTranslation();
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
