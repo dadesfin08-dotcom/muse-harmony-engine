@@ -344,6 +344,16 @@ function Index() {
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
   const getLocalizedCommuneName = (zone: { nameEn?: string | null; nameFr?: string | null; nameAr?: string | null; name: string }) =>
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
+  const getLocalizedDeliveryLabel = () => {
+    if (language === "ar") return "ثمن التوصيل";
+    if (language === "fr") return "Livraison";
+    return "Delivery";
+  };
+  const getLocalizedDeliveryFeeToLocationLabel = () => {
+    if (language === "ar") return "ثمن التوصيل إلى هذا الحي";
+    if (language === "fr") return "Frais de livraison vers cette zone";
+    return "Delivery fee to this location";
+  };
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
@@ -2476,6 +2486,11 @@ function Index() {
                         disabled={!selectedCommuneId}
                       />
                     </div>
+                    {selectedNeighborhoodOption ? (
+                      <p className="mt-2 text-sm font-medium text-primary">
+                        {getLocalizedDeliveryFeeToLocationLabel()}: {Number(selectedNeighborhoodOption.deliveryFee ?? 0).toFixed(0)} MAD
+                      </p>
+                    ) : null}
                   </div>
                   <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
                     {!selectedCommuneId ? (
@@ -2490,7 +2505,7 @@ function Index() {
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
-                    ) : filteredNeighborhoodOptions.length === 0 ? (
+                    ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
                     ) : (
                       <ul className="py-1">
@@ -2501,9 +2516,7 @@ function Index() {
                               onClick={() => {
                                 setSelectedNeighborhoodId(neighborhood.id);
                                 setSelectedNeighborhoodOption(neighborhood);
-                                setNeighborhoodSearchInput(
-                                  `${getLocalizedNeighborhoodName(neighborhood)} (+${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`,
-                                );
+                                setNeighborhoodSearchInput(getLocalizedNeighborhoodName(neighborhood));
                               }}
                               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
                             >
@@ -2511,7 +2524,7 @@ function Index() {
                                 className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
                               />
                               <span className="truncate">
-                                {getLocalizedNeighborhoodName(neighborhood)} (+{Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
+                                {getLocalizedNeighborhoodName(neighborhood)} ({getLocalizedDeliveryLabel()}: {Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
                               </span>
                             </button>
                           </li>
