@@ -30,6 +30,7 @@ import { Route as VendorOrderOrderIdRouteImport } from './routes/vendor.order.$o
 import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
 import { Route as CustomerOrderOrderIdRouteImport } from './routes/customer.order.$orderId'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
+import { Route as AdminServiceZonesCommuneIdRouteImport } from './routes/admin.service-zones.$communeId'
 
 const StaffPortalRoute = StaffPortalRouteImport.update({
   id: '/staff-portal',
@@ -136,10 +137,16 @@ const CustomerCategoriesIdRoute = CustomerCategoriesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CustomerCategoriesRoute,
 } as any)
+const AdminServiceZonesCommuneIdRoute =
+  AdminServiceZonesCommuneIdRouteImport.update({
+    id: '/service-zones/$communeId',
+    path: '/service-zones/$communeId',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
@@ -155,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/vendor/login': typeof VendorLoginRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
+  '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
@@ -162,7 +170,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/staff-portal': typeof StaffPortalRoute
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
   '/vendor/login': typeof VendorLoginRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer': typeof CustomerIndexRoute
+  '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
@@ -185,7 +194,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
@@ -201,6 +210,7 @@ export interface FileRoutesById {
   '/vendor/login': typeof VendorLoginRoute
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
+  '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/vendor/login'
     | '/vendor/wallet'
     | '/customer/'
+    | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
     | '/customer/product/$id'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/vendor/login'
     | '/vendor/wallet'
     | '/customer'
+    | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
     | '/customer/product/$id'
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
     | '/vendor/login'
     | '/vendor/wallet'
     | '/customer/'
+    | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
     | '/customer/product/$id'
@@ -279,7 +292,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   CustomerRoute: typeof CustomerRouteWithChildren
@@ -442,8 +455,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomerCategoriesIdRouteImport
       parentRoute: typeof CustomerCategoriesRoute
     }
+    '/admin/service-zones/$communeId': {
+      id: '/admin/service-zones/$communeId'
+      path: '/service-zones/$communeId'
+      fullPath: '/admin/service-zones/$communeId'
+      preLoaderRoute: typeof AdminServiceZonesCommuneIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminServiceZonesCommuneIdRoute: typeof AdminServiceZonesCommuneIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminServiceZonesCommuneIdRoute: AdminServiceZonesCommuneIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CategoriesRouteChildren {
   CategoriesIdRoute: typeof CategoriesIdRoute
@@ -492,7 +522,7 @@ const CustomerRouteWithChildren = CustomerRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   CustomerRoute: CustomerRouteWithChildren,

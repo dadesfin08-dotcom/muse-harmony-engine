@@ -10,7 +10,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -98,8 +98,6 @@ import {
   createCommune,
   createNeighborhood,
   listServiceZones,
-  updateCommune,
-  updateNeighborhood,
   type ServiceZoneTree,
 } from "@/lib/locations.functions";
 import {
@@ -342,6 +340,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminPage() {
+  const location = useLocation();
   const { t } = useTranslation();
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
@@ -356,8 +355,6 @@ function AdminPage() {
   const fetchServiceZones = useServerFn(listServiceZones);
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
-  const editCommune = useServerFn(updateCommune);
-  const editNeighborhood = useServerFn(updateNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
   const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
@@ -540,8 +537,6 @@ function AdminPage() {
     neighborhoodName: "",
     neighborhoodDeliveryFee: "0",
   });
-  const [isRenamingCommuneId, setIsRenamingCommuneId] = useState<string | null>(null);
-  const [isRenamingNeighborhoodId, setIsRenamingNeighborhoodId] = useState<string | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: "",
@@ -1957,70 +1952,6 @@ function AdminPage() {
     }
   };
 
-  const renameCommune = async (communeId: string, currentName: string) => {
-    const nextName = window.prompt("Edit commune name", currentName)?.trim();
-    if (!nextName || nextName === currentName) {
-      return;
-    }
-
-    try {
-      setIsRenamingCommuneId(communeId);
-      const updated = await editCommune({ data: { id: communeId, name: nextName } });
-      queryClient.setQueryData(["admin", "service-zones"], (current: ServiceZoneTree | undefined) =>
-        (current ?? []).map((zone) => (zone.id === communeId ? { ...zone, name: updated.name } : zone)),
-      );
-      toast.success("Commune updated.");
-    } catch (error) {
-      console.error("Failed to update commune:", error);
-      toast.error("Failed to update commune.");
-    } finally {
-      setIsRenamingCommuneId(null);
-    }
-  };
-
-  const renameNeighborhood = async (neighborhoodId: string, currentName: string, currentDeliveryFee: number) => {
-    const nextName = window.prompt("Edit neighborhood name", currentName)?.trim();
-    if (!nextName || nextName === currentName) {
-      return;
-    }
-
-    const nextDeliveryFeeRaw = window.prompt("Edit delivery fee (MAD)", String(currentDeliveryFee))?.trim();
-    if (!nextDeliveryFeeRaw) {
-      return;
-    }
-
-    const nextDeliveryFee = Number(nextDeliveryFeeRaw);
-    if (Number.isNaN(nextDeliveryFee) || nextDeliveryFee < 0) {
-      toast.error("Delivery fee must be a valid positive number.");
-      return;
-    }
-
-    try {
-      setIsRenamingNeighborhoodId(neighborhoodId);
-      const updated = await editNeighborhood({ data: { id: neighborhoodId, name: nextName, deliveryFee: nextDeliveryFee } });
-      queryClient.setQueryData(["admin", "service-zones"], (current: ServiceZoneTree | undefined) =>
-        (current ?? []).map((zone) =>
-          zone.id === updated.communeId
-            ? {
-                ...zone,
-                neighborhoods: zone.neighborhoods.map((n) =>
-                  n.id === neighborhoodId
-                    ? { ...n, name: updated.name, deliveryFee: Number(updated.deliveryFee ?? 0) }
-                    : n,
-                ),
-              }
-            : zone,
-        ),
-      );
-      toast.success("Neighborhood updated.");
-    } catch (error) {
-      console.error("Failed to update neighborhood:", error);
-      toast.error("Failed to update neighborhood.");
-    } finally {
-      setIsRenamingNeighborhoodId(null);
-    }
-  };
-
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
@@ -2028,7 +1959,13 @@ function AdminPage() {
     await navigate({ to: "/admin-login" });
   };
 
-  return (
+  const openCommuneProfile = (communeId: string) => {
+    navigate({ to: "/admin/service-zones/$communeId", params: { communeId } });
+  };
+
+  return location.pathname !== "/admin" ? (
+    <Outlet />
+  ) : (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-muted/20">
         <AdminSidebar activeTab={tab} />
@@ -2093,14 +2030,11 @@ function AdminPage() {
                 <ServiceZonesSection
                   zones={serviceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
-                  isRenamingCommuneId={isRenamingCommuneId}
-                  isRenamingNeighborhoodId={isRenamingNeighborhoodId}
                   form={serviceZoneForm}
                   onFormChange={setServiceZoneForm}
                   onSaveCommune={saveCommuneHandler}
                   onSaveNeighborhood={saveNeighborhoodHandler}
-                  onEditCommune={renameCommune}
-                  onEditNeighborhood={renameNeighborhood}
+                  onOpenCommuneProfile={openCommuneProfile}
                 />
               ) : null}
               {tab === "catalog" ? (
@@ -3366,19 +3300,14 @@ function CyclistsSection({
 function ServiceZonesSection({
   zones,
   isLoading,
-  isRenamingCommuneId,
-  isRenamingNeighborhoodId,
   form,
   onFormChange,
   onSaveCommune,
   onSaveNeighborhood,
-  onEditCommune,
-  onEditNeighborhood,
+  onOpenCommuneProfile,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
-  isRenamingCommuneId: string | null;
-  isRenamingNeighborhoodId: string | null;
   form: {
     communeName: string;
     neighborhoodCommuneId: string;
@@ -3395,8 +3324,7 @@ function ServiceZonesSection({
   >;
   onSaveCommune: () => void;
   onSaveNeighborhood: () => void;
-  onEditCommune: (communeId: string, currentName: string) => void;
-  onEditNeighborhood: (neighborhoodId: string, currentName: string, currentDeliveryFee: number) => void;
+  onOpenCommuneProfile: (communeId: string) => void;
 }) {
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
@@ -3484,16 +3412,15 @@ function ServiceZonesSection({
             {zones.map((zone) => (
               <div key={zone.id} className="rounded-md border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-foreground">{zone.name}</p>
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md"
-                    disabled={isRenamingCommuneId === zone.id}
-                    onClick={() => onEditCommune(zone.id, zone.name)}
+                    className="text-sm font-semibold text-foreground underline decoration-border underline-offset-4 transition hover:text-primary"
+                    onClick={() => onOpenCommuneProfile(zone.id)}
                   >
-                    {isRenamingCommuneId === zone.id ? "Saving..." : "Edit"}
+                    {zone.name}
+                  </button>
+                  <Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => onOpenCommuneProfile(zone.id)}>
+                    Manage
                   </Button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -3503,14 +3430,6 @@ function ServiceZonesSection({
                     zone.neighborhoods.map((neighborhood) => (
                       <div key={neighborhood.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-2 py-1">
                         <span className="text-xs text-foreground">{neighborhood.name} - {Number(neighborhood.deliveryFee ?? 0).toFixed(2)} MAD</span>
-                        <button
-                          type="button"
-                          className="text-xs font-medium text-primary disabled:opacity-60"
-                          disabled={isRenamingNeighborhoodId === neighborhood.id}
-                          onClick={() => onEditNeighborhood(neighborhood.id, neighborhood.name, Number(neighborhood.deliveryFee ?? 0))}
-                        >
-                          {isRenamingNeighborhoodId === neighborhood.id ? "Saving..." : "Edit"}
-                        </button>
                       </div>
                     ))
                   )}
