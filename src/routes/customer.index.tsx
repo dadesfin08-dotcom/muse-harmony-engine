@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import {
   Bike,
+  Check,
+  ChevronsUpDown,
   Search,
   ShoppingCart,
   Heart,
@@ -30,6 +32,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import {
@@ -70,6 +73,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
