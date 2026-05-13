@@ -327,6 +327,7 @@ function AdminPage() {
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
   const createBrandInDatabase = useServerFn(createBrand);
+  const importBrandsBulkInDatabase = useServerFn(importBrandsBulk);
   const updateBrandInDatabase = useServerFn(updateBrand);
   const deleteBrandInDatabase = useServerFn(deleteBrand);
   const uploadBrandLogoToStorage = useServerFn(uploadBrandLogo);
@@ -534,7 +535,9 @@ function AdminPage() {
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const [isImportingBrands, setIsImportingBrands] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
