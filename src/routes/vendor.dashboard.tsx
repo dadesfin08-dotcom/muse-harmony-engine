@@ -745,7 +745,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "preparing" } });
+      await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "preparing" } });
       await dashboardQuery.refetch();
       toast.success("Order moved to preparing.");
     } catch (error) {
@@ -774,7 +774,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "ready" } });
+      await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "ready" } });
       await dashboardQuery.refetch();
       toast.success("Order marked as ready.");
 
@@ -806,7 +806,7 @@ function VendorDashboardPage() {
       setIsSavingInventoryFor(item.id);
       await saveInventoryItem({
         data: {
-          phoneNumber: vendorPhoneNumber,
+          phoneNumber: normalizedVendorPhoneNumber,
           masterProductId: item.id,
           vendorPrice,
           isAvailable,
