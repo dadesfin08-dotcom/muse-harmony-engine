@@ -160,11 +160,19 @@ export type NeighborhoodSearchResult = {
   deliveryFee: number;
 };
 
-const createCommuneLookupKey = (nameEn: string, nameFr: string | null, nameAr: string | null) =>
-  `${nameEn.trim().toLowerCase()}|${nameFr?.trim().toLowerCase() ?? ""}|${nameAr?.trim().toLowerCase() ?? ""}`;
+const normalizeNameLookup = (value: string | null | undefined) => {
+  const normalized = value?.trim().toLocaleLowerCase() ?? "";
+  return normalized.length > 0 ? normalized : null;
+};
 
-const createNeighborhoodLookupKey = (communeId: string, nameEn: string, nameFr: string | null, nameAr: string | null) =>
-  `${communeId}|${nameEn.trim().toLowerCase()}|${nameFr?.trim().toLowerCase() ?? ""}|${nameAr?.trim().toLowerCase() ?? ""}`;
+const collectCommuneNameLookupKeys = (values: Array<string | null | undefined>) => {
+  const keys = new Set<string>();
+  for (const value of values) {
+    const normalized = normalizeNameLookup(value);
+    if (normalized) keys.add(normalized);
+  }
+  return [...keys];
+};
 
 const normalizeZoneCode = (value: string | null | undefined) => {
   const normalized = value?.trim().toUpperCase() ?? "";
@@ -620,13 +628,14 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
       if (communesError) throw new Error(communesError.message);
       if (neighborhoodsError) throw new Error(neighborhoodsError.message);
 
-      const communeByLookup = new Map<string, CommuneRow>();
+      const communeByAnyName = new Map<string, CommuneRow>();
       for (const commune of (communes ?? []) as CommuneRow[]) {
-        communeByLookup.set(createCommuneLookupKey(commune.name_en, commune.name_fr, commune.name_ar), commune);
+        for (const key of collectCommuneNameLookupKeys([commune.name_en, commune.name_fr, commune.name_ar])) {
+          communeByAnyName.set(key, commune);
+        }
       }
 
       const neighborhoodsByZoneCode = new Map<string, NeighborhoodRow>();
-      const neighborhoodsByCommuneAndNames = new Map<string, NeighborhoodRow>();
       const reservedZoneCodes = new Set<string>();
       let maxGeneratedSequence = 0;
 
@@ -634,15 +643,6 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
         const normalizedCode = normalizeZoneCode(neighborhood.zone_code);
         if (!normalizedCode) continue;
         neighborhoodsByZoneCode.set(normalizedCode, neighborhood);
-        neighborhoodsByCommuneAndNames.set(
-          createNeighborhoodLookupKey(
-            neighborhood.commune_id,
-            neighborhood.name_en,
-            neighborhood.name_fr,
-            neighborhood.name_ar,
-          ),
-          neighborhood,
-        );
         reservedZoneCodes.add(normalizedCode);
         const seq = extractZoneCodeSequence(normalizedCode);
         if (seq && seq > maxGeneratedSequence) {
@@ -670,10 +670,17 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
           continue;
         }
 
-        const existingByZone = row.zoneCode ? neighborhoodsByZoneCode.get(row.zoneCode) : null;
+        const existingByZone = row.zoneCode ? neighborhoodsByZoneCode.get(row.zoneCode) ?? null : null;
+        let targetCommune: CommuneRow | null = null;
 
-        const communeLookupKey = createCommuneLookupKey(row.communeEn, row.communeFr, row.communeAr);
-        let targetCommune: CommuneRow | null = communeByLookup.get(communeLookupKey) ?? null;
+        const rowCommuneLookupKeys = collectCommuneNameLookupKeys([row.communeEn, row.communeFr, row.communeAr]);
+        for (const key of rowCommuneLookupKeys) {
+          const match = communeByAnyName.get(key);
+          if (match) {
+            targetCommune = match;
+            break;
+          }
+        }
 
         if (!targetCommune) {
           const { data: insertedCommune, error: insertCommuneError } = await (supabaseAdmin as any)
@@ -694,7 +701,13 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
           }
 
           targetCommune = insertedCommune as CommuneRow;
-          communeByLookup.set(communeLookupKey, targetCommune);
+          for (const key of collectCommuneNameLookupKeys([
+            targetCommune.name_en,
+            targetCommune.name_fr,
+            targetCommune.name_ar,
+          ])) {
+            communeByAnyName.set(key, targetCommune);
+          }
         }
 
         if (!targetCommune?.id) {
@@ -702,23 +715,7 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
           continue;
         }
 
-        if (existingByZone && existingByZone.commune_id !== targetCommune.id) {
-          warnings.push(
-            `Row ${row.rowNumber}: Zone_Code '${row.zoneCode}' belongs to a different commune. Please fix the row to avoid data corruption.`,
-          );
-          continue;
-        }
-
-        const neighborhoodLookupKey = createNeighborhoodLookupKey(
-          targetCommune.id,
-          row.douarEn,
-          row.douarFr,
-          row.douarAr,
-        );
-        const existingByNames = neighborhoodsByCommuneAndNames.get(neighborhoodLookupKey) ?? null;
-        const neighborhoodToUpdate = existingByZone ?? existingByNames;
-
-        if (neighborhoodToUpdate) {
+        if (existingByZone) {
           const { data: updatedNeighborhood, error: updateNeighborhoodError } = await (supabaseAdmin as any)
             .from("neighborhoods")
             .update({
@@ -729,7 +726,7 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
               delivery_fee: row.deliveryFee,
               updated_at: new Date().toISOString(),
             })
-            .eq("id", neighborhoodToUpdate.id)
+            .eq("id", existingByZone.id)
             .select("id, zone_code, name_en, name_fr, name_ar, commune_id, delivery_fee")
             .single();
 
@@ -741,11 +738,8 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
           }
 
           const updatedRow = updatedNeighborhood as NeighborhoodRow;
-          neighborhoodsByZoneCode.set(updatedRow.zone_code, updatedRow);
-          neighborhoodsByCommuneAndNames.set(
-            createNeighborhoodLookupKey(updatedRow.commune_id, updatedRow.name_en, updatedRow.name_fr, updatedRow.name_ar),
-            updatedRow,
-          );
+          const normalizedUpdatedCode = normalizeZoneCode(updatedRow.zone_code);
+          if (normalizedUpdatedCode) neighborhoodsByZoneCode.set(normalizedUpdatedCode, updatedRow);
           updatedCount += 1;
           continue;
         }
@@ -779,10 +773,6 @@ export const importServiceZonesBulk = createServerFn({ method: "POST" })
 
         const insertedRow = insertedNeighborhood as NeighborhoodRow;
         neighborhoodsByZoneCode.set(zoneCodeToUse, insertedRow);
-        neighborhoodsByCommuneAndNames.set(
-          createNeighborhoodLookupKey(insertedRow.commune_id, insertedRow.name_en, insertedRow.name_fr, insertedRow.name_ar),
-          insertedRow,
-        );
         reservedZoneCodes.add(zoneCodeToUse);
         insertedCount += 1;
       }
