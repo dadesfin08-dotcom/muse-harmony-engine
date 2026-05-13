@@ -1363,9 +1363,11 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
-  const downloadMasterProductsCsvTemplate = async () => {
+  const downloadMasterProductsCatalogExport = async () => {
+    const exportRows = await fetchMasterProductsForExport();
+
     const workbook = new ExcelJS.Workbook();
-    const templateSheet = workbook.addWorksheet("Template");
+    const templateSheet = workbook.addWorksheet("Catalog");
     const lookupSheet = workbook.addWorksheet("Lookups");
     lookupSheet.state = "veryHidden";
 
@@ -1373,7 +1375,7 @@ function AdminPage() {
     templateSheet.getRow(1).font = { bold: true };
     templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-    const dropdownRowCount = 5000;
+    const dropdownRowCount = Math.max(5000, exportRows.length + 100);
     const categoryOptions = Array.from(new Set(activeCategories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
       (a, b) => a.localeCompare(b),
     );
@@ -1398,6 +1400,20 @@ function AdminPage() {
     const categoryFormula = categoryOptions.length > 0 ? `Lookups!$A$2:$A$${categoryOptions.length + 1}` : "\"\"";
     const brandFormula = brandOptions.length > 0 ? `Lookups!$B$2:$B$${brandOptions.length + 1}` : "\"\"";
     const unitFormula = `Lookups!$C$2:$C$${unitOptions.length + 1}`;
+
+    for (const row of exportRows) {
+      templateSheet.addRow([
+        row.image_url ?? "",
+        row.product_name,
+        row.name_fr ?? "",
+        row.name_ar ?? "",
+        row.category_name ?? "",
+        row.brand_name ?? "",
+        row.measurement_value != null ? String(row.measurement_value) : "",
+        row.measurement_unit,
+        row.barcode ?? "",
+      ]);
+    }
 
     for (let rowIndex = 2; rowIndex <= dropdownRowCount + 1; rowIndex += 1) {
       templateSheet.getCell(`E${rowIndex}`).dataValidation = {
@@ -1447,11 +1463,13 @@ function AdminPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "master-products-template.xlsx");
+    link.setAttribute("download", "master-products-catalog-export.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+
+    toast.success(`Catalog export ready: ${exportRows.length} products.`);
   };
 
   const downloadMasterProductsExampleCsv = () => {
