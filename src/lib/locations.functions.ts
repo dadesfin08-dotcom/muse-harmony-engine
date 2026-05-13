@@ -17,6 +17,21 @@ const createNeighborhoodInputSchema = z.object({
   deliveryFee: z.coerce.number().min(0).max(100000).default(0),
 });
 
+const serviceZoneImportRowSchema = z.object({
+  zoneCode: z.string().trim().max(64).nullable().optional(),
+  communeEn: z.string().trim().min(1).max(120),
+  communeFr: z.string().trim().max(120).nullable().optional(),
+  communeAr: z.string().trim().max(120).nullable().optional(),
+  douarEn: z.string().trim().min(1).max(120),
+  douarFr: z.string().trim().max(120).nullable().optional(),
+  douarAr: z.string().trim().max(120).nullable().optional(),
+  deliveryFee: z.coerce.number().min(0).max(100000).default(0),
+});
+
+const importServiceZonesBulkInputSchema = z.object({
+  rows: z.array(serviceZoneImportRowSchema).min(1),
+});
+
 const updateCommuneInputSchema = z.object({
   id: z.string().uuid(),
   nameEn: z.string().trim().min(1).max(120),
@@ -53,6 +68,7 @@ type CommuneRow = {
 
 type NeighborhoodRow = {
   id: string;
+  zone_code: string;
   name_en: string;
   name_fr: string | null;
   name_ar: string | null;
@@ -69,6 +85,7 @@ export type ServiceZoneTree = Array<{
   nameAr: string | null;
   neighborhoods: Array<{
     id: string;
+    zoneCode: string;
     name: string;
     nameEn: string;
     nameFr: string | null;
@@ -87,6 +104,7 @@ export type CommuneProfile = {
   nameAr: string | null;
   neighborhoods: Array<{
     id: string;
+    zoneCode: string;
     name: string;
     nameEn: string;
     nameFr: string | null;
@@ -95,6 +113,48 @@ export type CommuneProfile = {
     deliveryFee: number;
     vendorId: string | null;
   }>;
+};
+
+type ServiceZoneExportRow = {
+  zoneCode: string;
+  communeEn: string;
+  communeFr: string | null;
+  communeAr: string | null;
+  douarEn: string;
+  douarFr: string | null;
+  douarAr: string | null;
+  deliveryFee: number;
+};
+
+const createCommuneLookupKey = (nameEn: string, nameFr: string | null, nameAr: string | null) =>
+  `${nameEn.trim().toLowerCase()}|${nameFr?.trim().toLowerCase() ?? ""}|${nameAr?.trim().toLowerCase() ?? ""}`;
+
+const normalizeZoneCode = (value: string | null | undefined) => {
+  const normalized = value?.trim().toUpperCase() ?? "";
+  return normalized.length > 0 ? normalized : null;
+};
+
+const extractZoneCodeSequence = (zoneCode: string) => {
+  const match = zoneCode.match(/^SZ-(\d+)$/i);
+  if (!match) return null;
+  return Number.parseInt(match[1], 10);
+};
+
+const getNextZoneCodeCandidate = async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("neighborhoods")
+    .select("zone_code")
+    .ilike("zone_code", "SZ-%")
+    .order("zone_code", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const currentMax = extractZoneCodeSequence((data as { zone_code?: string | null } | null)?.zone_code ?? "") ?? 0;
+  return `SZ-${String(currentMax + 1).padStart(6, "0")}`;
 };
 
 export const listServiceZones = createServerFn({ method: "GET" }).handler(async () => {
