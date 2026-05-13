@@ -1470,26 +1470,76 @@ function AdminPage() {
   };
 
   const importMasterProductsFromCsv = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Please upload a CSV file.");
+    const lowerCaseName = file.name.toLowerCase();
+    const isCsv = lowerCaseName.endsWith(".csv");
+    const isXlsx = lowerCaseName.endsWith(".xlsx");
+
+    if (!isCsv && !isXlsx) {
+      toast.error("Please upload an XLSX or CSV file.");
       return;
     }
 
     try {
       setIsImportingMasterProducts(true);
 
-      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
-        Papa.parse<Record<string, string>>(file, {
-          header: true,
-          delimiter: ";",
-          transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
-          skipEmptyLines: true,
-          complete: resolve,
-          error: reject,
-        });
-      });
+      const parseSpreadsheetRows = async () => {
+        if (isCsv) {
+          const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+            Papa.parse<Record<string, string>>(file, {
+              header: true,
+              delimiter: ";",
+              transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
+              skipEmptyLines: true,
+              complete: resolve,
+              error: reject,
+            });
+          });
 
-      const uploadedHeaders = parsed.meta.fields ?? [];
+          return {
+            uploadedHeaders: parsed.meta.fields ?? [],
+            rows: parsed.data,
+          };
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const rawBuffer = await file.arrayBuffer();
+        await workbook.xlsx.load(rawBuffer);
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
+          throw new Error("The uploaded XLSX file has no worksheet.");
+        }
+
+        const headerRow = worksheet.getRow(1);
+        const uploadedHeaders = MASTER_PRODUCTS_CSV_HEADERS.map((_, index) =>
+          String(headerRow.getCell(index + 1).text ?? "")
+            .replace(/^\uFEFF/, "")
+            .trim(),
+        );
+
+        const rows: Array<Record<string, string>> = [];
+        for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+          const row = worksheet.getRow(rowNumber);
+          const mappedRow: Record<string, string> = {};
+          let hasAnyValue = false;
+
+          MASTER_PRODUCTS_CSV_HEADERS.forEach((header, headerIndex) => {
+            const rawValue = String(row.getCell(headerIndex + 1).text ?? "").trim();
+            mappedRow[header] = rawValue;
+            if (rawValue.length > 0) {
+              hasAnyValue = true;
+            }
+          });
+
+          if (hasAnyValue) {
+            rows.push(mappedRow);
+          }
+        }
+
+        return { uploadedHeaders, rows };
+      };
+
+      const parsedSpreadsheet = await parseSpreadsheetRows();
+      const uploadedHeaders = parsedSpreadsheet.uploadedHeaders;
       const missingHeaders = MASTER_PRODUCTS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
 
       if (missingHeaders.length > 0) {
@@ -1497,7 +1547,7 @@ function AdminPage() {
         return;
       }
 
-      const preparedRows = parsed.data
+      const preparedRows = parsedSpreadsheet.rows
         .map((row) => ({
           imageUrl: row.Image_URL?.trim() || null,
           nameEn: row.Name_EN?.trim() || "",
@@ -1558,8 +1608,8 @@ function AdminPage() {
         toast.success(summary);
       }
     } catch (error) {
-      console.error("Failed to import master products CSV:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to import master products CSV.");
+      console.error("Failed to import master products file:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import bulk products file.");
     } finally {
       setIsImportingMasterProducts(false);
       if (masterProductsCsvInputRef.current) {
