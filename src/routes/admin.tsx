@@ -222,7 +222,7 @@ type BrandAdminRow = {
 };
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
-const BRANDS_CSV_HEADERS = ["Brand_Name_AR", "Brand_Name_EN", "Brand_Name_FR", "Logo_URL"] as const;
+const BRANDS_CSV_HEADERS = ["Logo", "English", "Français", "العربية"] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -1239,7 +1239,7 @@ function AdminPage() {
   };
 
   const downloadBrandsCsvTemplate = () => {
-    const csvContent = `${BRANDS_CSV_HEADERS.join(",")}\n`;
+    const csvContent = `\uFEFF${BRANDS_CSV_HEADERS.join(";")}\n`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1263,6 +1263,8 @@ function AdminPage() {
       const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
         Papa.parse<Record<string, string>>(file, {
           header: true,
+          delimiter: ";",
+          transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
           skipEmptyLines: true,
           complete: resolve,
           error: reject,
@@ -1279,15 +1281,15 @@ function AdminPage() {
 
       const preparedRows = parsed.data
         .map((row) => ({
-          nameAr: row.Brand_Name_AR?.trim() || null,
-          nameEn: row.Brand_Name_EN?.trim() || "",
-          nameFr: row.Brand_Name_FR?.trim() || null,
-          logoUrl: row.Logo_URL?.trim() || null,
+          nameAr: row["العربية"]?.trim() || null,
+          nameEn: row.English?.trim() || "",
+          nameFr: row["Français"]?.trim() || null,
+          logoUrl: row.Logo?.trim() || null,
         }))
         .filter((row) => row.nameEn.length > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least Brand_Name_EN in one row.");
+        toast.error("No valid rows found. Fill at least English in one row.");
         return;
       }
 
