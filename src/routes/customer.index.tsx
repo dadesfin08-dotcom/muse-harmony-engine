@@ -631,6 +631,61 @@ function Index() {
     }
   };
 
+  useEffect(() => {
+    if (!isLocationModalOpen) {
+      return;
+    }
+
+    const hydrateLocationDrawer = async () => {
+      let commune = selectedCommuneOption;
+      let neighborhood = selectedNeighborhoodOption;
+
+      if (!selectedNeighborhoodId) {
+        const persistedLocation = readPersistedLocation();
+        if (persistedLocation?.neighborhoodId) {
+          const resolved = await resolveLocationAndApply(persistedLocation.neighborhoodId);
+          if (resolved) {
+            commune = selectedCommuneOption ?? commune;
+            neighborhood = selectedNeighborhoodOption ?? neighborhood;
+          }
+        }
+      }
+
+      if ((!commune || !neighborhood) && selectedNeighborhoodId) {
+        const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: selectedNeighborhoodId } });
+        if (resolved) {
+          commune = resolved.commune;
+          neighborhood = resolved.neighborhood;
+          setSelectedCommuneOption(resolved.commune);
+          setSelectedNeighborhoodOption(resolved.neighborhood);
+          if (!selectedCommuneId) {
+            setSelectedCommuneId(resolved.commune.id);
+          }
+        }
+      }
+
+      if (commune) {
+        setCommuneSearchInput(getLocalizedCommuneName(commune));
+      }
+
+      if (neighborhood) {
+        setNeighborhoodSearchInput(getLocalizedNeighborhoodName(neighborhood));
+      }
+    };
+
+    void hydrateLocationDrawer();
+  }, [
+    fetchLocationByNeighborhoodId,
+    getLocalizedCommuneName,
+    getLocalizedNeighborhoodName,
+    isLocationModalOpen,
+    resolveLocationAndApply,
+    selectedCommuneId,
+    selectedCommuneOption,
+    selectedNeighborhoodId,
+    selectedNeighborhoodOption,
+  ]);
+
   const categories = ((categoriesQuery.data ?? []) as CategoryChip[]).filter((category) => category.product_count > 0);
   const shouldAnimateCategories = categories.length > 3;
 
@@ -2398,7 +2453,7 @@ function Index() {
                         onChange={(event) => {
                           const nextValue = event.target.value;
                           setCommuneSearchInput(nextValue);
-                          if (selectedCommuneId) {
+                          if (selectedCommuneId && nextValue.trim().length === 0) {
                             setSelectedCommuneId("");
                             setSelectedCommuneOption(null);
                             setSelectedNeighborhoodId("");
