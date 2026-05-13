@@ -31,7 +31,6 @@ import {
   Clock3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Input } from "@/components/ui/input";
@@ -79,7 +78,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -305,8 +303,6 @@ function Index() {
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [selectedCommuneOption, setSelectedCommuneOption] = useState<CommuneSearchResult | null>(null);
   const [selectedNeighborhoodOption, setSelectedNeighborhoodOption] = useState<NeighborhoodSearchResult | null>(null);
-  const [isCommuneComboboxOpen, setIsCommuneComboboxOpen] = useState(false);
-  const [isNeighborhoodComboboxOpen, setIsNeighborhoodComboboxOpen] = useState(false);
   const [communeSearchInput, setCommuneSearchInput] = useState("");
   const [neighborhoodSearchInput, setNeighborhoodSearchInput] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -367,10 +363,12 @@ function Index() {
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
   const communeSearchQuery = useQuery({
     queryKey: ["customer", "commune-search", normalizedCommuneSearch],
     queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
-    enabled: isLocationModalOpen,
+    enabled: isLocationModalOpen && hasEnoughCommuneChars,
     staleTime: 15_000,
   });
   const neighborhoodSearchQuery = useQuery({
@@ -383,7 +381,7 @@ function Index() {
           limit: 30,
         },
       }),
-    enabled: isLocationModalOpen && !!selectedCommuneId,
+    enabled: isLocationModalOpen && !!selectedCommuneId && hasEnoughNeighborhoodChars,
     staleTime: 15_000,
   });
   const globalSettingsQuery = useQuery({
@@ -505,9 +503,10 @@ function Index() {
   const selectedCommune = selectedCommuneOption;
   const selectedNeighborhood = selectedNeighborhoodOption;
   const filteredCommuneOptions = useMemo(() => {
+    if (!hasEnoughCommuneChars) return [];
+
     const source = communeSearchQuery.data ?? [];
-    const query = normalizeSearchText(communeSearchInput);
-    if (!query) return source;
+    const query = normalizedCommuneSearch;
 
     return source.filter((commune) => {
       const searchable = [
@@ -522,11 +521,12 @@ function Index() {
 
       return searchable.some((value) => value.includes(query));
     });
-  }, [communeSearchInput, communeSearchQuery.data]);
+  }, [communeSearchQuery.data, getLocalizedCommuneName, hasEnoughCommuneChars, normalizedCommuneSearch]);
   const filteredNeighborhoodOptions = useMemo(() => {
+    if (!hasEnoughNeighborhoodChars) return [];
+
     const source = neighborhoodSearchQuery.data ?? [];
-    const query = normalizeSearchText(neighborhoodSearchInput);
-    if (!query) return source;
+    const query = normalizedNeighborhoodSearch;
 
     return source.filter((neighborhood) => {
       const feeLabel = `${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} mad`;
@@ -543,7 +543,7 @@ function Index() {
 
       return searchable.some((value) => value.includes(query));
     });
-  }, [neighborhoodSearchInput, neighborhoodSearchQuery.data]);
+  }, [getLocalizedNeighborhoodName, hasEnoughNeighborhoodChars, neighborhoodSearchQuery.data, normalizedNeighborhoodSearch]);
 
   useEffect(() => {
     if (!selectedNeighborhoodOption) return;
@@ -2359,154 +2359,148 @@ function Index() {
                 Choose your Jamaa Tourabiya and Hay / Douar before placing orders.
               </p>
 
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Jamaa Tourabiya
-                  </label>
-                  <Popover open={isCommuneComboboxOpen} onOpenChange={setIsCommuneComboboxOpen}>
-                    <PopoverAnchor asChild>
-                      <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          value={communeSearchInput}
-                          onChange={(event) => {
-                            const nextValue = event.target.value;
-                            setCommuneSearchInput(nextValue);
-                            if (selectedCommuneId) {
-                              setSelectedCommuneId("");
-                              setSelectedCommuneOption(null);
-                              setSelectedNeighborhoodId("");
-                              setSelectedNeighborhoodOption(null);
-                              setNeighborhoodSearchInput("");
-                            }
-                            if (!isCommuneComboboxOpen) setIsCommuneComboboxOpen(true);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                            }
-                          }}
-                          onFocus={() => setIsCommuneComboboxOpen(true)}
-                          placeholder="Search commune (EN / FR / AR)..."
-                          className="h-10 rounded-xl pl-9 pr-3 text-sm"
-                          aria-expanded={isCommuneComboboxOpen}
-                          role="combobox"
-                        />
-                      </div>
-                    </PopoverAnchor>
-                    <PopoverContent className="z-[100000] w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandList className="max-h-[300px] overflow-y-auto">
-                          <CommandEmpty>No commune found.</CommandEmpty>
-                          <CommandGroup>
-                            {filteredCommuneOptions.map((commune) => (
-                              <CommandItem
-                                key={commune.id}
-                                value={commune.id}
-                                onSelect={() => {
-                                  const nextCommuneId = commune.id;
-                                  const communeHasChanged = nextCommuneId !== selectedCommuneId;
-                                  setSelectedCommuneId(nextCommuneId);
-                                  setSelectedCommuneOption(commune);
-                                  if (communeHasChanged) {
-                                    setSelectedNeighborhoodId("");
-                                    setSelectedNeighborhoodOption(null);
-                                    setNeighborhoodSearchInput("");
-                                  }
-                                  setCommuneSearchInput(getLocalizedCommuneName(commune));
-                                }}
-                              >
-                                <Check
-                                  className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`}
-                                />
-                                <span className="truncate">{getLocalizedCommuneName(commune)}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <label className="text-xs font-medium text-muted-foreground">Jamaa Tourabiya</label>
+                  <div className="sticky top-0 z-50 bg-background pb-2">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={communeSearchInput}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setCommuneSearchInput(nextValue);
+                          if (selectedCommuneId) {
+                            setSelectedCommuneId("");
+                            setSelectedCommuneOption(null);
+                            setSelectedNeighborhoodId("");
+                            setSelectedNeighborhoodOption(null);
+                            setNeighborhoodSearchInput("");
+                          }
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") event.preventDefault();
+                        }}
+                        placeholder="Search commune (EN / FR / AR)..."
+                        className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                        role="combobox"
+                        aria-expanded={hasEnoughCommuneChars}
+                        aria-controls="commune-results"
+                      />
+                    </div>
+                  </div>
+                  <div id="commune-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
+                    {!hasEnoughCommuneChars ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">
+                        {language === "ar"
+                          ? "كتب على الأقل 3 حروف للبحث..."
+                          : language === "fr"
+                            ? "Tapez au moins 3 caractères pour rechercher..."
+                            : "Type at least 3 characters to search..."}
+                      </p>
+                    ) : communeSearchQuery.isLoading ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
+                    ) : filteredCommuneOptions.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">No commune found.</p>
+                    ) : (
+                      <ul className="py-1">
+                        {filteredCommuneOptions.map((commune) => (
+                          <li key={commune.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextCommuneId = commune.id;
+                                const communeHasChanged = nextCommuneId !== selectedCommuneId;
+                                setSelectedCommuneId(nextCommuneId);
+                                setSelectedCommuneOption(commune);
+                                if (communeHasChanged) {
+                                  setSelectedNeighborhoodId("");
+                                  setSelectedNeighborhoodOption(null);
+                                  setNeighborhoodSearchInput("");
+                                }
+                                setCommuneSearchInput(getLocalizedCommuneName(commune));
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                            >
+                              <Check className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`} />
+                              <span className="truncate">{getLocalizedCommuneName(commune)}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Hay / Douar
-                  </label>
-                  <Popover
-                    open={isNeighborhoodComboboxOpen}
-                    onOpenChange={(open) => setIsNeighborhoodComboboxOpen(selectedCommuneId ? open : false)}
-                  >
-                    <PopoverAnchor asChild>
-                      <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          value={neighborhoodSearchInput}
-                          onChange={(event) => {
-                            const nextValue = event.target.value;
-                            setNeighborhoodSearchInput(nextValue);
-                            if (selectedNeighborhoodId) {
-                              setSelectedNeighborhoodId("");
-                              setSelectedNeighborhoodOption(null);
-                            }
-                            if (selectedCommuneId && !isNeighborhoodComboboxOpen) {
-                              setIsNeighborhoodComboboxOpen(true);
-                            }
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                            }
-                          }}
-                          onFocus={() => {
-                            if (selectedCommuneId) {
-                              setIsNeighborhoodComboboxOpen(true);
-                            }
-                          }}
-                          placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
-                          className="h-10 rounded-xl pl-9 pr-3 text-sm"
-                          aria-expanded={isNeighborhoodComboboxOpen}
-                          role="combobox"
-                          disabled={!selectedCommuneId}
-                        />
-                      </div>
-                    </PopoverAnchor>
-                    <PopoverContent className="z-[100000] w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandList className="max-h-[300px] overflow-y-auto">
-                          {!selectedCommuneId ? <CommandEmpty>Select a commune first.</CommandEmpty> : null}
-                          {selectedCommuneId ? (
-                            <>
-                              <CommandEmpty>No douar found in this commune.</CommandEmpty>
-                              <CommandGroup>
-                                {filteredNeighborhoodOptions.map((neighborhood) => (
-                                  <CommandItem
-                                    key={neighborhood.id}
-                                    value={neighborhood.id}
-                                    onSelect={() => {
-                                      setSelectedNeighborhoodId(neighborhood.id);
-                                      setSelectedNeighborhoodOption(neighborhood);
-                                      setNeighborhoodSearchInput(
-                                        `${getLocalizedNeighborhoodName(neighborhood)} (+${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`,
-                                      );
-                                    }}
-                                  >
-                                    <Check
-                                      className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
-                                    />
-                                    <span className="truncate">
-                                      {getLocalizedNeighborhoodName(neighborhood)} (+{Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
-                                    </span>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </>
-                          ) : null}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <label className="text-xs font-medium text-muted-foreground">Hay / Douar</label>
+                  <div className="sticky top-0 z-50 bg-background pb-2">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={neighborhoodSearchInput}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          setNeighborhoodSearchInput(nextValue);
+                          if (selectedNeighborhoodId) {
+                            setSelectedNeighborhoodId("");
+                            setSelectedNeighborhoodOption(null);
+                          }
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") event.preventDefault();
+                        }}
+                        placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                        className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                        role="combobox"
+                        aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
+                        aria-controls="douar-results"
+                        disabled={!selectedCommuneId}
+                      />
+                    </div>
+                  </div>
+                  <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
+                    {!selectedCommuneId ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">Select a commune first.</p>
+                    ) : !hasEnoughNeighborhoodChars ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">
+                        {language === "ar"
+                          ? "كتب على الأقل 3 حروف للبحث..."
+                          : language === "fr"
+                            ? "Tapez au moins 3 caractères pour rechercher..."
+                            : "Type at least 3 characters to search..."}
+                      </p>
+                    ) : neighborhoodSearchQuery.isLoading ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
+                    ) : filteredNeighborhoodOptions.length === 0 ? (
+                      <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
+                    ) : (
+                      <ul className="py-1">
+                        {filteredNeighborhoodOptions.map((neighborhood) => (
+                          <li key={neighborhood.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedNeighborhoodId(neighborhood.id);
+                                setSelectedNeighborhoodOption(neighborhood);
+                                setNeighborhoodSearchInput(
+                                  `${getLocalizedNeighborhoodName(neighborhood)} (+${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`,
+                                );
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                            >
+                              <Check
+                                className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
+                              />
+                              <span className="truncate">
+                                {getLocalizedNeighborhoodName(neighborhood)} (+{Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
               </div>
 
