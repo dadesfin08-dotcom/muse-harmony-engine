@@ -1330,6 +1330,99 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
+  const downloadMasterProductsCsvTemplate = () => {
+    const csvContent = `\uFEFF${MASTER_PRODUCTS_CSV_HEADERS.join(";")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "master-products-template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importMasterProductsFromCsv = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please upload a CSV file.");
+      return;
+    }
+
+    try {
+      setIsImportingMasterProducts(true);
+
+      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+        Papa.parse<Record<string, string>>(file, {
+          header: true,
+          delimiter: ";",
+          transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
+          skipEmptyLines: true,
+          complete: resolve,
+          error: reject,
+        });
+      });
+
+      const uploadedHeaders = parsed.meta.fields ?? [];
+      const missingHeaders = MASTER_PRODUCTS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
+
+      if (missingHeaders.length > 0) {
+        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const preparedRows = parsed.data
+        .map((row) => ({
+          imageUrl: row.Image_URL?.trim() || null,
+          nameEn: row.Name_EN?.trim() || "",
+          nameFr: row.Name_FR?.trim() || null,
+          nameAr: row.Name_AR?.trim() || null,
+          category: row.Category?.trim() || "",
+          brand: row.Brand?.trim() || null,
+          measurementValue: row.Measurement_Value?.trim() || null,
+          measurementUnit: row.Measurement_Unit?.trim() || "",
+          barcode: row.Barcode?.trim() || null,
+        }))
+        .filter((row) => row.nameEn.length > 0 || row.category.length > 0);
+
+      if (preparedRows.length === 0) {
+        toast.error("No valid rows found. Fill at least Name_EN and Category in one row.");
+        return;
+      }
+
+      const result = await importMasterProductsBulkInDatabase({ data: { rows: preparedRows } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
+
+      const summary = `Imported ${result.totalProcessed}: ${result.insertedCount} new, ${result.updatedCount} updated${result.skippedCount > 0 ? `, ${result.skippedCount} skipped` : ""}.`;
+
+      if (result.skippedCount > 0) {
+        toast.warning(summary);
+        for (const warning of result.warnings.slice(0, 5)) {
+          toast.error(warning);
+        }
+        if (result.warnings.length > 5) {
+          toast.message(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
+        }
+      } else {
+        toast.success(summary);
+      }
+    } catch (error) {
+      console.error("Failed to import master products CSV:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import master products CSV.");
+    } finally {
+      setIsImportingMasterProducts(false);
+      if (masterProductsCsvInputRef.current) {
+        masterProductsCsvInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleMasterProductsCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    await importMasterProductsFromCsv(file);
+  };
+
   const archiveProduct = async (product: MasterProductEntity) => {
     setPendingArchiveProduct(product);
   };
