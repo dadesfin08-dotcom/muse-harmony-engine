@@ -369,8 +369,10 @@ function AdminPage() {
   const setVendorActiveState = useServerFn(updateVendorActiveState);
   const fetchVendorSalesAnalytics = useServerFn(getVendorSalesAnalytics);
   const fetchServiceZones = useServerFn(listServiceZones);
+  const fetchServiceZonesForExport = useServerFn(listServiceZonesForExport);
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
+  const importServiceZonesBulkInDatabase = useServerFn(importServiceZonesBulk);
   const fetchMasterProducts = useServerFn(listMasterProducts);
   const fetchMasterProductsForExport = useServerFn(listMasterProductsForExport);
   const fetchBrands = useServerFn(listBrands);
@@ -633,9 +635,11 @@ function AdminPage() {
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [isImportingBrands, setIsImportingBrands] = useState(false);
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
+  const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
+  const serviceZonesCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
