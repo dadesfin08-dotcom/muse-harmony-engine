@@ -31,7 +31,6 @@ import {
   Clock3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Input } from "@/components/ui/input";
@@ -79,7 +78,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -305,8 +303,6 @@ function Index() {
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [selectedCommuneOption, setSelectedCommuneOption] = useState<CommuneSearchResult | null>(null);
   const [selectedNeighborhoodOption, setSelectedNeighborhoodOption] = useState<NeighborhoodSearchResult | null>(null);
-  const [isCommuneComboboxOpen, setIsCommuneComboboxOpen] = useState(false);
-  const [isNeighborhoodComboboxOpen, setIsNeighborhoodComboboxOpen] = useState(false);
   const [communeSearchInput, setCommuneSearchInput] = useState("");
   const [neighborhoodSearchInput, setNeighborhoodSearchInput] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -367,10 +363,12 @@ function Index() {
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
   const communeSearchQuery = useQuery({
     queryKey: ["customer", "commune-search", normalizedCommuneSearch],
     queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
-    enabled: isLocationModalOpen,
+    enabled: isLocationModalOpen && hasEnoughCommuneChars,
     staleTime: 15_000,
   });
   const neighborhoodSearchQuery = useQuery({
@@ -383,7 +381,7 @@ function Index() {
           limit: 30,
         },
       }),
-    enabled: isLocationModalOpen && !!selectedCommuneId,
+    enabled: isLocationModalOpen && !!selectedCommuneId && hasEnoughNeighborhoodChars,
     staleTime: 15_000,
   });
   const globalSettingsQuery = useQuery({
@@ -505,9 +503,10 @@ function Index() {
   const selectedCommune = selectedCommuneOption;
   const selectedNeighborhood = selectedNeighborhoodOption;
   const filteredCommuneOptions = useMemo(() => {
+    if (!hasEnoughCommuneChars) return [];
+
     const source = communeSearchQuery.data ?? [];
-    const query = normalizeSearchText(communeSearchInput);
-    if (!query) return source;
+    const query = normalizedCommuneSearch;
 
     return source.filter((commune) => {
       const searchable = [
@@ -522,11 +521,12 @@ function Index() {
 
       return searchable.some((value) => value.includes(query));
     });
-  }, [communeSearchInput, communeSearchQuery.data]);
+  }, [communeSearchQuery.data, getLocalizedCommuneName, hasEnoughCommuneChars, normalizedCommuneSearch]);
   const filteredNeighborhoodOptions = useMemo(() => {
+    if (!hasEnoughNeighborhoodChars) return [];
+
     const source = neighborhoodSearchQuery.data ?? [];
-    const query = normalizeSearchText(neighborhoodSearchInput);
-    if (!query) return source;
+    const query = normalizedNeighborhoodSearch;
 
     return source.filter((neighborhood) => {
       const feeLabel = `${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} mad`;
@@ -543,7 +543,7 @@ function Index() {
 
       return searchable.some((value) => value.includes(query));
     });
-  }, [neighborhoodSearchInput, neighborhoodSearchQuery.data]);
+  }, [getLocalizedNeighborhoodName, hasEnoughNeighborhoodChars, neighborhoodSearchQuery.data, normalizedNeighborhoodSearch]);
 
   useEffect(() => {
     if (!selectedNeighborhoodOption) return;
