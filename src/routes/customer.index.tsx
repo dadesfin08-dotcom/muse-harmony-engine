@@ -365,16 +365,12 @@ function Index() {
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
-  const debouncedCommuneSearch = useDebouncedValue(communeSearchInput, 300);
-  const debouncedNeighborhoodSearch = useDebouncedValue(neighborhoodSearchInput, 300);
-  const normalizedCommuneSearch = normalizeSearchText(debouncedCommuneSearch);
-  const normalizedNeighborhoodSearch = normalizeSearchText(debouncedNeighborhoodSearch);
-  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
-  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
+  const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
+  const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const communeSearchQuery = useQuery({
     queryKey: ["customer", "commune-search", normalizedCommuneSearch],
     queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
-    enabled: isLocationModalOpen && hasEnoughCommuneChars,
+    enabled: isLocationModalOpen,
     staleTime: 15_000,
   });
   const neighborhoodSearchQuery = useQuery({
@@ -387,7 +383,7 @@ function Index() {
           limit: 30,
         },
       }),
-    enabled: isLocationModalOpen && !!selectedCommuneId && hasEnoughNeighborhoodChars,
+    enabled: isLocationModalOpen && !!selectedCommuneId,
     staleTime: 15_000,
   });
   const globalSettingsQuery = useQuery({
