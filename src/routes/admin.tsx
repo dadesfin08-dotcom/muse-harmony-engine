@@ -337,6 +337,7 @@ function AdminPage() {
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
+  const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
@@ -550,8 +551,10 @@ function AdminPage() {
   const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [isImportingBrands, setIsImportingBrands] = useState(false);
+  const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
+  const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
