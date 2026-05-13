@@ -2319,45 +2319,134 @@ function Index() {
 
               <div className="mt-4 space-y-3">
                 <div className="space-y-2">
-                  <label htmlFor="location-commune" className="text-xs font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Jamaa Tourabiya
                   </label>
-                  <select
-                    id="location-commune"
-                    value={selectedCommuneId}
-                    onChange={(event) => {
-                      setSelectedCommuneId(event.target.value);
-                      setSelectedNeighborhoodId("");
-                    }}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-                  >
-                    <option value="">Select commune</option>
-                    {serviceZones.map((commune) => (
-                      <option key={commune.id} value={commune.id}>
-                        {getLocalizedCommuneName(commune)}
-                      </option>
-                    ))}
-                  </select>
+                  <Popover open={isCommuneComboboxOpen} onOpenChange={setIsCommuneComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isCommuneComboboxOpen}
+                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
+                      >
+                        <span className="truncate text-left">
+                          {selectedCommune ? getLocalizedCommuneName(selectedCommune) : "Type 3+ characters to find a commune"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search commune (EN / FR / AR)..."
+                          value={communeSearchInput}
+                          onValueChange={setCommuneSearchInput}
+                        />
+                        <CommandList>
+                          {!hasEnoughCommuneChars ? (
+                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
+                          ) : null}
+                          {hasEnoughCommuneChars ? (
+                            <>
+                              <CommandEmpty>No commune found.</CommandEmpty>
+                              <CommandGroup>
+                                {filteredCommuneOptions.map((commune) => (
+                                  <CommandItem
+                                    key={commune.id}
+                                    value={commune.id}
+                                    onSelect={() => {
+                                      const nextCommuneId = commune.id;
+                                      const communeHasChanged = nextCommuneId !== selectedCommuneId;
+                                      setSelectedCommuneId(nextCommuneId);
+                                      if (communeHasChanged) {
+                                        setSelectedNeighborhoodId("");
+                                        setNeighborhoodSearchInput("");
+                                      }
+                                      setIsCommuneComboboxOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <span className="truncate">{getLocalizedCommuneName(commune)}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          ) : null}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="location-neighborhood" className="text-xs font-medium text-muted-foreground">
+                  <label className="text-xs font-medium text-muted-foreground">
                     Hay / Douar
                   </label>
-                  <select
-                    id="location-neighborhood"
-                    value={selectedNeighborhoodId}
-                    onChange={(event) => setSelectedNeighborhoodId(event.target.value)}
-                    disabled={!selectedCommuneId}
-                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition disabled:cursor-not-allowed disabled:opacity-60 focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                  <Popover
+                    open={isNeighborhoodComboboxOpen}
+                    onOpenChange={(open) => setIsNeighborhoodComboboxOpen(selectedCommuneId ? open : false)}
                   >
-                    <option value="">Select neighborhood</option>
-                    {neighborhoodOptions.map((neighborhood) => (
-                      <option key={neighborhood.id} value={neighborhood.id}>
-                        {getLocalizedNeighborhoodName(neighborhood)}
-                      </option>
-                    ))}
-                  </select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isNeighborhoodComboboxOpen}
+                        disabled={!selectedCommuneId}
+                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
+                      >
+                        <span className="truncate text-left">
+                          {selectedNeighborhood
+                            ? `${getLocalizedNeighborhoodName(selectedNeighborhood)} (+${Number(selectedNeighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`
+                            : selectedCommuneId
+                              ? "Type 3+ characters to find a douar"
+                              : "Select a commune first"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search douar (EN / FR / AR)..."
+                          value={neighborhoodSearchInput}
+                          onValueChange={setNeighborhoodSearchInput}
+                        />
+                        <CommandList>
+                          {!selectedCommuneId ? <CommandEmpty>Select a commune first.</CommandEmpty> : null}
+                          {selectedCommuneId && !hasEnoughNeighborhoodChars ? (
+                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
+                          ) : null}
+                          {selectedCommuneId && hasEnoughNeighborhoodChars ? (
+                            <>
+                              <CommandEmpty>No douar found in this commune.</CommandEmpty>
+                              <CommandGroup>
+                                {filteredNeighborhoodOptions.map((neighborhood) => (
+                                  <CommandItem
+                                    key={neighborhood.id}
+                                    value={neighborhood.id}
+                                    onSelect={() => {
+                                      setSelectedNeighborhoodId(neighborhood.id);
+                                      setIsNeighborhoodComboboxOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <span className="truncate">
+                                      {getLocalizedNeighborhoodName(neighborhood)} (+{Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          ) : null}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
