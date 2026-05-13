@@ -794,7 +794,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, measurement_unit, image_url, is_active)",
+          "vendor_id, vendor_price, is_available, is_flash_sale, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, measurement_unit, image_url, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -811,6 +811,8 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
       return ((rows ?? []) as Array<{
         vendor_id: string;
         vendor_price: number;
+        is_available: boolean;
+        is_flash_sale: boolean;
         flash_sale_price: number | null;
         flash_sale_end_time: string | null;
         master_products: {
@@ -823,7 +825,14 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           is_active: boolean;
         } | null;
       }>)
-        .filter((row) => !!row.master_products && row.flash_sale_price != null && !!row.flash_sale_end_time)
+        .filter(
+          (row) =>
+            row.is_available === true &&
+            row.is_flash_sale === true &&
+            !!row.master_products &&
+            row.flash_sale_price != null &&
+            !!row.flash_sale_end_time,
+        )
         .map((row) => ({
           id: row.master_products!.id,
           vendorId: row.vendor_id,
