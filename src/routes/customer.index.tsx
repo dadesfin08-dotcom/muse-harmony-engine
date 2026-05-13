@@ -2395,42 +2395,35 @@ function Index() {
                         />
                       </div>
                     </PopoverAnchor>
-                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                    <PopoverContent className="z-[100000] w-[--radix-popover-trigger-width] p-0" align="start">
                       <Command shouldFilter={false}>
-                        <CommandList>
-                          {!hasEnoughCommuneChars ? (
-                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
-                          ) : null}
-                          {hasEnoughCommuneChars ? (
-                            <>
-                              <CommandEmpty>No commune found.</CommandEmpty>
-                              <CommandGroup>
-                                {filteredCommuneOptions.map((commune) => (
-                                  <CommandItem
-                                    key={commune.id}
-                                    value={commune.id}
-                                    onSelect={() => {
-                                      const nextCommuneId = commune.id;
-                                      const communeHasChanged = nextCommuneId !== selectedCommuneId;
-                                      setSelectedCommuneId(nextCommuneId);
-                                      setSelectedCommuneOption(commune);
-                                      if (communeHasChanged) {
-                                        setSelectedNeighborhoodId("");
-                                        setSelectedNeighborhoodOption(null);
-                                        setNeighborhoodSearchInput("");
-                                      }
-                                      setCommuneSearchInput(getLocalizedCommuneName(commune));
-                                    }}
-                                  >
-                                    <Check
-                                      className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`}
-                                    />
-                                    <span className="truncate">{getLocalizedCommuneName(commune)}</span>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </>
-                          ) : null}
+                        <CommandList className="max-h-[300px] overflow-y-auto">
+                          <CommandEmpty>No commune found.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredCommuneOptions.map((commune) => (
+                              <CommandItem
+                                key={commune.id}
+                                value={commune.id}
+                                onSelect={() => {
+                                  const nextCommuneId = commune.id;
+                                  const communeHasChanged = nextCommuneId !== selectedCommuneId;
+                                  setSelectedCommuneId(nextCommuneId);
+                                  setSelectedCommuneOption(commune);
+                                  if (communeHasChanged) {
+                                    setSelectedNeighborhoodId("");
+                                    setSelectedNeighborhoodOption(null);
+                                    setNeighborhoodSearchInput("");
+                                  }
+                                  setCommuneSearchInput(getLocalizedCommuneName(commune));
+                                }}
+                              >
+                                <Check
+                                  className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`}
+                                />
+                                <span className="truncate">{getLocalizedCommuneName(commune)}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
                         </CommandList>
                       </Command>
                     </PopoverContent>
@@ -2479,14 +2472,11 @@ function Index() {
                         />
                       </div>
                     </PopoverAnchor>
-                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                    <PopoverContent className="z-[100000] w-[--radix-popover-trigger-width] p-0" align="start">
                       <Command shouldFilter={false}>
-                        <CommandList>
+                        <CommandList className="max-h-[300px] overflow-y-auto">
                           {!selectedCommuneId ? <CommandEmpty>Select a commune first.</CommandEmpty> : null}
-                          {selectedCommuneId && !hasEnoughNeighborhoodChars ? (
-                            <CommandEmpty>Type at least 3 characters.</CommandEmpty>
-                          ) : null}
-                          {selectedCommuneId && hasEnoughNeighborhoodChars ? (
+                          {selectedCommuneId ? (
                             <>
                               <CommandEmpty>No douar found in this commune.</CommandEmpty>
                               <CommandGroup>
