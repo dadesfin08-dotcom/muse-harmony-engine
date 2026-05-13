@@ -313,6 +313,8 @@ function Index() {
   };
   const getLocalizedNeighborhoodName = (zone: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
+  const getLocalizedCommuneName = (zone: { nameEn?: string | null; nameFr?: string | null; nameAr?: string | null; name: string }) =>
+    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
@@ -475,7 +477,7 @@ function Index() {
       return t("header.locationFallback");
     }
 
-    return `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`;
+    return `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`;
   }, [selectedCommuneId, selectedNeighborhoodId, serviceZones, t]);
 
   const resolveLocationByNeighborhoodId = (neighborhoodId: string) => {
@@ -485,7 +487,7 @@ function Index() {
         return {
           communeId: commune.id,
           neighborhoodId: neighborhood.id,
-          locationLabel: `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`,
+          locationLabel: `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`,
         } satisfies PersistedLocation;
       }
     }
@@ -1139,7 +1141,7 @@ function Index() {
     const location = {
       communeId: commune.id,
       neighborhoodId: neighborhood.id,
-      locationLabel: `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`,
+      locationLabel: `${getLocalizedCommuneName(commune)} / ${getLocalizedNeighborhoodName(neighborhood)}`,
     } satisfies PersistedLocation;
 
     persistLocation(location);
@@ -2279,7 +2281,7 @@ function Index() {
                     <option value="">Select commune</option>
                     {serviceZones.map((commune) => (
                       <option key={commune.id} value={commune.id}>
-                        {commune.name}
+                        {getLocalizedCommuneName(commune)}
                       </option>
                     ))}
                   </select>

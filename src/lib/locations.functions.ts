@@ -4,7 +4,9 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const createCommuneInputSchema = z.object({
-  name: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().min(1).max(120),
+  nameFr: z.string().trim().max(120).nullable().optional(),
+  nameAr: z.string().trim().max(120).nullable().optional(),
 });
 
 const createNeighborhoodInputSchema = z.object({
@@ -17,7 +19,9 @@ const createNeighborhoodInputSchema = z.object({
 
 const updateCommuneInputSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().min(1).max(120),
+  nameFr: z.string().trim().max(120).nullable().optional(),
+  nameAr: z.string().trim().max(120).nullable().optional(),
 });
 
 const updateNeighborhoodInputSchema = z.object({
@@ -42,7 +46,9 @@ const deleteCommuneInputSchema = z.object({
 
 type CommuneRow = {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
 };
 
 type NeighborhoodRow = {
@@ -58,6 +64,9 @@ type NeighborhoodRow = {
 export type ServiceZoneTree = Array<{
   id: string;
   name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   neighborhoods: Array<{
     id: string;
     name: string;
@@ -73,6 +82,9 @@ export type ServiceZoneTree = Array<{
 export type CommuneProfile = {
   id: string;
   name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   neighborhoods: Array<{
     id: string;
     name: string;
@@ -89,7 +101,10 @@ export const listServiceZones = createServerFn({ method: "GET" }).handler(async 
   try {
     const [{ data: communes, error: communesError }, { data: neighborhoods, error: neighborhoodsError }] =
       await Promise.all([
-        (supabaseAdmin as any).from("communes").select("id, name").order("name", { ascending: true }),
+        (supabaseAdmin as any)
+          .from("communes")
+          .select("id, name_en, name_fr, name_ar")
+          .order("name_en", { ascending: true }),
         (supabaseAdmin as any)
           .from("neighborhoods")
           .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee, vendor_id")
@@ -123,7 +138,10 @@ export const listServiceZones = createServerFn({ method: "GET" }).handler(async 
 
     return ((communes ?? []) as CommuneRow[]).map((commune) => ({
       id: commune.id,
-      name: commune.name,
+      name: commune.name_en,
+      nameEn: commune.name_en,
+      nameFr: commune.name_fr,
+      nameAr: commune.name_ar,
       neighborhoods: groupedNeighborhoods.get(commune.id) ?? [],
     }));
   } catch (error) {
@@ -138,8 +156,12 @@ export const createCommune = createServerFn({ method: "POST" })
     try {
       const { data: inserted, error } = await (supabaseAdmin as any)
         .from("communes")
-        .insert({ name: data.name })
-        .select("id, name")
+        .insert({
+          name_en: data.nameEn,
+          name_fr: data.nameFr?.trim() ? data.nameFr.trim() : null,
+          name_ar: data.nameAr?.trim() ? data.nameAr.trim() : null,
+        })
+        .select("id, name_en, name_fr, name_ar")
         .single();
 
       if (error || !inserted?.id) {
@@ -148,7 +170,10 @@ export const createCommune = createServerFn({ method: "POST" })
 
       return {
         id: (inserted as CommuneRow).id,
-        name: (inserted as CommuneRow).name,
+        name: (inserted as CommuneRow).name_en,
+        nameEn: (inserted as CommuneRow).name_en,
+        nameFr: (inserted as CommuneRow).name_fr,
+        nameAr: (inserted as CommuneRow).name_ar,
       };
     } catch (error) {
       console.error("createCommune failed:", error);
@@ -197,9 +222,13 @@ export const updateCommune = createServerFn({ method: "POST" })
     try {
       const { data: updated, error } = await (supabaseAdmin as any)
         .from("communes")
-        .update({ name: data.name })
+        .update({
+          name_en: data.nameEn,
+          name_fr: data.nameFr?.trim() ? data.nameFr.trim() : null,
+          name_ar: data.nameAr?.trim() ? data.nameAr.trim() : null,
+        })
         .eq("id", data.id)
-        .select("id, name")
+        .select("id, name_en, name_fr, name_ar")
         .single();
 
       if (error || !updated?.id) {
@@ -208,7 +237,10 @@ export const updateCommune = createServerFn({ method: "POST" })
 
       return {
         id: (updated as CommuneRow).id,
-        name: (updated as CommuneRow).name,
+        name: (updated as CommuneRow).name_en,
+        nameEn: (updated as CommuneRow).name_en,
+        nameFr: (updated as CommuneRow).name_fr,
+        nameAr: (updated as CommuneRow).name_ar,
       };
     } catch (error) {
       console.error("updateCommune failed:", error);
@@ -257,7 +289,11 @@ export const getCommuneById = createServerFn({ method: "GET" })
     try {
       const [{ data: commune, error: communeError }, { data: neighborhoods, error: neighborhoodsError }] =
         await Promise.all([
-          (supabaseAdmin as any).from("communes").select("id, name").eq("id", data.communeId).single(),
+          (supabaseAdmin as any)
+            .from("communes")
+            .select("id, name_en, name_fr, name_ar")
+            .eq("id", data.communeId)
+            .single(),
           (supabaseAdmin as any)
             .from("neighborhoods")
             .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee, vendor_id")
@@ -275,7 +311,10 @@ export const getCommuneById = createServerFn({ method: "GET" })
 
       return {
         id: (commune as CommuneRow).id,
-        name: (commune as CommuneRow).name,
+        name: (commune as CommuneRow).name_en,
+        nameEn: (commune as CommuneRow).name_en,
+        nameFr: (commune as CommuneRow).name_fr,
+        nameAr: (commune as CommuneRow).name_ar,
         neighborhoods: ((neighborhoods ?? []) as NeighborhoodRow[]).map((neighborhood) => ({
           id: neighborhood.id,
           name: neighborhood.name_en,

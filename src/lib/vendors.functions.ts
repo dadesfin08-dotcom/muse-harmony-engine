@@ -43,7 +43,9 @@ interface NeighborhoodRow {
 
 interface CommuneRow {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
 }
 
 const createVendorInputSchema = z.object({
@@ -165,7 +167,7 @@ async function fetchVendorRecord(vendorId: string) {
         .select("id, name_en, name_fr, name_ar, commune_id, vendor_id")
         .eq("vendor_id", vendorId)
         .order("name_en", { ascending: true }),
-      (supabaseAdmin as any).from("communes").select("id, name"),
+      (supabaseAdmin as any).from("communes").select("id, name_en, name_fr, name_ar"),
     ]);
 
   if (vendorError || !vendor?.id) {
@@ -180,7 +182,7 @@ async function fetchVendorRecord(vendorId: string) {
     throw new Error(communesError.message);
   }
 
-  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name]));
+  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
   const vendorNeighborhoods = (neighborhoods ?? []) as NeighborhoodRow[];
   const row = vendor as VendorRow;
 
@@ -206,7 +208,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
         .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id, vendor_id"),
-      (supabaseAdmin as any).from("communes").select("id, name"),
+      (supabaseAdmin as any).from("communes").select("id, name_en, name_fr, name_ar"),
     ]);
 
   if (vendorsError) {
@@ -219,7 +221,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
     throw new Error(`Failed to fetch communes: ${communesError.message}`);
   }
 
-  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name]));
+  const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
   const neighborhoodsByVendor = new Map<string, NeighborhoodRow[]>();
 
   for (const neighborhood of (neighborhoods ?? []) as NeighborhoodRow[]) {
