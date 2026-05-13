@@ -701,11 +701,9 @@ function VendorDashboardPage() {
       const next = { ...current };
       for (const item of inventoryItems) {
         next[item.id] = {
-          enabled: current[item.id]?.enabled ?? item.isFlashSale,
-          price:
-            current[item.id]?.price ??
-            (item.flashSalePrice != null ? String(item.flashSalePrice) : item.vendorPrice > 0 ? String(item.vendorPrice) : ""),
-          endAt: current[item.id]?.endAt ?? (item.flashSaleEndTime ?? ""),
+          enabled: item.isFlashSale,
+          price: item.flashSalePrice != null ? String(item.flashSalePrice) : item.vendorPrice > 0 ? String(item.vendorPrice) : "",
+          endAt: item.flashSaleEndTime ?? "",
         };
       }
       return next;
@@ -909,6 +907,7 @@ function VendorDashboardPage() {
       console.error("Failed to save flash sale:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to save flash sale.";
       toast.error(errorMessage, { id: `flash-save-${item.id}` });
+      await inventoryQuery.refetch();
     } finally {
       setIsSavingFlashFor(null);
     }
