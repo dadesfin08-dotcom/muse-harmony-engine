@@ -735,6 +735,19 @@ export const updateVendorFlashSale = createServerFn({ method: "POST" })
         return { ok: true };
       }
 
+      if (data.enabled) {
+        const regularPrice = Number(existingVendorProduct?.vendor_price ?? 0);
+        const flashPrice = Number(data.flashSalePrice ?? 0);
+
+        if (Number.isNaN(regularPrice) || regularPrice <= 0) {
+          throw new Error("Set a valid regular price before enabling a flash sale.");
+        }
+
+        if (Number.isNaN(flashPrice) || flashPrice >= regularPrice) {
+          throw new Error("Flash sale price must be lower than your regular price.");
+        }
+      }
+
       const updatePayload = data.enabled
         ? {
             is_flash_sale: true,
