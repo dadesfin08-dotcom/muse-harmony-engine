@@ -3450,14 +3450,22 @@ function CatalogSection({
   products,
   categories,
   isLoading,
+  isImporting,
+  masterProductsCsvInputRef,
   onAddProduct,
+  onDownloadTemplate,
+  onImportCsv,
   onEditProduct,
   onArchiveProduct,
 }: {
   products: MasterProductEntity[];
   categories: CategoryAdminRow[];
   isLoading: boolean;
+  isImporting: boolean;
+  masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
+  onDownloadTemplate: () => void;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
 }) {
@@ -3470,9 +3478,31 @@ function CatalogSection({
             Add standard grocery items once for shared vendor distribution.
           </p>
         </div>
-        <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
-          + Add Master Product
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
+            <Download className="size-4" />
+            Download CSV Template
+          </Button>
+          <input
+            ref={masterProductsCsvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onImportCsv}
+          />
+          <Button
+            variant="outline"
+            className="rounded-md"
+            onClick={() => masterProductsCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <FileUp className="size-4" />
+            {isImporting ? "Importing..." : "Import Bulk Products"}
+          </Button>
+          <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
+            + Add Master Product
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
