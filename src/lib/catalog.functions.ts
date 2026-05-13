@@ -435,13 +435,30 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         throw new Error("No valid master product rows found in the uploaded CSV.");
       }
 
-      const dedupedRowsByKey = new Map<string, (typeof normalizedRows)[number]>();
+      const warnings: string[] = [];
+      const dedupedRowsByBarcode = new Map<string, (typeof normalizedRows)[number]>();
       for (const row of normalizedRows) {
-        const key = row.barcode ? `barcode:${row.barcode.toLowerCase()}` : `name:${row.nameEn.toLowerCase()}`;
-        dedupedRowsByKey.set(key, row);
+        const normalizedBarcode = row.barcode?.trim().toLowerCase() ?? "";
+        if (!normalizedBarcode) {
+          warnings.push(`Row ${row.rowNumber}: barcode is required for duplicate-safe import.`);
+          continue;
+        }
+
+        dedupedRowsByBarcode.set(normalizedBarcode, row);
       }
 
-      const uniqueRows = Array.from(dedupedRowsByKey.values());
+      const uniqueRows = Array.from(dedupedRowsByBarcode.values());
+
+      if (uniqueRows.length === 0) {
+        return {
+          ok: true,
+          totalProcessed: 0,
+          insertedCount: 0,
+          updatedCount: 0,
+          skippedCount: warnings.length,
+          warnings,
+        };
+      }
 
       const [{ data: categories, error: categoriesError }, { data: brands, error: brandsError }, { data: existingProducts, error: existingProductsError }] =
         await Promise.all([
@@ -485,20 +502,12 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
       }
 
       const productsByBarcode = new Map<string, { id: string }>();
-      const productsByName = new Map<string, { id: string }>();
       for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null }>) {
-        const normalizedName = normalizeLookupKey(product.product_name);
-        if (normalizedName && !productsByName.has(normalizedName)) {
-          productsByName.set(normalizedName, { id: product.id });
-        }
-
         const normalizedBarcode = normalizeLookupKey(product.barcode);
         if (normalizedBarcode && !productsByBarcode.has(normalizedBarcode)) {
           productsByBarcode.set(normalizedBarcode, { id: product.id });
         }
       }
-
-      const warnings: string[] = [];
       let insertedCount = 0;
       let updatedCount = 0;
 
@@ -550,9 +559,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
 
         const normalizedBarcode = normalizeLookupKey(row.barcode);
-        const normalizedName = normalizeLookupKey(row.nameEn);
-        const existingProduct =
-          (normalizedBarcode ? productsByBarcode.get(normalizedBarcode) : null) ?? productsByName.get(normalizedName) ?? null;
+        const existingProduct = productsByBarcode.get(normalizedBarcode) ?? null;
 
         const payload = {
           product_name: row.nameEn,
@@ -581,10 +588,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           }
 
           updatedCount += 1;
-          productsByName.set(normalizedName, { id: existingProduct.id });
-          if (normalizedBarcode) {
-            productsByBarcode.set(normalizedBarcode, { id: existingProduct.id });
-          }
+          productsByBarcode.set(normalizedBarcode, { id: existingProduct.id });
           continue;
         }
 
@@ -600,10 +604,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
 
         insertedCount += 1;
-        productsByName.set(normalizedName, { id: inserted.id });
-        if (normalizedBarcode) {
-          productsByBarcode.set(normalizedBarcode, { id: inserted.id });
-        }
+        productsByBarcode.set(normalizedBarcode, { id: inserted.id });
       }
 
       return {
