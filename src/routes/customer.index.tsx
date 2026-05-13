@@ -63,6 +63,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductCard } from "@/components/ProductCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1569,39 +1570,22 @@ function Index() {
             <CarouselContent className="-ml-0 gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {flashDeals.map((product) => (
                 <CarouselItem key={`flash-${product.id}`} className="basis-[170px] pl-0">
-                  <article className="relative w-[170px] overflow-hidden rounded-2xl border border-border bg-card">
-                    <Link to="/product/$id" params={{ id: product.id }} className="block">
-                      <span className="absolute left-2 top-2 z-10 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-bold text-destructive-foreground">
-                        -{product.discountPercent}%
-                      </span>
-                      <div className="aspect-square overflow-hidden bg-muted/40">
-                        <img
-                          src={product.image}
-                          alt={product.alt}
-                          className="h-full w-full object-contain object-center p-2"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="space-y-1 p-2.5">
-                        <p className="line-clamp-1 text-xs font-semibold text-foreground">{product.name}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-destructive">{product.dealPrice} MAD</span>
-                          <span className="text-[11px] text-muted-foreground line-through">{product.price} MAD</span>
-                        </div>
-                      </div>
-                    </Link>
-                    <div className="px-2.5 pb-2.5">
-                      <Button
-                        variant="soft"
-                        size="sm"
-                        className="w-full rounded-xl"
-                        onClick={() => addFlashDealToCart(product)}
-                      >
-                        <Plus className="size-4" />
-                        {t("products.add")}
-                      </Button>
-                    </div>
-                  </article>
+                  <ProductCard
+                    id={product.id}
+                    name={product.name}
+                    brand={t("flashDeals.title", { defaultValue: "Flash Deal" })}
+                    measurementUnit={product.measurementUnit}
+                    imageUrl={product.image}
+                    price={Number(product.dealPrice ?? 0)}
+                    oldPrice={Number(product.price ?? 0)}
+                    discountPercent={product.discountPercent}
+                    isFlashDeal
+                    cartQuantity={getCartQuantity(product.id)}
+                    addLabel={t("products.add")}
+                    onAdd={() => addFlashDealToCart(product)}
+                    onIncrease={() => increaseItem(product.id)}
+                    onDecrease={() => decreaseItem(product.id)}
+                  />
                 </CarouselItem>
               ))}
             </CarouselContent>
