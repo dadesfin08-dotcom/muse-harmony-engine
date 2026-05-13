@@ -106,6 +106,7 @@ import {
   createBrand,
   createMasterProduct,
   importMasterProductsBulk,
+  listMasterProductsForExport,
   deleteBrand,
   importBrandsBulk,
   listBrands,
@@ -357,6 +358,7 @@ function AdminPage() {
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
+  const fetchMasterProductsForExport = useServerFn(listMasterProductsForExport);
   const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
   const fetchSiteAds = useServerFn(listSiteAds);
@@ -1361,95 +1363,118 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
-  const downloadMasterProductsCsvTemplate = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const templateSheet = workbook.addWorksheet("Template");
-    const lookupSheet = workbook.addWorksheet("Lookups");
-    lookupSheet.state = "veryHidden";
+  const downloadMasterProductsCatalogExport = async () => {
+    try {
+      const exportRows = await fetchMasterProductsForExport();
 
-    templateSheet.addRow([...MASTER_PRODUCTS_CSV_HEADERS]);
-    templateSheet.getRow(1).font = { bold: true };
-    templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+      const workbook = new ExcelJS.Workbook();
+      const templateSheet = workbook.addWorksheet("Catalog");
+      const lookupSheet = workbook.addWorksheet("Lookups");
+      lookupSheet.state = "veryHidden";
 
-    const dropdownRowCount = 5000;
-    const categoryOptions = Array.from(new Set(activeCategories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
-      (a, b) => a.localeCompare(b),
-    );
-    const brandOptions = Array.from(new Set(brands.map((brand) => brand.name_en.trim()).filter(Boolean))).sort((a, b) =>
-      a.localeCompare(b),
-    );
-    const unitOptions = measurementUnits;
+      templateSheet.addRow([...MASTER_PRODUCTS_CSV_HEADERS]);
+      templateSheet.getRow(1).font = { bold: true };
+      templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-    lookupSheet.getCell("A1").value = "Category";
-    categoryOptions.forEach((value, index) => {
-      lookupSheet.getCell(index + 2, 1).value = value;
-    });
-    lookupSheet.getCell("B1").value = "Brand";
-    brandOptions.forEach((value, index) => {
-      lookupSheet.getCell(index + 2, 2).value = value;
-    });
-    lookupSheet.getCell("C1").value = "Measurement_Unit";
-    unitOptions.forEach((value, index) => {
-      lookupSheet.getCell(index + 2, 3).value = value;
-    });
+      const dropdownRowCount = Math.max(5000, exportRows.length + 100);
+      const categoryOptions = Array.from(new Set(categories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
+        (a, b) => a.localeCompare(b),
+      );
+      const brandOptions = Array.from(new Set(brands.map((brand) => brand.name_en.trim()).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b),
+      );
+      const unitOptions = measurementUnits;
 
-    const categoryFormula = categoryOptions.length > 0 ? `Lookups!$A$2:$A$${categoryOptions.length + 1}` : "\"\"";
-    const brandFormula = brandOptions.length > 0 ? `Lookups!$B$2:$B$${brandOptions.length + 1}` : "\"\"";
-    const unitFormula = `Lookups!$C$2:$C$${unitOptions.length + 1}`;
+      lookupSheet.getCell("A1").value = "Category";
+      categoryOptions.forEach((value, index) => {
+        lookupSheet.getCell(index + 2, 1).value = value;
+      });
+      lookupSheet.getCell("B1").value = "Brand";
+      brandOptions.forEach((value, index) => {
+        lookupSheet.getCell(index + 2, 2).value = value;
+      });
+      lookupSheet.getCell("C1").value = "Measurement_Unit";
+      unitOptions.forEach((value, index) => {
+        lookupSheet.getCell(index + 2, 3).value = value;
+      });
 
-    for (let rowIndex = 2; rowIndex <= dropdownRowCount + 1; rowIndex += 1) {
-      templateSheet.getCell(`E${rowIndex}`).dataValidation = {
-        type: "list",
-        allowBlank: false,
-        formulae: [categoryFormula],
-        showErrorMessage: true,
-        errorTitle: "Invalid Category",
-        error: "Pick a category from the dropdown list.",
-      };
+      const categoryFormula = categoryOptions.length > 0 ? `Lookups!$A$2:$A$${categoryOptions.length + 1}` : "\"\"";
+      const brandFormula = brandOptions.length > 0 ? `Lookups!$B$2:$B$${brandOptions.length + 1}` : "\"\"";
+      const unitFormula = `Lookups!$C$2:$C$${unitOptions.length + 1}`;
 
-      templateSheet.getCell(`F${rowIndex}`).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: [brandFormula],
-        showErrorMessage: true,
-        errorTitle: "Invalid Brand",
-        error: "Pick a brand from the dropdown list.",
-      };
+      for (const row of exportRows) {
+        templateSheet.addRow([
+          row.image_url ?? "",
+          row.product_name,
+          row.name_fr ?? "",
+          row.name_ar ?? "",
+          row.category_name ?? "",
+          row.brand_name ?? "",
+          row.measurement_value != null ? String(row.measurement_value) : "",
+          row.measurement_unit,
+          row.barcode ?? "",
+        ]);
+      }
 
-      templateSheet.getCell(`H${rowIndex}`).dataValidation = {
-        type: "list",
-        allowBlank: false,
-        formulae: [unitFormula],
-        showErrorMessage: true,
-        errorTitle: "Invalid Measurement Unit",
-        error: "Pick a measurement unit from the dropdown list.",
-      };
+      for (let rowIndex = 2; rowIndex <= dropdownRowCount + 1; rowIndex += 1) {
+        templateSheet.getCell(`E${rowIndex}`).dataValidation = {
+          type: "list",
+          allowBlank: false,
+          formulae: [categoryFormula],
+          showErrorMessage: true,
+          errorTitle: "Invalid Category",
+          error: "Pick a category from the dropdown list.",
+        };
+
+        templateSheet.getCell(`F${rowIndex}`).dataValidation = {
+          type: "list",
+          allowBlank: true,
+          formulae: [brandFormula],
+          showErrorMessage: true,
+          errorTitle: "Invalid Brand",
+          error: "Pick a brand from the dropdown list.",
+        };
+
+        templateSheet.getCell(`H${rowIndex}`).dataValidation = {
+          type: "list",
+          allowBlank: false,
+          formulae: [unitFormula],
+          showErrorMessage: true,
+          errorTitle: "Invalid Measurement Unit",
+          error: "Pick a measurement unit from the dropdown list.",
+        };
+      }
+
+      templateSheet.columns = [
+        { width: 36 },
+        { width: 24 },
+        { width: 24 },
+        { width: 24 },
+        { width: 22 },
+        { width: 22 },
+        { width: 20 },
+        { width: 20 },
+        { width: 22 },
+      ];
+
+      const bytes = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "master-products-catalog-export.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Catalog export ready: ${exportRows.length} products.`);
+    } catch (error) {
+      console.error("Failed to export catalog XLSX:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to export catalog XLSX.");
     }
-
-    templateSheet.columns = [
-      { width: 36 },
-      { width: 24 },
-      { width: 24 },
-      { width: 24 },
-      { width: 22 },
-      { width: 22 },
-      { width: 20 },
-      { width: 20 },
-      { width: 22 },
-    ];
-
-    const bytes = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([bytes], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "master-products-template.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const downloadMasterProductsExampleCsv = () => {
@@ -2174,7 +2199,7 @@ function AdminPage() {
                   isImporting={isImportingMasterProducts}
                   masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
-                  onDownloadTemplate={downloadMasterProductsCsvTemplate}
+                  onDownloadTemplate={downloadMasterProductsCatalogExport}
                   onDownloadExample={downloadMasterProductsExampleCsv}
                   onImportCsv={handleMasterProductsCsvUpload}
                   onEditProduct={openEditProductModal}
@@ -3609,7 +3634,7 @@ function CatalogSection({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download XLSX Template
+            Download / Export Catalog (XLSX)
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
