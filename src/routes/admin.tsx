@@ -1377,7 +1377,7 @@ function AdminPage() {
       templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
       const dropdownRowCount = Math.max(5000, exportRows.length + 100);
-      const categoryOptions = Array.from(new Set(activeCategories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
+      const categoryOptions = Array.from(new Set(categories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
         (a, b) => a.localeCompare(b),
       );
       const brandOptions = Array.from(new Set(brands.map((brand) => brand.name_en.trim()).filter(Boolean))).sort((a, b) =>
