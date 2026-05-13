@@ -637,40 +637,24 @@ function Index() {
     }
 
     const hydrateLocationDrawer = async () => {
-      let commune = selectedCommuneOption;
-      let neighborhood = selectedNeighborhoodOption;
+      const persistedLocation = readPersistedLocation();
+      const neighborhoodIdToHydrate = selectedNeighborhoodId || persistedLocation?.neighborhoodId || "";
 
-      if (!selectedNeighborhoodId) {
-        const persistedLocation = readPersistedLocation();
-        if (persistedLocation?.neighborhoodId) {
-          const resolved = await resolveLocationAndApply(persistedLocation.neighborhoodId);
-          if (resolved) {
-            commune = selectedCommuneOption ?? commune;
-            neighborhood = selectedNeighborhoodOption ?? neighborhood;
-          }
-        }
+      if (!neighborhoodIdToHydrate) {
+        return;
       }
 
-      if ((!commune || !neighborhood) && selectedNeighborhoodId) {
-        const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: selectedNeighborhoodId } });
-        if (resolved) {
-          commune = resolved.commune;
-          neighborhood = resolved.neighborhood;
-          setSelectedCommuneOption(resolved.commune);
-          setSelectedNeighborhoodOption(resolved.neighborhood);
-          if (!selectedCommuneId) {
-            setSelectedCommuneId(resolved.commune.id);
-          }
-        }
+      const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: neighborhoodIdToHydrate } });
+      if (!resolved) {
+        return;
       }
 
-      if (commune) {
-        setCommuneSearchInput(getLocalizedCommuneName(commune));
-      }
-
-      if (neighborhood) {
-        setNeighborhoodSearchInput(getLocalizedNeighborhoodName(neighborhood));
-      }
+      setSelectedCommuneId(resolved.commune.id);
+      setSelectedNeighborhoodId(resolved.neighborhood.id);
+      setSelectedCommuneOption(resolved.commune);
+      setSelectedNeighborhoodOption(resolved.neighborhood);
+      setCommuneSearchInput(getLocalizedCommuneName(resolved.commune));
+      setNeighborhoodSearchInput(getLocalizedNeighborhoodName(resolved.neighborhood));
     };
 
     void hydrateLocationDrawer();
@@ -679,11 +663,7 @@ function Index() {
     getLocalizedCommuneName,
     getLocalizedNeighborhoodName,
     isLocationModalOpen,
-    resolveLocationAndApply,
-    selectedCommuneId,
-    selectedCommuneOption,
     selectedNeighborhoodId,
-    selectedNeighborhoodOption,
   ]);
 
   const categories = ((categoriesQuery.data ?? []) as CategoryChip[]).filter((category) => category.product_count > 0);
