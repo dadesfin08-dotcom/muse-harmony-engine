@@ -2746,8 +2746,9 @@ function Index() {
                     >
                       Change phone number
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
             </DialogContent>
           </Dialog>
         )
