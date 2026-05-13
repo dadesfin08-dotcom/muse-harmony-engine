@@ -9,6 +9,7 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { listActiveFlashDeals } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
+import fallbackProductImage from "@/assets/product-vegetables.jpg";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
@@ -113,7 +114,7 @@ function FlashDealsPage() {
                   name: deal.localizedName,
                   price: Number(deal.flashSalePrice ?? 0),
                   measurementUnit: deal.measurementUnit,
-                  image: deal.imageUrl || "",
+                  image: deal.imageUrl || fallbackProductImage,
                   alt: deal.localizedName,
                 });
 
