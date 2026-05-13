@@ -3413,13 +3413,21 @@ function CatalogSection({
 function BrandsSection({
   brands,
   isLoading,
+  isImporting,
+  brandCsvInputRef,
   onAddBrand,
+  onDownloadTemplate,
+  onImportCsv,
   onEditBrand,
   onDeleteBrand,
 }: {
   brands: BrandAdminRow[];
   isLoading: boolean;
+  isImporting: boolean;
+  brandCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddBrand: () => void;
+  onDownloadTemplate: () => void;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void;
   onEditBrand: (brand: BrandAdminRow) => void;
   onDeleteBrand: (brand: BrandAdminRow) => void;
 }) {
@@ -3430,9 +3438,31 @@ function BrandsSection({
           <h2 className="text-base font-semibold text-foreground">Brands · الماركات</h2>
           <p className="text-sm text-muted-foreground">Centralized multilingual brand registry for all products.</p>
         </div>
-        <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
-          + Add New Brand
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
+            <Download className="size-4" />
+            Download CSV Template
+          </Button>
+          <input
+            ref={brandCsvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onImportCsv}
+          />
+          <Button
+            variant="outline"
+            className="rounded-md"
+            onClick={() => brandCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <FileUp className="size-4" />
+            {isImporting ? "Importing..." : "Import Bulk Brands"}
+          </Button>
+          <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
+            + Add New Brand
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">
