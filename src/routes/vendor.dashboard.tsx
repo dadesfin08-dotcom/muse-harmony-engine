@@ -874,11 +874,27 @@ function VendorDashboardPage() {
       }
     }
 
+    const activeVendorPhone = (() => {
+      if (typeof window === "undefined") return vendorPhoneNumber;
+      try {
+        const raw = window.localStorage.getItem("bzaf.vendorSession");
+        return raw ? ((JSON.parse(raw) as { phoneNumber?: string }).phoneNumber ?? vendorPhoneNumber) : vendorPhoneNumber;
+      } catch {
+        return vendorPhoneNumber;
+      }
+    })();
+
+    if (!activeVendorPhone) {
+      toast.error("Vendor session missing. Please log in again.");
+      return;
+    }
+
     try {
       setIsSavingFlashFor(item.id);
+      toast.loading("Saving flash sale...", { id: `flash-save-${item.id}` });
       await saveFlashSale({
         data: {
-          phoneNumber: vendorPhoneNumber,
+          phoneNumber: activeVendorPhone,
           masterProductId: item.id,
           enabled: draft.enabled,
           flashSalePrice: draft.enabled ? numericFlashPrice : null,
@@ -886,10 +902,13 @@ function VendorDashboardPage() {
         },
       });
       await inventoryQuery.refetch();
-      toast.success(draft.enabled ? "Flash sale saved." : "Flash sale disabled.");
+      toast.success(draft.enabled ? "Flash sale saved." : "Flash sale disabled.", {
+        id: `flash-save-${item.id}`,
+      });
     } catch (error) {
       console.error("Failed to save flash sale:", error);
-      toast.error("Failed to save flash sale.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to save flash sale.";
+      toast.error(errorMessage, { id: `flash-save-${item.id}` });
     } finally {
       setIsSavingFlashFor(null);
     }
