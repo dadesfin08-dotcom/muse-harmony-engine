@@ -106,6 +106,7 @@ import {
   archiveMasterProduct,
   createBrand,
   createMasterProduct,
+  importMasterProductsBulk,
   deleteBrand,
   importBrandsBulk,
   listBrands,
@@ -223,6 +224,17 @@ type BrandAdminRow = {
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
 const BRANDS_CSV_HEADERS = ["Logo", "English", "Français", "العربية"] as const;
+const MASTER_PRODUCTS_CSV_HEADERS = [
+  "Image_URL",
+  "Name_EN",
+  "Name_FR",
+  "Name_AR",
+  "Category",
+  "Brand",
+  "Measurement_Value",
+  "Measurement_Unit",
+  "Barcode",
+] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
