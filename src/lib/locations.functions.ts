@@ -289,7 +289,6 @@ export const getCommuneById = createServerFn({ method: "GET" })
     try {
       const [{ data: commune, error: communeError }, { data: neighborhoods, error: neighborhoodsError }] =
         await Promise.all([
-          (supabaseAdmin as any).from("communes").select("id, name").eq("id", data.communeId).single(),
           (supabaseAdmin as any)
             .from("communes")
             .select("id, name_en, name_fr, name_ar")
