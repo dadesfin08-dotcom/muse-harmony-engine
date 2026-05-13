@@ -24,6 +24,18 @@ const updateNeighborhoodInputSchema = z.object({
   deliveryFee: z.coerce.number().min(0).max(100000).default(0),
 });
 
+const getCommuneByIdInputSchema = z.object({
+  communeId: z.string().uuid(),
+});
+
+const deleteNeighborhoodInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const deleteCommuneInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
 type CommuneRow = {
   id: string;
   name: string;
@@ -48,6 +60,18 @@ export type ServiceZoneTree = Array<{
     vendorId: string | null;
   }>;
 }>;
+
+export type CommuneProfile = {
+  id: string;
+  name: string;
+  neighborhoods: Array<{
+    id: string;
+    name: string;
+    communeId: string;
+    deliveryFee: number;
+    vendorId: string | null;
+  }>;
+};
 
 export const listServiceZones = createServerFn({ method: "GET" }).handler(async () => {
   try {
