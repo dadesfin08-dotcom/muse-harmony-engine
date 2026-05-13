@@ -311,6 +311,8 @@ function Index() {
     if (language === "fr") return fr?.trim() || en;
     return en;
   };
+  const getLocalizedNeighborhoodName = (zone: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
+    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
@@ -473,7 +475,7 @@ function Index() {
       return t("header.locationFallback");
     }
 
-    return `${commune.name} / ${neighborhood.name}`;
+    return `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`;
   }, [selectedCommuneId, selectedNeighborhoodId, serviceZones, t]);
 
   const resolveLocationByNeighborhoodId = (neighborhoodId: string) => {
@@ -483,7 +485,7 @@ function Index() {
         return {
           communeId: commune.id,
           neighborhoodId: neighborhood.id,
-          locationLabel: `${commune.name} / ${neighborhood.name}`,
+          locationLabel: `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`,
         } satisfies PersistedLocation;
       }
     }
@@ -1137,7 +1139,7 @@ function Index() {
     const location = {
       communeId: commune.id,
       neighborhoodId: neighborhood.id,
-      locationLabel: `${commune.name} / ${neighborhood.name}`,
+      locationLabel: `${commune.name} / ${getLocalizedNeighborhoodName(neighborhood)}`,
     } satisfies PersistedLocation;
 
     persistLocation(location);
@@ -2297,7 +2299,7 @@ function Index() {
                     <option value="">Select neighborhood</option>
                     {neighborhoodOptions.map((neighborhood) => (
                       <option key={neighborhood.id} value={neighborhood.id}>
-                        {neighborhood.name}
+                        {getLocalizedNeighborhoodName(neighborhood)}
                       </option>
                     ))}
                   </select>
