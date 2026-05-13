@@ -889,12 +889,16 @@ export const getCommuneById = createServerFn({ method: "GET" })
 
       const commune = ((communeRows ?? []) as CommuneRow[])[0] ?? null;
 
-      if (communeError || !commune?.id) {
-        throw new Error(communeError?.message ?? "Commune not found.");
+      if (communeError) {
+        throw new Error(communeError.message);
       }
 
       if (neighborhoodsError) {
         throw new Error(neighborhoodsError.message);
+      }
+
+      if (!commune?.id) {
+        return null;
       }
 
       return {
@@ -907,7 +911,7 @@ export const getCommuneById = createServerFn({ method: "GET" })
       } satisfies CommuneProfile;
     } catch (error) {
       console.error("getCommuneById failed:", error);
-      throw new Error("Failed to load commune profile.");
+      throw new Error(error instanceof Error ? error.message : "Failed to load commune profile.");
     }
   });
 
