@@ -1261,6 +1261,12 @@ function Index() {
     toast.success("Delivery location saved.");
   };
 
+  const closeLocationModal = () => {
+    setIsLocationModalOpen(false);
+    setCommuneSearchInput("");
+    setNeighborhoodSearchInput("");
+  };
+
   return (
     <>
       <main className="app-shell min-h-screen bg-muted/20 pb-24 text-foreground md:pb-0">
@@ -2354,7 +2360,19 @@ function Index() {
           <div className="absolute inset-0 bg-black/50" />
           <section className="absolute inset-0 flex items-center justify-center px-4">
             <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
-              <h2 className="text-lg font-semibold text-foreground">Select Your Delivery Location</h2>
+              <div className="flex w-full items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-foreground">Select Your Delivery Location</h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground"
+                  onClick={closeLocationModal}
+                  aria-label="Close location drawer"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 Choose your Jamaa Tourabiya and Hay / Douar before placing orders.
               </p>
