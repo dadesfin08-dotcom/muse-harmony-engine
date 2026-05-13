@@ -52,7 +52,13 @@ import {
 import { getCheckoutPaymentOptions, getCustomerCarnetOverview } from "@/lib/carnet.functions";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getActiveAdsAndAnnouncements } from "@/lib/ads-content.functions";
-import { listServiceZones } from "@/lib/locations.functions";
+import {
+  getLocationByNeighborhoodId,
+  searchCommunes,
+  searchNeighborhoodsByCommune,
+  type CommuneSearchResult,
+  type NeighborhoodSearchResult,
+} from "@/lib/locations.functions";
 import { createCustomerOrder, getCustomerOrders, upsertCustomerProfile } from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
@@ -297,6 +303,8 @@ function Index() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [selectedCommuneId, setSelectedCommuneId] = useState("");
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
+  const [selectedCommuneOption, setSelectedCommuneOption] = useState<CommuneSearchResult | null>(null);
+  const [selectedNeighborhoodOption, setSelectedNeighborhoodOption] = useState<NeighborhoodSearchResult | null>(null);
   const [isCommuneComboboxOpen, setIsCommuneComboboxOpen] = useState(false);
   const [isNeighborhoodComboboxOpen, setIsNeighborhoodComboboxOpen] = useState(false);
   const [communeSearchInput, setCommuneSearchInput] = useState("");
@@ -343,7 +351,9 @@ function Index() {
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
-  const fetchServiceZones = useServerFn(listServiceZones);
+  const fetchCommuneSearchResults = useServerFn(searchCommunes);
+  const fetchNeighborhoodSearchResults = useServerFn(searchNeighborhoodsByCommune);
+  const fetchLocationByNeighborhoodId = useServerFn(getLocationByNeighborhoodId);
   const fetchCatalogByNeighborhood = useServerFn(getCustomerCatalogByNeighborhood);
   const fetchCustomerProfileByPhone = useServerFn(getCustomerProfileByPhone);
   const syncCustomerNeighborhood = useServerFn(upsertCustomerNeighborhood);
@@ -355,9 +365,30 @@ function Index() {
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
-  const serviceZonesQuery = useQuery({
-    queryKey: ["customer", "service-zones"],
-    queryFn: () => fetchServiceZones(),
+  const debouncedCommuneSearch = useDebouncedValue(communeSearchInput, 300);
+  const debouncedNeighborhoodSearch = useDebouncedValue(neighborhoodSearchInput, 300);
+  const normalizedCommuneSearch = normalizeSearchText(debouncedCommuneSearch);
+  const normalizedNeighborhoodSearch = normalizeSearchText(debouncedNeighborhoodSearch);
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
+  const communeSearchQuery = useQuery({
+    queryKey: ["customer", "commune-search", normalizedCommuneSearch],
+    queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
+    enabled: isLocationModalOpen && hasEnoughCommuneChars,
+    staleTime: 15_000,
+  });
+  const neighborhoodSearchQuery = useQuery({
+    queryKey: ["customer", "neighborhood-search", selectedCommuneId, normalizedNeighborhoodSearch],
+    queryFn: () =>
+      fetchNeighborhoodSearchResults({
+        data: {
+          communeId: selectedCommuneId,
+          query: normalizedNeighborhoodSearch,
+          limit: 30,
+        },
+      }),
+    enabled: isLocationModalOpen && !!selectedCommuneId && hasEnoughNeighborhoodChars,
+    staleTime: 15_000,
   });
   const globalSettingsQuery = useQuery({
     queryKey: ["customer", "global-settings"],
