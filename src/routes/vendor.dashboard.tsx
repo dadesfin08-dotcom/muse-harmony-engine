@@ -195,6 +195,14 @@ function VendorDashboardPage() {
       return "";
     }
   }, []);
+  const normalizedVendorPhoneNumber = useMemo(
+    () => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
+    [vendorPhoneNumber],
+  );
+  const hasValidVendorPhoneSession = useMemo(
+    () => isValidMoroccoPhone(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
+    [vendorPhoneNumber],
+  );
 
   const fetchDashboardData = useServerFn(getVendorDashboardData);
   const fetchInvoiceSettings = useServerFn(getInvoiceSettings);
@@ -255,9 +263,10 @@ function VendorDashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const invoiceSettingsQuery = useQuery({
@@ -278,16 +287,25 @@ function VendorDashboardPage() {
 
   const carnetQuery = useQuery({
     queryKey: ["vendor", "carnet"],
-    queryFn: () => fetchVendorCarnetData({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryFn: () => fetchVendorCarnetData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 5_000,
     placeholderData: (previousData) => previousData,
+    enabled: hasValidVendorPhoneSession,
   });
 
   const ledgerQuery = useQuery({
     queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone],
-    queryFn: () => fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone!, phoneNumber: vendorPhoneNumber } }),
-    enabled: !!selectedCarnetPhone,
+    queryFn: () =>
+      fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone!, phoneNumber: normalizedVendorPhoneNumber } }),
+    enabled: !!selectedCarnetPhone && hasValidVendorPhoneSession,
   });
+
+  useEffect(() => {
+    if (hasValidVendorPhoneSession) return;
+    toast.error("Vendor session invalid. Please log in again.");
+    clearRoleSessions();
+    void navigate({ to: "/vendor/login" });
+  }, [hasValidVendorPhoneSession, navigate]);
 
   const isDashboardInitialLoading = dashboardQuery.isLoading && !dashboardQuery.data;
   const isInventoryInitialLoading = inventoryQuery.isLoading && !inventoryQuery.data;
