@@ -940,15 +940,21 @@ function AdminPage() {
   };
 
   const saveCommuneHandler = async () => {
-    if (!serviceZoneForm.communeName.trim()) {
-      toast.error("Please enter a commune name.");
+    if (!serviceZoneForm.communeNameEn.trim()) {
+      toast.error("Please enter at least Commune Name (EN).");
       return;
     }
 
     try {
-      await saveCommune({ data: { name: serviceZoneForm.communeName.trim() } });
+      await saveCommune({
+        data: {
+          nameEn: serviceZoneForm.communeNameEn.trim(),
+          nameFr: serviceZoneForm.communeNameFr.trim() || null,
+          nameAr: serviceZoneForm.communeNameAr.trim() || null,
+        },
+      });
       await serviceZonesQuery.refetch();
-      setServiceZoneForm((current) => ({ ...current, communeName: "" }));
+      setServiceZoneForm((current) => ({ ...current, communeNameEn: "", communeNameFr: "", communeNameAr: "" }));
       toast.success("Commune created successfully.");
     } catch (error) {
       console.error("Failed to create commune:", error);
@@ -3482,11 +3488,14 @@ function ServiceZonesSection({
   onSaveCommune,
   onSaveNeighborhood,
   onOpenCommuneProfile,
+  localizeCommuneName,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
   form: {
-    communeName: string;
+    communeNameEn: string;
+    communeNameFr: string;
+    communeNameAr: string;
     neighborhoodCommuneId: string;
     neighborhoodNameEn: string;
     neighborhoodNameFr: string;
@@ -3495,7 +3504,9 @@ function ServiceZonesSection({
   };
   onFormChange: Dispatch<
     SetStateAction<{
-      communeName: string;
+      communeNameEn: string;
+      communeNameFr: string;
+      communeNameAr: string;
       neighborhoodCommuneId: string;
       neighborhoodNameEn: string;
       neighborhoodNameFr: string;
@@ -3506,6 +3517,7 @@ function ServiceZonesSection({
   onSaveCommune: () => void;
   onSaveNeighborhood: () => void;
   onOpenCommuneProfile: (communeId: string) => void;
+  localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
 }) {
   const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
     const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
@@ -3528,9 +3540,21 @@ function ServiceZonesSection({
           </label>
           <input
             id="new-commune"
-            value={form.communeName}
-            onChange={(event) => onFormChange((current) => ({ ...current, communeName: event.target.value }))}
-            placeholder="e.g. Sidi Bernoussi"
+            value={form.communeNameEn}
+            onChange={(event) => onFormChange((current) => ({ ...current, communeNameEn: event.target.value }))}
+            placeholder="Commune Name (EN) — e.g. Sidi Bernoussi"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.communeNameFr}
+            onChange={(event) => onFormChange((current) => ({ ...current, communeNameFr: event.target.value }))}
+            placeholder="Commune Name (FR)"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.communeNameAr}
+            onChange={(event) => onFormChange((current) => ({ ...current, communeNameAr: event.target.value }))}
+            placeholder="Commune Name (AR) - مثال: سيدي البرنوصي"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <Button variant="hero" className="w-full rounded-md" onClick={onSaveCommune}>
@@ -3556,7 +3580,7 @@ function ServiceZonesSection({
             <option value="">Select commune</option>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
-                {zone.name}
+                {localizeCommuneName(zone)}
               </option>
             ))}
           </select>
