@@ -92,8 +92,8 @@ export const listServiceZones = createServerFn({ method: "GET" }).handler(async 
         (supabaseAdmin as any).from("communes").select("id, name").order("name", { ascending: true }),
         (supabaseAdmin as any)
           .from("neighborhoods")
-          .select("id, name, commune_id, delivery_fee, vendor_id")
-          .order("name", { ascending: true }),
+          .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee, vendor_id")
+          .order("name_en", { ascending: true }),
       ]);
 
     if (communesError) {
@@ -110,7 +110,10 @@ export const listServiceZones = createServerFn({ method: "GET" }).handler(async 
       const current = groupedNeighborhoods.get(neighborhood.commune_id) ?? [];
       current.push({
         id: neighborhood.id,
-        name: neighborhood.name,
+        name: neighborhood.name_en,
+        nameEn: neighborhood.name_en,
+        nameFr: neighborhood.name_fr,
+        nameAr: neighborhood.name_ar,
         communeId: neighborhood.commune_id,
         deliveryFee: Number(neighborhood.delivery_fee ?? 0),
         vendorId: neighborhood.vendor_id,
@@ -161,10 +164,12 @@ export const createNeighborhood = createServerFn({ method: "POST" })
         .from("neighborhoods")
         .insert({
           commune_id: data.communeId,
-          name: data.name,
+          name_en: data.nameEn,
+          name_fr: data.nameFr?.trim() ? data.nameFr.trim() : null,
+          name_ar: data.nameAr?.trim() ? data.nameAr.trim() : null,
           delivery_fee: data.deliveryFee,
         })
-        .select("id, name, commune_id, delivery_fee")
+        .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee")
         .single();
 
       if (error || !inserted?.id) {
@@ -173,7 +178,10 @@ export const createNeighborhood = createServerFn({ method: "POST" })
 
       return {
         id: (inserted as NeighborhoodRow).id,
-        name: (inserted as NeighborhoodRow).name,
+        name: (inserted as NeighborhoodRow).name_en,
+        nameEn: (inserted as NeighborhoodRow).name_en,
+        nameFr: (inserted as NeighborhoodRow).name_fr,
+        nameAr: (inserted as NeighborhoodRow).name_ar,
         communeId: (inserted as NeighborhoodRow).commune_id,
         deliveryFee: Number((inserted as NeighborhoodRow).delivery_fee ?? 0),
       };
@@ -214,9 +222,14 @@ export const updateNeighborhood = createServerFn({ method: "POST" })
     try {
       const { data: updated, error } = await (supabaseAdmin as any)
         .from("neighborhoods")
-        .update({ name: data.name, delivery_fee: data.deliveryFee })
+        .update({
+          name_en: data.nameEn,
+          name_fr: data.nameFr?.trim() ? data.nameFr.trim() : null,
+          name_ar: data.nameAr?.trim() ? data.nameAr.trim() : null,
+          delivery_fee: data.deliveryFee,
+        })
         .eq("id", data.id)
-        .select("id, name, commune_id, delivery_fee")
+        .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee")
         .single();
 
       if (error || !updated?.id) {
@@ -225,7 +238,10 @@ export const updateNeighborhood = createServerFn({ method: "POST" })
 
       return {
         id: (updated as NeighborhoodRow).id,
-        name: (updated as NeighborhoodRow).name,
+        name: (updated as NeighborhoodRow).name_en,
+        nameEn: (updated as NeighborhoodRow).name_en,
+        nameFr: (updated as NeighborhoodRow).name_fr,
+        nameAr: (updated as NeighborhoodRow).name_ar,
         communeId: (updated as NeighborhoodRow).commune_id,
         deliveryFee: Number((updated as NeighborhoodRow).delivery_fee ?? 0),
       };
@@ -244,9 +260,9 @@ export const getCommuneById = createServerFn({ method: "GET" })
           (supabaseAdmin as any).from("communes").select("id, name").eq("id", data.communeId).single(),
           (supabaseAdmin as any)
             .from("neighborhoods")
-            .select("id, name, commune_id, delivery_fee, vendor_id")
+            .select("id, name_en, name_fr, name_ar, commune_id, delivery_fee, vendor_id")
             .eq("commune_id", data.communeId)
-            .order("name", { ascending: true }),
+            .order("name_en", { ascending: true }),
         ]);
 
       if (communeError || !commune?.id) {
@@ -262,7 +278,10 @@ export const getCommuneById = createServerFn({ method: "GET" })
         name: (commune as CommuneRow).name,
         neighborhoods: ((neighborhoods ?? []) as NeighborhoodRow[]).map((neighborhood) => ({
           id: neighborhood.id,
-          name: neighborhood.name,
+          name: neighborhood.name_en,
+          nameEn: neighborhood.name_en,
+          nameFr: neighborhood.name_fr,
+          nameAr: neighborhood.name_ar,
           communeId: neighborhood.commune_id,
           deliveryFee: Number(neighborhood.delivery_fee ?? 0),
           vendorId: neighborhood.vendor_id,
