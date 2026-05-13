@@ -1178,8 +1178,18 @@ function Index() {
       return;
     }
 
-    const commune = serviceZones.find((zone) => zone.id === selectedCommuneId);
-    const neighborhood = commune?.neighborhoods.find((zone) => zone.id === selectedNeighborhoodId);
+    let commune = selectedCommuneOption;
+    let neighborhood = selectedNeighborhoodOption;
+
+    if (!commune || !neighborhood || neighborhood.id !== selectedNeighborhoodId || commune.id !== selectedCommuneId) {
+      const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: selectedNeighborhoodId } });
+      if (resolved) {
+        commune = resolved.commune;
+        neighborhood = resolved.neighborhood;
+        setSelectedCommuneOption(resolved.commune);
+        setSelectedNeighborhoodOption(resolved.neighborhood);
+      }
+    }
 
     if (!commune || !neighborhood) {
       toast.error("Invalid location selection. Please try again.");
@@ -2452,7 +2462,7 @@ function Index() {
                 variant="hero"
                 className="mt-5 w-full rounded-xl"
                 onClick={saveLocationSelection}
-                disabled={!selectedCommuneId || !selectedNeighborhoodId || serviceZonesQuery.isLoading}
+                disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
               >
                 Confirm Location
               </Button>
