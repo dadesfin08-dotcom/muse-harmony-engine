@@ -2112,6 +2112,7 @@ function AdminPage() {
                   masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
                   onDownloadTemplate={downloadMasterProductsCsvTemplate}
+                  onDownloadExample={downloadMasterProductsExampleCsv}
                   onImportCsv={handleMasterProductsCsvUpload}
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
