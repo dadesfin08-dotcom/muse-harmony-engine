@@ -1383,7 +1383,7 @@ function AdminPage() {
           measurementUnit: row.Measurement_Unit?.trim() || "",
           barcode: row.Barcode?.trim() || null,
         }))
-        .filter((row) => row.nameEn.length > 0 || row.category.length > 0);
+        .filter((row) => row.nameEn.length > 0 && row.category.length > 0);
 
       if (preparedRows.length === 0) {
         toast.error("No valid rows found. Fill at least Name_EN and Category in one row.");
@@ -1401,7 +1401,7 @@ function AdminPage() {
           toast.error(warning);
         }
         if (result.warnings.length > 5) {
-          toast.message(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
+          toast(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
         }
       } else {
         toast.success(summary);
