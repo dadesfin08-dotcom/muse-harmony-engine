@@ -1543,7 +1543,7 @@ function AdminPage() {
       const missingHeaders = MASTER_PRODUCTS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
 
       if (missingHeaders.length > 0) {
-        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        toast.error(`Missing required headers: ${missingHeaders.join(", ")}`);
         return;
       }
 
@@ -1602,7 +1602,7 @@ function AdminPage() {
 
         toast.warning(`Total skipped rows: ${result.skippedCount}`);
         if (result.warnings.length > 5) {
-          toast(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
+          toast(`+${result.warnings.length - 5} more skipped rows. Check your file values and retry.`);
         }
       } else {
         toast.success(summary);
@@ -3591,7 +3591,7 @@ function CatalogSection({
   isImporting: boolean;
   masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
-  onDownloadTemplate: () => void;
+  onDownloadTemplate: () => void | Promise<void>;
   onDownloadExample: () => void;
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
@@ -3609,7 +3609,7 @@ function CatalogSection({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download CSV Template
+            Download XLSX Template
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
@@ -3618,7 +3618,7 @@ function CatalogSection({
           <input
             ref={masterProductsCsvInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             className="hidden"
             onChange={onImportCsv}
           />
