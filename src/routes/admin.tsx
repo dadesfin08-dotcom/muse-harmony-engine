@@ -3494,6 +3494,13 @@ function ServiceZonesSection({
   onSaveNeighborhood: () => void;
   onOpenCommuneProfile: (communeId: string) => void;
 }) {
+  const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
+    const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value));
+    return Array.from(new Set(labels)).join(" / ");
+  };
+
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div>
@@ -3609,7 +3616,9 @@ function ServiceZonesSection({
                   ) : (
                     zone.neighborhoods.map((neighborhood) => (
                       <div key={neighborhood.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-2 py-1">
-                        <span className="text-xs text-foreground">{neighborhood.name} - {Number(neighborhood.deliveryFee ?? 0).toFixed(2)} MAD</span>
+                        <span className="text-xs text-foreground">
+                          {formatNeighborhoodLabel(neighborhood)} - {Number(neighborhood.deliveryFee ?? 0).toFixed(2)} MAD
+                        </span>
                       </div>
                     ))
                   )}
