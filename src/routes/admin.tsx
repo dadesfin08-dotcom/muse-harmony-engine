@@ -343,7 +343,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminPage() {
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
   const queryClient = useQueryClient();
@@ -468,6 +468,17 @@ function AdminPage() {
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
+  const getLocalizedCommuneName = (commune: {
+    name: string;
+    nameEn?: string | null;
+    nameFr?: string | null;
+    nameAr?: string | null;
+  }) => {
+    const lang = i18n.resolvedLanguage || i18n.language || "en";
+    if (lang === "ar") return commune.nameAr?.trim() || commune.nameFr?.trim() || commune.nameEn || commune.name;
+    if (lang === "fr") return commune.nameFr?.trim() || commune.nameEn || commune.name;
+    return commune.nameEn || commune.name;
+  };
   const masterProducts =
     masterProductsQuery.data?.map(
       (row): MasterProductEntity => ({
@@ -535,7 +546,9 @@ function AdminPage() {
     isActive: true,
   });
   const [serviceZoneForm, setServiceZoneForm] = useState({
-    communeName: "",
+    communeNameEn: "",
+    communeNameFr: "",
+    communeNameAr: "",
     neighborhoodCommuneId: "",
     neighborhoodNameEn: "",
     neighborhoodNameFr: "",
