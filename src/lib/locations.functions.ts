@@ -168,6 +168,65 @@ const normalizeZoneCode = (value: string | null | undefined) => {
   return normalized.length > 0 ? normalized : null;
 };
 
+const normalizeFuzzyText = (value: string | null | undefined) =>
+  (value ?? "")
+    .toLocaleLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const levenshteinDistance = (a: string, b: string) => {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  const previous = new Array(b.length + 1).fill(0);
+  const current = new Array(b.length + 1).fill(0);
+
+  for (let j = 0; j <= b.length; j += 1) previous[j] = j;
+
+  for (let i = 1; i <= a.length; i += 1) {
+    current[0] = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost);
+    }
+    for (let j = 0; j <= b.length; j += 1) previous[j] = current[j];
+  }
+
+  return previous[b.length];
+};
+
+const fuzzyScore = (queryRaw: string, labels: Array<string | null | undefined>) => {
+  const query = normalizeFuzzyText(queryRaw);
+  if (!query) return 0;
+
+  const normalizedLabels = labels.map((label) => normalizeFuzzyText(label)).filter(Boolean);
+  if (normalizedLabels.length === 0) return 0;
+
+  let bestScore = 0;
+  for (const label of normalizedLabels) {
+    if (label.includes(query)) {
+      bestScore = Math.max(bestScore, 1);
+    }
+
+    const labelTokens = label.split(" ").filter(Boolean);
+    const candidates = [label, ...labelTokens];
+
+    for (const candidate of candidates) {
+      const maxLen = Math.max(query.length, candidate.length);
+      if (maxLen === 0) continue;
+      const distance = levenshteinDistance(query, candidate);
+      const similarity = 1 - distance / maxLen;
+      bestScore = Math.max(bestScore, similarity);
+    }
+  }
+
+  return bestScore;
+};
+
 const extractZoneCodeSequence = (zoneCode: string) => {
   const match = zoneCode.match(/^SZ-(\d+)$/i);
   if (!match) return null;
@@ -202,27 +261,35 @@ export const searchCommunes = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const query = data.query.trim();
-      const pattern = `%${query}%`;
-
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("communes")
         .select("id, name_en, name_fr, name_ar")
-        .or(`name_en.ilike.${pattern},name_fr.ilike.${pattern},name_ar.ilike.${pattern}`)
         .order("name_en", { ascending: true })
-        .limit(data.limit);
+        .limit(500);
 
       if (error) throw new Error(error.message);
 
-      return ((rows ?? []) as CommuneRow[]).map(
-        (commune) =>
-          ({
-            id: commune.id,
-            name: commune.name_en,
-            nameEn: commune.name_en,
-            nameFr: commune.name_fr,
-            nameAr: commune.name_ar,
-          }) satisfies CommuneSearchResult,
-      );
+      return ((rows ?? []) as CommuneRow[])
+        .map((commune) => ({
+          commune,
+          score: fuzzyScore(query, [commune.name_en, commune.name_fr, commune.name_ar]),
+        }))
+        .filter(({ score }) => score >= 0.45)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.commune.name_en.localeCompare(b.commune.name_en);
+        })
+        .slice(0, data.limit)
+        .map(
+          ({ commune }) =>
+            ({
+              id: commune.id,
+              name: commune.name_en,
+              nameEn: commune.name_en,
+              nameFr: commune.name_fr,
+              nameAr: commune.name_ar,
+            }) satisfies CommuneSearchResult,
+        );
     } catch (error) {
       console.error("searchCommunes failed:", error);
       throw new Error("Failed to search communes.");
@@ -234,31 +301,39 @@ export const searchNeighborhoodsByCommune = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const query = data.query.trim();
-      const pattern = `%${query}%`;
-
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("neighborhoods")
         .select("id, zone_code, name_en, name_fr, name_ar, commune_id, delivery_fee")
         .eq("commune_id", data.communeId)
-        .or(`name_en.ilike.${pattern},name_fr.ilike.${pattern},name_ar.ilike.${pattern}`)
         .order("name_en", { ascending: true })
-        .limit(data.limit);
+        .limit(800);
 
       if (error) throw new Error(error.message);
 
-      return ((rows ?? []) as NeighborhoodRow[]).map(
-        (row) =>
-          ({
-            id: row.id,
-            zoneCode: row.zone_code,
-            communeId: row.commune_id,
-            name: row.name_en,
-            nameEn: row.name_en,
-            nameFr: row.name_fr,
-            nameAr: row.name_ar,
-            deliveryFee: Number(row.delivery_fee ?? 0),
-          }) satisfies NeighborhoodSearchResult,
-      );
+      return ((rows ?? []) as NeighborhoodRow[])
+        .map((row) => ({
+          row,
+          score: fuzzyScore(query, [row.name_en, row.name_fr, row.name_ar]),
+        }))
+        .filter(({ score }) => score >= 0.45)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.row.name_en.localeCompare(b.row.name_en);
+        })
+        .slice(0, data.limit)
+        .map(
+          ({ row }) =>
+            ({
+              id: row.id,
+              zoneCode: row.zone_code,
+              communeId: row.commune_id,
+              name: row.name_en,
+              nameEn: row.name_en,
+              nameFr: row.name_fr,
+              nameAr: row.name_ar,
+              deliveryFee: Number(row.delivery_fee ?? 0),
+            }) satisfies NeighborhoodSearchResult,
+        );
     } catch (error) {
       console.error("searchNeighborhoodsByCommune failed:", error);
       throw new Error("Failed to search neighborhoods.");
