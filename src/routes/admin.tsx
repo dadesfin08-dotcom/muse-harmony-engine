@@ -2031,7 +2031,11 @@ function AdminPage() {
                   products={masterProducts}
                   categories={categories}
                   isLoading={dbHealthQuery.isLoading || masterProductsQuery.isLoading}
+                  isImporting={isImportingMasterProducts}
+                  masterProductsCsvInputRef={masterProductsCsvInputRef}
                   onAddProduct={openCreateProductModal}
+                  onDownloadTemplate={downloadMasterProductsCsvTemplate}
+                  onImportCsv={handleMasterProductsCsvUpload}
                   onEditProduct={openEditProductModal}
                   onArchiveProduct={archiveProduct}
                 />
