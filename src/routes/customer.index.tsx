@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Input } from "@/components/ui/input";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -2328,26 +2329,33 @@ function Index() {
                     Jamaa Tourabiya
                   </label>
                   <Popover open={isCommuneComboboxOpen} onOpenChange={setIsCommuneComboboxOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={isCommuneComboboxOpen}
-                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
-                      >
-                        <span className="truncate text-left">
-                          {selectedCommune ? getLocalizedCommuneName(selectedCommune) : "Type 3+ characters to find a commune"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
-                      </Button>
-                    </PopoverTrigger>
+                    <PopoverAnchor asChild>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={communeSearchInput}
+                          onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setCommuneSearchInput(nextValue);
+                            if (selectedCommuneId) {
+                              setSelectedCommuneId("");
+                              setSelectedCommuneOption(null);
+                              setSelectedNeighborhoodId("");
+                              setSelectedNeighborhoodOption(null);
+                              setNeighborhoodSearchInput("");
+                            }
+                            if (!isCommuneComboboxOpen) setIsCommuneComboboxOpen(true);
+                          }}
+                          onFocus={() => setIsCommuneComboboxOpen(true)}
+                          placeholder="Search commune (EN / FR / AR)..."
+                          className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                          aria-expanded={isCommuneComboboxOpen}
+                          role="combobox"
+                        />
+                      </div>
+                    </PopoverAnchor>
                     <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                       <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Search commune (EN / FR / AR)..."
-                          value={communeSearchInput}
-                          onValueChange={setCommuneSearchInput}
-                        />
                         <CommandList>
                           {!hasEnoughCommuneChars ? (
                             <CommandEmpty>Type at least 3 characters.</CommandEmpty>
@@ -2370,6 +2378,7 @@ function Index() {
                                         setSelectedNeighborhoodOption(null);
                                         setNeighborhoodSearchInput("");
                                       }
+                                      setCommuneSearchInput(getLocalizedCommuneName(commune));
                                       setIsCommuneComboboxOpen(false);
                                     }}
                                   >
@@ -2396,31 +2405,37 @@ function Index() {
                     open={isNeighborhoodComboboxOpen}
                     onOpenChange={(open) => setIsNeighborhoodComboboxOpen(selectedCommuneId ? open : false)}
                   >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={isNeighborhoodComboboxOpen}
-                        disabled={!selectedCommuneId}
-                        className="h-10 w-full justify-between rounded-xl px-3 text-sm font-normal"
-                      >
-                        <span className="truncate text-left">
-                          {selectedNeighborhood
-                            ? `${getLocalizedNeighborhoodName(selectedNeighborhood)} (+${Number(selectedNeighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`
-                            : selectedCommuneId
-                              ? "Type 3+ characters to find a douar"
-                              : "Select a commune first"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
-                      </Button>
-                    </PopoverTrigger>
+                    <PopoverAnchor asChild>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={neighborhoodSearchInput}
+                          onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setNeighborhoodSearchInput(nextValue);
+                            if (selectedNeighborhoodId) {
+                              setSelectedNeighborhoodId("");
+                              setSelectedNeighborhoodOption(null);
+                            }
+                            if (selectedCommuneId && !isNeighborhoodComboboxOpen) {
+                              setIsNeighborhoodComboboxOpen(true);
+                            }
+                          }}
+                          onFocus={() => {
+                            if (selectedCommuneId) {
+                              setIsNeighborhoodComboboxOpen(true);
+                            }
+                          }}
+                          placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                          className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                          aria-expanded={isNeighborhoodComboboxOpen}
+                          role="combobox"
+                          disabled={!selectedCommuneId}
+                        />
+                      </div>
+                    </PopoverAnchor>
                     <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                       <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Search douar (EN / FR / AR)..."
-                          value={neighborhoodSearchInput}
-                          onValueChange={setNeighborhoodSearchInput}
-                        />
                         <CommandList>
                           {!selectedCommuneId ? <CommandEmpty>Select a commune first.</CommandEmpty> : null}
                           {selectedCommuneId && !hasEnoughNeighborhoodChars ? (
@@ -2437,6 +2452,9 @@ function Index() {
                                     onSelect={() => {
                                       setSelectedNeighborhoodId(neighborhood.id);
                                       setSelectedNeighborhoodOption(neighborhood);
+                                      setNeighborhoodSearchInput(
+                                        `${getLocalizedNeighborhoodName(neighborhood)} (+${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)`,
+                                      );
                                       setIsNeighborhoodComboboxOpen(false);
                                     }}
                                   >
