@@ -537,7 +537,9 @@ function AdminPage() {
   const [serviceZoneForm, setServiceZoneForm] = useState({
     communeName: "",
     neighborhoodCommuneId: "",
-    neighborhoodName: "",
+    neighborhoodNameEn: "",
+    neighborhoodNameFr: "",
+    neighborhoodNameAr: "",
     neighborhoodDeliveryFee: "0",
   });
 
@@ -946,11 +948,11 @@ function AdminPage() {
 
     if (
       !serviceZoneForm.neighborhoodCommuneId ||
-      !serviceZoneForm.neighborhoodName.trim() ||
+      !serviceZoneForm.neighborhoodNameEn.trim() ||
       Number.isNaN(parsedDeliveryFee) ||
       parsedDeliveryFee < 0
     ) {
-      toast.error("Please select a commune and enter a neighborhood name.");
+      toast.error("Please select a commune and enter at least Neighborhood Name (EN).");
       return;
     }
 
@@ -958,12 +960,20 @@ function AdminPage() {
       await saveNeighborhood({
         data: {
           communeId: serviceZoneForm.neighborhoodCommuneId,
-          name: serviceZoneForm.neighborhoodName.trim(),
+          nameEn: serviceZoneForm.neighborhoodNameEn.trim(),
+          nameFr: serviceZoneForm.neighborhoodNameFr.trim() || null,
+          nameAr: serviceZoneForm.neighborhoodNameAr.trim() || null,
           deliveryFee: parsedDeliveryFee,
         },
       });
       await serviceZonesQuery.refetch();
-      setServiceZoneForm((current) => ({ ...current, neighborhoodName: "", neighborhoodDeliveryFee: "0" }));
+      setServiceZoneForm((current) => ({
+        ...current,
+        neighborhoodNameEn: "",
+        neighborhoodNameFr: "",
+        neighborhoodNameAr: "",
+        neighborhoodDeliveryFee: "0",
+      }));
       toast.success("Neighborhood created successfully.");
     } catch (error) {
       console.error("Failed to create neighborhood:", error);
@@ -3465,14 +3475,18 @@ function ServiceZonesSection({
   form: {
     communeName: string;
     neighborhoodCommuneId: string;
-    neighborhoodName: string;
+    neighborhoodNameEn: string;
+    neighborhoodNameFr: string;
+    neighborhoodNameAr: string;
     neighborhoodDeliveryFee: string;
   };
   onFormChange: Dispatch<
     SetStateAction<{
       communeName: string;
       neighborhoodCommuneId: string;
-      neighborhoodName: string;
+      neighborhoodNameEn: string;
+      neighborhoodNameFr: string;
+      neighborhoodNameAr: string;
       neighborhoodDeliveryFee: string;
     }>
   >;
@@ -3528,9 +3542,21 @@ function ServiceZonesSection({
           </select>
           <input
             id="new-neighborhood"
-            value={form.neighborhoodName}
-            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodName: event.target.value }))}
-            placeholder="e.g. Hay El Farah"
+            value={form.neighborhoodNameEn}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameEn: event.target.value }))}
+            placeholder="Neighborhood Name (EN)"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.neighborhoodNameFr}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameFr: event.target.value }))}
+            placeholder="Neighborhood Name (FR)"
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          />
+          <input
+            value={form.neighborhoodNameAr}
+            onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameAr: event.target.value }))}
+            placeholder="Neighborhood Name (AR) - مثال: حي الفرح"
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input

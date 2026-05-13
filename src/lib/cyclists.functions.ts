@@ -65,7 +65,9 @@ type CyclistCoverageRow = {
 
 type NeighborhoodRow = {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
   commune_id: string;
 };
 
@@ -151,7 +153,7 @@ export type CyclistEarningsHistoryResponse = {
 async function buildServiceZoneMaps() {
   const [{ data: neighborhoods, error: neighborhoodsError }, { data: communes, error: communesError }] =
     await Promise.all([
-      (supabaseAdmin as any).from("neighborhoods").select("id, name, commune_id"),
+      (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id"),
       (supabaseAdmin as any).from("communes").select("id, name"),
     ]);
 
@@ -189,7 +191,7 @@ function formatCoverageZone(
 
     const communeName = communeMap.get(neighborhood.commune_id) ?? "Unknown Commune";
     const current = byCommune.get(communeName) ?? [];
-    current.push(neighborhood.name);
+    current.push(neighborhood.name_en);
     byCommune.set(communeName, current);
   }
 
@@ -441,7 +443,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           id: row.id,
           customerName: row.customer_name,
           customerPhone: row.customer_phone,
-          douar: neighborhood?.name ?? "Unspecified",
+          douar: neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified",
           deliveryFeeMad: Number(row.delivery_fee ?? 0),
           totalMad: Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
           paymentMethod: row.payment_method === "Carnet" ? "Carnet" : "COD",

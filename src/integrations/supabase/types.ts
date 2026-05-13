@@ -451,7 +451,9 @@ export type Database = {
           created_at: string
           delivery_fee: number
           id: string
-          name: string
+          name_ar: string | null
+          name_en: string
+          name_fr: string | null
           updated_at: string
           vendor_id: string | null
         }
@@ -460,7 +462,9 @@ export type Database = {
           created_at?: string
           delivery_fee?: number
           id?: string
-          name: string
+          name_ar?: string | null
+          name_en: string
+          name_fr?: string | null
           updated_at?: string
           vendor_id?: string | null
         }
@@ -469,7 +473,9 @@ export type Database = {
           created_at?: string
           delivery_fee?: number
           id?: string
-          name?: string
+          name_ar?: string | null
+          name_en?: string
+          name_fr?: string | null
           updated_at?: string
           vendor_id?: string | null
         }
