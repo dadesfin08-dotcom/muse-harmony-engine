@@ -363,8 +363,8 @@ function Index() {
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
-  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 3;
-  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 3;
+  const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
+  const hasEnoughNeighborhoodChars = normalizedNeighborhoodSearch.length >= 1;
   const communeSearchQuery = useQuery({
     queryKey: ["customer", "commune-search", normalizedCommuneSearch],
     queryFn: () => fetchCommuneSearchResults({ data: { query: normalizedCommuneSearch, limit: 20 } }),
@@ -2393,10 +2393,10 @@ function Index() {
                     {!hasEnoughCommuneChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
-                          ? "كتب على الأقل 3 حروف للبحث..."
+                          ? "بدا كتب باش نْقلبو ليك..."
                           : language === "fr"
-                            ? "Tapez au moins 3 caractères pour rechercher..."
-                            : "Type at least 3 characters to search..."}
+                            ? "Commencez à taper pour rechercher..."
+                            : "Start typing to search..."}
                       </p>
                     ) : communeSearchQuery.isLoading ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
@@ -2465,10 +2465,10 @@ function Index() {
                     ) : !hasEnoughNeighborhoodChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
-                          ? "كتب على الأقل 3 حروف للبحث..."
+                          ? "بدا كتب باش نْقلبو ليك..."
                           : language === "fr"
-                            ? "Tapez au moins 3 caractères pour rechercher..."
-                            : "Type at least 3 characters to search..."}
+                            ? "Commencez à taper pour rechercher..."
+                            : "Start typing to search..."}
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
