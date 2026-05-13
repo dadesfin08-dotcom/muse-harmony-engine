@@ -64,6 +64,7 @@ import {
 import { getVendorDashboardData, updateVendorOrderStatus } from "@/lib/orders.functions";
 import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
+import { cn } from "@/lib/utils";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
@@ -2202,6 +2203,19 @@ function FlashSalesView({
                 endAt: item.flashSaleEndTime ?? "",
               };
 
+              const numericFlashPrice = Number(draft.price);
+              const isFlashPriceValid =
+                draft.enabled &&
+                !Number.isNaN(numericFlashPrice) &&
+                numericFlashPrice > 0 &&
+                numericFlashPrice < item.vendorPrice;
+              const isFlashPriceInvalid =
+                draft.enabled && draft.price.trim().length > 0 && !Number.isNaN(numericFlashPrice) && numericFlashPrice >= item.vendorPrice;
+              const flashEndTime = draft.endAt ? new Date(draft.endAt) : null;
+              const isEndAtValid =
+                draft.enabled && flashEndTime !== null && !Number.isNaN(flashEndTime.getTime()) && flashEndTime.getTime() > Date.now();
+              const canSaveFlashSale = !draft.enabled || (isFlashPriceValid && isEndAtValid);
+
               return (
                 <article
                   key={item.id}
@@ -2268,9 +2282,16 @@ function FlashSalesView({
                           }))
                         }
                         placeholder="0.00"
-                        className="h-10 rounded-xl"
+                        className={cn(
+                          "h-10 rounded-xl",
+                          isFlashPriceInvalid &&
+                            "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
+                        )}
                         disabled={!draft.enabled}
                       />
+                      {isFlashPriceInvalid ? (
+                        <p className="text-xs text-destructive">Flash price must be less than the regular price.</p>
+                      ) : null}
                     </div>
 
                     <div className="space-y-1">
@@ -2301,7 +2322,7 @@ function FlashSalesView({
                     variant="hero"
                     className="mt-3 h-10 w-full rounded-xl"
                     onClick={() => onSaveFlash(item)}
-                    disabled={isSavingFlashFor === item.id}
+                    disabled={isSavingFlashFor === item.id || !canSaveFlashSale}
                   >
                     {isSavingFlashFor === item.id ? "Saving..." : "Save Flash Sale"}
                   </Button>
