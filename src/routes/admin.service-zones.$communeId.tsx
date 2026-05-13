@@ -579,7 +579,7 @@ function CommuneProfilePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this commune permanently?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete <strong>{commune.name}</strong> and all its douars. This action cannot be undone.
+              This will delete <strong>{localizedCommuneName(commune)}</strong> and all its douars. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
