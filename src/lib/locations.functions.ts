@@ -9,7 +9,9 @@ const createCommuneInputSchema = z.object({
 
 const createNeighborhoodInputSchema = z.object({
   communeId: z.string().uuid(),
-  name: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().min(1).max(120),
+  nameFr: z.string().trim().max(120).nullable().optional(),
+  nameAr: z.string().trim().max(120).nullable().optional(),
   deliveryFee: z.coerce.number().min(0).max(100000).default(0),
 });
 
@@ -20,7 +22,9 @@ const updateCommuneInputSchema = z.object({
 
 const updateNeighborhoodInputSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().min(1).max(120),
+  nameFr: z.string().trim().max(120).nullable().optional(),
+  nameAr: z.string().trim().max(120).nullable().optional(),
   deliveryFee: z.coerce.number().min(0).max(100000).default(0),
 });
 
@@ -43,7 +47,9 @@ type CommuneRow = {
 
 type NeighborhoodRow = {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
   commune_id: string;
   delivery_fee: number;
   vendor_id: string | null;
@@ -55,6 +61,9 @@ export type ServiceZoneTree = Array<{
   neighborhoods: Array<{
     id: string;
     name: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
     communeId: string;
     deliveryFee: number;
     vendorId: string | null;
@@ -67,6 +76,9 @@ export type CommuneProfile = {
   neighborhoods: Array<{
     id: string;
     name: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
     communeId: string;
     deliveryFee: number;
     vendorId: string | null;
