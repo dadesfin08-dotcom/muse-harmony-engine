@@ -14,6 +14,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
+import Papa from "papaparse";
 import { z } from "zod";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -35,6 +36,8 @@ import {
   ChevronsUpDown,
   Users,
   LogOut,
+  Download,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -104,6 +107,7 @@ import {
   createBrand,
   createMasterProduct,
   deleteBrand,
+  importBrandsBulk,
   listBrands,
   listMasterProducts,
   updateBrand,
@@ -218,6 +222,7 @@ type BrandAdminRow = {
 };
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
+const BRANDS_CSV_HEADERS = ["Brand_Name_AR", "Brand_Name_EN", "Brand_Name_FR", "Logo_URL"] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -324,6 +329,7 @@ function AdminPage() {
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
   const archiveMasterProductInDatabase = useServerFn(archiveMasterProduct);
   const createBrandInDatabase = useServerFn(createBrand);
+  const importBrandsBulkInDatabase = useServerFn(importBrandsBulk);
   const updateBrandInDatabase = useServerFn(updateBrand);
   const deleteBrandInDatabase = useServerFn(deleteBrand);
   const uploadBrandLogoToStorage = useServerFn(uploadBrandLogo);
@@ -531,7 +537,9 @@ function AdminPage() {
   const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
   const [brandLogoPreviewUrl, setBrandLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingBrand, setIsSavingBrand] = useState(false);
+  const [isImportingBrands, setIsImportingBrands] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
+  const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
@@ -1230,6 +1238,81 @@ function AdminPage() {
     }
   };
 
+  const downloadBrandsCsvTemplate = () => {
+    const csvContent = `${BRANDS_CSV_HEADERS.join(",")}\n`;
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "brands-template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importBrandsFromCsv = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please upload a CSV file.");
+      return;
+    }
+
+    try {
+      setIsImportingBrands(true);
+
+      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+        Papa.parse<Record<string, string>>(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: resolve,
+          error: reject,
+        });
+      });
+
+      const uploadedHeaders = parsed.meta.fields ?? [];
+      const missingHeaders = BRANDS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
+
+      if (missingHeaders.length > 0) {
+        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const preparedRows = parsed.data
+        .map((row) => ({
+          nameAr: row.Brand_Name_AR?.trim() || null,
+          nameEn: row.Brand_Name_EN?.trim() || "",
+          nameFr: row.Brand_Name_FR?.trim() || null,
+          logoUrl: row.Logo_URL?.trim() || null,
+        }))
+        .filter((row) => row.nameEn.length > 0);
+
+      if (preparedRows.length === 0) {
+        toast.error("No valid rows found. Fill at least Brand_Name_EN in one row.");
+        return;
+      }
+
+      const result = await importBrandsBulkInDatabase({ data: { rows: preparedRows } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
+      toast.success(
+        `Brands imported: ${result.totalProcessed} (${result.insertedCount} new, ${result.updatedCount} updated).`,
+      );
+    } catch (error) {
+      console.error("Failed to import brands CSV:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import brands CSV.");
+    } finally {
+      setIsImportingBrands(false);
+      if (brandCsvInputRef.current) {
+        brandCsvInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleBrandsCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    await importBrandsFromCsv(file);
+  };
+
   const archiveProduct = async (product: MasterProductEntity) => {
     setPendingArchiveProduct(product);
   };
@@ -1847,7 +1930,11 @@ function AdminPage() {
                 <BrandsSection
                   brands={brands}
                   isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading}
+                  isImporting={isImportingBrands}
+                  brandCsvInputRef={brandCsvInputRef}
                   onAddBrand={openCreateBrandModal}
+                  onDownloadTemplate={downloadBrandsCsvTemplate}
+                  onImportCsv={handleBrandsCsvUpload}
                   onEditBrand={openEditBrandModal}
                   onDeleteBrand={deleteBrandHandler}
                 />
@@ -3326,13 +3413,21 @@ function CatalogSection({
 function BrandsSection({
   brands,
   isLoading,
+  isImporting,
+  brandCsvInputRef,
   onAddBrand,
+  onDownloadTemplate,
+  onImportCsv,
   onEditBrand,
   onDeleteBrand,
 }: {
   brands: BrandAdminRow[];
   isLoading: boolean;
+  isImporting: boolean;
+  brandCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddBrand: () => void;
+  onDownloadTemplate: () => void;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditBrand: (brand: BrandAdminRow) => void;
   onDeleteBrand: (brand: BrandAdminRow) => void;
 }) {
@@ -3343,9 +3438,31 @@ function BrandsSection({
           <h2 className="text-base font-semibold text-foreground">Brands · الماركات</h2>
           <p className="text-sm text-muted-foreground">Centralized multilingual brand registry for all products.</p>
         </div>
-        <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
-          + Add New Brand
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
+            <Download className="size-4" />
+            Download CSV Template
+          </Button>
+          <input
+            ref={brandCsvInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={onImportCsv}
+          />
+          <Button
+            variant="outline"
+            className="rounded-md"
+            onClick={() => brandCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <FileUp className="size-4" />
+            {isImporting ? "Importing..." : "Import Bulk Brands"}
+          </Button>
+          <Button variant="hero" className="rounded-md" onClick={onAddBrand}>
+            + Add New Brand
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">

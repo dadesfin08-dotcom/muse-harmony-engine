@@ -88,6 +88,20 @@ const createBrandInputSchema = z.object({
   logoUrl: z.string().url().max(2000).nullable(),
 });
 
+const bulkImportBrandsInputSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        nameEn: z.string().trim().min(1).max(120),
+        nameAr: z.string().trim().max(120).nullable(),
+        nameFr: z.string().trim().max(120).nullable(),
+        logoUrl: z.string().url().max(2000).nullable(),
+      }),
+    )
+    .min(1)
+    .max(5000),
+});
+
 const uploadBrandLogoInputSchema = z.object({
   fileName: z.string().trim().min(1).max(180),
   contentType: z.string().trim().min(1).max(120),
@@ -284,6 +298,98 @@ export const createBrand = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("createBrand failed:", error);
       throw createDbError(error, "Failed to create brand.");
+    }
+  });
+
+export const importBrandsBulk = createServerFn({ method: "POST" })
+  .inputValidator((input) => bulkImportBrandsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const normalizedRows = data.rows
+        .map((row) => ({
+          nameEn: row.nameEn.trim(),
+          nameFr: row.nameFr?.trim() ? row.nameFr.trim() : null,
+          nameAr: row.nameAr?.trim() ? row.nameAr.trim() : null,
+          logoUrl: row.logoUrl?.trim() ? row.logoUrl.trim() : null,
+        }))
+        .filter((row) => row.nameEn.length > 0);
+
+      if (normalizedRows.length === 0) {
+        throw new Error("No valid brand rows found in the uploaded CSV.");
+      }
+
+      const rowsByName = new Map<string, (typeof normalizedRows)[number]>();
+      for (const row of normalizedRows) {
+        rowsByName.set(row.nameEn.toLowerCase(), row);
+      }
+
+      const uniqueRows = Array.from(rowsByName.values());
+      const uniqueNames = uniqueRows.map((row) => row.nameEn);
+
+      const { data: existingBrands, error: existingBrandsError } = await (supabaseAdmin as any)
+        .from("brands")
+        .select("id, name_en")
+        .in("name_en", uniqueNames);
+
+      if (existingBrandsError) {
+        throw new Error(existingBrandsError.message);
+      }
+
+      const existingByName = new Map<string, { id: string; name_en: string }>();
+      for (const row of (existingBrands ?? []) as Array<{ id: string; name_en: string }>) {
+        existingByName.set(row.name_en.toLowerCase(), row);
+      }
+
+      const updates = uniqueRows.filter((row) => existingByName.has(row.nameEn.toLowerCase()));
+      const inserts = uniqueRows.filter((row) => !existingByName.has(row.nameEn.toLowerCase()));
+
+      let updatedCount = 0;
+      for (const row of updates) {
+        const existing = existingByName.get(row.nameEn.toLowerCase());
+        if (!existing?.id) continue;
+
+        const { error } = await (supabaseAdmin as any)
+          .from("brands")
+          .update({
+            name_en: row.nameEn,
+            name_fr: row.nameFr,
+            name_ar: row.nameAr,
+            logo_url: row.logoUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        updatedCount += 1;
+      }
+
+      if (inserts.length > 0) {
+        const { error: insertError } = await (supabaseAdmin as any).from("brands").insert(
+          inserts.map((row) => ({
+            name_en: row.nameEn,
+            name_fr: row.nameFr,
+            name_ar: row.nameAr,
+            logo_url: row.logoUrl,
+          })),
+        );
+
+        if (insertError) {
+          throw new Error(insertError.message);
+        }
+      }
+
+      return {
+        ok: true,
+        insertedCount: inserts.length,
+        updatedCount,
+        totalProcessed: uniqueRows.length,
+      };
+    } catch (error) {
+      console.error("importBrandsBulk failed:", error);
+      throw createDbError(error, "Failed to bulk import brands.");
     }
   });
 
