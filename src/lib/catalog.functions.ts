@@ -432,7 +432,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         .filter((row) => row.nameEn.length > 0);
 
       if (normalizedRows.length === 0) {
-        throw new Error("No valid master product rows found in the uploaded CSV.");
+        throw new Error("No valid master product rows found in the uploaded file.");
       }
 
       const warnings: string[] = [];
@@ -466,7 +466,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         await Promise.all([
           (supabaseAdmin as any).from("categories").select("id, name_en, name_fr, name_ar").eq("is_active", true),
           (supabaseAdmin as any).from("brands").select("id, name_en, name_fr, name_ar"),
-          (supabaseAdmin as any).from("master_products").select("id, product_name, barcode"),
+          (supabaseAdmin as any).from("master_products").select("id, product_name, barcode, image_url"),
         ]);
 
       if (categoriesError) {
@@ -503,11 +503,11 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
       }
 
-      const productsByBarcode = new Map<string, { id: string }>();
-      for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null }>) {
+      const productsByBarcode = new Map<string, { id: string; image_url: string | null }>();
+      for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null; image_url: string | null }>) {
         const normalizedBarcode = normalizeLookupKey(product.barcode);
         if (normalizedBarcode && !productsByBarcode.has(normalizedBarcode)) {
-          productsByBarcode.set(normalizedBarcode, { id: product.id });
+          productsByBarcode.set(normalizedBarcode, { id: product.id, image_url: product.image_url });
         }
       }
       let insertedCount = 0;
@@ -587,9 +587,14 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         };
 
         if (existingProduct?.id) {
+          const updatePayload = {
+            ...payload,
+            image_url: row.imageUrl ?? existingProduct.image_url,
+          };
+
           const { error: updateError } = await (supabaseAdmin as any)
             .from("master_products")
-            .update(payload)
+            .update(updatePayload)
             .eq("id", existingProduct.id);
 
           if (updateError) {
@@ -598,7 +603,10 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           }
 
           updatedCount += 1;
-          productsByBarcode.set(normalizedBarcode, { id: existingProduct.id });
+          productsByBarcode.set(normalizedBarcode, {
+            id: existingProduct.id,
+            image_url: row.imageUrl ?? existingProduct.image_url,
+          });
           continue;
         }
 
@@ -614,7 +622,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
 
         insertedCount += 1;
-        productsByBarcode.set(normalizedBarcode, { id: inserted.id });
+        productsByBarcode.set(normalizedBarcode, { id: inserted.id, image_url: row.imageUrl });
       }
 
       return {

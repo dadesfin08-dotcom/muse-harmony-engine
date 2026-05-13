@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import Papa from "papaparse";
+import ExcelJS from "exceljs";
 import { z } from "zod";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -1360,13 +1361,91 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
-  const downloadMasterProductsCsvTemplate = () => {
-    const csvContent = `\uFEFF${MASTER_PRODUCTS_CSV_HEADERS.join(";")}\n`;
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const downloadMasterProductsCsvTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const templateSheet = workbook.addWorksheet("Template");
+    const lookupSheet = workbook.addWorksheet("Lookups");
+    lookupSheet.state = "veryHidden";
+
+    templateSheet.addRow([...MASTER_PRODUCTS_CSV_HEADERS]);
+    templateSheet.getRow(1).font = { bold: true };
+    templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+
+    const dropdownRowCount = 5000;
+    const categoryOptions = Array.from(new Set(activeCategories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    );
+    const brandOptions = Array.from(new Set(brands.map((brand) => brand.name_en.trim()).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b),
+    );
+    const unitOptions = measurementUnits;
+
+    lookupSheet.getCell("A1").value = "Category";
+    categoryOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 1).value = value;
+    });
+    lookupSheet.getCell("B1").value = "Brand";
+    brandOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 2).value = value;
+    });
+    lookupSheet.getCell("C1").value = "Measurement_Unit";
+    unitOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 3).value = value;
+    });
+
+    const categoryFormula = categoryOptions.length > 0 ? `Lookups!$A$2:$A$${categoryOptions.length + 1}` : "\"\"";
+    const brandFormula = brandOptions.length > 0 ? `Lookups!$B$2:$B$${brandOptions.length + 1}` : "\"\"";
+    const unitFormula = `Lookups!$C$2:$C$${unitOptions.length + 1}`;
+
+    for (let rowIndex = 2; rowIndex <= dropdownRowCount + 1; rowIndex += 1) {
+      templateSheet.getCell(`E${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [categoryFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Category",
+        error: "Pick a category from the dropdown list.",
+      };
+
+      templateSheet.getCell(`F${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: [brandFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Brand",
+        error: "Pick a brand from the dropdown list.",
+      };
+
+      templateSheet.getCell(`H${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [unitFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Measurement Unit",
+        error: "Pick a measurement unit from the dropdown list.",
+      };
+    }
+
+    templateSheet.columns = [
+      { width: 36 },
+      { width: 24 },
+      { width: 24 },
+      { width: 24 },
+      { width: 22 },
+      { width: 22 },
+      { width: 20 },
+      { width: 20 },
+      { width: 22 },
+    ];
+
+    const bytes = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "master-products-template.csv");
+    link.setAttribute("download", "master-products-template.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1391,34 +1470,84 @@ function AdminPage() {
   };
 
   const importMasterProductsFromCsv = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Please upload a CSV file.");
+    const lowerCaseName = file.name.toLowerCase();
+    const isCsv = lowerCaseName.endsWith(".csv");
+    const isXlsx = lowerCaseName.endsWith(".xlsx");
+
+    if (!isCsv && !isXlsx) {
+      toast.error("Please upload an XLSX or CSV file.");
       return;
     }
 
     try {
       setIsImportingMasterProducts(true);
 
-      const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
-        Papa.parse<Record<string, string>>(file, {
-          header: true,
-          delimiter: ";",
-          transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
-          skipEmptyLines: true,
-          complete: resolve,
-          error: reject,
-        });
-      });
+      const parseSpreadsheetRows = async () => {
+        if (isCsv) {
+          const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+            Papa.parse<Record<string, string>>(file, {
+              header: true,
+              delimiter: ";",
+              transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
+              skipEmptyLines: true,
+              complete: resolve,
+              error: reject,
+            });
+          });
 
-      const uploadedHeaders = parsed.meta.fields ?? [];
+          return {
+            uploadedHeaders: parsed.meta.fields ?? [],
+            rows: parsed.data,
+          };
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const rawBuffer = await file.arrayBuffer();
+        await workbook.xlsx.load(rawBuffer);
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
+          throw new Error("The uploaded XLSX file has no worksheet.");
+        }
+
+        const headerRow = worksheet.getRow(1);
+        const uploadedHeaders = MASTER_PRODUCTS_CSV_HEADERS.map((_, index) =>
+          String(headerRow.getCell(index + 1).text ?? "")
+            .replace(/^\uFEFF/, "")
+            .trim(),
+        );
+
+        const rows: Array<Record<string, string>> = [];
+        for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+          const row = worksheet.getRow(rowNumber);
+          const mappedRow: Record<string, string> = {};
+          let hasAnyValue = false;
+
+          MASTER_PRODUCTS_CSV_HEADERS.forEach((header, headerIndex) => {
+            const rawValue = String(row.getCell(headerIndex + 1).text ?? "").trim();
+            mappedRow[header] = rawValue;
+            if (rawValue.length > 0) {
+              hasAnyValue = true;
+            }
+          });
+
+          if (hasAnyValue) {
+            rows.push(mappedRow);
+          }
+        }
+
+        return { uploadedHeaders, rows };
+      };
+
+      const parsedSpreadsheet = await parseSpreadsheetRows();
+      const uploadedHeaders = parsedSpreadsheet.uploadedHeaders;
       const missingHeaders = MASTER_PRODUCTS_CSV_HEADERS.filter((header) => !uploadedHeaders.includes(header));
 
       if (missingHeaders.length > 0) {
-        toast.error(`Missing CSV headers: ${missingHeaders.join(", ")}`);
+        toast.error(`Missing required headers: ${missingHeaders.join(", ")}`);
         return;
       }
 
-      const preparedRows = parsed.data
+      const preparedRows = parsedSpreadsheet.rows
         .map((row) => ({
           imageUrl: row.Image_URL?.trim() || null,
           nameEn: row.Name_EN?.trim() || "",
@@ -1473,14 +1602,14 @@ function AdminPage() {
 
         toast.warning(`Total skipped rows: ${result.skippedCount}`);
         if (result.warnings.length > 5) {
-          toast(`+${result.warnings.length - 5} more skipped rows. Check CSV values and retry.`);
+          toast(`+${result.warnings.length - 5} more skipped rows. Check your file values and retry.`);
         }
       } else {
         toast.success(summary);
       }
     } catch (error) {
-      console.error("Failed to import master products CSV:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to import master products CSV.");
+      console.error("Failed to import master products file:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import bulk products file.");
     } finally {
       setIsImportingMasterProducts(false);
       if (masterProductsCsvInputRef.current) {
@@ -3462,7 +3591,7 @@ function CatalogSection({
   isImporting: boolean;
   masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
-  onDownloadTemplate: () => void;
+  onDownloadTemplate: () => void | Promise<void>;
   onDownloadExample: () => void;
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
@@ -3480,7 +3609,7 @@ function CatalogSection({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download CSV Template
+            Download XLSX Template
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
@@ -3489,7 +3618,7 @@ function CatalogSection({
           <input
             ref={masterProductsCsvInputRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
             className="hidden"
             onChange={onImportCsv}
           />
