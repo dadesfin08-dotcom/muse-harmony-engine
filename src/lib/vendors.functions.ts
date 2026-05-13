@@ -34,7 +34,9 @@ interface VendorRow {
 
 interface NeighborhoodRow {
   id: string;
-  name: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
   commune_id: string;
   vendor_id: string | null;
 }
@@ -100,7 +102,7 @@ function zoneFromNeighborhoods(neighborhoods: NeighborhoodRow[], communeMap: Map
   return neighborhoods
     .map((neighborhood) => {
       const communeName = communeMap.get(neighborhood.commune_id);
-      return communeName ? `${communeName} / ${neighborhood.name}` : neighborhood.name;
+      return communeName ? `${communeName} / ${neighborhood.name_en}` : neighborhood.name_en;
     })
     .join(" • ");
 }
@@ -108,7 +110,7 @@ function zoneFromNeighborhoods(neighborhoods: NeighborhoodRow[], communeMap: Map
 async function assertNeighborhoodsAvailable(neighborhoodIds: string[], currentVendorId?: string) {
   const conflictQuery = (supabaseAdmin as any)
     .from("neighborhoods")
-    .select("id, name, vendor_id")
+    .select("id, name_en, vendor_id")
     .in("id", neighborhoodIds)
     .not("vendor_id", "is", null);
 
@@ -123,7 +125,7 @@ async function assertNeighborhoodsAvailable(neighborhoodIds: string[], currentVe
   }
 
   if ((conflicts ?? []).length > 0) {
-    const claimed = (conflicts as Array<{ name: string }>).map((row) => row.name).join(", ");
+    const claimed = (conflicts as Array<{ name_en: string }>).map((row) => row.name_en).join(", ");
     throw new Error(`These neighborhoods are already claimed: ${claimed}`);
   }
 }
@@ -160,9 +162,9 @@ async function fetchVendorRecord(vendorId: string) {
         .single(),
       (supabaseAdmin as any)
         .from("neighborhoods")
-        .select("id, name, commune_id, vendor_id")
+        .select("id, name_en, name_fr, name_ar, commune_id, vendor_id")
         .eq("vendor_id", vendorId)
-        .order("name", { ascending: true }),
+        .order("name_en", { ascending: true }),
       (supabaseAdmin as any).from("communes").select("id, name"),
     ]);
 
@@ -203,7 +205,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
         .from("vendors")
         .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .order("created_at", { ascending: false }),
-      (supabaseAdmin as any).from("neighborhoods").select("id, name, commune_id, vendor_id"),
+      (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id, vendor_id"),
       (supabaseAdmin as any).from("communes").select("id, name"),
     ]);
 
