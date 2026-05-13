@@ -283,6 +283,15 @@ export const deleteCommune = createServerFn({ method: "POST" })
   .inputValidator((input) => deleteCommuneInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const { error: deleteNeighborhoodsError } = await (supabaseAdmin as any)
+        .from("neighborhoods")
+        .delete()
+        .eq("commune_id", data.id);
+
+      if (deleteNeighborhoodsError) {
+        throw new Error(deleteNeighborhoodsError.message);
+      }
+
       const { error } = await (supabaseAdmin as any).from("communes").delete().eq("id", data.id);
 
       if (error) {
