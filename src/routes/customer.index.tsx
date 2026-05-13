@@ -508,8 +508,46 @@ function Index() {
 
   const selectedCommune = selectedCommuneOption;
   const selectedNeighborhood = selectedNeighborhoodOption;
-  const filteredCommuneOptions = communeSearchQuery.data ?? [];
-  const filteredNeighborhoodOptions = neighborhoodSearchQuery.data ?? [];
+  const filteredCommuneOptions = useMemo(() => {
+    const source = communeSearchQuery.data ?? [];
+    const query = normalizeSearchText(communeSearchInput);
+    if (!query) return source;
+
+    return source.filter((commune) => {
+      const searchable = [
+        commune.name,
+        commune.nameEn,
+        commune.nameFr,
+        commune.nameAr,
+        getLocalizedCommuneName(commune),
+      ]
+        .map((value) => normalizeSearchText(value ?? ""))
+        .filter(Boolean);
+
+      return searchable.some((value) => value.includes(query));
+    });
+  }, [communeSearchInput, communeSearchQuery.data]);
+  const filteredNeighborhoodOptions = useMemo(() => {
+    const source = neighborhoodSearchQuery.data ?? [];
+    const query = normalizeSearchText(neighborhoodSearchInput);
+    if (!query) return source;
+
+    return source.filter((neighborhood) => {
+      const feeLabel = `${Number(neighborhood.deliveryFee ?? 0).toFixed(0)} mad`;
+      const searchable = [
+        neighborhood.name,
+        neighborhood.nameEn,
+        neighborhood.nameFr,
+        neighborhood.nameAr,
+        getLocalizedNeighborhoodName(neighborhood),
+        feeLabel,
+      ]
+        .map((value) => normalizeSearchText(value ?? ""))
+        .filter(Boolean);
+
+      return searchable.some((value) => value.includes(query));
+    });
+  }, [neighborhoodSearchInput, neighborhoodSearchQuery.data]);
 
   useEffect(() => {
     if (!selectedNeighborhoodOption) return;
