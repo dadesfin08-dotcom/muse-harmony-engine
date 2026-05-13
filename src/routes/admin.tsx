@@ -98,8 +98,6 @@ import {
   createCommune,
   createNeighborhood,
   listServiceZones,
-  updateCommune,
-  updateNeighborhood,
   type ServiceZoneTree,
 } from "@/lib/locations.functions";
 import {
@@ -356,8 +354,6 @@ function AdminPage() {
   const fetchServiceZones = useServerFn(listServiceZones);
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
-  const editCommune = useServerFn(updateCommune);
-  const editNeighborhood = useServerFn(updateNeighborhood);
   const fetchMasterProducts = useServerFn(listMasterProducts);
   const fetchBrands = useServerFn(listBrands);
   const fetchCategories = useServerFn(listAdminCategories);
@@ -540,8 +536,6 @@ function AdminPage() {
     neighborhoodName: "",
     neighborhoodDeliveryFee: "0",
   });
-  const [isRenamingCommuneId, setIsRenamingCommuneId] = useState<string | null>(null);
-  const [isRenamingNeighborhoodId, setIsRenamingNeighborhoodId] = useState<string | null>(null);
 
   const [productForm, setProductForm] = useState({
     name: "",
