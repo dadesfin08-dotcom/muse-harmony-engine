@@ -221,7 +221,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 type PersistedLocation = {
   communeId: string;
   neighborhoodId: string;
-  locationLabel: string;
+  locationLabel?: string;
 };
 
 type CustomerAuthStep = "phone" | "otp";
@@ -2336,8 +2336,10 @@ function Index() {
                                       const nextCommuneId = commune.id;
                                       const communeHasChanged = nextCommuneId !== selectedCommuneId;
                                       setSelectedCommuneId(nextCommuneId);
+                                      setSelectedCommuneOption(commune);
                                       if (communeHasChanged) {
                                         setSelectedNeighborhoodId("");
+                                        setSelectedNeighborhoodOption(null);
                                         setNeighborhoodSearchInput("");
                                       }
                                       setIsCommuneComboboxOpen(false);
@@ -2406,6 +2408,7 @@ function Index() {
                                     value={neighborhood.id}
                                     onSelect={() => {
                                       setSelectedNeighborhoodId(neighborhood.id);
+                                      setSelectedNeighborhoodOption(neighborhood);
                                       setIsNeighborhoodComboboxOpen(false);
                                     }}
                                   >
