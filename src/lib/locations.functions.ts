@@ -37,13 +37,13 @@ const getCommuneByIdInputSchema = z.object({
 });
 
 const searchCommunesInputSchema = z.object({
-  query: z.string().trim().min(3).max(120),
+  query: z.string().trim().max(120).default(""),
   limit: z.coerce.number().int().min(1).max(25).default(15),
 });
 
 const searchNeighborhoodsByCommuneInputSchema = z.object({
   communeId: z.string().uuid(),
-  query: z.string().trim().min(3).max(120),
+  query: z.string().trim().max(120).default(""),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
@@ -269,6 +269,19 @@ export const searchCommunes = createServerFn({ method: "GET" })
 
       if (error) throw new Error(error.message);
 
+      if (!query) {
+        return ((rows ?? []) as CommuneRow[]).slice(0, data.limit).map(
+          (commune) =>
+            ({
+              id: commune.id,
+              name: commune.name_en,
+              nameEn: commune.name_en,
+              nameFr: commune.name_fr,
+              nameAr: commune.name_ar,
+            }) satisfies CommuneSearchResult,
+        );
+      }
+
       return ((rows ?? []) as CommuneRow[])
         .map((commune) => ({
           commune,
@@ -309,6 +322,22 @@ export const searchNeighborhoodsByCommune = createServerFn({ method: "GET" })
         .limit(800);
 
       if (error) throw new Error(error.message);
+
+      if (!query) {
+        return ((rows ?? []) as NeighborhoodRow[]).slice(0, data.limit).map(
+          (row) =>
+            ({
+              id: row.id,
+              zoneCode: row.zone_code,
+              communeId: row.commune_id,
+              name: row.name_en,
+              nameEn: row.name_en,
+              nameFr: row.name_fr,
+              nameAr: row.name_ar,
+              deliveryFee: Number(row.delivery_fee ?? 0),
+            }) satisfies NeighborhoodSearchResult,
+        );
+      }
 
       return ((rows ?? []) as NeighborhoodRow[])
         .map((row) => ({
