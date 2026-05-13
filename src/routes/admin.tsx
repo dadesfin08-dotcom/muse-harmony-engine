@@ -3642,7 +3642,7 @@ function ServiceZonesSection({
                     className="text-sm font-semibold text-foreground underline decoration-border underline-offset-4 transition hover:text-primary"
                     onClick={() => onOpenCommuneProfile(zone.id)}
                   >
-                    {zone.name}
+                    {localizeCommuneName(zone)}
                   </button>
                   <Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => onOpenCommuneProfile(zone.id)}>
                     Manage
