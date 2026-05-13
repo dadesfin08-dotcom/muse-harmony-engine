@@ -1361,13 +1361,91 @@ function AdminPage() {
     await importBrandsFromCsv(file);
   };
 
-  const downloadMasterProductsCsvTemplate = () => {
-    const csvContent = `\uFEFF${MASTER_PRODUCTS_CSV_HEADERS.join(";")}\n`;
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const downloadMasterProductsCsvTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const templateSheet = workbook.addWorksheet("Template");
+    const lookupSheet = workbook.addWorksheet("Lookups");
+    lookupSheet.state = "veryHidden";
+
+    templateSheet.addRow([...MASTER_PRODUCTS_CSV_HEADERS]);
+    templateSheet.getRow(1).font = { bold: true };
+    templateSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+
+    const dropdownRowCount = 5000;
+    const categoryOptions = Array.from(new Set(activeCategories.map((category) => category.name_en.trim()).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b),
+    );
+    const brandOptions = Array.from(new Set(brands.map((brand) => brand.name_en.trim()).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b),
+    );
+    const unitOptions = measurementUnits;
+
+    lookupSheet.getCell("A1").value = "Category";
+    categoryOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 1).value = value;
+    });
+    lookupSheet.getCell("B1").value = "Brand";
+    brandOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 2).value = value;
+    });
+    lookupSheet.getCell("C1").value = "Measurement_Unit";
+    unitOptions.forEach((value, index) => {
+      lookupSheet.getCell(index + 2, 3).value = value;
+    });
+
+    const categoryFormula = categoryOptions.length > 0 ? `Lookups!$A$2:$A$${categoryOptions.length + 1}` : "\"\"";
+    const brandFormula = brandOptions.length > 0 ? `Lookups!$B$2:$B$${brandOptions.length + 1}` : "\"\"";
+    const unitFormula = `Lookups!$C$2:$C$${unitOptions.length + 1}`;
+
+    for (let rowIndex = 2; rowIndex <= dropdownRowCount + 1; rowIndex += 1) {
+      templateSheet.getCell(`E${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [categoryFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Category",
+        error: "Pick a category from the dropdown list.",
+      };
+
+      templateSheet.getCell(`F${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: [brandFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Brand",
+        error: "Pick a brand from the dropdown list.",
+      };
+
+      templateSheet.getCell(`H${rowIndex}`).dataValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [unitFormula],
+        showErrorMessage: true,
+        errorTitle: "Invalid Measurement Unit",
+        error: "Pick a measurement unit from the dropdown list.",
+      };
+    }
+
+    templateSheet.columns = [
+      { width: 36 },
+      { width: 24 },
+      { width: 24 },
+      { width: 24 },
+      { width: 22 },
+      { width: 22 },
+      { width: 20 },
+      { width: 20 },
+      { width: 22 },
+    ];
+
+    const bytes = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "master-products-template.csv");
+    link.setAttribute("download", "master-products-template.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
