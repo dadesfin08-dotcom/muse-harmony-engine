@@ -169,6 +169,19 @@ type MasterProductRow = {
   created_at: string;
 };
 
+type MasterProductExportRow = {
+  id: string;
+  product_name: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  image_url: string | null;
+  barcode: string | null;
+  measurement_value: number | null;
+  measurement_unit: MeasurementUnit;
+  category_name: string | null;
+  brand_name: string | null;
+};
+
 type VendorProductRow = {
   id: string;
   master_product_id: string;
@@ -273,6 +286,79 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
   } catch (error) {
     console.error("listMasterProducts failed:", error);
     throw new Error("Failed to load master products.");
+  }
+});
+
+export const listMasterProductsForExport = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { data, error } = await (supabaseAdmin as any)
+      .from("master_products")
+      .select("id, product_name, name_fr, name_ar, image_url, barcode, measurement_value, measurement_unit, category, category_id, brand_id")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const products = (data ?? []) as Array<{
+      id: string;
+      product_name: string;
+      name_fr: string | null;
+      name_ar: string | null;
+      image_url: string | null;
+      barcode: string | null;
+      measurement_value: number | null;
+      measurement_unit: MeasurementUnit;
+      category: ProductCategory | null;
+      category_id: string | null;
+      brand_id: string | null;
+    }>;
+
+    const categoryIds = Array.from(new Set(products.map((row) => row.category_id).filter((value): value is string => Boolean(value))));
+    const brandIds = Array.from(new Set(products.map((row) => row.brand_id).filter((value): value is string => Boolean(value))));
+
+    const [categoriesResult, brandsResult] = await Promise.all([
+      categoryIds.length > 0
+        ? (supabaseAdmin as any).from("categories").select("id, name_en").in("id", categoryIds)
+        : Promise.resolve({ data: [], error: null }),
+      brandIds.length > 0
+        ? (supabaseAdmin as any).from("brands").select("id, name_en").in("id", brandIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (categoriesResult.error) {
+      throw new Error(categoriesResult.error.message);
+    }
+
+    if (brandsResult.error) {
+      throw new Error(brandsResult.error.message);
+    }
+
+    const categoriesById = new Map<string, string>();
+    for (const category of (categoriesResult.data ?? []) as Array<{ id: string; name_en: string }>) {
+      categoriesById.set(category.id, category.name_en);
+    }
+
+    const brandsById = new Map<string, string>();
+    for (const brand of (brandsResult.data ?? []) as Array<{ id: string; name_en: string }>) {
+      brandsById.set(brand.id, brand.name_en);
+    }
+
+    return products.map((row) => ({
+      id: row.id,
+      product_name: row.product_name,
+      name_fr: row.name_fr,
+      name_ar: row.name_ar,
+      image_url: row.image_url,
+      barcode: row.barcode,
+      measurement_value: row.measurement_value,
+      measurement_unit: row.measurement_unit,
+      category_name: (row.category_id ? categoriesById.get(row.category_id) : null) ?? row.category ?? null,
+      brand_name: row.brand_id ? (brandsById.get(row.brand_id) ?? null) : null,
+    })) as MasterProductExportRow[];
+  } catch (error) {
+    console.error("listMasterProductsForExport failed:", error);
+    throw new Error("Failed to export master products.");
   }
 });
 
@@ -464,9 +550,9 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
 
       const [{ data: categories, error: categoriesError }, { data: brands, error: brandsError }, { data: existingProducts, error: existingProductsError }] =
         await Promise.all([
-          (supabaseAdmin as any).from("categories").select("id, name_en, name_fr, name_ar").eq("is_active", true),
+          (supabaseAdmin as any).from("categories").select("id, name_en, name_fr, name_ar"),
           (supabaseAdmin as any).from("brands").select("id, name_en, name_fr, name_ar"),
-          (supabaseAdmin as any).from("master_products").select("id, product_name, barcode, image_url"),
+          (supabaseAdmin as any).from("master_products").select("id, product_name, barcode, image_url, is_active"),
         ]);
 
       if (categoriesError) {
@@ -503,11 +589,15 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
       }
 
-      const productsByBarcode = new Map<string, { id: string; image_url: string | null }>();
-      for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null; image_url: string | null }>) {
+      const productsByBarcode = new Map<string, { id: string; image_url: string | null; is_active: boolean }>();
+      for (const product of (existingProducts ?? []) as Array<{ id: string; product_name: string; barcode: string | null; image_url: string | null; is_active: boolean }>) {
         const normalizedBarcode = normalizeLookupKey(product.barcode);
         if (normalizedBarcode && !productsByBarcode.has(normalizedBarcode)) {
-          productsByBarcode.set(normalizedBarcode, { id: product.id, image_url: product.image_url });
+          productsByBarcode.set(normalizedBarcode, {
+            id: product.id,
+            image_url: product.image_url,
+            is_active: Boolean(product.is_active),
+          });
         }
       }
       let insertedCount = 0;
@@ -582,7 +672,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           measurement_unit: parsedMeasurementUnit.data,
           image_url: row.imageUrl,
           barcode: row.barcode,
-          is_active: true,
+          is_active: existingProduct?.is_active ?? true,
           updated_at: new Date().toISOString(),
         };
 
@@ -606,6 +696,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           productsByBarcode.set(normalizedBarcode, {
             id: existingProduct.id,
             image_url: row.imageUrl ?? existingProduct.image_url,
+            is_active: existingProduct.is_active,
           });
           continue;
         }
@@ -622,7 +713,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
         }
 
         insertedCount += 1;
-        productsByBarcode.set(normalizedBarcode, { id: inserted.id, image_url: row.imageUrl });
+        productsByBarcode.set(normalizedBarcode, { id: inserted.id, image_url: row.imageUrl, is_active: true });
       }
 
       return {
