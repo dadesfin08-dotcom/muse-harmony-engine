@@ -3532,6 +3532,7 @@ function CatalogSection({
   masterProductsCsvInputRef,
   onAddProduct,
   onDownloadTemplate,
+  onDownloadExample,
   onImportCsv,
   onEditProduct,
   onArchiveProduct,
@@ -3543,6 +3544,7 @@ function CatalogSection({
   masterProductsCsvInputRef: RefObject<HTMLInputElement | null>;
   onAddProduct: () => void;
   onDownloadTemplate: () => void;
+  onDownloadExample: () => void;
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
@@ -3560,6 +3562,10 @@ function CatalogSection({
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
             Download CSV Template
+          </Button>
+          <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
+            <Download className="size-4" />
+            Download Example CSV
           </Button>
           <input
             ref={masterProductsCsvInputRef}
