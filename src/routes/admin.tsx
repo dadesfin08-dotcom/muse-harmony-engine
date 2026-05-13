@@ -1930,7 +1930,11 @@ function AdminPage() {
                 <BrandsSection
                   brands={brands}
                   isLoading={dbHealthQuery.isLoading || brandsQuery.isLoading}
+                  isImporting={isImportingBrands}
+                  brandCsvInputRef={brandCsvInputRef}
                   onAddBrand={openCreateBrandModal}
+                  onDownloadTemplate={downloadBrandsCsvTemplate}
+                  onImportCsv={handleBrandsCsvUpload}
                   onEditBrand={openEditBrandModal}
                   onDeleteBrand={deleteBrandHandler}
                 />
