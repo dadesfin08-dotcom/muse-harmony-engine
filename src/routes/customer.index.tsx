@@ -631,6 +631,41 @@ function Index() {
     }
   };
 
+  useEffect(() => {
+    if (!isLocationModalOpen) {
+      return;
+    }
+
+    const hydrateLocationDrawer = async () => {
+      const persistedLocation = readPersistedLocation();
+      const neighborhoodIdToHydrate = selectedNeighborhoodId || persistedLocation?.neighborhoodId || "";
+
+      if (!neighborhoodIdToHydrate) {
+        return;
+      }
+
+      const resolved = await fetchLocationByNeighborhoodId({ data: { neighborhoodId: neighborhoodIdToHydrate } });
+      if (!resolved) {
+        return;
+      }
+
+      setSelectedCommuneId(resolved.commune.id);
+      setSelectedNeighborhoodId(resolved.neighborhood.id);
+      setSelectedCommuneOption(resolved.commune);
+      setSelectedNeighborhoodOption(resolved.neighborhood);
+      setCommuneSearchInput(getLocalizedCommuneName(resolved.commune));
+      setNeighborhoodSearchInput(getLocalizedNeighborhoodName(resolved.neighborhood));
+    };
+
+    void hydrateLocationDrawer();
+  }, [
+    fetchLocationByNeighborhoodId,
+    getLocalizedCommuneName,
+    getLocalizedNeighborhoodName,
+    isLocationModalOpen,
+    selectedNeighborhoodId,
+  ]);
+
   const categories = ((categoriesQuery.data ?? []) as CategoryChip[]).filter((category) => category.product_count > 0);
   const shouldAnimateCategories = categories.length > 3;
 
@@ -2398,7 +2433,7 @@ function Index() {
                         onChange={(event) => {
                           const nextValue = event.target.value;
                           setCommuneSearchInput(nextValue);
-                          if (selectedCommuneId) {
+                          if (selectedCommuneId && nextValue.trim().length === 0) {
                             setSelectedCommuneId("");
                             setSelectedCommuneOption(null);
                             setSelectedNeighborhoodId("");
