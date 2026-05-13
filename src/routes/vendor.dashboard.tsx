@@ -900,8 +900,11 @@ function VendorDashboardPage() {
         return vendorPhoneNumber;
       }
     })();
+    const normalizedActiveVendorPhone = formatMoroccoPhoneForPayload(
+      normalizeMoroccoPhoneInput(activeVendorPhone),
+    );
 
-    if (!activeVendorPhone) {
+    if (!isValidMoroccoPhone(normalizeMoroccoPhoneInput(activeVendorPhone))) {
       toast.error("Vendor session missing. Please log in again.");
       return;
     }
@@ -911,7 +914,7 @@ function VendorDashboardPage() {
       toast.loading("Saving flash sale...", { id: `flash-save-${item.id}` });
       await saveFlashSale({
         data: {
-          phoneNumber: activeVendorPhone,
+          phoneNumber: normalizedActiveVendorPhone,
           masterProductId: item.id,
           enabled: draft.enabled,
           flashSalePrice: draft.enabled ? numericFlashPrice : null,
