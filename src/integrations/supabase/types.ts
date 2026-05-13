@@ -462,6 +462,7 @@ export type Database = {
           name_fr: string | null
           updated_at: string
           vendor_id: string | null
+          zone_code: string
         }
         Insert: {
           commune_id: string
@@ -473,6 +474,7 @@ export type Database = {
           name_fr?: string | null
           updated_at?: string
           vendor_id?: string | null
+          zone_code: string
         }
         Update: {
           commune_id?: string
@@ -484,6 +486,7 @@ export type Database = {
           name_fr?: string | null
           updated_at?: string
           vendor_id?: string | null
+          zone_code?: string
         }
         Relationships: [
           {

@@ -99,7 +99,9 @@ import {
 import {
   createCommune,
   createNeighborhood,
+  importServiceZonesBulk,
   listServiceZones,
+  listServiceZonesForExport,
   type ServiceZoneTree,
 } from "@/lib/locations.functions";
 import {
@@ -272,6 +274,16 @@ const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
     "6111000010014",
   ],
 ] as const;
+const SERVICE_ZONES_BULK_HEADERS = [
+  "Zone_Code",
+  "Commune_EN",
+  "Commune_FR",
+  "Commune_AR",
+  "Douar_EN",
+  "Douar_FR",
+  "Douar_AR",
+  "Delivery_Fee",
+] as const;
 const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
@@ -357,8 +369,10 @@ function AdminPage() {
   const setVendorActiveState = useServerFn(updateVendorActiveState);
   const fetchVendorSalesAnalytics = useServerFn(getVendorSalesAnalytics);
   const fetchServiceZones = useServerFn(listServiceZones);
+  const fetchServiceZonesForExport = useServerFn(listServiceZonesForExport);
   const saveCommune = useServerFn(createCommune);
   const saveNeighborhood = useServerFn(createNeighborhood);
+  const importServiceZonesBulkInDatabase = useServerFn(importServiceZonesBulk);
   const fetchMasterProducts = useServerFn(listMasterProducts);
   const fetchMasterProductsForExport = useServerFn(listMasterProductsForExport);
   const fetchBrands = useServerFn(listBrands);
@@ -621,9 +635,11 @@ function AdminPage() {
   const [isSavingBrand, setIsSavingBrand] = useState(false);
   const [isImportingBrands, setIsImportingBrands] = useState(false);
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
+  const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
+  const serviceZonesCsvInputRef = useRef<HTMLInputElement | null>(null);
   const [brandPickerOpen, setBrandPickerOpen] = useState(false);
   const [manageVendorForm, setManageVendorForm] = useState({
     vendorId: "",
@@ -1019,6 +1035,173 @@ function AdminPage() {
       console.error("Failed to create neighborhood:", error);
       toast.error("Failed to create neighborhood.");
     }
+  };
+
+  const downloadServiceZonesExport = async () => {
+    try {
+      const rows = await fetchServiceZonesForExport();
+      const csvRows = [
+        SERVICE_ZONES_BULK_HEADERS.join(";"),
+        ...rows.map((row) =>
+          [
+            row.zoneCode,
+            row.communeEn,
+            row.communeFr ?? "",
+            row.communeAr ?? "",
+            row.douarEn,
+            row.douarFr ?? "",
+            row.douarAr ?? "",
+            String(Number(row.deliveryFee ?? 0)),
+          ]
+            .map((cell) => {
+              const value = String(cell ?? "");
+              if (value.includes(";") || value.includes("\n") || value.includes('"')) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value;
+            })
+            .join(";"),
+        ),
+      ];
+
+      const csvContent = `\uFEFF${csvRows.join("\n")}\n`;
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "service-zones-export.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Service zones export ready: ${rows.length} douars.`);
+    } catch (error) {
+      console.error("Failed to export service zones:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to export service zones.");
+    }
+  };
+
+  const importServiceZonesFromSheet = async (file: File) => {
+    const lowerCaseName = file.name.toLowerCase();
+    const isCsv = lowerCaseName.endsWith(".csv");
+    const isXlsx = lowerCaseName.endsWith(".xlsx");
+
+    if (!isCsv && !isXlsx) {
+      toast.error("Please upload an XLSX or CSV file.");
+      return;
+    }
+
+    try {
+      setIsImportingServiceZones(true);
+
+      const parseSpreadsheetRows = async () => {
+        if (isCsv) {
+          const parsed = await new Promise<Papa.ParseResult<Record<string, string>>>((resolve, reject) => {
+            Papa.parse<Record<string, string>>(file, {
+              header: true,
+              delimiter: ";",
+              transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
+              skipEmptyLines: true,
+              complete: resolve,
+              error: reject,
+            });
+          });
+
+          return {
+            uploadedHeaders: parsed.meta.fields ?? [],
+            rows: parsed.data,
+          };
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(await file.arrayBuffer());
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
+          throw new Error("The uploaded XLSX file has no worksheet.");
+        }
+
+        const headerRow = worksheet.getRow(1);
+        const uploadedHeaders = SERVICE_ZONES_BULK_HEADERS.map((_, index) =>
+          String(headerRow.getCell(index + 1).text ?? "")
+            .replace(/^\uFEFF/, "")
+            .trim(),
+        );
+
+        const rows: Array<Record<string, string>> = [];
+        for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+          const row = worksheet.getRow(rowNumber);
+          const mappedRow: Record<string, string> = {};
+          let hasAnyValue = false;
+
+          SERVICE_ZONES_BULK_HEADERS.forEach((header, headerIndex) => {
+            const rawValue = String(row.getCell(headerIndex + 1).text ?? "").trim();
+            mappedRow[header] = rawValue;
+            if (rawValue.length > 0) hasAnyValue = true;
+          });
+
+          if (hasAnyValue) rows.push(mappedRow);
+        }
+
+        return { uploadedHeaders, rows };
+      };
+
+      const parsedSpreadsheet = await parseSpreadsheetRows();
+      const missingHeaders = SERVICE_ZONES_BULK_HEADERS.filter(
+        (header) => !parsedSpreadsheet.uploadedHeaders.includes(header),
+      );
+
+      if (missingHeaders.length > 0) {
+        toast.error(`Missing required headers: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const preparedRows = parsedSpreadsheet.rows
+        .map((row) => ({
+          zoneCode: row.Zone_Code?.trim() || null,
+          communeEn: row.Commune_EN?.trim() || "",
+          communeFr: row.Commune_FR?.trim() || null,
+          communeAr: row.Commune_AR?.trim() || null,
+          douarEn: row.Douar_EN?.trim() || "",
+          douarFr: row.Douar_FR?.trim() || null,
+          douarAr: row.Douar_AR?.trim() || null,
+          deliveryFee: row.Delivery_Fee?.trim() || "0",
+        }))
+        .filter((row) => row.communeEn.length > 0 && row.douarEn.length > 0);
+
+      if (preparedRows.length === 0) {
+        toast.error("No valid rows found. Fill at least Commune_EN and Douar_EN in one row.");
+        return;
+      }
+
+      const result = await importServiceZonesBulkInDatabase({ data: { rows: preparedRows } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
+
+      const summary = `Bulk service zones import done — New: ${result.insertedCount}, Updated: ${result.updatedCount}${result.skippedCount > 0 ? `, Skipped: ${result.skippedCount}` : ""}.`;
+
+      if (result.skippedCount > 0) {
+        toast.warning(summary);
+        for (const warning of result.warnings.slice(0, 5)) {
+          toast.error(warning);
+        }
+      } else {
+        toast.success(summary);
+      }
+    } catch (error) {
+      console.error("Failed to import service zones file:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to import service zones file.");
+    } finally {
+      setIsImportingServiceZones(false);
+      if (serviceZonesCsvInputRef.current) {
+        serviceZonesCsvInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleServiceZonesCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    await importServiceZonesFromSheet(file);
   };
 
   const saveMasterProduct = async () => {
@@ -2234,10 +2417,14 @@ function AdminPage() {
                 <ServiceZonesSection
                   zones={serviceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
+                  isImporting={isImportingServiceZones}
                   form={serviceZoneForm}
                   onFormChange={setServiceZoneForm}
                   onSaveCommune={saveCommuneHandler}
                   onSaveNeighborhood={saveNeighborhoodHandler}
+                  onDownloadExport={downloadServiceZonesExport}
+                  serviceZonesCsvInputRef={serviceZonesCsvInputRef}
+                  onImportCsv={handleServiceZonesCsvUpload}
                   onOpenCommuneProfile={openCommuneProfile}
                   localizeCommuneName={getLocalizedCommuneName}
                 />
@@ -3513,15 +3700,20 @@ function CyclistsSection({
 function ServiceZonesSection({
   zones,
   isLoading,
+  isImporting,
   form,
   onFormChange,
   onSaveCommune,
   onSaveNeighborhood,
+  onDownloadExport,
+  serviceZonesCsvInputRef,
+  onImportCsv,
   onOpenCommuneProfile,
   localizeCommuneName,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
+  isImporting: boolean;
   form: {
     communeNameEn: string;
     communeNameFr: string;
@@ -3546,6 +3738,9 @@ function ServiceZonesSection({
   >;
   onSaveCommune: () => void;
   onSaveNeighborhood: () => void;
+  onDownloadExport: () => void | Promise<void>;
+  serviceZonesCsvInputRef: RefObject<HTMLInputElement | null>;
+  onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
 }) {
@@ -3561,6 +3756,29 @@ function ServiceZonesSection({
       <div>
         <h2 className="text-base font-semibold text-foreground">Service Zones</h2>
         <p className="text-sm text-muted-foreground">Define communes and neighborhoods for strict routing.</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" className="rounded-md" onClick={onDownloadExport}>
+          <Download className="size-4" />
+          Download / Export Service Zones (XLSX)
+        </Button>
+        <input
+          ref={serviceZonesCsvInputRef}
+          type="file"
+          accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          className="hidden"
+          onChange={onImportCsv}
+        />
+        <Button
+          variant="outline"
+          className="rounded-md"
+          onClick={() => serviceZonesCsvInputRef.current?.click()}
+          disabled={isImporting}
+        >
+          <FileUp className="size-4" />
+          {isImporting ? "Importing..." : "Import Bulk Service Zones"}
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
