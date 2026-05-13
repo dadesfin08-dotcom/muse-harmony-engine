@@ -2281,7 +2281,7 @@ function Index() {
                     <option value="">Select commune</option>
                     {serviceZones.map((commune) => (
                       <option key={commune.id} value={commune.id}>
-                        {commune.name}
+                        {getLocalizedCommuneName(commune)}
                       </option>
                     ))}
                   </select>
