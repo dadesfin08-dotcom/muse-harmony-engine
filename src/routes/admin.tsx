@@ -341,10 +341,6 @@ export const Route = createFileRoute("/admin")({
 
 function AdminPage() {
   const location = useLocation();
-  if (location.pathname !== "/admin") {
-    return <Outlet />;
-  }
-
   const { t } = useTranslation();
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
@@ -1967,7 +1963,9 @@ function AdminPage() {
     navigate({ to: "/admin/service-zones/$communeId", params: { communeId } });
   };
 
-  return (
+  return location.pathname !== "/admin" ? (
+    <Outlet />
+  ) : (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-muted/20">
         <AdminSidebar activeTab={tab} />
