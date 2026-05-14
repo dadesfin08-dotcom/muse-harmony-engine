@@ -90,7 +90,7 @@ type OrderRow = {
   customer_phone: string;
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status: "new" | "preparing" | "ready" | "delivering" | "out_for_delivery" | "delivered";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
@@ -131,7 +131,7 @@ export type VendorOrderDetails = {
 export type CustomerOrderDetails = {
   id: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status: "new" | "preparing" | "ready" | "delivering" | "out_for_delivery" | "delivered" | "cancelled";
   deliveryAuthCode: string | null;
   createdAt: string;
   deliveryFeeMad: number;
