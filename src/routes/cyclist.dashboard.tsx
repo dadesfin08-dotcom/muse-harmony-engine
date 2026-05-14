@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
+  confirmCashHandoverToVendor,
   getCyclistDashboardData,
   setCyclistActiveState,
   type CyclistOrderCard,
@@ -92,6 +93,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
+  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -103,7 +105,33 @@ function CyclistDashboardPage() {
   const cyclist = dashboardQuery.data?.cyclist;
   const availableRuns = dashboardQuery.data?.availableRuns ?? [];
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
+  const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
+
+  const confirmCashHandoverMutation = useMutation({
+    mutationFn: async ({ vendorId }: { vendorId: string }) => {
+      if (!session?.cyclistId) {
+        throw new Error("Session expired.");
+      }
+      return confirmCashHandover({
+        data: {
+          cyclistId: session.cyclistId,
+          vendorId,
+        },
+      });
+    },
+    onSuccess: async (result) => {
+      toast.success(
+        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
+      );
+      await dashboardQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
+    },
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") {
