@@ -37,7 +37,6 @@ function CustomerOrderDetailsPage() {
     queryKey: ["customer", "order-details", orderId, customerPhoneNumber],
     enabled: Boolean(orderId && customerPhoneNumber),
     queryFn: () => getDetails({ data: { phoneNumber: customerPhoneNumber, orderId } }),
-    refetchInterval: order?.status === "delivering" ? 3500 : false,
   });
 
   const order = detailsQuery.data;
