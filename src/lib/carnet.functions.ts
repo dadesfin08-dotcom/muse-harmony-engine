@@ -210,7 +210,7 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
         .from("carnet_transactions")
         .select("amount, created_at")
         .eq("vendor_id", vendor.id)
-        .eq("transaction_type", "CREDIT_ISSUED")
+        .eq("transaction_type", "CREDIT_ISSUED"),
       (supabaseAdmin as any)
         .from("carnet_transactions")
         .select("amount")
