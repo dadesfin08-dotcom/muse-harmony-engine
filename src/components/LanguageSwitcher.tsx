@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Check, Languages } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -13,7 +13,12 @@ const languageOptions: Array<{ code: AppLanguage; label: string; flag: string }>
   { code: "en", label: "English", flag: "🇬🇧" },
 ];
 
-export function LanguageSwitcher({ className }: { className?: string }) {
+type LanguageSwitcherProps = {
+  className?: string;
+  trigger?: ReactNode;
+};
+
+export function LanguageSwitcher({ className, trigger }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -30,16 +35,18 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <button
-          type="button"
-          aria-label={t("language.label")}
-          className={cn(
-            "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted",
-            className,
-          )}
-        >
-          <Languages className="size-5" />
-        </button>
+        {trigger ?? (
+          <button
+            type="button"
+            aria-label={t("language.label")}
+            className={cn(
+              "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted",
+              className,
+            )}
+          >
+            <Languages className="size-5" />
+          </button>
+        )}
       </DialogTrigger>
 
       <DialogContent
