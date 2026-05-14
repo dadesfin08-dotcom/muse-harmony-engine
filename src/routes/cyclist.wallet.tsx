@@ -66,18 +66,14 @@ function CyclistWalletPage() {
     queryKey: ["cyclist", "wallet", "rewrite", authUserId],
     enabled: authReady && Boolean(authUserId),
     queryFn: async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user?.id) {
+      if (!authUserId) {
         throw new Error("User not authenticated.");
       }
 
       const { data: cyclistRow, error: cyclistError } = await supabase
         .from("cyclists")
         .select("id, full_name")
-        .eq("user_id", user.id)
+        .eq("user_id", authUserId)
         .maybeSingle();
 
       if (cyclistError) {
