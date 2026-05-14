@@ -160,6 +160,7 @@ import {
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
 import { uploadReceiptLogo } from "@/lib/invoice-settings.functions";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
@@ -2481,7 +2482,8 @@ function AdminPage() {
               <h1 className="text-base font-bold tracking-tight text-foreground">{t("admin.header.title")}</h1>
               <p className="text-xs text-muted-foreground">{t("admin.header.subtitle")}</p>
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
               <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
                 <LogOut className="size-4" />
                 <span>{t("admin.actions.logout")}</span>
