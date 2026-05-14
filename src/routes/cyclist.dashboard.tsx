@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, CreditCard, Info, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -604,10 +604,6 @@ function OrderCard({
       : "bg-primary text-primary-foreground hover:bg-primary/90";
 
   const shortOrderId = `#${order.id.replace(/-/g, "").slice(-4).toUpperCase()}`;
-  const notes = [order.deliveryInstructions?.trim(), order.savedInstructions?.trim()].filter(
-    (note): note is string => Boolean(note),
-  );
-  const briefingText = notes.length ? Array.from(new Set(notes)).join(" • ") : null;
   const whatsappPhone = order.customerPhone.replace(/\D/g, "");
 
   if (isActiveDelivery) {
@@ -712,17 +708,7 @@ function OrderCard({
           </div>
         </div>
 
-        {briefingText ? (
-          <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
-            <p className="inline-flex items-center gap-2 text-sm font-bold text-amber-700">
-              <Info className="h-4 w-4 text-amber-600" />
-              تعليمات إضافية:
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-amber-800">{briefingText}</p>
-          </div>
-        ) : null}
-
-        <Button className={`mt-5 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? "Updating..." : actionLabel}
         </Button>
