@@ -1243,6 +1243,10 @@ function AdminPage() {
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
+      productVariants: productForm.productVariants
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
       brandId: productForm.brandId.trim() ? productForm.brandId : null,
       categoryId: productForm.categoryId,
       measurementValue: parsedMeasurementValue,
@@ -1298,6 +1302,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
@@ -1319,6 +1324,7 @@ function AdminPage() {
           name: productForm.name.trim(),
           nameFr: productForm.nameFr.trim(),
           nameAr: productForm.nameAr.trim(),
+          productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
           categoryId: productForm.categoryId,
           measurementValue: parsedMeasurementValue,
@@ -1341,6 +1347,7 @@ function AdminPage() {
         name: "",
         nameFr: "",
         nameAr: "",
+        productVariants: "",
         brandId: "",
         categoryId: "",
         measurementValue: "",
@@ -1396,6 +1403,7 @@ function AdminPage() {
       name: "",
       nameFr: "",
       nameAr: "",
+      productVariants: "",
       brandId: "",
       categoryId: "",
       measurementValue: "",
@@ -1414,6 +1422,7 @@ function AdminPage() {
       name: product.name,
       nameFr: product.nameFr ?? product.name,
       nameAr: product.nameAr ?? product.name,
+      productVariants: Array.isArray(product.productVariants) ? product.productVariants.join(", ") : "",
       brandId: product.brandId ?? "",
       categoryId: product.categoryId ?? "",
       measurementValue:
