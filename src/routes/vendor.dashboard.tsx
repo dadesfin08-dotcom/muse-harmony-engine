@@ -128,7 +128,7 @@ type DashboardOrder = {
   communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status: "new" | "preparing" | "ready" | "in_transit" | "delivering" | "delivered";
   deliveryFeeMad: number;
   totalMad: number;
   vendorShareMad: number;
@@ -143,8 +143,32 @@ type DashboardOrder = {
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
+  cyclist?: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    avatarUrl?: string | null;
+  } | null;
   createdAt: string;
 };
+
+function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
+  if (status === "picked_up" || status === "in_transit") {
+    return "in_transit";
+  }
+
+  if (
+    status === "new" ||
+    status === "preparing" ||
+    status === "ready" ||
+    status === "delivering" ||
+    status === "delivered"
+  ) {
+    return status;
+  }
+
+  return "new";
+}
 
 type InventoryItem = {
   id: string;
