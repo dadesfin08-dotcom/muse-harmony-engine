@@ -15,21 +15,23 @@ import {
   Clock3,
   History,
   LogOut,
+  MessageCircle,
   Package,
+  Phone,
+  QrCode,
   Search,
   ShoppingBag,
   Store,
   Truck,
-  User,
   Volume2,
   VolumeX,
   Wallet,
-  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,10 +66,10 @@ import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
 import { cn } from "@/lib/utils";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
-import { formatDistanceToNow } from "date-fns";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -1692,7 +1696,7 @@ function LiveOrdersView({
             <EmptyState label="No new orders right now." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {queue.new.map((order) => (
                   <OrderCard
                     key={order.id}
@@ -1717,7 +1721,7 @@ function LiveOrdersView({
             <EmptyState label="No orders are currently being prepared." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {queue.preparing.map((order) => (
                   <OrderCard
                     key={order.id}
@@ -1741,7 +1745,7 @@ function LiveOrdersView({
             <EmptyState label="No orders waiting for pickup." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
                 {queue.ready.map((order) => (
                   <OrderCard
                     key={order.id}
@@ -2420,8 +2424,9 @@ function OrderCard({
   onMarkReady?: () => void;
   timeTick: number;
 }) {
-  const shortId = shortOrderId(order.id);
+  const orderTitle = `Order #${shortOrderId(order.id)}`;
   const elapsed = elapsedLabel(order.createdAt, timeTick);
+  const dateAndTime = formatOrderDateTime(order.createdAt);
   const [checkedItemKeys, setCheckedItemKeys] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -2440,64 +2445,211 @@ function OrderCard({
       ? order.items.filter((item, index) => checkedItemKeys[getOrderItemKey(order.id, item, index)]).length
       : 0;
   const allPacked = tab === "preparing" ? order.items.length > 0 && packedCount === order.items.length : false;
-  const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
-
-  if (compact) {
-    return (
-      <article className="rounded-xl border border-border bg-card p-3 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-base font-semibold text-foreground">Order {shortId}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{elapsed}</p>
-          </div>
-          <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Delivered</Badge>
-        </div>
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Customer</p>
-            <p className="text-sm font-medium text-foreground">{order.customerName}</p>
-          </div>
-          <p className="text-base font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
-        </div>
-      </article>
-    );
-  }
+  const whatsappUrl = `https://wa.me/${order.customerPhone.replace("+", "")}`;
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-2xl font-black tracking-tight text-foreground">{shortId}</p>
-        <OrderStatusBadge tab={tab} status={order.status} />
-      </div>
+    <article
+      className={`rounded-2xl border border-border bg-background shadow-sm transition hover:shadow-md ${
+        compact ? "p-3" : "p-4"
+      }`}
+    >
+      {onOpenDetails ? (
+        <button type="button" onClick={onOpenDetails} className="w-full text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-base font-semibold text-foreground">{orderTitle}</p>
+              {!compact ? (
+                <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {tab === "new" ? <span className="inline-block size-2 rounded-full bg-accent animate-pulse" /> : null}
+                  <Clock3 className="size-3.5" />
+                  {elapsed}
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {dateAndTime.date} • {dateAndTime.time}
+                </p>
+              )}
+            </div>
 
-      <div className="mt-3 space-y-2.5">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-          <Clock3 className="size-4" />
-          ⏱ {elapsed}
-        </p>
+            {compact ? (
+              <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Delivered</Badge>
+            ) : (
+              <OrderStatusBadge tab={tab} status={order.status} />
+            )}
+          </div>
 
-        <p className="inline-flex items-center gap-2 text-sm text-foreground">
-          <User className="size-4 text-muted-foreground" />
-          <span className="font-semibold">{order.customerName}</span>
-        </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div className="space-y-1">
+              {!compact ? (
+                <>
+                  <p className="text-xs text-muted-foreground">Items</p>
+                  <p className="text-sm text-foreground">{order.itemCount} items</p>
+                </>
+              ) : null}
+            </div>
+            <div className="text-left sm:text-right">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-lg font-semibold text-foreground">{order.totalMad.toFixed(2)} MAD</p>
+            </div>
+          </div>
+        </button>
+      ) : (
+        <>
+          <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-base font-semibold text-foreground">{orderTitle}</p>
+            {!compact ? (
+              <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                {tab === "new" ? <span className="inline-block size-2 rounded-full bg-accent animate-pulse" /> : null}
+                <Clock3 className="size-3.5" />
+                {elapsed}
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {dateAndTime.date} • {dateAndTime.time}
+              </p>
+            )}
+          </div>
 
-        <p className="inline-flex items-center gap-2 text-sm text-foreground">
-          <MapPin className="size-4 text-muted-foreground" />
-          <span>{destination || "Destination unavailable"}</span>
-        </p>
+          {compact ? (
+            <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Delivered</Badge>
+          ) : (
+            <OrderStatusBadge tab={tab} status={order.status} />
+          )}
+        </div>
 
-        <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
-      </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="space-y-1">
+            {!compact ? (
+              <>
+                <p className="text-xs text-muted-foreground">Items</p>
+                <p className="text-sm text-foreground">{order.itemCount} items</p>
+              </>
+            ) : null}
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-lg font-semibold text-foreground">{order.totalMad.toFixed(2)} MAD</p>
+          </div>
+          </div>
+        </>
+      )}
 
-      <Button variant="hero" className="mt-4 h-10 w-full rounded-xl" onClick={onOpenDetails}>
-        {tab === "ready" ? "Assign Driver" : "View & Process"}
-      </Button>
+      {!compact ? (
+        <div className="mt-4 rounded-xl border border-border bg-muted/20 p-3">
+        <p className="text-xs text-muted-foreground">Customer</p>
+        <p className="mt-1 text-sm font-medium text-foreground">{order.customerName}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <a
+            href={`tel:${order.customerPhone}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted"
+            aria-label={`Call ${order.customerName}`}
+          >
+            <Phone className="size-3.5" />
+            {order.customerPhone}
+          </a>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg px-2.5 text-xs">
+                <MessageCircle className="size-3.5" />
+                WhatsApp
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 rounded-xl border-border bg-card p-3">
+              <div className="space-y-2 text-center">
+                <p className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
+                  <QrCode className="size-3.5" />
+                  WhatsApp QR
+                </p>
+                <div className="mx-auto inline-flex rounded-lg border border-border bg-background p-2">
+                  <QRCodeSVG value={whatsappUrl} size={144} />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Scan to open chat on your phone.</p>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        </div>
+      ) : null}
+
+       {!compact && (tab === "new" || tab === "preparing") && order.items.length > 0 ? (
+        <div className="mt-4 space-y-2 rounded-xl border border-border bg-card p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            {tab === "preparing" ? "Packing Checklist" : "Order Items"}
+          </p>
+          {order.items.map((item, index) => {
+            const itemKey = getOrderItemKey(order.id, item, index);
+            const isChecked = checkedItemKeys[itemKey] ?? false;
+
+            return (
+              <label
+                key={itemKey}
+                className={`flex items-center justify-between gap-3 rounded-lg border border-border px-2.5 py-2 ${
+                  tab === "preparing" && isChecked ? "bg-muted/40" : "bg-background"
+                }`}
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  {tab === "preparing" ? (
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        setCheckedItemKeys((current) => ({
+                          ...current,
+                          [itemKey]: checked === true,
+                        }));
+                      }}
+                      aria-label={`Mark ${item.name} as packed`}
+                    />
+                  ) : null}
+
+                  <span
+                    className={`inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/40 ${
+                      tab === "preparing" && isChecked ? "opacity-50" : "opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={item.imageUrl || fallbackProductImage}
+                      alt={`${item.name} thumbnail`}
+                      className="h-full w-full object-contain p-1"
+                      loading="lazy"
+                      width={40}
+                      height={40}
+                    />
+                  </span>
+
+                  <p
+                    className={`min-w-0 text-sm text-foreground ${
+                      tab === "preparing" && isChecked ? "line-through opacity-70" : ""
+                    }`}
+                  >
+                    {item.quantity}x {item.name}
+                  </p>
+                </div>
+
+                <p className="shrink-0 text-xs font-medium text-muted-foreground">
+                  {roundMoney(Number(item.quantity ?? 0) * Number(item.unitPriceMad ?? 0)).toFixed(2)} MAD
+                </p>
+              </label>
+            );
+          })}
+
+          {tab === "preparing" ? (
+            <div className="space-y-2 pt-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                Packed: {packedCount}/{order.items.length} items
+              </p>
+              <Progress value={(packedCount / order.items.length) * 100} className="h-1.5" />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {tab === "new" ? (
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Button variant="soft" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Button variant="hero" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
             <BadgeCheck className="size-4" />
-            {isUpdating ? "Updating..." : "Accept"}
+            {isUpdating ? "Updating..." : "Accept & Prepare"}
           </Button>
           <Button variant="outline" className="h-10 w-full rounded-xl" onClick={onReject} disabled={isUpdating}>
             Reject
@@ -2508,7 +2660,7 @@ function OrderCard({
       {tab === "preparing" ? (
         <Button
           variant="hero"
-          className="mt-2 h-10 w-full rounded-xl"
+          className="mt-4 h-10 w-full rounded-xl"
           onClick={onMarkReady}
           disabled={isUpdating || !allPacked}
         >
@@ -2560,11 +2712,11 @@ function EmptyState({ label }: { label: string }) {
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
   if (tab === "new") {
-    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">New</Badge>;
+    return <Badge className="rounded-md bg-accent/15 text-accent-foreground hover:bg-accent/15">New</Badge>;
   }
 
   if (tab === "preparing") {
-    return <Badge className="rounded-md bg-accent/20 text-foreground hover:bg-accent/20">Preparing</Badge>;
+    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">Preparing</Badge>;
   }
 
   return status === "ready" ? (
@@ -2575,7 +2727,7 @@ function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: Dashboa
 }
 
 function shortOrderId(id: string) {
-  return `#${id.slice(-4).toUpperCase()}`;
+  return id.slice(0, 8).toUpperCase();
 }
 
 function getOrderItemKey(
@@ -2587,18 +2739,27 @@ function getOrderItemKey(
 }
 
 function elapsedLabel(createdAt: string, nowTick: number) {
-  if (!Number.isFinite(nowTick)) {
+  const created = new Date(createdAt).getTime();
+  if (Number.isNaN(created)) {
     return "--";
   }
 
-  if (Number.isNaN(new Date(createdAt).getTime())) {
-    return "--";
+  const minutes = Math.max(0, Math.floor((nowTick - created) / 60000));
+  if (minutes < 1) {
+    return "Just now";
   }
 
-  return formatDistanceToNow(new Date(createdAt), {
-    addSuffix: true,
-    includeSeconds: true,
-  });
+  if (minutes < 60) {
+    return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hr${hours === 1 ? "" : "s"} ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 function formatOrderDateTime(createdAt: string) {
