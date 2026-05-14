@@ -15,10 +15,7 @@ import {
   Clock3,
   History,
   LogOut,
-  MessageCircle,
   Package,
-  Phone,
-  QrCode,
   Search,
   ShoppingBag,
   Store,
@@ -33,7 +30,6 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -43,8 +39,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,8 +61,6 @@ import { getVendorDashboardData, updateVendorOrderStatus } from "@/lib/orders.fu
 import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
 import { cn } from "@/lib/utils";
-import fallbackProductImage from "@/assets/product-vegetables.jpg";
-import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
