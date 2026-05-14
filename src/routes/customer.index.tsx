@@ -1171,6 +1171,17 @@ function Index() {
         },
       });
 
+      persistCheckoutPrefs({
+        phoneNumber: customerSession.phoneNumber,
+        fullName: fullName.trim(),
+        address: address.trim(),
+        deliveryNotes: deliveryNotes.trim(),
+        communeId: selectedCommuneId,
+        neighborhoodId: selectedNeighborhoodId,
+        communeLabel: selectedCommuneOption ? getLocalizedCommuneName(selectedCommuneOption) : null,
+        neighborhoodLabel: selectedNeighborhoodOption ? getLocalizedNeighborhoodName(selectedNeighborhoodOption) : null,
+      });
+
       setCheckoutStep("success");
       clearCart();
       toast.success("Order confirmed successfully.");
