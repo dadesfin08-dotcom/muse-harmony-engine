@@ -707,7 +707,6 @@ function AdminPage() {
   });
   const [receiptLogoFile, setReceiptLogoFile] = useState<File | null>(null);
   const [receiptLogoPreviewUrl, setReceiptLogoPreviewUrl] = useState<string | null>(null);
-  const receiptLogoInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
 
   useEffect(() => {
@@ -2602,9 +2601,8 @@ function AdminPage() {
                   isGlobalSettingsLoading={isSavingGlobalSettings || dbHealthQuery.isLoading || globalSettingsQuery.isLoading}
                   receiptForm={receiptForm}
                   receiptLogoPreviewUrl={receiptLogoPreviewUrl}
-                  onReceiptLogoFileChange={(file) => setReceiptLogoFile(file)}
-                  onReceiptLogoPreviewChange={(url) => setReceiptLogoPreviewUrl(url)}
-                  onOpenReceiptLogoPicker={() => receiptLogoInputRef.current?.click()}
+                  onReceiptLogoFileChange={(file: File | null) => setReceiptLogoFile(file)}
+                  onReceiptLogoPreviewChange={(url: string | null) => setReceiptLogoPreviewUrl(url)}
                   onReceiptFormChange={setReceiptForm}
                   onSaveReceiptSettings={saveReceiptSettings}
                   isReceiptSettingsLoading={
