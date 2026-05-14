@@ -5095,6 +5095,10 @@ function SettingsSection({
   onSaveGlobalSettings,
   isGlobalSettingsLoading,
   receiptForm,
+  receiptLogoPreviewUrl,
+  onReceiptLogoFileChange,
+  onReceiptLogoPreviewChange,
+  onOpenReceiptLogoPicker,
   onReceiptFormChange,
   onSaveReceiptSettings,
   isReceiptSettingsLoading,
@@ -5119,20 +5123,32 @@ function SettingsSection({
   isGlobalSettingsLoading: boolean;
   receiptForm: {
     id: string;
-    storeName: string;
-    address: string;
-    phone: string;
+    receiptLogoUrl: string;
+    receiptStoreName: string;
+    receiptSlogan: string;
+    receiptPhone: string;
+    receiptAddress: string;
+    receiptWebsite: string;
     taxId: string;
-    footerMessage: string;
+    receiptFooterMessage: string;
+    receiptSocialSupport: string;
   };
+  receiptLogoPreviewUrl: string | null;
+  onReceiptLogoFileChange: (file: File | null) => void;
+  onReceiptLogoPreviewChange: (url: string | null) => void;
+  onOpenReceiptLogoPicker: () => void;
   onReceiptFormChange: Dispatch<
     SetStateAction<{
       id: string;
-      storeName: string;
-      address: string;
-      phone: string;
+      receiptLogoUrl: string;
+      receiptStoreName: string;
+      receiptSlogan: string;
+      receiptPhone: string;
+      receiptAddress: string;
+      receiptWebsite: string;
       taxId: string;
-      footerMessage: string;
+      receiptFooterMessage: string;
+      receiptSocialSupport: string;
     }>
   >;
   onSaveReceiptSettings: () => Promise<void>;
@@ -5219,33 +5235,79 @@ function SettingsSection({
 
       <div>
         <h3 className="text-base font-semibold text-foreground">Receipt Settings</h3>
-        <p className="text-sm text-muted-foreground">Configure thermal receipt header and footer details.</p>
+        <p className="text-sm text-muted-foreground">Configure logo, branding and footer details for thermal receipts.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-medium text-foreground">Receipt Logo</label>
+          <div className="flex items-center gap-4 rounded-md border border-border bg-background p-3">
+            {receiptLogoPreviewUrl ? (
+              <img src={receiptLogoPreviewUrl} alt="Receipt logo preview" className="h-14 w-14 rounded-sm border border-border object-contain" />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-sm border border-dashed border-border text-xs text-muted-foreground">No logo</div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  onReceiptLogoFileChange(file);
+                  if (!file) {
+                    onReceiptLogoPreviewChange(receiptForm.receiptLogoUrl || null);
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => onReceiptLogoPreviewChange(typeof reader.result === "string" ? reader.result : null);
+                  reader.onerror = () => toast.error("Unable to preview selected logo.");
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <Button type="button" variant="outline" className="rounded-md" onClick={onOpenReceiptLogoPicker}>
+                Upload logo
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="receipt-store-name" className="text-sm font-medium text-foreground">
-            Receipt Header
+            Store Name
           </label>
-          <Textarea
+          <Input
             id="receipt-store-name"
-            value={receiptForm.storeName}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, storeName: event.target.value }))}
-            className="min-h-28 rounded-md"
-            placeholder={DEFAULT_RECEIPT_HEADER_CONTENT}
+            value={receiptForm.receiptStoreName}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptStoreName: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_STORE_NAME}
           />
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="receipt-slogan" className="text-sm font-medium text-foreground">
+            Slogan
+          </label>
+          <Input
+            id="receipt-slogan"
+            value={receiptForm.receiptSlogan}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptSlogan: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_SLOGAN}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-phone" className="text-sm font-medium text-foreground">
             Phone
           </label>
           <Input
             id="receipt-phone"
-            value={receiptForm.phone}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, phone: event.target.value }))}
+            value={receiptForm.receiptPhone}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptPhone: event.target.value }))}
             className="h-10 rounded-md"
-            placeholder="+212XXXXXXXXX"
+            placeholder={DEFAULT_RECEIPT_PHONE}
           />
         </div>
 
@@ -5255,10 +5317,23 @@ function SettingsSection({
           </label>
           <Input
             id="receipt-address"
-            value={receiptForm.address}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, address: event.target.value }))}
+            value={receiptForm.receiptAddress}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptAddress: event.target.value }))}
             className="h-10 rounded-md"
-            placeholder="Casablanca, Morocco"
+            placeholder={DEFAULT_RECEIPT_ADDRESS}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="receipt-website" className="text-sm font-medium text-foreground">
+            Website
+          </label>
+          <Input
+            id="receipt-website"
+            value={receiptForm.receiptWebsite}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptWebsite: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_WEBSITE}
           />
         </div>
 
@@ -5277,14 +5352,27 @@ function SettingsSection({
 
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-footer" className="text-sm font-medium text-foreground">
-            Receipt Footer
+            Footer Message
           </label>
-          <Textarea
+          <Input
             id="receipt-footer"
-            value={receiptForm.footerMessage}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, footerMessage: event.target.value }))}
-            className="min-h-20 rounded-md"
-            placeholder={DEFAULT_RECEIPT_FOOTER_CONTENT}
+            value={receiptForm.receiptFooterMessage}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptFooterMessage: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_FOOTER_MESSAGE}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <label htmlFor="receipt-social-support" className="text-sm font-medium text-foreground">
+            Social & Support
+          </label>
+          <Input
+            id="receipt-social-support"
+            value={receiptForm.receiptSocialSupport}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptSocialSupport: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_SOCIAL_SUPPORT}
           />
         </div>
       </div>
