@@ -327,13 +327,13 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus("Point your camera at the customer QR code.");
+          setScannerStatus(t("cyclist.cameraPointToQr"));
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
         if (mounted) {
           setShowManualEntry(true);
-          setScannerStatus("Camera unavailable. Enter code manually.");
+          setScannerStatus(t("cyclist.cameraUnavailableManual"));
         }
       }
     };
@@ -365,7 +365,7 @@ function CyclistDashboardPage() {
   const handleLogout = async () => {
     clearRoleSessions();
     localStorage.removeItem(CYCLIST_SESSION_STORAGE_KEY);
-    toast.success("Logged out successfully.");
+    toast.success(t("cyclist.loggedOut"));
     await navigate({ to: "/cyclist/login" });
   };
 
