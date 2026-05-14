@@ -130,7 +130,7 @@ function CyclistDashboardPage() {
 
     void playActionSound({ enabled: true }).then((played) => {
       if (!played && !hasAudioPermissionHintShown) {
-        toast.info("Click the sound icon to allow pickup alerts in your browser.");
+        toast.info("اضغط على زر الصوت لتفعيل تنبيهات الطلبات.");
         setHasAudioPermissionHintShown(true);
       }
     });
@@ -145,24 +145,24 @@ function CyclistDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("Sounds disabled.");
+      toast.success("تم إيقاف الصوت.");
       return;
     }
 
     const played = await playActionSound({ enabled: true });
     if (!played) {
-      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
+      toast.error("المتصفح منع التشغيل التلقائي. تفاعل مع الصفحة ثم حاول مرة أخرى.");
       return;
     }
 
-    toast.success("Sounds enabled.");
+    toast.success("تم تفعيل الصوت.");
   };
 
   const onlineCountLabel = useMemo(() => {
     if (activeView === "available") {
-      return `${availableRuns.length} available run${availableRuns.length === 1 ? "" : "s"}`;
+      return `${availableRuns.length} طلب متاح`;
     }
-    return `${activeDeliveries.length} active deliver${activeDeliveries.length === 1 ? "y" : "ies"}`;
+    return `${activeDeliveries.length} توصيل نشط`;
   }, [activeView, availableRuns.length, activeDeliveries.length]);
 
   const updateOnlineState = async (isOnline: boolean) => {
@@ -184,11 +184,11 @@ function CyclistDashboardPage() {
       );
 
       await setActiveState({ data: { cyclistId: cyclist.id, isActive: isOnline } });
-      toast.success(isOnline ? "You are online." : "You are offline.");
+      toast.success(isOnline ? "أنت الآن متصل." : "أنت الآن غير متصل.");
     } catch (error) {
       console.error("Failed to update cyclist online state:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update online status.");
+      toast.error("تعذر تحديث حالة الاتصال.");
     }
   };
 
@@ -212,12 +212,12 @@ function CyclistDashboardPage() {
       });
 
       await acceptRun({ data: { cyclistId: session.cyclistId, orderId: order.id } });
-      toast.success("Delivery accepted.");
+      toast.success("تم قبول التوصيل.");
       await dashboardQuery.refetch();
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : "Failed to accept delivery.");
+      toast.error(error instanceof Error ? error.message : "تعذر قبول التوصيل.");
     } finally {
       setIsUpdatingOrderId(null);
     }
@@ -229,7 +229,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Ready to scan.");
+    setScannerStatus("جاهز للمسح.");
     isVerifyingCodeRef.current = false;
   };
 
@@ -240,13 +240,13 @@ function CyclistDashboardPage() {
 
     const extractedCode = extractDeliveryCode(rawValue, order.id);
     if (!extractedCode) {
-      toast.error("Invalid QR/PIN format.");
+      toast.error("صيغة QR/PIN غير صحيحة.");
       return;
     }
 
     isVerifyingCodeRef.current = true;
     setIsUpdatingOrderId(order.id);
-    setScannerStatus("Verifying delivery pass...");
+    setScannerStatus("جاري التحقق من رمز التسليم...");
 
     try {
       queryClient.setQueryData(["cyclist", "dashboard", session.cyclistId], (current: any) => {
@@ -271,15 +271,15 @@ function CyclistDashboardPage() {
       });
 
       setIsScannerSuccess(true);
-      setScannerStatus("Delivery verified successfully.");
-      toast.success("Delivery completed successfully.");
+      setScannerStatus("تم التحقق من التسليم بنجاح.");
+      toast.success("تم إكمال التسليم بنجاح.");
       await dashboardQuery.refetch();
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Failed to verify delivery:", error);
       await dashboardQuery.refetch();
-      setScannerStatus("Verification failed. Try scanning again or use manual code.");
-      toast.error(error instanceof Error ? error.message : "Failed to verify delivery.");
+      setScannerStatus("فشل التحقق. حاول المسح مجددًا أو أدخل الرمز يدويًا.");
+      toast.error(error instanceof Error ? error.message : "تعذر التحقق من التسليم.");
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
@@ -291,7 +291,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Preparing camera...");
+    setScannerStatus("جاري تجهيز الكاميرا...");
     setIsScannerOpen(true);
   };
 
@@ -323,13 +323,13 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus("Point your camera at the customer QR code.");
+          setScannerStatus("وجّه الكاميرا إلى رمز QR الخاص بالزبون.");
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
         if (mounted) {
           setShowManualEntry(true);
-          setScannerStatus("Camera unavailable. Enter code manually.");
+          setScannerStatus("الكاميرا غير متاحة. أدخل الرمز يدويًا.");
         }
       }
     };
