@@ -523,12 +523,21 @@ function VendorDashboardPage() {
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
-        status: row.status,
+        status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
         totalMad: roundMoney(Number(row.total_price ?? 0)),
         vendorShareMad: roundMoney(Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0)),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
+        cyclist:
+          row.cyclist && typeof row.cyclist.name === "string" && typeof row.cyclist.phoneNumber === "string"
+            ? {
+                id: row.cyclist.id,
+                name: row.cyclist.name,
+                phoneNumber: row.cyclist.phoneNumber,
+                avatarUrl: row.cyclist.avatarUrl ?? null,
+              }
+            : null,
         createdAt: row.created_at,
       }))
       .filter((order) => !rejectedOrderIds[order.id]);
@@ -539,6 +548,7 @@ function VendorDashboardPage() {
       new: orders.filter((order) => order.status === "new"),
       preparing: orders.filter((order) => order.status === "preparing"),
       ready: orders.filter((order) => order.status === "ready"),
+      inDelivery: orders.filter((order) => order.status === "in_transit" || order.status === "delivering"),
       delivered: orders.filter((order) => order.status === "delivered"),
     }),
     [orders],
