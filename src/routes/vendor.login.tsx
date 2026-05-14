@@ -153,8 +153,8 @@ function VendorLoginPage() {
               <Store className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Vendor Partner Portal</CardTitle>
-              <p className="text-sm text-muted-foreground">Manage your store orders</p>
+              <CardTitle className="text-2xl font-semibold">{t("vendorLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("vendorLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -164,7 +164,7 @@ function VendorLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="vendor-phone" className="text-sm">
-                  Phone Number
+                  {t("vendorLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -180,7 +180,7 @@ function VendorLoginPage() {
                   />
                 </div>
                 <p id="phone-help" className="text-xs text-muted-foreground">
-                  Enter your store phone linked by the admin.
+                  {t("vendorLogin.phoneHelp")}
                 </p>
               </div>
 
@@ -193,7 +193,7 @@ function VendorLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "Sending..." : "Send Code via WhatsApp"}
+                {isSendingCode ? t("vendorLogin.sending") : t("vendorLogin.sendCode")}
               </Button>
             </div>
 
@@ -201,8 +201,8 @@ function VendorLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">Enter your OTP</h2>
-                <p className="text-sm text-muted-foreground">Enter the code sent to your WhatsApp</p>
+                <h2 className="text-base font-semibold text-foreground">{t("vendorLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("vendorLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -241,10 +241,10 @@ function VendorLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `Resend available in ${otpResendCountdown}s`
+                  ? t("vendorLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "Sending..."
-                    : "Resend code"}
+                    ? t("vendorLogin.sending")
+                    : t("vendorLogin.resend")}
               </Button>
 
               <Button
@@ -256,7 +256,7 @@ function VendorLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "Verifying..." : "Verify & Login"}
+                {isVerifying ? t("vendorLogin.verifying") : t("vendorLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -268,13 +268,13 @@ function VendorLoginPage() {
                   setOtpCode("");
                 }}
               >
-                Change phone number
+                {t("vendorLogin.changePhone")}
               </Button>
             </div>
 
             <div className="pt-1 text-center">
               <Button type="button" variant="link" className="h-auto p-0 text-sm text-muted-foreground">
-                Need help? Contact Admin
+                {t("vendorLogin.needHelp")}
               </Button>
             </div>
           </CardContent>
