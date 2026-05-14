@@ -15,7 +15,6 @@ import {
   Clock3,
   History,
   LogOut,
-  Bike,
   Package,
   Phone,
   MessageCircle,
