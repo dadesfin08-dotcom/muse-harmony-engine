@@ -363,7 +363,7 @@ const masterProductFormSchema = z.object({
 });
 
 const platformCollectionQrPayloadSchema = z.object({
-  action: z.literal("admin_collection").optional(),
+  action: z.literal("admin_collection"),
   vendor_id: z.string().uuid(),
   amount_owed: z.union([z.number(), z.string()]),
 });
