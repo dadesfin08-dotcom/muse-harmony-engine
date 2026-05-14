@@ -116,6 +116,53 @@ type LedgerOrderItem = {
   unitPriceMad: number;
 };
 
+const INCOMING_ALERT_CACHE_TTL_MS = 15 * 60 * 1000;
+const INCOMING_ALERT_CACHE_MAX_ITEMS = 160;
+
+function incomingAlertCacheKey(phoneNumber: string) {
+  return `vendor.incoming-order-alerts.${phoneNumber}`;
+}
+
+function readIncomingAlertCache(phoneNumber: string) {
+  if (typeof window === "undefined" || !phoneNumber) return new Map<string, number>();
+
+  try {
+    const raw = window.localStorage.getItem(incomingAlertCacheKey(phoneNumber));
+    if (!raw) return new Map<string, number>();
+
+    const parsed = JSON.parse(raw) as Array<{ id?: string; seenAt?: number }>;
+    const now = Date.now();
+    const next = new Map<string, number>();
+
+    for (const entry of parsed) {
+      if (!entry?.id || typeof entry.seenAt !== "number") continue;
+      if (now - entry.seenAt > INCOMING_ALERT_CACHE_TTL_MS) continue;
+      next.set(entry.id, entry.seenAt);
+    }
+
+    return next;
+  } catch {
+    return new Map<string, number>();
+  }
+}
+
+function writeIncomingAlertCache(phoneNumber: string, cache: Map<string, number>) {
+  if (typeof window === "undefined" || !phoneNumber) return;
+
+  const now = Date.now();
+  const entries = Array.from(cache.entries())
+    .filter(([, seenAt]) => now - seenAt <= INCOMING_ALERT_CACHE_TTL_MS)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, INCOMING_ALERT_CACHE_MAX_ITEMS)
+    .map(([id, seenAt]) => ({ id, seenAt }));
+
+  try {
+    window.localStorage.setItem(incomingAlertCacheKey(phoneNumber), JSON.stringify(entries));
+  } catch {
+    // ignore localStorage write errors (quota/privacy mode)
+  }
+}
+
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
 }
@@ -250,7 +297,8 @@ function VendorDashboardPage() {
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
-  const shownIncomingToastIdsRef = useRef<Set<string>>(new Set());
+  const shownIncomingToastIdsRef = useRef<Map<string, number>>(new Map());
+  const incomingAlertCachePhoneRef = useRef<string>("");
   const [printOrder, setPrintOrder] = useState<DashboardOrder | null>(null);
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
   const vendorPhoneNumber = useMemo(() => {
@@ -270,6 +318,21 @@ function VendorDashboardPage() {
     () => isValidMoroccoPhone(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
     [vendorPhoneNumber],
   );
+
+  useEffect(() => {
+    if (!normalizedVendorPhoneNumber) {
+      shownIncomingToastIdsRef.current = new Map();
+      incomingAlertCachePhoneRef.current = "";
+      return;
+    }
+
+    if (incomingAlertCachePhoneRef.current === normalizedVendorPhoneNumber) {
+      return;
+    }
+
+    shownIncomingToastIdsRef.current = readIncomingAlertCache(normalizedVendorPhoneNumber);
+    incomingAlertCachePhoneRef.current = normalizedVendorPhoneNumber;
+  }, [normalizedVendorPhoneNumber]);
 
   const fetchDashboardData = useServerFn(getVendorDashboardData);
   const fetchInvoiceSettings = useServerFn(getInvoiceSettings);
@@ -500,18 +563,28 @@ function VendorDashboardPage() {
 
           const insertedId = inserted.id;
 
-          if (shownIncomingToastIdsRef.current.has(insertedId)) {
+          const now = Date.now();
+          const seenAt = shownIncomingToastIdsRef.current.get(insertedId);
+          if (typeof seenAt === "number" && now - seenAt <= INCOMING_ALERT_CACHE_TTL_MS) {
             return;
           }
 
-          shownIncomingToastIdsRef.current.add(insertedId);
+          shownIncomingToastIdsRef.current.set(insertedId, now);
 
-          if (shownIncomingToastIdsRef.current.size > 80) {
-            const oldestId = shownIncomingToastIdsRef.current.values().next().value;
-            if (oldestId) {
-              shownIncomingToastIdsRef.current.delete(oldestId);
+          for (const [cachedId, cachedAt] of shownIncomingToastIdsRef.current.entries()) {
+            if (now - cachedAt > INCOMING_ALERT_CACHE_TTL_MS) {
+              shownIncomingToastIdsRef.current.delete(cachedId);
             }
           }
+
+          if (shownIncomingToastIdsRef.current.size > INCOMING_ALERT_CACHE_MAX_ITEMS) {
+            const oldestEntry = [...shownIncomingToastIdsRef.current.entries()].sort((a, b) => a[1] - b[1])[0];
+            if (oldestEntry) {
+              shownIncomingToastIdsRef.current.delete(oldestEntry[0]);
+            }
+          }
+
+          writeIncomingAlertCache(normalizedVendorPhoneNumber, shownIncomingToastIdsRef.current);
 
           const totalMad = roundMoney(Number(inserted.total_price ?? 0));
           const toastId = `incoming-order-${insertedId}`;
