@@ -205,7 +205,7 @@ function CyclistWalletPage() {
           filter: `cyclist_id=eq.${cyclistId}`,
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", authUserId] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
         },
       )
       .subscribe();
@@ -213,7 +213,7 @@ function CyclistWalletPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [authUserId, queryClient, walletQuery.data?.cyclistId]);
+  }, [queryClient, session?.cyclistId, walletQuery.data?.cyclistId]);
 
   useEffect(() => {
     if (!isVendorQrScannerOpen) {
@@ -267,11 +267,7 @@ function CyclistWalletPage() {
     };
   }, [isVendorQrScannerOpen]);
 
-  if (!authReady) {
-    return <main className="min-h-screen bg-muted/20" />;
-  }
-
-  if (!authUserId) {
+  if (!session?.cyclistId) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
         <Card className="w-full max-w-sm">
