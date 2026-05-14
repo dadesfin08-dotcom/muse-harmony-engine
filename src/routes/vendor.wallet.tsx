@@ -78,84 +78,6 @@ function VendorWalletPage() {
     };
   }, [queryClient, vendorId]);
 
-  const settleMutation = useMutation({
-    mutationFn: async ({ cyclistId }: { cyclistId: string }) => {
-      if (!vendorId) throw new Error("Vendor session missing.");
-      return settleHandover({
-        data: {
-          phoneNumber: vendorPhoneNumber,
-          cyclistId,
-        },
-      });
-    },
-    onSuccess: async (result) => {
-      toast.success(`Cash handover confirmed: ${result.settledAmountMad.toFixed(2)} MAD · تم تأكيد استلام المبلغ الكامل`);
-      setConfirmPayload(null);
-      setIsScannerOpen(false);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId] }),
-        queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Settlement failed.");
-    },
-  });
-
-  useEffect(() => {
-    if (!isScannerOpen) return;
-
-    let mounted = true;
-    let scanner: any = null;
-
-    const startScanner = async () => {
-      try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (!mounted) return;
-
-        scanner = new Html5Qrcode("vendor-cash-qr-reader");
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 240, height: 240 } },
-          (decodedText: string) => {
-            try {
-              const parsed = qrPayloadSchema.parse(JSON.parse(decodedText));
-              const amount = Number(parsed.amount);
-              if (!Number.isFinite(amount) || amount < 0) {
-                if (!Number.isFinite(amount)) {
-                  throw new Error("Invalid amount in QR payload.");
-                }
-              }
-
-              setConfirmPayload({ cyclistId: parsed.cyclist_id, amount });
-              setIsScannerOpen(false);
-            } catch {
-              toast.error("Invalid QR payload. · الرمز غير صالح");
-            }
-          },
-          () => undefined,
-        );
-      } catch (error) {
-        console.error("Vendor QR scanner failed:", error);
-        toast.error("Unable to open camera scanner.");
-      }
-    };
-
-    void startScanner();
-
-    return () => {
-      mounted = false;
-      if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
-      }
-    };
-  }, [isScannerOpen]);
-
   const summary = settlementQuery.data;
   const hasSummary = Boolean(summary);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
@@ -173,10 +95,14 @@ function VendorWalletPage() {
     });
   }, [summary?.platformDuesMad, vendorId]);
 
-  const confirmationLabel = useMemo(() => {
-    if (!confirmPayload) return "";
-    return `${confirmPayload.amount.toFixed(2)} MAD`;
-  }, [confirmPayload]);
+  const vendorReceiptQrPayload = useMemo(() => {
+    if (!vendorId) return null;
+    return JSON.stringify({
+      action: "vendor_cash_receipt",
+      vendor_id: vendorId,
+      issued_at: new Date().toISOString(),
+    });
+  }, [vendorId]);
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
