@@ -3014,7 +3014,7 @@ function OrderCard({
               </div>
 
               <div className="min-w-0 text-right">
-                <MapPin className="ml-auto h-4.5 w-4.5 text-chart-4" />
+                <MapPin className="ml-auto h-4 w-4 text-chart-4" />
                 <p className="truncate text-sm font-bold text-foreground">{routeEnd}</p>
                 <p className="text-[11px] font-medium text-chart-4">Pending</p>
               </div>
@@ -3040,11 +3040,11 @@ function OrderCard({
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-chart-4/30 bg-background text-chart-4 shadow-sm animate-pulse"
                 aria-label={`Call driver ${driverName}`}
               >
-                <Smartphone className="h-4.5 w-4.5" />
+                <Smartphone className="h-4 w-4" />
               </a>
             ) : (
               <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground">
-                <Smartphone className="h-4.5 w-4.5" />
+                <Smartphone className="h-4 w-4" />
               </span>
             )}
           </div>
