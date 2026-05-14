@@ -35,7 +35,7 @@ type CyclistSession = {
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
-      { title: "Cyclist Dashboard | Bzaf Fresh" },
+      { title: "حساب الموصّل | بزاف فريش" },
       {
         name: "description",
         content: "Mobile-first cyclist dashboard for accepting runs and completing local deliveries.",
@@ -361,7 +361,7 @@ function CyclistDashboardPage() {
   const handleLogout = async () => {
     clearRoleSessions();
     localStorage.removeItem(CYCLIST_SESSION_STORAGE_KEY);
-    toast.success("Logged out successfully.");
+      toast.success("تم تسجيل الخروج بنجاح.");
     await navigate({ to: "/cyclist/login" });
   };
 
@@ -369,9 +369,9 @@ function CyclistDashboardPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
         <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
-          <p className="text-sm text-muted-foreground">Your cyclist session has expired.</p>
+          <p className="text-sm text-muted-foreground">انتهت جلسة حساب الموصّل.</p>
           <Button className="w-full" onClick={() => navigate({ to: "/cyclist/login" })}>
-            Go to Login
+            الذهاب لتسجيل الدخول
           </Button>
         </div>
       </main>
@@ -388,7 +388,7 @@ function CyclistDashboardPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{cyclist?.fullName ?? session.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">Cyclist Dashboard</p>
+              <p className="truncate text-xs text-muted-foreground">حساب الموصّل</p>
             </div>
           </div>
 
@@ -398,8 +398,8 @@ function CyclistDashboardPage() {
               variant="soft"
               className="rounded-xl"
               onClick={handleToggleSounds}
-              aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
-              title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+              aria-label={isSoundEnabled ? "إيقاف الصوت" : "تفعيل الصوت"}
+              title={isSoundEnabled ? "إيقاف الصوت" : "تفعيل الصوت"}
             >
               {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </Button>
@@ -410,7 +410,7 @@ function CyclistDashboardPage() {
         </div>
 
         <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "Online" : "Offline"}</span>
+            <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "متصل" : "غير متصل"}</span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
@@ -426,7 +426,7 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Available Runs
+            الطلبات المتاحة
           </button>
           <button
             type="button"
@@ -437,13 +437,13 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Active Deliveries
+            التوصيلات النشطة
           </button>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
-          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing…</p> : null}
+          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">جاري التحديث…</p> : null}
         </div>
 
         {activeView === "available" ? (
@@ -463,7 +463,7 @@ function CyclistDashboardPage() {
                   key={order.id}
                   order={order}
                   isActiveDelivery={false}
-                  actionLabel="Accept & Pick Up"
+                  actionLabel="قبول وبدء الالتقاط"
                   actionTone="primary"
                   actionIcon={Truck}
                   isBusy={isUpdatingOrderId === order.id}
@@ -482,7 +482,7 @@ function CyclistDashboardPage() {
                   key={order.id}
                   order={order}
                   isActiveDelivery
-                  actionLabel="Scan to Deliver (مسح الرمز للتسليم)"
+                  actionLabel="مسح الرمز للتسليم"
                   actionTone="success"
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
@@ -498,7 +498,7 @@ function CyclistDashboardPage() {
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="text-base font-semibold">Scan to Deliver</DialogTitle>
+            <DialogTitle className="text-base font-semibold">مسح الرمز للتسليم</DialogTitle>
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
@@ -527,12 +527,12 @@ function CyclistDashboardPage() {
                     onClick={handleManualVerify}
                     disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
                   >
-                    {isUpdatingOrderId === scannerOrder?.id ? "Verifying..." : "Verify & Deliver"}
+                    {isUpdatingOrderId === scannerOrder?.id ? "جاري التحقق..." : "تحقق وسلّم"}
                   </Button>
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
                   <Camera className="size-4" />
-                  Back to Camera
+                  الرجوع للكاميرا
                 </Button>
               </div>
             ) : (
@@ -542,7 +542,7 @@ function CyclistDashboardPage() {
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
                   <Keyboard className="size-4" />
-                  Enter Code Manually (إدخال الرمز يدوياً)
+                  إدخال الرمز يدوياً
                 </Button>
               </>
             )}
@@ -563,14 +563,14 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Available Runs
+            الطلبات المتاحة
           </button>
 
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
-            aria-label="Open wallet"
+            aria-label="فتح المحفظة"
           >
             <Wallet className="size-5" />
           </button>
@@ -584,7 +584,7 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Active Deliveries
+            التوصيلات النشطة
           </button>
         </div>
       </nav>
@@ -601,9 +601,9 @@ function CyclistDashboardPage() {
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
                 <ChevronRight className="size-4" />
-                Back (رجوع)
+                رجوع
               </Button>
-              <p className="text-sm font-semibold text-foreground">Order Details</p>
+              <p className="text-sm font-semibold text-foreground">تفاصيل الطلب</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -673,7 +673,7 @@ function CyclistDashboardPage() {
                               <TooltipTrigger asChild>
                                 <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
                                   <Package className="h-3 w-3" />
-                                  <span>Qty x{item.quantity}</span>
+                                  <span>الكمية x{item.quantity}</span>
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent side="top">الكمية الحالية هي x{item.quantity}</TooltipContent>
@@ -683,7 +683,7 @@ function CyclistDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="p-4 text-sm text-muted-foreground">No items available for this order.</p>
+                    <p className="p-4 text-sm text-muted-foreground">لا توجد منتجات متاحة لهذا الطلب.</p>
                   )}
                 </div>
 
@@ -694,15 +694,15 @@ function CyclistDashboardPage() {
                   </div>
                   <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Subtotal</span>
+                    <span>المجموع الفرعي</span>
                     <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Delivery Fee</span>
+                    <span>رسوم التوصيل</span>
                     <span>{detailsOrder.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-800">
-                    <span>Total</span>
+                    <span>الإجمالي</span>
                     <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
                   </div>
                 </div>
@@ -875,7 +875,7 @@ function OrderCard({
           {order.customerPhone}
         </a>
         <p className="text-sm text-muted-foreground">Douar: {order.douar}</p>
-        <p className="text-sm font-medium text-foreground">Total: {order.totalMad.toFixed(2)} MAD</p>
+        <p className="text-sm font-medium text-foreground">الإجمالي: {order.totalMad.toFixed(2)} MAD</p>
         <p className="text-xs text-muted-foreground">Delivery notes: {order.deliveryNotes || "—"}</p>
         <p className="text-xs text-muted-foreground">Saved instructions: {order.savedInstructions || "—"}</p>
       </div>
