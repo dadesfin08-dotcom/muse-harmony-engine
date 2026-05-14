@@ -92,15 +92,21 @@ function CustomerOrderDetailsPage() {
 
   const statusBadge = useMemo(() => {
     const status = String(order?.status ?? "new").toLowerCase();
-    if (status === "delivered") return { label: copy.statusDelivered, className: "bg-primary/15 text-primary border-primary/30" };
-    if (status === "delivering" || status === "out_for_delivery") return { label: copy.statusOutForDelivery, className: "bg-accent/30 text-foreground border-border" };
-    if (status === "preparing" || status === "ready") return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
+    const deliveredStatuses = ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"];
+    const outForDeliveryStatuses = ["delivering", "out_for_delivery", "picked_up", "on_the_way"];
+    const preparingStatuses = ["pending", "new", "preparing", "accepted", "processing", "ready"];
+
+    if (deliveredStatuses.includes(status)) return { label: copy.statusDelivered, className: "bg-success text-success-foreground border-success" };
+    if (outForDeliveryStatuses.includes(status)) return { label: copy.statusOutForDelivery, className: "bg-orange-100 text-orange-800 border-orange-300" };
+    if (preparingStatuses.includes(status)) return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
     if (status === "cancelled") return { label: copy.statusCancelled, className: "bg-destructive/10 text-destructive border-destructive/30" };
     return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
   }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
 
   const normalizedOrderStatus = String(order?.status ?? "").toLowerCase();
-  const isOutForDelivery = normalizedOrderStatus === "delivering" || normalizedOrderStatus === "out_for_delivery";
+  const deliveredStatuses = ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"];
+  const isOutForDelivery = ["delivering", "out_for_delivery", "picked_up", "on_the_way"].includes(normalizedOrderStatus);
+  const isDelivered = deliveredStatuses.includes(normalizedOrderStatus);
   const handoverQrPayload = useMemo(() => {
     if (!order?.id || !isOutForDelivery) return "";
     return JSON.stringify({ order_id: order.id, delivery_auth_code: order.deliveryAuthCode ?? null });
@@ -171,7 +177,7 @@ function CustomerOrderDetailsPage() {
                     <QRCodeSVG value={handoverQrPayload} size={184} includeMargin />
                   </div>
                 </div>
-              ) : normalizedOrderStatus === "delivered" ? (
+              ) : isDelivered ? (
                 <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3">
                   <p className="inline-flex items-center text-sm font-semibold text-success">{copy.handoverDelivered}</p>
                 </div>
