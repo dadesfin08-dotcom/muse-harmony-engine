@@ -134,7 +134,7 @@ function CyclistDashboardPage() {
 
     void playActionSound({ enabled: true }).then((played) => {
       if (!played && !hasAudioPermissionHintShown) {
-        toast.info("Click the sound icon to allow pickup alerts in your browser.");
+        toast.info(t("cyclist.soundPermissionHint"));
         setHasAudioPermissionHintShown(true);
       }
     });
@@ -149,24 +149,24 @@ function CyclistDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("Sounds disabled.");
+      toast.success(t("cyclist.soundsDisabled"));
       return;
     }
 
     const played = await playActionSound({ enabled: true });
     if (!played) {
-      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
+      toast.error(t("cyclist.autoplayBlocked"));
       return;
     }
 
-    toast.success("Sounds enabled.");
+    toast.success(t("cyclist.soundsEnabled"));
   };
 
   const onlineCountLabel = useMemo(() => {
     if (activeView === "available") {
-      return `${availableRuns.length} available run${availableRuns.length === 1 ? "" : "s"}`;
+      return t("cyclist.availableRunsCount", { count: availableRuns.length });
     }
-    return `${activeDeliveries.length} active deliver${activeDeliveries.length === 1 ? "y" : "ies"}`;
+    return t("cyclist.activeDeliveriesCount", { count: activeDeliveries.length });
   }, [activeView, availableRuns.length, activeDeliveries.length]);
 
   const updateOnlineState = async (isOnline: boolean) => {
