@@ -404,6 +404,7 @@ function AdminPage() {
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
+  const uploadSiteLogoToStorage = useServerFn(uploadSiteLogo);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
@@ -705,7 +706,11 @@ function AdminPage() {
     minimumOrderMad: "50",
     freeDeliveryThresholdMad: "500",
     marketplaceActive: true,
+    siteName: "Bzaf Fresh",
+    siteLogoUrl: "",
   });
+  const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
+  const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
@@ -740,8 +745,13 @@ function AdminPage() {
         minimumOrderMad: String(Number(row.minimum_order_amount ?? 50)),
         freeDeliveryThresholdMad: String(Number(row.free_delivery_threshold ?? 500)),
         marketplaceActive: Boolean(row.marketplace_active ?? true),
+        siteName: row.site_name?.trim() || "Bzaf Fresh",
+        siteLogoUrl: row.site_logo_url?.trim() || "",
       };
     });
+
+    setSiteLogoFile(null);
+    setSiteLogoPreviewUrl(row.site_logo_url?.trim() || null);
   }, [globalSettingsQuery.data]);
 
   useEffect(() => {
