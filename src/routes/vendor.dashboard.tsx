@@ -471,8 +471,8 @@ function VendorDashboardPage() {
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
         status: row.status,
-        deliveryFeeMad: Number(row.delivery_fee ?? 0),
-        totalMad: Number(row.total_price ?? 0),
+        deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
+        totalMad: roundMoney(Number(row.total_price ?? 0)),
         vendorShareMad: roundMoney(Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0)),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
@@ -1777,7 +1777,7 @@ function OrderHistoryView({
   const summary = useMemo(
     () => ({
       completedOrders: filteredOrders.length,
-      totalEarningsMad: filteredOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
+      totalEarningsMad: roundMoney(filteredOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
     }),
     [filteredOrders],
   );
