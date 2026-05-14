@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, Keyboard, Lock, LogOut, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, Info, Keyboard, Lock, LogOut, MapPin, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -462,6 +462,7 @@ function CyclistDashboardPage() {
                 <OrderCard
                   key={order.id}
                   order={order}
+                  isActiveDelivery={false}
                   actionLabel="Accept & Pick Up"
                   actionTone="primary"
                   actionIcon={Truck}
@@ -480,6 +481,7 @@ function CyclistDashboardPage() {
                 <OrderCard
                   key={order.id}
                   order={order}
+                  isActiveDelivery
                   actionLabel="Scan to Deliver (مسح الرمز للتسليم)"
                   actionTone="success"
                   actionIcon={Camera}
@@ -581,6 +583,7 @@ function CyclistDashboardPage() {
 
 function OrderCard({
   order,
+  isActiveDelivery = false,
   actionLabel,
   actionTone,
   actionIcon: ActionIcon,
@@ -588,6 +591,7 @@ function OrderCard({
   onAction,
 }: {
   order: CyclistOrderCard;
+  isActiveDelivery?: boolean;
   actionLabel: string;
   actionTone: "primary" | "success";
   actionIcon: typeof Truck;
@@ -598,6 +602,61 @@ function OrderCard({
     actionTone === "success"
       ? "bg-success text-success-foreground hover:bg-success/90"
       : "bg-primary text-primary-foreground hover:bg-primary/90";
+
+  const shortOrderId = `#${order.id.replace(/-/g, "").slice(-4).toUpperCase()}`;
+  const notes = [order.deliveryNotes?.trim(), order.savedInstructions?.trim()].filter(
+    (note): note is string => Boolean(note),
+  );
+  const briefingText = notes.length ? Array.from(new Set(notes)).join(" • ") : null;
+
+  if (isActiveDelivery) {
+    return (
+      <article className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
+        {order.paymentMethod === "Carnet" ? (
+          <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
+            <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
+              <AlertTriangle className="size-4" />
+              CREDIT ORDER - DO NOT COLLECT CASH
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
+          <p className="text-2xl font-black text-gray-900">{shortOrderId}</p>
+          <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+        </div>
+
+        <div>
+          <p className="text-lg font-bold text-foreground">{order.customerName}</p>
+          <a
+            href={`tel:${order.customerPhone}`}
+            className="mt-1 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700"
+          >
+            <PhoneCall className="size-4" />
+            {order.customerPhone}
+          </a>
+        </div>
+
+        <div className="mt-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+          <p className="flex items-start gap-2 text-sm text-gray-700">
+            <MapPin className="mt-0.5 size-4 shrink-0" />
+            <span className="min-w-0">{order.douar}</span>
+          </p>
+          {briefingText ? (
+            <p className="mt-2 flex items-start gap-2 border-t border-slate-200 pt-2 text-sm italic text-gray-600">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              <span className="min-w-0">{briefingText}</span>
+            </p>
+          ) : null}
+        </div>
+
+        <Button className={`mt-5 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+          <ActionIcon className="size-4" />
+          {isBusy ? "Updating..." : actionLabel}
+        </Button>
+      </article>
+    );
+  }
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
