@@ -1039,6 +1039,7 @@ export type Database = {
           phone_number: string
           platform_dues: number
           store_name: string
+          total_cash_received: number
           updated_at: string
           user_id: string | null
           vendor_earnings: number
@@ -1054,6 +1055,7 @@ export type Database = {
           phone_number: string
           platform_dues?: number
           store_name: string
+          total_cash_received?: number
           updated_at?: string
           user_id?: string | null
           vendor_earnings?: number
@@ -1069,6 +1071,7 @@ export type Database = {
           phone_number?: string
           platform_dues?: number
           store_name?: string
+          total_cash_received?: number
           updated_at?: string
           user_id?: string | null
           vendor_earnings?: number
@@ -1121,6 +1124,7 @@ export type Database = {
         Returns: {
           platform_dues_added: number
           settled_orders_count: number
+          total_cash_received_added: number
           vendor_earnings_added: number
         }[]
       }
