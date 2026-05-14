@@ -220,7 +220,7 @@ export function CustomerLayout({
     }
 
     closeCart();
-    void navigate({ to: "/", hash: "checkout" });
+    void navigate({ to: "/customer", hash: "checkout" });
   };
 
   useEffect(() => {
