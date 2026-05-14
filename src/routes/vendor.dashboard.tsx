@@ -44,17 +44,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -2910,7 +2899,6 @@ function OrderCard({
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
-  const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
@@ -2921,6 +2909,8 @@ function OrderCard({
     : "DR";
   const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
   const driver = order.cyclist;
+  const driverPhoneForCall = driver?.phoneNumber?.trim() ?? "";
+  const driverPhoneForWhatsApp = driverPhoneForCall.replace(/\D/g, "");
 
   if (compact) {
     return (
