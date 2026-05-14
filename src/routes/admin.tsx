@@ -40,6 +40,9 @@ import {
   Download,
   FileUp,
   Search,
+  QrCode,
+  ScanLine,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -138,6 +141,7 @@ import {
 import { checkAdminDatabaseHealth } from "@/lib/admin-health.functions";
 import {
   createVendor,
+  collectVendorPlatformDues,
   getVendorSalesAnalytics,
   listVendors,
   type AdminVendorRecord,
@@ -180,6 +184,7 @@ import {
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 import i18n from "@/lib/i18n";
+import { QRCodeSVG } from "qrcode.react";
 
 type AdminTab =
   | "overview"
