@@ -828,10 +828,12 @@ function VendorDashboardPage() {
           status: "ready",
         });
       }
+      return true;
     } catch (error) {
       console.error("Failed to mark order as ready:", error);
       await dashboardQuery.refetch();
       toast.error("Failed to update order status.");
+      return false;
     } finally {
       setIsUpdating(null);
     }
@@ -851,6 +853,36 @@ function VendorDashboardPage() {
 
     setPackingCheckedItemKeys(initialChecks);
     setPackingOrderId(orderId);
+  };
+
+  const packingOrder = useMemo(
+    () => (packingOrderId ? orders.find((order) => order.id === packingOrderId) ?? null : null),
+    [orders, packingOrderId],
+  );
+
+  const packedItemsCount = useMemo(() => {
+    if (!packingOrder) return 0;
+    return packingOrder.items.filter((item, index) => packingCheckedItemKeys[getOrderItemKey(packingOrder.id, item, index)]).length;
+  }, [packingCheckedItemKeys, packingOrder]);
+
+  const totalPackingItems = packingOrder?.items.length ?? 0;
+  const fillPercentage = totalPackingItems > 0 ? Math.round((packedItemsCount / totalPackingItems) * 100) : 0;
+  const isPackingComplete = totalPackingItems > 0 && fillPercentage === 100;
+
+  const togglePackingItem = (itemKey: string, checked: boolean) => {
+    setPackingCheckedItemKeys((current) => ({
+      ...current,
+      [itemKey]: checked,
+    }));
+  };
+
+  const handleConfirmPackedOrder = async () => {
+    if (!packingOrder || !isPackingComplete) return;
+    const wasUpdated = await handleMarkReady(packingOrder.id);
+    if (wasUpdated) {
+      setPackingOrderId(null);
+      setPackingCheckedItemKeys({});
+    }
   };
 
   const handleRejectOrder = (orderId: string) => {
