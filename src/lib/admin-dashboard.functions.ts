@@ -2,6 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  DEFAULT_RECEIPT_ADDRESS,
+  DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_PHONE,
+} from "@/lib/receipt-settings.defaults";
 
 type AdminOrderStatus = "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
 
@@ -59,11 +65,11 @@ const GLOBAL_SETTINGS_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
 function normalizeInvoiceSettingsRow(row: any): InvoiceSettingsRow {
   return {
     id: row.id,
-    store_name: row.store_name ?? "",
-    address: row.address ?? "",
-    phone: row.phone ?? "",
+    store_name: row.store_name ?? DEFAULT_RECEIPT_HEADER_CONTENT,
+    address: row.address ?? DEFAULT_RECEIPT_ADDRESS,
+    phone: row.phone ?? DEFAULT_RECEIPT_PHONE,
     tax_id: row.tax_id ?? null,
-    footer_message: row.footer_message ?? "",
+    footer_message: row.footer_message ?? DEFAULT_RECEIPT_FOOTER_CONTENT,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -185,17 +191,44 @@ export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler
   }
 
   if (data?.id) {
+    const normalizedDefaultsPatch = {
+      store_name: data.store_name?.trim() ? data.store_name : DEFAULT_RECEIPT_HEADER_CONTENT,
+      address: data.address?.trim() ? data.address : DEFAULT_RECEIPT_ADDRESS,
+      phone: data.phone?.trim() ? data.phone : DEFAULT_RECEIPT_PHONE,
+      footer_message: data.footer_message?.trim() ? data.footer_message : DEFAULT_RECEIPT_FOOTER_CONTENT,
+    };
+
+    if (
+      normalizedDefaultsPatch.store_name !== data.store_name ||
+      normalizedDefaultsPatch.address !== data.address ||
+      normalizedDefaultsPatch.phone !== data.phone ||
+      normalizedDefaultsPatch.footer_message !== data.footer_message
+    ) {
+      const { data: patchedRow, error: patchError } = await (supabaseAdmin as any)
+        .from("invoice_settings")
+        .update(normalizedDefaultsPatch)
+        .eq("id", data.id)
+        .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+        .single();
+
+      if (patchError || !patchedRow?.id) {
+        throw new Error(patchError?.message ?? "Failed to apply default receipt settings.");
+      }
+
+      return normalizeInvoiceSettingsRow(patchedRow);
+    }
+
     return normalizeInvoiceSettingsRow(data);
   }
 
   const { data: inserted, error: insertError } = await (supabaseAdmin as any)
     .from("invoice_settings")
     .insert({
-      store_name: "",
-      address: "",
-      phone: "",
+      store_name: DEFAULT_RECEIPT_HEADER_CONTENT,
+      address: DEFAULT_RECEIPT_ADDRESS,
+      phone: DEFAULT_RECEIPT_PHONE,
       tax_id: null,
-      footer_message: "",
+      footer_message: DEFAULT_RECEIPT_FOOTER_CONTENT,
     })
     .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
     .single();
