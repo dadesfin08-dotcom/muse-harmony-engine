@@ -966,7 +966,7 @@ function Index() {
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
     { label: "Order Placed", statuses: ["new"] },
     { label: "Preparing", statuses: ["preparing", "ready"] },
-    { label: "Out for Delivery", statuses: ["delivering"] },
+    { label: "Out for Delivery", statuses: ["delivering", "out_for_delivery"] },
     { label: "Delivered", statuses: ["delivered"] },
   ];
 
