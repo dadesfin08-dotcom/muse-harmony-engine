@@ -859,6 +859,36 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       site_ads: {
         Row: {
           bg_color: string | null
@@ -1197,6 +1227,10 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      recompute_vendor_carnet_customer_debt: {
+        Args: { p_customer_phone: string; p_vendor_id: string }
+        Returns: number
+      }
       record_vendor_carnet_payment: {
         Args: {
           p_amount: number
@@ -1211,7 +1245,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      carnet_transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID"
+      carnet_transaction_type:
+        | "CREDIT_ISSUED"
+        | "CREDIT_REPAID"
+        | "CREDIT_CANCELLED"
       markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
@@ -1374,7 +1411,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      carnet_transaction_type: ["CREDIT_ISSUED", "CREDIT_REPAID"],
+      carnet_transaction_type: [
+        "CREDIT_ISSUED",
+        "CREDIT_REPAID",
+        "CREDIT_CANCELLED",
+      ],
       markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",
