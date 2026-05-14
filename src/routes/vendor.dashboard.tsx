@@ -878,7 +878,13 @@ function VendorDashboardPage() {
 
   const totalPackingItems = packingOrder?.items.length ?? 0;
   const fillPercentage = totalPackingItems > 0 ? Math.round((packedItemsCount / totalPackingItems) * 100) : 0;
-  const isPackingComplete = totalPackingItems > 0 && fillPercentage === 100;
+  const isPackingComplete = useMemo(() => {
+    if (!packingOrder || packingOrder.items.length === 0) return false;
+    return packingOrder.items.every((item, index) => {
+      const itemKey = getOrderItemKey(packingOrder.id, item, index);
+      return packingProgressByOrder[packingOrder.id]?.[itemKey] === true;
+    });
+  }, [packingOrder, packingProgressByOrder]);
 
   const togglePackingItem = (itemKey: string, checked: boolean) => {
     if (!packingOrderId) return;
