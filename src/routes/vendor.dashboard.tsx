@@ -1928,7 +1928,13 @@ function LiveOrdersView({
 }: {
   activeTab: OrderQueueTab;
   onTabChange: (tab: OrderQueueTab) => void;
-  queue: { new: DashboardOrder[]; preparing: DashboardOrder[]; ready: DashboardOrder[]; delivered: DashboardOrder[] };
+  queue: {
+    new: DashboardOrder[];
+    preparing: DashboardOrder[];
+    ready: DashboardOrder[];
+    inDelivery: DashboardOrder[];
+    delivered: DashboardOrder[];
+  };
   isLoading: boolean;
   isUpdating: string | null;
   onOpenOrder: (orderId: string) => void;
@@ -1949,7 +1955,11 @@ function LiveOrdersView({
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => (v === "new" || v === "preparing" || v === "ready" ? onTabChange(v) : undefined)}
+        onValueChange={(v) =>
+          v === "new" || v === "preparing" || v === "ready" || v === "inDelivery"
+            ? onTabChange(v)
+            : undefined
+        }
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="new" className="rounded-lg">
@@ -1960,6 +1970,9 @@ function LiveOrdersView({
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
             Ready ({queue.ready.length})
+          </TabsTrigger>
+          <TabsTrigger value="inDelivery" className="rounded-lg">
+            In Delivery ({queue.inDelivery.length})
           </TabsTrigger>
         </TabsList>
 
@@ -2025,6 +2038,29 @@ function LiveOrdersView({
                     key={order.id}
                     order={order}
                     tab="ready"
+                    isUpdating={false}
+                    onOpenDetails={() => onOpenOrder(order.id)}
+                    timeTick={timeTick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="inDelivery" className="mt-4">
+          {isLoading ? (
+            <EmptyState label="Loading live orders..." />
+          ) : queue.inDelivery.length === 0 ? (
+            <EmptyState label="No orders currently in delivery." />
+          ) : (
+            <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {queue.inDelivery.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    tab="inDelivery"
                     isUpdating={false}
                     onOpenDetails={() => onOpenOrder(order.id)}
                     timeTick={timeTick}
