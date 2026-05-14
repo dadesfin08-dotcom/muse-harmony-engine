@@ -81,6 +81,7 @@ import { type CustomerPanelView, useCustomerPanelStore } from "@/lib/customer-pa
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -2607,6 +2608,11 @@ function Index() {
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
+                                      {isCarnetUnpaidOrder(order.payment_method) ? (
+                                        <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
+                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                        </Badge>
+                                      ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
@@ -2657,6 +2663,11 @@ function Index() {
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
+                                      {isCarnetUnpaidOrder(order.payment_method) ? (
+                                        <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
+                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                        </Badge>
+                                      ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
