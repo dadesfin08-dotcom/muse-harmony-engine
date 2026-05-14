@@ -94,7 +94,7 @@ function VendorWalletPage() {
   }, [queryClient, vendorId]);
 
   const settleMutation = useMutation({
-    mutationFn: async ({ cyclistId, amount }: { cyclistId: string; amount: number }) => {
+    mutationFn: async ({ cyclistId }: { cyclistId: string }) => {
       if (!vendorId) throw new Error("Vendor session missing.");
       return settleHandover({
         data: {
@@ -360,7 +360,7 @@ function VendorWalletPage() {
             <Button
               onClick={() => {
                 if (!confirmPayload) return;
-                settleMutation.mutate(confirmPayload);
+                settleMutation.mutate({ cyclistId: confirmPayload.cyclistId });
               }}
               disabled={!confirmPayload || settleMutation.isPending}
             >
