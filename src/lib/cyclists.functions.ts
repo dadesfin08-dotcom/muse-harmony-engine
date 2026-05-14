@@ -940,3 +940,32 @@ export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Failed to verify delivery code.");
     }
   });
+
+export const confirmCashHandoverToVendor = createServerFn({ method: "POST" })
+  .inputValidator((input) => confirmCashHandoverInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("confirm_cash_transferred_to_vendor", {
+        p_cyclist_id: data.cyclistId,
+        p_vendor_id: data.vendorId,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : null;
+      if (!result) {
+        throw new Error("No settlement result returned.");
+      }
+
+      return {
+        settledOrdersCount: Number(result.settled_orders_count ?? 0),
+        vendorEarningsAddedMad: Number(result.vendor_earnings_added ?? 0),
+        platformDuesAddedMad: Number(result.platform_dues_added ?? 0),
+      };
+    } catch (error) {
+      console.error("confirmCashHandoverToVendor failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to confirm cash handover.");
+    }
+  });
