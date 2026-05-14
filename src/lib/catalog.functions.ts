@@ -151,6 +151,12 @@ const activeFlashDealsInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
 });
 
+const customerSearchInputSchema = z.object({
+  neighborhoodId: z.string().uuid(),
+  query: z.string().trim().min(1).max(80),
+  limit: z.number().int().min(1).max(20).default(8),
+});
+
 type MasterProductRow = {
   id: string;
   product_name: string;
@@ -1320,6 +1326,74 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("listActiveFlashDeals failed:", error);
       throw new Error("Failed to load flash deals.");
+    }
+  });
+
+export const searchCustomerProducts = createServerFn({ method: "POST" })
+  .inputValidator((input) => customerSearchInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+      if (vendorIds.length === 0) return [] as Array<any>;
+
+      const normalizedQuery = data.query.trim();
+      const escapedLike = normalizedQuery.replace(/[%_]/g, "");
+      const ilikePattern = `%${escapedLike}%`;
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("vendor_products")
+        .select(
+          "vendor_id, vendor_price, master_products:master_product_id(id, product_name, name_fr, name_ar, category, image_url, brands:brand_id(name_en, name_fr, name_ar))",
+        )
+        .in("vendor_id", vendorIds)
+        .eq("is_available", true)
+        .eq("master_products.is_active", true)
+        .or(
+          `product_name.ilike.${ilikePattern},name_fr.ilike.${ilikePattern},name_ar.ilike.${ilikePattern},category.ilike.${ilikePattern}`,
+          { foreignTable: "master_products" },
+        )
+        .order("popularity_score", { foreignTable: "master_products", ascending: false })
+        .limit(Math.max(data.limit * 4, 20));
+
+      if (error) throw new Error(error.message);
+
+      const normalizedNeedle = normalizedQuery.toLocaleLowerCase();
+
+      const result = ((rows ?? []) as Array<any>)
+        .filter((row) => row?.master_products)
+        .map((row) => ({
+          id: row.master_products.id as string,
+          name: row.master_products.product_name as string,
+          nameFr: (row.master_products.name_fr as string | null) ?? null,
+          nameAr: (row.master_products.name_ar as string | null) ?? null,
+          category: row.master_products.category as ProductCategory,
+          imageUrl: (row.master_products.image_url as string | null) ?? null,
+          vendorPrice: Number(row.vendor_price ?? 0),
+          brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
+          brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
+          brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
+        }))
+        .filter((item) => {
+          const searchable = [
+            item.name,
+            item.nameFr,
+            item.nameAr,
+            item.brandNameEn,
+            item.brandNameFr,
+            item.brandNameAr,
+            item.category,
+          ]
+            .filter(Boolean)
+            .map((value) => String(value).toLocaleLowerCase());
+
+          return searchable.some((value) => value.includes(normalizedNeedle));
+        })
+        .slice(0, data.limit);
+
+      return result;
+    } catch (error) {
+      console.error("searchCustomerProducts failed:", error);
+      throw new Error("Failed to search products.");
     }
   });
 
