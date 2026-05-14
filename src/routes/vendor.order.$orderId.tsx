@@ -6,10 +6,8 @@ import { ArrowLeft, MapPin, MessageSquareText, Phone, User } from "lucide-react"
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getVendorOrderDetails, updateVendorOrderStatus } from "@/lib/orders.functions";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/vendor/order/$orderId")({
   component: VendorOrderDetailsPage,
@@ -20,7 +18,6 @@ function VendorOrderDetailsPage() {
   const navigate = useNavigate({ from: "/vendor/order/$orderId" });
   const getDetails = useServerFn(getVendorOrderDetails);
   const updateStatus = useServerFn(updateVendorOrderStatus);
-  const [packedItems, setPackedItems] = useState<string[]>([]);
   const [isMarkingReady, setIsMarkingReady] = useState(false);
 
   const vendorPhoneNumber = useMemo(() => {
@@ -40,25 +37,9 @@ function VendorOrderDetailsPage() {
   });
 
   const order = detailsQuery.data;
-  const isPreparing = order?.status === "preparing";
-  const totalItems = order?.items.length ?? 0;
-  const allItemsPacked = totalItems > 0 && packedItems.length === totalItems;
-
-  useEffect(() => {
-    setPackedItems([]);
-  }, [order?.id]);
-
-  const togglePackedItem = (itemKey: string, checked: boolean) => {
-    setPackedItems((current) => {
-      if (checked) {
-        return current.includes(itemKey) ? current : [...current, itemKey];
-      }
-      return current.filter((key) => key !== itemKey);
-    });
-  };
 
   const handleMarkReady = async () => {
-    if (!order || !isPreparing || !allItemsPacked) return;
+    if (!order || order.status !== "preparing") return;
 
     try {
       setIsMarkingReady(true);
