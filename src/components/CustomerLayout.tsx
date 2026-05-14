@@ -8,6 +8,7 @@ import {
   Search,
   ShoppingCart,
   UserCircle2,
+  Languages,
   Plus,
   Minus,
   Trash2,
@@ -23,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getCustomerCarnetBalance, getCustomerCarnetOverview } from "@/lib/carnet.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
@@ -261,8 +263,8 @@ export function CustomerLayout({
     <>
       <main className="pb-24 md:pb-0">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background pb-safe shadow-[var(--shadow-soft)] md:hidden">
-        <div className="mx-auto flex h-16 max-w-6xl items-start justify-around px-4 pt-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
+        <div className="mx-auto grid h-[76px] max-w-6xl grid-cols-5 items-end px-3 pb-2">
           <Link to="/" className="flex flex-col items-center justify-center gap-1 text-primary">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
@@ -282,6 +284,21 @@ export function CustomerLayout({
             <Search className="size-5" />
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
+
+          <div className="flex items-end justify-center">
+            <LanguageSwitcher
+              trigger={
+                <button
+                  type="button"
+                  aria-label={t("language.label")}
+                  className="relative inline-flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full border-4 border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110"
+                >
+                  <Languages className="size-7" />
+                  <span className="pointer-events-none absolute inset-0 rounded-full animate-pulse bg-emerald-400/20" />
+                </button>
+              }
+            />
+          </div>
 
           <button
             type="button"
