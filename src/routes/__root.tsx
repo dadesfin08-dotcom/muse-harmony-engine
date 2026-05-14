@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
 
-import i18n, { LANGUAGE_STORAGE_KEY } from "@/lib/i18n";
+import i18n, { LANGUAGE_STORAGE_KEY, LOCKED_LANGUAGE } from "@/lib/i18n";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ensureAuthSessionHydrated,
@@ -116,7 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
       </head>
@@ -132,14 +132,14 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
-    const applyLanguageDirection = (language: string) => {
-      const nextLang = language === "ar" ? "ar" : language === "fr" ? "fr" : "en";
-      document.documentElement.lang = nextLang;
-      document.documentElement.dir = nextLang === "ar" ? "rtl" : "ltr";
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLang);
+    const applyLanguageDirection = () => {
+      document.documentElement.lang = LOCKED_LANGUAGE;
+      document.documentElement.dir = "rtl";
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, LOCKED_LANGUAGE);
     };
 
-    applyLanguageDirection(i18n.resolvedLanguage || i18n.language);
+    applyLanguageDirection();
+    void i18n.changeLanguage(LOCKED_LANGUAGE);
     i18n.on("languageChanged", applyLanguageDirection);
 
     return () => {
