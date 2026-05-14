@@ -150,19 +150,51 @@ export type CustomerOrderDetails = {
 };
 
 async function resolveVendorByPhone(phoneNumber: string) {
+  const normalizedInput = normalizeMoroccoPhoneInput(phoneNumber);
+  const candidatePhones = Array.from(
+    new Set([
+      phoneNumber.trim(),
+      formatMoroccoPhoneForPayload(normalizedInput),
+      `0${normalizedInput}`,
+      normalizedInput,
+    ]).values(),
+  ).filter((value) => value.length > 0);
+
   const { data: vendor, error } = await (supabaseAdmin as any)
     .from("vendors")
     .select("id, store_name, phone_number")
-    .eq("phone_number", phoneNumber)
+    .in("phone_number", candidatePhones)
     .eq("is_active", true)
     .limit(1)
     .maybeSingle();
 
-  if (error || !vendor?.id) {
+  if (error) {
     throw new Error("Vendor session is invalid.");
   }
 
-  return vendor as VendorRow;
+  if (vendor?.id) {
+    return vendor as VendorRow;
+  }
+
+  const { data: activeVendors, error: fallbackError } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id, store_name, phone_number")
+    .eq("is_active", true);
+
+  if (fallbackError) {
+    throw new Error("Vendor session is invalid.");
+  }
+
+  const matchedVendor = ((activeVendors ?? []) as Array<VendorRow>).find((row) => {
+    const normalizedVendorPhone = normalizeMoroccoPhoneInput(String(row.phone_number ?? ""));
+    return normalizedVendorPhone.length > 0 && normalizedVendorPhone === normalizedInput;
+  });
+
+  if (!matchedVendor?.id) {
+    throw new Error("Vendor session is invalid.");
+  }
+
+  return matchedVendor as VendorRow;
 }
 
 async function resolveVendorsForNeighborhood(neighborhoodId: string) {
