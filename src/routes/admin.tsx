@@ -3559,6 +3559,7 @@ function AdminPage() {
 }
 
 function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
+  const { t } = useTranslation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -3566,19 +3567,19 @@ function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
     <Sidebar collapsible="icon" className="border-r border-border/60">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{collapsed ? "" : "Control Center"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{collapsed ? "" : t("admin.sidebar.controlCenter")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.tab}>
-                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={t(item.label)}>
                     <Link
                       to="/admin"
                       search={{ tab: item.tab }}
                       className="flex items-center gap-2 rounded-md hover:bg-sidebar-accent/70"
                     >
                       <item.icon className="size-4" />
-                      {!collapsed ? <span>{item.label}</span> : null}
+                      {!collapsed ? <span>{t(item.label)}</span> : null}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
