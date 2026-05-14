@@ -113,7 +113,7 @@ function CustomerOrderDetailsPage() {
       action: "customer_delivery_confirmation",
       order_id: order.id,
     });
-  }, [isOutForDelivery, order?.deliveryAuthCode, order?.id]);
+  }, [isOutForDelivery, order?.id]);
 
   const paymentBadge = useMemo(() => {
     const normalized = String(order?.paymentMethod ?? "").trim().toLowerCase();
