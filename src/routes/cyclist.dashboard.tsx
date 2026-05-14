@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, PackageSearch, Phone, PhoneCall, ShoppingBasket, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -631,11 +631,31 @@ function CyclistDashboardPage() {
                           <ShoppingBasket className="size-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
-                          <p className="mt-1 text-xs text-slate-500">x{item.quantity}</p>
+                          <p className="truncate text-base font-bold text-slate-900">{item.name}</p>
+                          {item.brandName || item.measurementValue || item.measurementUnit ? (
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                              {item.brandName ? (
+                                <span className="inline-flex items-center gap-1 text-sky-600">
+                                  <Tag className="h-3 w-3 text-slate-400" />
+                                  {item.brandName}
+                                </span>
+                              ) : null}
+                              {item.measurementValue || item.measurementUnit ? (
+                                <span className="inline-flex items-center gap-1 text-orange-600">
+                                  <Scale className="ml-2 h-3 w-3 text-slate-400" />
+                                  {[item.measurementValue, item.measurementUnit].filter(Boolean).join(" ")}
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <div className="mt-1 inline-flex items-center gap-1 text-xs text-slate-600" dir="rtl">
+                            <Package className="h-3 w-3 text-slate-400" />
+                            <span>الكمية:</span>
+                            <span className="font-extrabold text-emerald-600">x{item.quantity}</span>
+                          </div>
                           {item.selectedVariant ? <p className="mt-1 text-xs text-slate-600">{item.selectedVariant}</p> : null}
                         </div>
-                        <p className="text-sm font-semibold text-slate-700">{item.lineTotalMad.toFixed(2)} MAD</p>
+                        <p className="text-sm font-bold text-emerald-600">{item.lineTotalMad.toFixed(2)} MAD</p>
                       </div>
                     ))
                   ) : (
