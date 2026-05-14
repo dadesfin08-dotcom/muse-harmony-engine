@@ -100,7 +100,7 @@ type CarnetLedgerTransaction = {
   createdAt: string;
   description: string;
   amount: number;
-  kind: "debt" | "payment";
+  kind: "debt" | "payment" | "cancelled";
 };
 
 type LedgerOrderItem = {
@@ -2011,12 +2011,23 @@ function VendorDashboardPage() {
                                       }`}
                                     />
                                   ) : null}
-                                  <span>{transaction.description}</span>
+                                  <span className={transaction.kind === "cancelled" ? "line-through text-muted-foreground" : ""}>
+                                    {transaction.description}
+                                  </span>
+                                  {transaction.kind === "cancelled" ? (
+                                    <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                                      Cancelled / Reversed
+                                    </span>
+                                  ) : null}
                                 </div>
                               </TableCell>
                               <TableCell
                                 className={`text-right font-semibold ${
-                                  transaction.kind === "debt" ? "text-destructive" : "text-success"
+                                  transaction.kind === "debt"
+                                    ? "text-destructive"
+                                    : transaction.kind === "cancelled"
+                                      ? "text-amber-600"
+                                      : "text-success"
                                 }`}
                               >
                                 {transaction.kind === "debt" ? "+" : "-"}
