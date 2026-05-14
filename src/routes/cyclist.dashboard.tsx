@@ -641,14 +641,14 @@ function OrderCard({
               <Phone className="h-4 w-4 text-slate-400" />
               رقم الهاتف
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               <a
                 href={`tel:${order.customerPhone}`}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700"
+                className="flex items-center justify-center rounded-full bg-emerald-100 p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
               >
                 <PhoneCall className="size-4" />
-                {order.customerPhone}
               </a>
+              <span className="truncate text-sm font-bold text-slate-900">{order.customerPhone}</span>
               <a
                 href={`https://wa.me/${whatsappPhone}`}
                 target="_blank"
@@ -675,12 +675,12 @@ function OrderCard({
               <MapPin className="h-4 w-4 text-slate-400" />
               العنوان
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-end gap-1 text-right text-sm font-bold text-blue-600 hover:underline"
+                className="inline-flex max-w-full items-center justify-end gap-1 truncate text-right text-sm font-bold text-blue-600 hover:underline"
               >
                 <MapPin className="h-4 w-4" />
                 {order.deliveryAddress}
