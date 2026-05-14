@@ -996,6 +996,7 @@ function AdminPage() {
       });
 
       await vendorsQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
 
       setPlatformCollectionReceipt({
         vendorName: platformCollectionConfirmation.vendorName,
@@ -1006,7 +1007,7 @@ function AdminPage() {
       });
       setPlatformCollectionConfirmation(null);
       setIsPlatformQrScannerOpen(false);
-      toast.success("Cash Collected Successfully");
+      toast.success("Funds successfully collected to Admin Treasury.");
     } catch (error) {
       console.error("Platform dues collection failed:", error);
       toast.error(error instanceof Error ? error.message : "Failed to collect platform dues.");
