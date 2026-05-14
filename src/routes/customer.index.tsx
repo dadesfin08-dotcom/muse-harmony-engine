@@ -3,10 +3,12 @@ import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Bike,
   Check,
   Search,
+  Loader2,
   ShoppingCart,
   Heart,
   Package,
@@ -38,7 +40,7 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { getCustomerCatalogByNeighborhood, listActiveFlashDeals } from "@/lib/catalog.functions";
+import { getCustomerCatalogByNeighborhood, listActiveFlashDeals, searchCustomerProducts } from "@/lib/catalog.functions";
 import type { ProductCategory } from "@/lib/catalog.functions";
 import { listActiveCategories } from "@/lib/categories.functions";
 import {
