@@ -1473,7 +1473,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -1501,6 +1501,11 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
+          productVariants: Array.isArray(row.master_products.product_variants)
+            ? row.master_products.product_variants
+                .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+                .filter((value: string) => value.length > 0)
+            : [],
         brandId: row.master_products.brand_id,
         brand: row.master_products.brands?.name_en ?? null,
         brandNameEn: row.master_products.brands?.name_en ?? null,
