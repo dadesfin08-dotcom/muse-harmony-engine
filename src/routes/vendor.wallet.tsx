@@ -34,16 +34,17 @@ function VendorWalletPage() {
       return "";
     }
   }, []);
-  const normalizedVendorPhoneNumber = useMemo(
-    () => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
-    [vendorPhoneNumber],
-  );
+  const normalizedVendorPhoneNumber = useMemo(() => {
+    const normalizedLocal = normalizeMoroccoPhoneInput(vendorPhoneNumber);
+    return normalizedLocal.length === 9 ? formatMoroccoPhoneForPayload(normalizedLocal) : "";
+  }, [vendorPhoneNumber]);
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
+    enabled: Boolean(normalizedVendorPhoneNumber),
     queryFn: () => fetchDashboard({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
@@ -112,7 +113,10 @@ function VendorWalletPage() {
     };
   }, [dashboardQuery.data?.orders]);
   const hasSummary = Boolean(summary);
+  const hasCashBreakdown = Boolean(dashboardQuery.data);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
+  const formatCashBreakdownMad = (value: number | undefined) =>
+    hasCashBreakdown ? `${(value ?? 0).toFixed(2)} MAD` : "--";
   const deliveredOrders = (dashboardQuery.data?.orders ?? [])
     .filter((order) => ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(order.status))
     .slice(0, 8);
@@ -171,15 +175,15 @@ function VendorWalletPage() {
           <CardContent className="space-y-3">
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
               <p className="text-xs text-muted-foreground">إجمالي النقد المستلم · Total Cash in Hand</p>
-              <p className="text-2xl font-semibold text-foreground">{formatMad(cashBreakdown.totalCashInHandMad)}</p>
+              <p className="text-2xl font-semibold text-foreground">{formatCashBreakdownMad(cashBreakdown.totalCashInHandMad)}</p>
             </div>
             <div className="rounded-lg border border-success/30 bg-success/10 px-3 py-2">
               <p className="text-xs text-muted-foreground">صافي أرباحي · My Net Profit</p>
-              <p className="text-xl font-semibold text-success">{formatMad(cashBreakdown.myNetProfitMad)}</p>
+              <p className="text-xl font-semibold text-success">{formatCashBreakdownMad(cashBreakdown.myNetProfitMad)}</p>
             </div>
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
               <p className="text-xs text-muted-foreground">مستحقات المنصة · Platform Dues</p>
-              <p className="text-xl font-semibold text-destructive">{formatMad(cashBreakdown.platformDuesMad)}</p>
+              <p className="text-xl font-semibold text-destructive">{formatCashBreakdownMad(cashBreakdown.platformDuesMad)}</p>
             </div>
             <Button
               className="w-full"
