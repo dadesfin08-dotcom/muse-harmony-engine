@@ -1901,6 +1901,17 @@ function VendorDashboardPage() {
                       return;
                     }
 
+                    const liveDebt = Number(selectedCarnetCustomer.currentDebt ?? 0);
+                    if (liveDebt <= 0.01) {
+                      toast.error("No outstanding debt for this customer.");
+                      return;
+                    }
+
+                    if (amount > liveDebt + 0.01) {
+                      toast.error(`Payment exceeds current debt (${liveDebt.toFixed(2)} MAD).`);
+                      return;
+                    }
+
                     try {
                       setIsRecordingPayment(true);
                       await recordCarnetPayment({
