@@ -10,6 +10,9 @@ export type ThermalReceiptOrder = {
   id: string;
   customerName: string;
   customerPhone: string;
+  neighborhoodName: string;
+  communeName: string;
+  specialInstructions?: string | null;
   createdAt: string;
   items: ThermalReceiptOrderItem[];
   deliveryFeeMad: number;
@@ -51,6 +54,10 @@ export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>(fu
         hour12: false,
       }).format(createdAt);
   const itemsSubtotalMad = order.items.reduce((sum, item) => sum + item.quantity * item.unitPriceMad, 0);
+  const cleanedSpecialInstructions =
+    typeof order.specialInstructions === "string" && order.specialInstructions.trim().length > 0
+      ? order.specialInstructions.trim()
+      : "None / لا توجد";
 
   return (
     <div
@@ -83,6 +90,22 @@ export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>(fu
         </div>
         <div>Customer: {order.customerName}</div>
         <div>Phone: {order.customerPhone}</div>
+        <div style={{ marginTop: "1mm" }}>
+          <div style={{ fontWeight: 700 }}>Address</div>
+          <div>Commune / Jamaa Tourabiya: {order.communeName || "-"}</div>
+          <div>Douar / Neighborhood: {order.neighborhoodName || "-"}</div>
+        </div>
+        <div
+          style={{
+            marginTop: "1mm",
+            border: "1px dashed #666",
+            padding: "1mm",
+            background: "#f5f5f5",
+          }}
+        >
+          <div style={{ fontWeight: 700 }}>Special Instructions</div>
+          <div style={{ wordBreak: "break-word" }}>{cleanedSpecialInstructions}</div>
+        </div>
       </div>
 
       <div style={{ marginBottom: "2mm" }}>
@@ -99,10 +122,10 @@ export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>(fu
         ))}
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", paddingTop: "1.5mm", textAlign: "right", marginBottom: "2mm" }}>
+      <div className="border-t-2 border-dashed border-gray-300" style={{ paddingTop: "1.5mm", textAlign: "right", marginBottom: "2mm" }}>
         <div>Subtotal: {itemsSubtotalMad.toFixed(2)} MAD</div>
-        <div>Delivery: {Number(order.deliveryFeeMad ?? 0).toFixed(2)} MAD</div>
-        <div style={{ fontSize: "13px", fontWeight: 700 }}>TOTAL: {order.totalMad.toFixed(2)} MAD</div>
+        <div>Delivery Fee (ثمن التوصيل): {Number(order.deliveryFeeMad ?? 0).toFixed(2)} MAD</div>
+        <div style={{ fontSize: "14px", fontWeight: 700 }}>Grand Total (المجموع): {Number(order.totalMad ?? 0).toFixed(2)} MAD</div>
       </div>
 
       <div style={{ textAlign: "center" }}>{settings.footerMessage}</div>
