@@ -3197,11 +3197,11 @@ function AdminPage() {
       >
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingProductId ? "Edit Master Product" : "Add Master Product"}</DialogTitle>
+            <DialogTitle>{editingProductId ? t("admin.catalog.modals.editMasterProduct") : t("admin.catalog.modals.addMasterProduct")}</DialogTitle>
             <DialogDescription>
               {editingProductId
-                ? "Update the shared product reference across all vendors."
-                : "Set the shared product reference for all vendors."}
+                ? t("admin.catalog.modals.editMasterProductDescription")
+                : t("admin.catalog.modals.addMasterProductDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -3231,10 +3231,10 @@ function AdminPage() {
                   <ImagePlus className="size-5" />
                 </span>
               )}
-              <p className="mt-2 text-sm font-medium text-foreground">
-                {productImagePreviewUrl ? "Image selected" : "Upload product image"}
-              </p>
-              <p className="text-xs text-muted-foreground">Click or drag and drop an image file</p>
+                <p className="mt-2 text-sm font-medium text-foreground">
+                  {productImagePreviewUrl ? t("admin.catalog.modals.imageSelected") : t("admin.catalog.modals.uploadProductImage")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("admin.catalog.modals.clickOrDragImage")}</p>
             </button>
 
             <div className="space-y-2">
@@ -3245,7 +3245,7 @@ function AdminPage() {
                 id="product-name-en"
                 value={productForm.name}
                 onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="e.g. Olive Oil 1L"
+                placeholder={t("admin.catalog.modals.placeholders.productNameEn")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
@@ -3258,7 +3258,7 @@ function AdminPage() {
                 id="product-name-fr"
                 value={productForm.nameFr}
                 onChange={(event) => setProductForm((current) => ({ ...current, nameFr: event.target.value }))}
-                placeholder="e.g. Huile d'olive 1L"
+                placeholder={t("admin.catalog.modals.placeholders.productNameFr")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
@@ -3271,14 +3271,14 @@ function AdminPage() {
                 id="product-name-ar"
                 value={productForm.nameAr}
                 onChange={(event) => setProductForm((current) => ({ ...current, nameAr: event.target.value }))}
-                placeholder="مثال: زيت الزيتون 1 لتر"
+                placeholder={t("admin.catalog.modals.placeholders.productNameAr")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
-                Brand (المركة)
+                {t("admin.catalog.modals.brand")}
               </label>
               <Popover open={brandPickerOpen} onOpenChange={setBrandPickerOpen}>
                 <PopoverTrigger asChild>
@@ -3290,16 +3290,16 @@ function AdminPage() {
                     className="h-10 w-full justify-between rounded-md"
                   >
                     <span className="truncate">
-                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || "No brand"}
+                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || t("admin.catalog.modals.noBrand")}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[320px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search brand..." />
+                    <CommandInput placeholder={t("admin.catalog.modals.searchBrand")} />
                     <CommandList>
-                      <CommandEmpty>No brand found.</CommandEmpty>
+                      <CommandEmpty>{t("admin.catalog.modals.noBrandFound")}</CommandEmpty>
                       <CommandItem
                         value="no-brand"
                         onSelect={() => {
@@ -3307,7 +3307,7 @@ function AdminPage() {
                           setBrandPickerOpen(false);
                         }}
                       >
-                        No brand
+                        {t("admin.catalog.modals.noBrand")}
                       </CommandItem>
                       {brands.map((brand) => (
                         <CommandItem
@@ -3329,7 +3329,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-medium text-foreground">
-                Category
+                {t("admin.catalog.modals.category")}
               </label>
               <select
                 id="category"
@@ -3342,7 +3342,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select category</option>
+                <option value="">{t("admin.catalog.modals.selectCategory")}</option>
                 {activeCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name_en}
@@ -3352,7 +3352,7 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Measurement</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.catalog.modals.measurement")}</label>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   id="measurement-value"
@@ -3366,7 +3366,7 @@ function AdminPage() {
                       measurementValue: event.target.value,
                     }))
                   }
-                  placeholder="2"
+                  placeholder={t("admin.catalog.modals.placeholders.measurementValue")}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                 />
                 <select
@@ -3391,7 +3391,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="product-variant-input" className="text-sm font-medium text-foreground">
-                Product Variants / الأنواع أو النكهات
+                {t("admin.catalog.modals.productVariants")}
               </label>
               <Input
                 id="product-variant-input"
@@ -3408,7 +3408,7 @@ function AdminPage() {
                     addProductVariantTag(productVariantInput);
                   }
                 }}
-                placeholder="Type variant (e.g. Vanilla) and press Enter"
+                placeholder={t("admin.catalog.modals.placeholders.variantInput")}
               />
               {parsedProductVariants.length > 0 ? (
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -3424,13 +3424,13 @@ function AdminPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">No variants added yet.</p>
+                <p className="text-xs text-muted-foreground">{t("admin.catalog.modals.noVariants")}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="popularity-score" className="text-sm font-medium text-foreground">
-                Popularity Score
+                {t("admin.catalog.modals.popularityScore")}
               </label>
               <input
                 id="popularity-score"
@@ -3456,7 +3456,7 @@ function AdminPage() {
               onClick={saveMasterProduct}
               disabled={isUploadingProduct}
             >
-              {isUploadingProduct ? "Uploading..." : editingProductId ? "Update Product" : "Save Product"}
+              {isUploadingProduct ? t("admin.common.uploading") : editingProductId ? t("admin.catalog.modals.updateProduct") : t("admin.catalog.modals.saveProduct")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3473,8 +3473,8 @@ function AdminPage() {
       >
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingBrandId ? "Edit Brand" : "Add New Brand"}</DialogTitle>
-            <DialogDescription>Manage multilingual brand names and logo.</DialogDescription>
+            <DialogTitle>{editingBrandId ? t("admin.brands.modals.editBrand") : t("admin.brands.modals.addNewBrand")}</DialogTitle>
+            <DialogDescription>{t("admin.brands.modals.description")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -3501,38 +3501,38 @@ function AdminPage() {
                   <ImagePlus className="size-5" />
                 </span>
               )}
-              <p className="mt-2 text-sm font-medium text-foreground">Upload brand logo</p>
+              <p className="mt-2 text-sm font-medium text-foreground">{t("admin.brands.modals.uploadBrandLogo")}</p>
             </button>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (EN)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameEn")}</label>
               <Input
                 value={brandForm.nameEn}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameEn: event.target.value }))}
-                placeholder="e.g. Lesieur"
+                placeholder={t("admin.brands.modals.placeholders.nameEn")}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (FR)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameFr")}</label>
               <Input
                 value={brandForm.nameFr}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameFr: event.target.value }))}
-                placeholder="Ex: Lesieur"
+                placeholder={t("admin.brands.modals.placeholders.nameFr")}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (AR)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameAr")}</label>
               <Input
                 value={brandForm.nameAr}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameAr: event.target.value }))}
-                placeholder="مثال: ليزيور"
+                placeholder={t("admin.brands.modals.placeholders.nameAr")}
               />
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="hero" className="w-full rounded-md" onClick={saveBrandHandler} disabled={isSavingBrand}>
-              {isSavingBrand ? "Saving..." : editingBrandId ? "Update Brand" : "Save Brand"}
+              {isSavingBrand ? t("admin.common.saving") : editingBrandId ? t("admin.brands.modals.updateBrand") : t("admin.brands.modals.saveBrand")}
             </Button>
           </DialogFooter>
         </DialogContent>
