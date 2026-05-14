@@ -1473,6 +1473,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         .select("id, total_price, delivery_fee, payment_method")
         .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
+        .eq("payment_method", "COD")
         .eq("status", "delivered_cash_with_cyclist")
         .eq("vendor_settlement_status", "pending");
 
@@ -1487,28 +1488,13 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         payment_method: string;
       }>;
 
-      const isCashPayment = (paymentMethod: string | null | undefined) => {
-        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-        return normalized === "cash" || normalized === "cod";
-      };
-
-      const isCreditPayment = (paymentMethod: string | null | undefined) => {
-        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-        return normalized === "credit" || normalized === "carnet";
-      };
-
       const cashToRemitMad = rows
-        .filter((row) => isCashPayment(row.payment_method))
+        .filter((row) => String(row.payment_method ?? "").trim().toUpperCase() === "COD")
         .reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
-
-      const owedByVendorMad = rows
-        .filter((row) => isCreditPayment(row.payment_method))
-        .reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-
       const computedAmount = cashToRemitMad;
 
-      if (Math.abs(computedAmount - data.expectedAmount) > 0.5) {
-        throw new Error("Settlement amount mismatch. Please refresh and scan again.");
+      if (rows.length === 0 || computedAmount <= 0) {
+        throw new Error("No pending delivered cash orders found for this cyclist and vendor.");
       }
 
       const { data: settleResult, error: settleError } = await (supabaseAdmin as any).rpc(
