@@ -15,15 +15,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
-  confirmCashHandoverToVendor,
+  completeCustomerDeliveryByOrder,
   getCyclistDashboardData,
   setCyclistActiveState,
+  settleVendorCashHandover,
   type CyclistOrderCard,
-  verifyDeliveryCodeAndComplete,
 } from "@/lib/cyclists.functions";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
-import { extractDeliveryCode } from "@/lib/extract-delivery-code";
 import appI18n from "@/lib/i18n";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
@@ -56,14 +55,10 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
-  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scannerOrder, setScannerOrder] = useState<CyclistOrderCard | null>(null);
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
-  const [manualCode, setManualCode] = useState("");
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
@@ -93,8 +88,8 @@ function CyclistDashboardPage() {
   const fetchDashboardData = useServerFn(getCyclistDashboardData);
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
-  const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
-  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
+  const completeCustomerDelivery = useServerFn(completeCustomerDeliveryByOrder);
+  const settleVendorHandover = useServerFn(settleVendorCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -108,37 +103,6 @@ function CyclistDashboardPage() {
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
   const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
-
-  const confirmCashHandoverMutation = useMutation({
-    mutationFn: async ({ vendorId }: { vendorId: string }) => {
-      if (!session?.cyclistId) {
-        throw new Error("Session expired.");
-      }
-      return confirmCashHandover({
-        data: {
-          cyclistId: session.cyclistId,
-          vendorId,
-        },
-      });
-    },
-    onMutate: ({ vendorId }) => {
-      setSettlingVendorId(vendorId);
-    },
-    onSuccess: async (result) => {
-      toast.success(
-        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
-      );
-      await dashboardQuery.refetch();
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
-    },
-    onSettled: () => {
-      setSettlingVendorId(null);
-    },
-  });
 
   useEffect(() => {
     if (typeof window === "undefined") {
