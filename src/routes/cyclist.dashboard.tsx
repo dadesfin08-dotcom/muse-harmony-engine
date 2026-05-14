@@ -300,6 +300,49 @@ function CyclistDashboardPage() {
     isVerifyingCodeRef.current = false;
   };
 
+  const closeVendorQrScanner = () => {
+    setIsVendorQrScannerOpen(false);
+    setVendorSettlementTarget(null);
+    setIsVendorQrScannerSuccess(false);
+    setVendorQrScannerStatus("");
+    isVerifyingVendorQrRef.current = false;
+  };
+
+  const handleVendorQrScan = async (decodedText: string) => {
+    if (!session?.cyclistId || !vendorSettlementTarget || isVerifyingVendorQrRef.current) return;
+
+    try {
+      const parsed = JSON.parse(decodedText) as {
+        action?: string;
+        vendor_id?: string;
+        timestamp?: string;
+      };
+
+      if (
+        parsed?.action !== "vendor_cash_receipt" ||
+        typeof parsed.vendor_id !== "string" ||
+        typeof parsed.timestamp !== "string"
+      ) {
+        throw new Error("Invalid vendor QR payload");
+      }
+
+      if (parsed.vendor_id !== vendorSettlementTarget.vendorId) {
+        throw new Error("هذا الرمز لا يخص نفس التاجر.");
+      }
+
+      isVerifyingVendorQrRef.current = true;
+      setVendorQrScannerStatus("جاري التحقق من الرمز...");
+      await executeVendorQrCashHandoverMutation.mutateAsync({
+        vendorId: parsed.vendor_id,
+        timestamp: parsed.timestamp,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "QR غير صالح");
+      isVerifyingVendorQrRef.current = false;
+      setVendorQrScannerStatus("رمز غير صالح، حاول مرة أخرى.");
+    }
+  };
+
   const handleVerifyDeliveryCode = async (order: CyclistOrderCard, rawValue: string) => {
     if (!session?.cyclistId || isVerifyingCodeRef.current) {
       return;
@@ -417,6 +460,58 @@ function CyclistDashboardPage() {
       }
     };
   }, [isScannerOpen, scannerOrder, showManualEntry, isScannerSuccess]);
+
+  useEffect(() => {
+    if (!isVendorQrScannerOpen || !vendorSettlementTarget || isVendorQrScannerSuccess) {
+      return;
+    }
+
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        const scanner = new Html5Qrcode("vendor-cash-receipt-qr-reader");
+        vendorQrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            void handleVendorQrScan(decodedText);
+          },
+          () => undefined,
+        );
+
+        if (mounted) {
+          setVendorQrScannerStatus("وجّه الكاميرا إلى رمز التاجر");
+        }
+      } catch {
+        if (mounted) {
+          setVendorQrScannerStatus("تعذر فتح الكاميرا لمسح كود التاجر.");
+          toast.error("تعذر فتح الكاميرا لمسح كود التاجر.");
+        }
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      const scanner = vendorQrScannerRef.current;
+      vendorQrScannerRef.current = null;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isVendorQrScannerOpen, vendorSettlementTarget, isVendorQrScannerSuccess]);
 
   const handleManualVerify = async () => {
     if (!scannerOrder) {
