@@ -479,7 +479,7 @@ function Index() {
         data: {
           neighborhoodId: selectedNeighborhoodId,
           query: debouncedSearchTerm.trim(),
-          limit: 8,
+          limit: 6,
         },
       }),
     enabled: !!selectedNeighborhoodId && debouncedSearchTerm.trim().length > 0,
@@ -1549,7 +1549,7 @@ function Index() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="absolute left-0 right-0 top-12 z-[100] max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
                   >
                     {predictiveSearchResults.length > 0 ? (
                       predictiveSearchResults.map((item) => (
@@ -1557,21 +1557,21 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
+                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
                             alt={item.localizedName}
-                            className="h-11 w-11 rounded-md border border-border object-cover"
+                            className="h-11 w-11 rounded-lg border border-border object-cover"
                             loading="lazy"
                           />
                           <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 block text-sm text-foreground">
+                            <span className="line-clamp-1 block text-sm font-semibold text-foreground">
                               {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-semibold text-primary">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
                         </button>
                       ))
                     ) : (
@@ -1649,7 +1649,7 @@ function Index() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="absolute left-0 right-0 top-12 z-[100] max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
                   >
                     {predictiveSearchResults.length > 0 ? (
                       predictiveSearchResults.map((item) => (
@@ -1657,21 +1657,21 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
+                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
                             alt={item.localizedName}
-                            className="h-11 w-11 rounded-md border border-border object-cover"
+                            className="h-11 w-11 rounded-lg border border-border object-cover"
                             loading="lazy"
                           />
                           <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 block text-sm text-foreground">
+                            <span className="line-clamp-1 block text-sm font-semibold text-foreground">
                               {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-semibold text-primary">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
                         </button>
                       ))
                     ) : (
