@@ -466,7 +466,7 @@ export const getCheckoutPaymentOptions = createServerFn({ method: "POST" })
 
       const { data: carnetRow, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("current_debt, max_limit")
+        .select("max_limit")
         .eq("vendor_id", vendor.id)
         .eq("customer_phone", data.customerPhone)
         .maybeSingle();
@@ -479,7 +479,7 @@ export const getCheckoutPaymentOptions = createServerFn({ method: "POST" })
         return { canUseCarnet: false, reason: "Customer is not on trusted carnet list." };
       }
 
-      const currentDebt = Number(carnetRow.current_debt ?? 0);
+      const currentDebt = await getDynamicDebtForVendorCustomer(String(vendor.id), data.customerPhone);
       const maxLimit = Number(carnetRow.max_limit ?? 0);
       const projectedDebt = currentDebt + Number(data.cartTotal ?? 0);
 
