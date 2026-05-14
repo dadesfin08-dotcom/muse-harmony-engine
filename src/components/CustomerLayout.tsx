@@ -295,19 +295,7 @@ export function CustomerLayout({
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="relative z-20 flex items-end justify-center">
-            <LanguageSwitcher
-              trigger={
-                <button
-                  type="button"
-                  aria-label={t("language.label")}
-                  className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-full flex items-center justify-center border-4 border-white shadow-[0_0_20px_rgba(16,185,129,0.6)] z-50 text-white cursor-pointer hover:scale-105 transition-transform"
-                >
-                  <Languages className="size-7" />
-                </button>
-              }
-            />
-          </div>
+          <div aria-hidden className="h-10" />
 
           <button
             type="button"
@@ -341,6 +329,22 @@ export function CustomerLayout({
             <UserCircle2 className="size-5" />
             <span className="text-[10px]">{t("nav.profile")}</span>
           </button>
+            </div>
+
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center">
+              <div className="pointer-events-auto">
+                <LanguageSwitcher
+                  trigger={
+                    <button
+                      type="button"
+                      aria-label={t("language.label")}
+                      className="-mt-6 inline-flex size-16 items-center justify-center rounded-full border-4 border-background bg-primary text-primary-foreground shadow-[var(--shadow-strong)] transition-transform hover:scale-105"
+                    >
+                      <Languages className="size-7" />
+                    </button>
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
