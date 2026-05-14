@@ -74,7 +74,7 @@ const executeVendorQrCashHandoverInputSchema = z.object({
   qr: z.object({
     action: z.literal("vendor_cash_receipt"),
     vendor_id: z.string().uuid(),
-    timestamp: z.string().datetime(),
+    timestamp: z.string().datetime().optional(),
   }),
 });
 
@@ -1145,17 +1145,19 @@ export const executeVendorQrCashHandover = createServerFn({ method: "POST" })
   .inputValidator((input) => executeVendorQrCashHandoverInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const qrTimestamp = Date.parse(data.qr.timestamp);
-      if (Number.isNaN(qrTimestamp)) {
-        throw new Error("Invalid QR timestamp.");
-      }
+      if (data.qr.timestamp) {
+        const qrTimestamp = Date.parse(data.qr.timestamp);
+        if (Number.isNaN(qrTimestamp)) {
+          throw new Error("Invalid QR timestamp.");
+        }
 
-      const now = Date.now();
-      const qrAgeMs = now - qrTimestamp;
-      const maxQrAgeMs = 5 * 60 * 1000;
-      const futureToleranceMs = 2 * 60 * 1000;
-      if (qrAgeMs > maxQrAgeMs || qrAgeMs < -futureToleranceMs) {
-        throw new Error("QR code expired. Please ask vendor to refresh and try again.");
+        const now = Date.now();
+        const qrAgeMs = now - qrTimestamp;
+        const maxQrAgeMs = 5 * 60 * 1000;
+        const futureToleranceMs = 2 * 60 * 1000;
+        if (qrAgeMs > maxQrAgeMs || qrAgeMs < -futureToleranceMs) {
+          throw new Error("QR code expired. Please ask vendor to refresh and try again.");
+        }
       }
 
       const { count: pendingCount, error: pendingError } = await (supabaseAdmin as any)
