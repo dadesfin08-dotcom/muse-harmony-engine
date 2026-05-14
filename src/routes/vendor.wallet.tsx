@@ -105,7 +105,7 @@ function VendorWalletPage() {
       });
     },
     onSuccess: async (result) => {
-      toast.success(`Net settlement confirmed: ${result.settledAmountMad.toFixed(2)} MAD · تمت تسوية الصافي`);
+      toast.success(`Cash handover confirmed: ${result.settledAmountMad.toFixed(2)} MAD · تم تأكيد استلام المبلغ الكامل`);
       setConfirmPayload(null);
       setIsScannerOpen(false);
       await Promise.all([
@@ -179,15 +179,15 @@ function VendorWalletPage() {
     .filter((order) => ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(order.status))
     .slice(0, 8);
   const platformCollectionQrPayload = useMemo(() => {
-    if (!vendorId || !dashboardQuery.data?.vendor) return null;
-    const amountMad = Number(dashboardQuery.data.vendor.platformDuesMad ?? 0);
+    if (!vendorId) return null;
+    const amountMad = Number(summary?.platformDuesMad ?? 0);
     if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
 
     return JSON.stringify({
       vendor_id: vendorId,
       amount_owed: amountMad.toFixed(2),
     });
-  }, [dashboardQuery.data?.vendor, vendorId]);
+  }, [summary?.platformDuesMad, vendorId]);
 
   const confirmationLabel = useMemo(() => {
     if (!confirmPayload) return "";
@@ -227,18 +227,24 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="size-4 text-primary" />
-              Platform Dues · مستحقات المنصة
+              Cash Breakdown · تفصيل النقد
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">
-              {dashboardQuery.data?.vendor?.platformDuesMad != null
-                ? `${Number(dashboardQuery.data.vendor.platformDuesMad).toFixed(2)} MAD`
-                : "--"}
-            </p>
-            <p className="text-xs text-muted-foreground">This balance is collected by Super-Admin via QR cash collection.</p>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+              <p className="text-xs text-muted-foreground">إجمالي النقد المستلم · Total Cash in Hand</p>
+              <p className="text-2xl font-semibold text-foreground">{formatMad(summary?.totalCashInHandMad)}</p>
+            </div>
+            <div className="rounded-lg border border-success/30 bg-success/10 px-3 py-2">
+              <p className="text-xs text-muted-foreground">صافي أرباحي · My Net Profit</p>
+              <p className="text-xl font-semibold text-success">{formatMad(summary?.myNetProfitMad)}</p>
+            </div>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+              <p className="text-xs text-muted-foreground">مستحقات المنصة · Platform Dues</p>
+              <p className="text-xl font-semibold text-destructive">{formatMad(summary?.platformDuesMad)}</p>
+            </div>
             <Button
-              className="mt-3 w-full"
+              className="w-full"
               variant="outline"
               onClick={() => {
                 if (!platformCollectionQrPayload) {
@@ -345,8 +351,8 @@ function VendorWalletPage() {
             <DialogTitle>Confirm Cash Reception · تأكيد استلام النقود</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Net cash handover: {confirmationLabel}. Confirm settlement for all pending cash and carnet orders from this
-            cyclist? · الصافي للتسليم: {confirmationLabel}. واش كتأكد تسوية جميع الطلبات المعلقة كاش وكارني لهاد السائق؟
+            Full cash handover: {confirmationLabel}. Confirm settlement for all pending delivered cash orders from this
+            cyclist? · المبلغ الكامل للتسليم: {confirmationLabel}. واش كتأكد تسوية جميع الطلبات النقدية المسلمة والمعلقة لهاد السائق؟
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmPayload(null)} disabled={settleMutation.isPending}>

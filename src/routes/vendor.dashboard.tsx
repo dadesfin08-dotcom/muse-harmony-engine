@@ -854,11 +854,14 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
+      totalCashInHandMad: roundMoney(Number(dashboardQuery.data?.vendor?.totalCashInHandMad ?? 0)),
+      myNetProfitMad: roundMoney(Number(dashboardQuery.data?.vendor?.myNetProfitMad ?? 0)),
+      platformDuesMad: roundMoney(Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0)),
       cashEarningsMad: roundMoney(cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
       creditIssuedMad: roundMoney(carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
       outstandingCreditMad: roundMoney(outstandingCreditMad),
     };
-  }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers]);
+  }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers, dashboardQuery.data?.vendor]);
 
   const printableOrder = useMemo<ThermalReceiptOrder>(
     () =>
@@ -1357,19 +1360,20 @@ function VendorDashboardPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <QuickStatCard label="Pending Orders" value={String(quickStats.pendingOrders)} icon={Clock3} />
               <QuickStatCard
-                label="Cash Sales Volume · مبيعات نقداً"
-                value={`${quickStats.cashEarningsMad.toFixed(2)} MAD`}
-                tone="accent"
+                label="إجمالي النقد المستلم"
+                value={`${quickStats.totalCashInHandMad.toFixed(2)} MAD`}
                 icon={Banknote}
               />
               <QuickStatCard
-                label="Credit Issued · مبيعات الكارني"
-                value={`${quickStats.creditIssuedMad.toFixed(2)} MAD`}
+                label="صافي أرباحي"
+                value={`${quickStats.myNetProfitMad.toFixed(2)} MAD`}
+                tone="success"
                 icon={BookUser}
               />
               <QuickStatCard
-                label="Outstanding Credit"
-                value={`${quickStats.outstandingCreditMad.toFixed(2)} MAD`}
+                label="مستحقات المنصة"
+                value={`${quickStats.platformDuesMad.toFixed(2)} MAD`}
+                tone="danger"
                 icon={History}
               />
               </div>
@@ -3177,7 +3181,7 @@ function QuickStatCard({
 }: {
   label: string;
   value: string;
-  tone?: "default" | "accent";
+  tone?: "default" | "accent" | "success" | "danger";
   icon: typeof Clock3;
 }) {
   return (
@@ -3185,7 +3189,11 @@ function QuickStatCard({
       className={`rounded-xl border px-3 py-2 shadow-sm ${
         tone === "accent"
           ? "border-primary/20 bg-primary/5 text-foreground"
-          : "border-border bg-card text-foreground"
+          : tone === "success"
+            ? "border-success/30 bg-success/10 text-foreground"
+            : tone === "danger"
+              ? "border-destructive/30 bg-destructive/10 text-foreground"
+              : "border-border bg-card text-foreground"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
