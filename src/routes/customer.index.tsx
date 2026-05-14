@@ -333,6 +333,12 @@ function Index() {
   const isArabic = language === "ar";
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
   const [isBottomPromoDismissed, setIsBottomPromoDismissed] = useState(false);
+  const [desktopSearchInput, setDesktopSearchInput] = useState("");
+  const [mobileSearchInput, setMobileSearchInput] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
+  const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const flashDealsAutoplayRef = useRef(
     Autoplay({ delay: 3200, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
@@ -388,6 +394,7 @@ function Index() {
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
+  const searchProductsFn = useServerFn(searchCustomerProducts);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -466,7 +473,31 @@ function Index() {
     enabled: !!selectedNeighborhoodId,
     refetchInterval: selectedNeighborhoodId ? 10_000 : false,
   });
+  const predictiveSearchQuery = useQuery({
+    queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
+    queryFn: () =>
+      searchProductsFn({
+        data: {
+          neighborhoodId: selectedNeighborhoodId,
+          query: debouncedSearchTerm.trim(),
+          limit: 8,
+        },
+      }),
+    enabled: !!selectedNeighborhoodId && debouncedSearchTerm.trim().length > 0,
+    staleTime: 8_000,
+  });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handleOutsideClick);
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     setFlashNowMs(Date.now());
