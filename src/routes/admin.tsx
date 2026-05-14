@@ -4025,10 +4025,10 @@ function AdminPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Factory Reset (مسح شامل للبيانات)</AlertDialogTitle>
+            <AlertDialogTitle>Orders Reset (مسح الطلبات فقط)</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف كل البيانات نهائيًا: Orders, Customers, Vendors, Cyclists, Service Zones, Global Catalog, Master Product List,
-              Brands, Categories, Ads & Content, Settings. اكتب RESET_ALL للتأكيد.
+              سيتم حذف جميع بيانات الطلبات نهائيًا فقط (مع Order ID وكل سجل داخل Orders). لن يتم حذف Customers, Vendors,
+              Cyclists, Service Zones, Global Catalog, Brands, Categories, Ads & Content, أو Settings. اكتب RESET_ALL للتأكيد.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -6006,9 +6006,9 @@ function SettingsSection({
       </Button>
 
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
-        <h3 className="text-sm font-semibold text-destructive">Factory Reset (إعادة ضبط المصنع)</h3>
+        <h3 className="text-sm font-semibold text-destructive">Orders Reset (مسح الطلبات فقط)</h3>
         <p className="mt-1 text-xs text-destructive/90">
-          سيمسح هذا الإجراء كل الأرقام والبيانات من النظام بالكامل ولا يمكن التراجع عنه.
+          سيمسح هذا الإجراء كل بيانات Orders فقط (بما فيها Order ID) ولا يمكن التراجع عنه.
         </p>
         <Button
           type="button"
