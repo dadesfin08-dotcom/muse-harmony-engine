@@ -336,6 +336,16 @@ const masterProductFormSchema = z.object({
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
 
+const platformCollectionQrPayloadSchema = z.object({
+  type: z.literal("platform_collection_request"),
+  v: z.literal(1),
+  vendor_id: z.string().uuid(),
+  vendor_name: z.string().trim().min(1),
+  amount: z.union([z.number(), z.string()]),
+  currency: z.literal("MAD"),
+  requested_at: z.string(),
+});
+
 const weeklyOrdersChartConfig = {
   orders: {
     label: i18n.t("admin.nav.orders"),
