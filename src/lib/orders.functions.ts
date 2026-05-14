@@ -100,7 +100,15 @@ type OrderRow = {
   delivery_fee: number;
   total_price: number;
   item_count: number;
-  order_items: Array<{ name: string; quantity: number; unitPriceMad: number; imageUrl?: string | null }>;
+  order_items: Array<{
+    name: string;
+    quantity: number;
+    unitPriceMad: number;
+    imageUrl?: string | null;
+    brandName?: string | null;
+    measurementValue?: number | null;
+    measurementUnit?: string | null;
+  }>;
   vendor_settlement_status?: "pending" | "settled";
   created_at: string;
 };
@@ -440,21 +448,73 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       ),
     ) as string[];
 
-    let productImageMap = new Map<string, string | null>();
+    let productDetailsMap = new Map<
+      string,
+      {
+        imageUrl: string | null;
+        brandName: string | null;
+        measurementValue: number | null;
+        measurementUnit: string | null;
+      }
+    >();
     if (orderItemNames.length > 0) {
       const { data: products, error: productsError } = await (supabaseAdmin as any)
         .from("master_products")
-        .select("product_name, image_url")
+        .select("product_name, image_url, measurement_value, measurement_unit, brand_id")
         .in("product_name", orderItemNames);
 
       if (productsError) {
         throw new Error(productsError.message);
       }
 
-      productImageMap = new Map(
+      const brandIds = Array.from(
+        new Set(
+          (products ?? [])
+            .map((product: any) => (typeof product?.brand_id === "string" ? product.brand_id : null))
+            .filter((value: string | null): value is string => Boolean(value)),
+        ),
+      );
+
+      const brandsQuery =
+        brandIds.length > 0
+          ? await (supabaseAdmin as any).from("brands").select("id, name_ar, name_fr, name_en").in("id", brandIds)
+          : { data: [], error: null };
+
+      if (brandsQuery.error) {
+        throw new Error(brandsQuery.error.message);
+      }
+
+      const brandsById = new Map(
+        ((brandsQuery.data ?? []) as Array<{ id: string; name_ar?: string | null; name_fr?: string | null; name_en?: string | null }>).map(
+          (brand) => [brand.id, brand],
+        ),
+      );
+
+      productDetailsMap = new Map(
         (products ?? [])
           .filter((product: any) => typeof product?.product_name === "string")
-          .map((product: any) => [product.product_name.trim().toLowerCase(), product.image_url ?? null]),
+          .map((product: any) => {
+            const brand = typeof product?.brand_id === "string" ? brandsById.get(product.brand_id) : undefined;
+            const brandName = localizedName(brand);
+
+            return [
+              product.product_name.trim().toLowerCase(),
+              {
+                imageUrl: product.image_url ?? null,
+                brandName: brandName || null,
+                measurementValue:
+                  typeof product?.measurement_value === "number"
+                    ? product.measurement_value
+                    : typeof product?.measurement_value === "string"
+                      ? Number(product.measurement_value)
+                      : null,
+                measurementUnit:
+                  typeof product?.measurement_unit === "string" && product.measurement_unit.trim().length > 0
+                    ? product.measurement_unit.trim()
+                    : null,
+              },
+            ];
+          }),
       );
     }
 
@@ -548,13 +608,18 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
 
     const hydratedOrders = (orders ?? []).map((order: any) => {
       const items = Array.isArray(order?.order_items)
-        ? order.order_items.map((item: any) => ({
-            ...item,
-            imageUrl:
-              typeof item?.name === "string"
-                ? productImageMap.get(item.name.trim().toLowerCase()) ?? null
-                : null,
-          }))
+        ? order.order_items.map((item: any) => {
+            const productDetails =
+              typeof item?.name === "string" ? productDetailsMap.get(item.name.trim().toLowerCase()) : undefined;
+
+            return {
+              ...item,
+              imageUrl: productDetails?.imageUrl ?? null,
+              brandName: productDetails?.brandName ?? null,
+              measurementValue: productDetails?.measurementValue ?? null,
+              measurementUnit: productDetails?.measurementUnit ?? null,
+            };
+          })
         : [];
 
       const neighborhoodRow =
