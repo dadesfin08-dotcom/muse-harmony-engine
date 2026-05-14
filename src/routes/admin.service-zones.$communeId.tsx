@@ -313,7 +313,7 @@ function CommuneProfilePage() {
   if (communeQuery.isLoading) {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
-        <p className="text-sm text-muted-foreground">Loading commune profile...</p>
+        <p className="text-sm text-muted-foreground">{t("admin.serviceZones.communeProfileLoading")}</p>
       </main>
     );
   }
@@ -321,10 +321,10 @@ function CommuneProfilePage() {
   if (communeQuery.error || !commune) {
     return (
       <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
-        <p className="text-sm text-destructive">Unable to load this commune.</p>
+        <p className="text-sm text-destructive">{t("admin.serviceZones.communeProfileLoadFailed")}</p>
         <Button asChild variant="outline" className="rounded-md">
           <Link to="/admin" search={{ tab: "service-zones" }}>
-            Back to Service Zones
+            {t("admin.serviceZones.backToServiceZones")}
           </Link>
         </Button>
       </main>
@@ -337,7 +337,7 @@ function CommuneProfilePage() {
         <Button asChild variant="outline" className="rounded-md">
           <Link to="/admin" search={{ tab: "service-zones" }}>
             <ArrowLeft className="size-4" />
-            Back to Service Zones
+            {t("admin.serviceZones.backToServiceZones")}
           </Link>
         </Button>
       </div>
@@ -349,21 +349,21 @@ function CommuneProfilePage() {
               <Input
                 value={communeNameEnDraft}
                 onChange={(event) => setCommuneNameEnDraft(event.target.value)}
-                placeholder="Commune name (EN)"
+                placeholder={t("admin.serviceZones.placeholders.communeNameEn")}
               />
               <Input
                 value={communeNameFrDraft}
                 onChange={(event) => setCommuneNameFrDraft(event.target.value)}
-                placeholder="Commune name (FR)"
+                placeholder={t("admin.serviceZones.placeholders.communeNameFr")}
               />
               <Input
                 value={communeNameArDraft}
                 onChange={(event) => setCommuneNameArDraft(event.target.value)}
-                placeholder="Commune name (AR)"
+                placeholder={t("admin.serviceZones.placeholders.communeNameAr")}
               />
               <div className="flex gap-2">
                 <Button className="rounded-md" onClick={saveCommuneName} disabled={isSavingCommuneName}>
-                  {isSavingCommuneName ? "Saving..." : "Save names"}
+                  {isSavingCommuneName ? t("admin.common.saving") : t("admin.serviceZones.saveNames")}
                 </Button>
                 <Button
                   variant="outline"
@@ -371,21 +371,21 @@ function CommuneProfilePage() {
                   onClick={() => setIsEditingCommuneName(false)}
                   disabled={isSavingCommuneName}
                 >
-                  Cancel
+                  {t("admin.common.cancel")}
                 </Button>
               </div>
             </div>
           ) : (
             <div>
               <h1 className="text-2xl font-bold text-foreground">{localizedCommuneName(commune)}</h1>
-              <p className="text-sm text-muted-foreground">Manage douars and delivery fees for this commune.</p>
+               <p className="text-sm text-muted-foreground">{t("admin.serviceZones.manageDouarsHint")}</p>
             </div>
           )}
 
           {!isEditingCommuneName ? (
             <Button variant="outline" className="rounded-md" onClick={startEditCommuneName}>
               <Pencil className="size-4" />
-              Edit Name
+              {t("admin.serviceZones.editName")}
             </Button>
           ) : null}
         </div>
@@ -393,23 +393,23 @@ function CommuneProfilePage() {
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
         <div className="mb-3">
-          <h2 className="text-base font-semibold text-foreground">Douars</h2>
+           <h2 className="text-base font-semibold text-foreground">{t("admin.serviceZones.douarsTitle")}</h2>
         </div>
 
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="min-w-full text-sm">
             <thead className="bg-muted/40 text-left text-muted-foreground">
               <tr>
-                <th className="px-4 py-2 font-medium">Douar Name</th>
-                <th className="px-4 py-2 font-medium">Delivery Fee (MAD)</th>
-                <th className="px-4 py-2 font-medium text-right">Actions</th>
+                 <th className="px-4 py-2 font-medium">{t("admin.serviceZones.douarName")}</th>
+                 <th className="px-4 py-2 font-medium">{t("admin.serviceZones.deliveryFeeMad")}</th>
+                 <th className="px-4 py-2 font-medium text-right">{t("admin.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {sortedNeighborhoods.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-4 text-muted-foreground">
-                    No douars yet for this commune.
+                     {t("admin.serviceZones.noDouarsForCommune")}
                   </td>
                 </tr>
               ) : (
@@ -424,19 +424,19 @@ function CommuneProfilePage() {
                               value={editingNeighborhoodNameEn}
                               onChange={(event) => setEditingNeighborhoodNameEn(event.target.value)}
                               className="h-9"
-                              placeholder="Name (EN)"
+                               placeholder={t("admin.serviceZones.placeholders.nameEn")}
                             />
                             <Input
                               value={editingNeighborhoodNameFr}
                               onChange={(event) => setEditingNeighborhoodNameFr(event.target.value)}
                               className="h-9"
-                              placeholder="Name (FR)"
+                               placeholder={t("admin.serviceZones.placeholders.nameFr")}
                             />
                             <Input
                               value={editingNeighborhoodNameAr}
                               onChange={(event) => setEditingNeighborhoodNameAr(event.target.value)}
                               className="h-9"
-                              placeholder="Name (AR)"
+                               placeholder={t("admin.serviceZones.placeholders.nameAr")}
                             />
                           </div>
                         ) : (
@@ -467,7 +467,7 @@ function CommuneProfilePage() {
                                 onClick={saveNeighborhood}
                                 disabled={isSavingNeighborhood}
                               >
-                                {isSavingNeighborhood ? "Saving..." : "Save"}
+                                 {isSavingNeighborhood ? t("admin.common.saving") : t("admin.common.save")}
                               </Button>
                               <Button
                                 size="sm"
@@ -476,7 +476,7 @@ function CommuneProfilePage() {
                                 onClick={() => setEditingNeighborhoodId(null)}
                                 disabled={isSavingNeighborhood}
                               >
-                                Cancel
+                                 {t("admin.common.cancel")}
                               </Button>
                             </>
                           ) : (
@@ -495,7 +495,7 @@ function CommuneProfilePage() {
                                   )
                                 }
                               >
-                                Edit
+                                 {t("admin.common.edit")}
                               </Button>
                               <Button
                                 size="sm"
@@ -503,16 +503,16 @@ function CommuneProfilePage() {
                                 className="rounded-md border-destructive/40 text-destructive hover:bg-destructive/10"
                                 disabled={deletingNeighborhoodId === douar.id}
                                 onClick={() => {
-                                  const confirmed = window.confirm(
-                                      `Delete douar \"${localizedNeighborhoodName(douar)}\"? This action cannot be undone.`,
-                                  );
+                                   const confirmed = window.confirm(
+                                     t("admin.confirm.deleteDouar", { name: localizedNeighborhoodName(douar) }),
+                                   );
                                   if (confirmed) {
                                     confirmDeleteNeighborhood(douar.id);
                                   }
                                 }}
                               >
                                 <Trash2 className="size-4" />
-                                {deletingNeighborhoodId === douar.id ? "Deleting..." : "Delete"}
+                                 {deletingNeighborhoodId === douar.id ? t("admin.common.deleting") : t("admin.common.delete")}
                               </Button>
                             </>
                           )}
@@ -527,22 +527,22 @@ function CommuneProfilePage() {
         </div>
 
         <div className="mt-4 rounded-md border border-border bg-background p-3">
-          <p className="mb-2 text-sm font-medium text-foreground">Quick Add Douar</p>
+           <p className="mb-2 text-sm font-medium text-foreground">{t("admin.serviceZones.quickAddDouar")}</p>
           <div className="grid gap-2 md:grid-cols-[1fr_180px_auto]">
             <Input
               value={newDouarNameEn}
               onChange={(event) => setNewDouarNameEn(event.target.value)}
-              placeholder="Douar name (EN)"
+               placeholder={t("admin.serviceZones.placeholders.douarNameEn")}
             />
             <Input
               value={newDouarNameFr}
               onChange={(event) => setNewDouarNameFr(event.target.value)}
-              placeholder="Douar name (FR)"
+               placeholder={t("admin.serviceZones.placeholders.douarNameFr")}
             />
             <Input
               value={newDouarNameAr}
               onChange={(event) => setNewDouarNameAr(event.target.value)}
-              placeholder="Douar name (AR)"
+               placeholder={t("admin.serviceZones.placeholders.douarNameAr")}
             />
             <Input
               type="number"
@@ -550,19 +550,19 @@ function CommuneProfilePage() {
               step="0.01"
               value={newDouarFee}
               onChange={(event) => setNewDouarFee(event.target.value)}
-              placeholder="Delivery fee"
+               placeholder={t("admin.serviceZones.placeholders.deliveryFee")}
             />
             <Button className="rounded-md" onClick={handleQuickAddDouar} disabled={isAddingDouar}>
-              {isAddingDouar ? "Adding..." : "Add Douar"}
+               {isAddingDouar ? t("admin.common.adding") : t("admin.serviceZones.addDouar")}
             </Button>
           </div>
         </div>
       </section>
 
       <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 shadow-sm md:p-5">
-        <h2 className="text-base font-semibold text-destructive">Danger Zone</h2>
+         <h2 className="text-base font-semibold text-destructive">{t("admin.serviceZones.dangerZone")}</h2>
         <p className="mt-1 text-sm text-destructive/90">
-          Deleting this commune will permanently remove it and all associated douars.
+           {t("admin.serviceZones.deleteCommuneWarning")}
         </p>
         <Button
           variant="outline"
@@ -570,20 +570,20 @@ function CommuneProfilePage() {
           onClick={() => setIsDeleteCommuneDialogOpen(true)}
         >
           <Trash2 className="size-4" />
-          Delete Entire Commune
+           {t("admin.serviceZones.deleteEntireCommune")}
         </Button>
       </section>
 
       <AlertDialog open={isDeleteCommuneDialogOpen} onOpenChange={setIsDeleteCommuneDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this commune permanently?</AlertDialogTitle>
+             <AlertDialogTitle>{t("admin.serviceZones.deleteCommuneDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete <strong>{localizedCommuneName(commune)}</strong> and all its douars. This action cannot be undone.
+               {t("admin.serviceZones.deleteCommuneDialogDescriptionPrefix")} <strong>{localizedCommuneName(commune)}</strong> {t("admin.serviceZones.deleteCommuneDialogDescriptionSuffix")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingCommune}>Cancel</AlertDialogCancel>
+             <AlertDialogCancel disabled={isDeletingCommune}>{t("admin.common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={isDeletingCommune}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -592,7 +592,7 @@ function CommuneProfilePage() {
                 handleDeleteCommune();
               }}
             >
-              {isDeletingCommune ? "Deleting..." : "Yes, Delete Commune"}
+               {isDeletingCommune ? t("admin.common.deleting") : t("admin.serviceZones.confirmDeleteCommune")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
