@@ -1116,6 +1116,14 @@ export type Database = {
           order_id: string
         }[]
       }
+      confirm_cash_transferred_to_vendor: {
+        Args: { p_cyclist_id: string; p_vendor_id: string }
+        Returns: {
+          platform_dues_added: number
+          settled_orders_count: number
+          vendor_earnings_added: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       record_vendor_carnet_payment: {
         Args: {
@@ -1148,6 +1156,8 @@ export type Database = {
         | "delivering"
         | "delivered"
         | "cancelled"
+        | "delivered_cash_with_cyclist"
+        | "cash_transferred_to_vendor"
       payment_method: "COD" | "Carnet"
       product_category:
         | "Vegetables"
@@ -1309,6 +1319,8 @@ export const Constants = {
         "delivering",
         "delivered",
         "cancelled",
+        "delivered_cash_with_cyclist",
+        "cash_transferred_to_vendor",
       ],
       payment_method: ["COD", "Carnet"],
       product_category: [
