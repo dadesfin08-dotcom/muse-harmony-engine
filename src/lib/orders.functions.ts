@@ -135,6 +135,7 @@ type OrderRow = {
     avatarUrl?: string | null;
   } | null;
   vendor_settlement_status?: "pending" | "settled";
+  admin_settled?: boolean;
   created_at: string;
 };
 
