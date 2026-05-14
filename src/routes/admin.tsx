@@ -4123,23 +4123,24 @@ function CatalogSection({
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Master Product List</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.catalog.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Add standard grocery items once for shared vendor distribution.
+            {t("admin.catalog.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download / Export Catalog (XLSX)
+            {t("admin.catalog.downloadExportXlsx")}
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
-            Download Example CSV
+            {t("admin.catalog.downloadExampleCsv")}
           </Button>
           <input
             ref={masterProductsCsvInputRef}
@@ -4155,10 +4156,10 @@ function CatalogSection({
             disabled={isImporting}
           >
             <FileUp className="size-4" />
-            {isImporting ? "Importing..." : "Import Bulk Products"}
+            {isImporting ? t("admin.common.importing") : t("admin.catalog.importBulkProducts")}
           </Button>
           <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
-            + Add Master Product
+            {t("admin.catalog.addMasterProduct")}
           </Button>
         </div>
       </div>
@@ -4169,17 +4170,17 @@ function CatalogSection({
           <Input
             value={searchTerm}
             onChange={(event) => onSearchTermChange(event.target.value)}
-            placeholder="Search by name (EN/FR/AR) or barcode"
+            placeholder={t("admin.catalog.searchPlaceholder")}
             className="pl-9"
           />
         </div>
 
         <Select value={selectedCategoryId} onValueChange={onCategoryChange}>
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder={t("admin.catalog.allCategories")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("admin.catalog.allCategories")}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name_en}
@@ -4190,10 +4191,10 @@ function CatalogSection({
 
         <Select value={selectedBrandId} onValueChange={onBrandChange}>
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="All Brands" />
+            <SelectValue placeholder={t("admin.catalog.allBrands")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
+            <SelectItem value="all">{t("admin.catalog.allBrands")}</SelectItem>
             {brands.map((brand) => (
               <SelectItem key={brand.id} value={brand.id}>
                 {brand.name_en}
@@ -4202,7 +4203,7 @@ function CatalogSection({
           </SelectContent>
         </Select>
 
-        <p className="text-xs text-muted-foreground">Showing {products.length} of {allProductsCount} products</p>
+        <p className="text-xs text-muted-foreground">{t("admin.catalog.showingProducts", { shown: products.length, total: allProductsCount })}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
