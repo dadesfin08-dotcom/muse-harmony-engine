@@ -196,7 +196,7 @@ function VendorDashboardPage() {
   const [expandedLedgerOrderIds, setExpandedLedgerOrderIds] = useState<Record<string, boolean>>({});
   const [rejectedOrderIds, setRejectedOrderIds] = useState<Record<string, boolean>>({});
   const [packingOrderId, setPackingOrderId] = useState<string | null>(null);
-  const [packingCheckedItemKeys, setPackingCheckedItemKeys] = useState<Record<string, boolean>>({});
+  const [packingProgressByOrder, setPackingProgressByOrder] = useState<Record<string, Record<string, boolean>>>({});
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
@@ -847,12 +847,19 @@ function VendorDashboardPage() {
       return;
     }
 
-    const initialChecks = targetOrder.items.reduce<Record<string, boolean>>((acc, item, index) => {
-      acc[getOrderItemKey(targetOrder.id, item, index)] = false;
-      return acc;
-    }, {});
+    setPackingProgressByOrder((current) => {
+      if (current[orderId]) return current;
 
-    setPackingCheckedItemKeys(initialChecks);
+      const initialChecks = targetOrder.items.reduce<Record<string, boolean>>((acc, item, index) => {
+        acc[getOrderItemKey(targetOrder.id, item, index)] = false;
+        return acc;
+      }, {});
+
+      return {
+        ...current,
+        [orderId]: initialChecks,
+      };
+    });
     setPackingOrderId(orderId);
   };
 
@@ -863,17 +870,24 @@ function VendorDashboardPage() {
 
   const packedItemsCount = useMemo(() => {
     if (!packingOrder) return 0;
-    return packingOrder.items.filter((item, index) => packingCheckedItemKeys[getOrderItemKey(packingOrder.id, item, index)]).length;
-  }, [packingCheckedItemKeys, packingOrder]);
+    return packingOrder.items.filter((item, index) => {
+      const itemKey = getOrderItemKey(packingOrder.id, item, index);
+      return packingProgressByOrder[packingOrder.id]?.[itemKey];
+    }).length;
+  }, [packingOrder, packingProgressByOrder]);
 
   const totalPackingItems = packingOrder?.items.length ?? 0;
   const fillPercentage = totalPackingItems > 0 ? Math.round((packedItemsCount / totalPackingItems) * 100) : 0;
   const isPackingComplete = totalPackingItems > 0 && fillPercentage === 100;
 
   const togglePackingItem = (itemKey: string, checked: boolean) => {
-    setPackingCheckedItemKeys((current) => ({
+    if (!packingOrderId) return;
+    setPackingProgressByOrder((current) => ({
       ...current,
-      [itemKey]: checked,
+      [packingOrderId]: {
+        ...(current[packingOrderId] ?? {}),
+        [itemKey]: checked,
+      },
     }));
   };
 
@@ -881,8 +895,12 @@ function VendorDashboardPage() {
     if (!packingOrder || !isPackingComplete) return;
     const wasUpdated = await handleMarkReady(packingOrder.id);
     if (wasUpdated) {
+      setPackingProgressByOrder((current) => {
+        const next = { ...current };
+        delete next[packingOrder.id];
+        return next;
+      });
       setPackingOrderId(null);
-      setPackingCheckedItemKeys({});
     }
   };
 
