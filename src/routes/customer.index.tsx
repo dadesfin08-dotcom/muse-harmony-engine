@@ -1129,6 +1129,7 @@ function Index() {
       brandName: product.brandNameEn || product.brand || null,
       measurementValue: product.measurementValue ?? null,
       price: product.price,
+      basePrice: Number(product.basePrice ?? product.price ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.image,
       alt: product.alt,
@@ -1153,6 +1154,7 @@ function Index() {
     image: string;
     alt: string;
     dealPrice: number;
+    baseDealPrice?: number;
   }) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
@@ -1164,6 +1166,7 @@ function Index() {
       id: deal.id,
       name: deal.name,
       price: deal.dealPrice,
+      basePrice: Number(deal.baseDealPrice ?? deal.dealPrice ?? 0),
       measurementUnit: deal.measurementUnit,
       image: deal.image,
       alt: deal.alt,
