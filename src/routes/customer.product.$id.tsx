@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { getBrandSuggestionsForNeighborhood, getCustomerProductDetail } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
