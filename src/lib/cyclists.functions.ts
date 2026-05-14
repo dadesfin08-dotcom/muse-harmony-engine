@@ -80,6 +80,7 @@ type CommuneRow = {
 
 type OrderRow = {
   id: string;
+  customer_user_id?: string | null;
   customer_name: string;
   customer_phone: string;
   delivery_notes: string;
@@ -113,6 +114,8 @@ export type CyclistOrderCard = {
   id: string;
   customerName: string;
   customerPhone: string;
+  deliveryAddress: string;
+  deliveryInstructions: string;
   douar: string;
   deliveryFeeMad: number;
   totalMad: number;
@@ -375,7 +378,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           ? (supabaseAdmin as any)
               .from("orders")
               .select(
-                "id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
+                "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
               )
               .eq("status", "ready")
               .in("neighborhood_id", coverageNeighborhoodIds)
@@ -385,7 +388,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select(
-            "id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
+            "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
           )
           .eq("status", "delivering")
           .eq("cyclist_id", cyclist.id)
@@ -428,23 +431,47 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
             .in("phone_number", uniquePhones)
         : { data: [], error: null };
 
+      const uniqueCustomerUserIds = Array.from(
+        new Set(allRows.map((row) => row.customer_user_id).filter((value): value is string => Boolean(value))),
+      );
+
+      const { data: profiles, error: profilesError } = uniqueCustomerUserIds.length
+        ? await (supabaseAdmin as any).from("profiles").select("id, address").in("id", uniqueCustomerUserIds)
+        : { data: [], error: null };
+
       if (customersError) {
         throw new Error(customersError.message);
+      }
+      if (profilesError) {
+        throw new Error(profilesError.message);
       }
 
       const { neighborhoodMap } = await buildServiceZoneMaps();
       const customerInstructionMap = new Map(
         ((customers ?? []) as CustomerRow[]).map((customer) => [customer.phone_number, customer.saved_instructions]),
       );
+      const profileAddressMap = new Map(
+        ((profiles ?? []) as Array<{ id: string; address?: string | null }>).map((profile) => [
+          profile.id,
+          typeof profile.address === "string" ? profile.address.trim() : "",
+        ]),
+      );
 
       const mapOrder = (row: OrderRow): CyclistOrderCard => {
         const neighborhood = neighborhoodMap.get(row.neighborhood_id);
-        const savedInstructions = customerInstructionMap.get(row.customer_phone) ?? row.delivery_notes ?? "";
+        const savedInstructions = customerInstructionMap.get(row.customer_phone) ?? "";
+        const checkoutAddress =
+          typeof row.customer_user_id === "string" ? (profileAddressMap.get(row.customer_user_id) ?? "") : "";
+        const deliveryAddress =
+          checkoutAddress || neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified";
+        const deliveryInstructions = (row.delivery_notes ?? "").trim();
 
         return {
           id: row.id,
           customerName: row.customer_name,
           customerPhone: row.customer_phone,
+          deliveryAddress,
+          deliveryInstructions,
           douar: neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified",
           deliveryFeeMad: Number(row.delivery_fee ?? 0),
           totalMad: Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
