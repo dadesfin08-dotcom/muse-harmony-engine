@@ -23,7 +23,9 @@ type FlashDealProduct = {
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl: string | null;
   vendorPrice: number;
+  finalVendorPrice?: number;
   flashSalePrice: number;
+  finalFlashSalePrice?: number;
   flashSaleEndTime: string;
 };
 
@@ -70,7 +72,9 @@ function FlashDealsPage() {
             ? row.nameFr || row.name
             : row.name,
       discountPercent:
-        row.vendorPrice > 0 ? Math.max(0, Math.round(((row.vendorPrice - row.flashSalePrice) / row.vendorPrice) * 100)) : 0,
+        row.vendorPrice > 0
+          ? Math.max(0, Math.round(((row.vendorPrice - row.flashSalePrice) / row.vendorPrice) * 100))
+          : 0,
     }));
   }, [flashDealsQuery.data, language]);
 
@@ -102,8 +106,8 @@ function FlashDealsPage() {
               brand={t("flashDeals.title", { defaultValue: "Flash Deal" })}
               measurementUnit={deal.measurementUnit}
               imageUrl={deal.imageUrl}
-              price={Number(deal.flashSalePrice ?? 0)}
-              oldPrice={Number(deal.vendorPrice ?? 0)}
+              price={Number(deal.finalFlashSalePrice ?? deal.flashSalePrice ?? 0)}
+              oldPrice={Number(deal.finalVendorPrice ?? deal.vendorPrice ?? 0)}
               discountPercent={deal.discountPercent}
               isFlashDeal
               cartQuantity={getCartQuantity(deal.id)}
@@ -112,7 +116,8 @@ function FlashDealsPage() {
                 addCartItem({
                   id: deal.id,
                   name: deal.localizedName,
-                  price: Number(deal.flashSalePrice ?? 0),
+                  price: Number(deal.finalFlashSalePrice ?? deal.flashSalePrice ?? 0),
+                  basePrice: Number(deal.flashSalePrice ?? 0),
                   measurementUnit: deal.measurementUnit,
                   image: deal.imageUrl || fallbackProductImage,
                   alt: deal.localizedName,
