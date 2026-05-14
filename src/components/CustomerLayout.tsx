@@ -8,7 +8,6 @@ import {
   Search,
   ShoppingCart,
   UserCircle2,
-  Languages,
   Plus,
   Minus,
   Trash2,
@@ -295,18 +294,8 @@ export function CustomerLayout({
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="relative z-20 flex items-end justify-center">
-            <LanguageSwitcher
-              trigger={
-                <button
-                  type="button"
-                  aria-label={t("language.label")}
-                  className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-full flex items-center justify-center border-4 border-white shadow-[0_0_20px_rgba(16,185,129,0.6)] z-50 text-white cursor-pointer hover:scale-105 transition-transform"
-                >
-                  <Languages className="size-7" />
-                </button>
-              }
-            />
+          <div className="flex items-end justify-center pb-1">
+            <LanguageSwitcher />
           </div>
 
           <button
