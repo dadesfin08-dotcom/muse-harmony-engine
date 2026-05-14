@@ -31,6 +31,7 @@ type CatalogProduct = {
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl: string | null;
   vendorPrice: number;
+  finalVendorPrice?: number;
 };
 
 export const Route = createFileRoute("/customer/all-products")({
@@ -119,7 +120,8 @@ function AllProductsPage() {
       productId: product.id,
       name: product.localizedName,
       selectedVariant,
-      price: Number(product.vendorPrice ?? 0),
+      price: Number(product.finalVendorPrice ?? product.vendorPrice ?? 0),
+      basePrice: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
       measurementValue: product.measurementValue ?? null,
       brandName: product.localizedBrand || null,
@@ -193,7 +195,7 @@ function AllProductsPage() {
             measurementUnit={product.measurementUnit}
             imageUrl={product.imageUrl}
             productVariants={product.productVariants ?? []}
-            price={Number(product.vendorPrice ?? 0)}
+            price={Number(product.finalVendorPrice ?? product.vendorPrice ?? 0)}
             cartQuantity={getCartQuantity(product.id, product.productVariants?.[0] ?? null)}
             selectedVariant={product.productVariants?.[0] ?? null}
             addLabel={t("products.add")}
@@ -207,7 +209,8 @@ function AllProductsPage() {
                 productId: product.id,
                 name: product.localizedName,
                 selectedVariant: normalizedVariant,
-                price: Number(product.vendorPrice ?? 0),
+                price: Number(product.finalVendorPrice ?? product.vendorPrice ?? 0),
+                basePrice: Number(product.vendorPrice ?? 0),
                 measurementUnit: product.measurementUnit,
                 measurementValue: product.measurementValue ?? null,
                 brandName: product.localizedBrand || null,

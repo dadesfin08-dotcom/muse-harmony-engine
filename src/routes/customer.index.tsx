@@ -121,6 +121,7 @@ type Product = {
   category: ProductCategory;
   categoryId?: string | null;
   price: number;
+  basePrice?: number;
   measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
@@ -135,6 +136,7 @@ type SearchResultProduct = {
   category: ProductCategory;
   imageUrl: string | null;
   vendorPrice: number;
+  finalVendorPrice?: number;
   brandNameEn?: string | null;
   brandNameFr?: string | null;
   brandNameAr?: string | null;
@@ -785,7 +787,8 @@ function Index() {
         brandNameAr: (item as { brandNameAr?: string | null }).brandNameAr ?? null,
         category: item.category,
         categoryId: (item as { categoryId?: string | null }).categoryId ?? null,
-        price: item.vendorPrice,
+        price: Number((item as { finalVendorPrice?: number }).finalVendorPrice ?? item.vendorPrice),
+        basePrice: Number(item.vendorPrice ?? 0),
         measurementValue: (item as { measurementValue?: number | null }).measurementValue ?? null,
         measurementUnit: item.measurementUnit,
         image: item.imageUrl || productFallbackImage,
@@ -806,7 +809,9 @@ function Index() {
       measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
       imageUrl?: string | null;
       vendorPrice: number;
+      finalVendorPrice?: number;
       flashSalePrice: number;
+      finalFlashSalePrice?: number;
       flashSaleEndTime: string;
     }>;
 
@@ -829,8 +834,9 @@ function Index() {
         nameAr: row.nameAr,
         category: "Groceries" as ProductCategory,
         categoryId: null,
-        price: Number(row.vendorPrice),
-        dealPrice: Number(row.flashSalePrice),
+        price: Number(row.finalVendorPrice ?? row.vendorPrice),
+        dealPrice: Number(row.finalFlashSalePrice ?? row.flashSalePrice),
+        baseDealPrice: Number(row.flashSalePrice),
         measurementUnit: row.measurementUnit,
         image: row.imageUrl || productFallbackImage,
         alt: `${localizedName} product image`,
@@ -1123,6 +1129,7 @@ function Index() {
       brandName: product.brandNameEn || product.brand || null,
       measurementValue: product.measurementValue ?? null,
       price: product.price,
+      basePrice: Number(product.basePrice ?? product.price ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.image,
       alt: product.alt,
@@ -1147,6 +1154,7 @@ function Index() {
     image: string;
     alt: string;
     dealPrice: number;
+    baseDealPrice?: number;
   }) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
@@ -1158,6 +1166,7 @@ function Index() {
       id: deal.id,
       name: deal.name,
       price: deal.dealPrice,
+      basePrice: Number(deal.baseDealPrice ?? deal.dealPrice ?? 0),
       measurementUnit: deal.measurementUnit,
       image: deal.image,
       alt: deal.alt,
@@ -1263,6 +1272,7 @@ function Index() {
             measurementUnit: item.measurementUnit ?? null,
             quantity: item.quantity,
             unitPriceMad: item.price,
+            basePriceMad: Number(item.basePrice ?? item.price ?? 0),
           })),
         },
       });
@@ -1594,7 +1604,9 @@ function Index() {
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                          </span>
                         </button>
                       ))
                     ) : (
@@ -1694,7 +1706,9 @@ function Index() {
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                          </span>
                         </button>
                       ))
                     ) : (
