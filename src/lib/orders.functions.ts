@@ -7,6 +7,12 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import {
+  isCodPaymentMethod,
+  isOrderEligibleForQrSettlement,
+  isVendorKpiPendingStatus,
+  isVendorKpiSettledStatus,
+} from "@/lib/settlement-status-rules";
 
 const moroccoPhoneSchema = z
   .string()
@@ -1347,11 +1353,6 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
     try {
       const vendor = await resolveVendorByPhone(data.phoneNumber);
 
-      const isCashPayment = (paymentMethod: string | null | undefined) => {
-        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-        return normalized === "cash" || normalized === "cod";
-      };
-
       const isCreditPayment = (paymentMethod: string | null | undefined) => {
         const normalized = String(paymentMethod ?? "").trim().toLowerCase();
         return normalized === "credit" || normalized === "carnet";
@@ -1410,34 +1411,30 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
       }>;
       const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; payment_method: string; status: string | null }>;
 
-      const pendingRowsInScope = pending.filter(
-        (row) => String(row.status ?? "").trim().toLowerCase() === "delivered_cash_with_cyclist",
-      );
-      const pendingCashRows = pendingRowsInScope.filter((row) => isCashPayment(row.payment_method));
+      const pendingRowsInScope = pending.filter((row) => isVendorKpiPendingStatus(row.status));
+      const pendingCashRows = pendingRowsInScope.filter((row) => isCodPaymentMethod(row.payment_method));
       const pendingCreditRows = pendingRowsInScope.filter((row) => isCreditPayment(row.payment_method));
 
       const receivedTodayRows = received.filter((row) => {
-        if (String(row.status ?? "").trim().toLowerCase() !== "cash_transferred_to_vendor") return false;
+        if (!isVendorKpiSettledStatus(row.status)) return false;
         if (!row.updated_at) return false;
         const date = new Date(row.updated_at);
         return !Number.isNaN(date.getTime()) && isToday(date);
       });
 
-      const lifetimeRowsInScope = lifetime.filter(
-        (row) => String(row.status ?? "").trim().toLowerCase() === "cash_transferred_to_vendor",
-      );
+      const lifetimeRowsInScope = lifetime.filter((row) => isVendorKpiSettledStatus(row.status));
 
       const unsettledCashWithCyclistsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
 
       const owedToCyclistMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
 
       const totalReceivedTodayMad = receivedTodayRows.reduce(
-        (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
+        (sum, row) => (isCodPaymentMethod(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
       const lifetimeEarningsMad = lifetimeRowsInScope.reduce(
-        (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
+        (sum, row) => (isCodPaymentMethod(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
@@ -1479,13 +1476,22 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
 
       const rows = (pendingRows ?? []) as Array<{
         id: string;
+        vendor_id: string;
+        cyclist_id: string | null;
         total_price: number;
         delivery_fee: number;
         payment_method: string;
+        status?: string | null;
+        vendor_settlement_status?: string | null;
       }>;
 
       const cashToRemitMad = rows
-        .filter((row) => String(row.payment_method ?? "").trim().toUpperCase() === "COD")
+        .filter((row) =>
+          isOrderEligibleForQrSettlement(row, {
+            vendorId: vendor.id,
+            cyclistId: data.cyclistId,
+          }),
+        )
         .reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
       const computedAmount = cashToRemitMad;
 
