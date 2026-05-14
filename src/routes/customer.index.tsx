@@ -885,6 +885,7 @@ function Index() {
     const persistedLocation = readPersistedLocation();
     if (persistedLocation?.neighborhoodId) {
       void resolveLocationAndApply(persistedLocation.neighborhoodId);
+      checkoutPrefsHydrationRef.current = customerSession.phoneNumber;
 
       if (
         customerSession?.phoneNumber &&
