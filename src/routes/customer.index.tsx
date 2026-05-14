@@ -128,6 +128,19 @@ type Product = {
   alt: string;
 };
 
+type SearchResultProduct = {
+  id: string;
+  name: string;
+  nameFr?: string | null;
+  nameAr?: string | null;
+  category: ProductCategory;
+  imageUrl: string | null;
+  vendorPrice: number;
+  brandNameEn?: string | null;
+  brandNameFr?: string | null;
+  brandNameAr?: string | null;
+};
+
 const productFallbackImage = heroImage;
 
 type AdSlide = {
