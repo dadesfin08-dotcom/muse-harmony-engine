@@ -149,7 +149,7 @@ function CyclistWalletPage() {
     onSuccess: async () => {
       void playSuccessSound();
       await queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
-      toast.success("Cash handover confirmed successfully.");
+      toast.success("تم تسليم العهدة بنجاح والتسوية مع البائع");
       await walletQuery.refetch();
       setIsVendorQrScannerOpen(false);
       setVendorQrScannerStatus("");
