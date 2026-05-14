@@ -1211,7 +1211,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      carnet_transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID"
+      carnet_transaction_type:
+        | "CREDIT_ISSUED"
+        | "CREDIT_REPAID"
+        | "CREDIT_CANCELLED"
       markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
@@ -1374,7 +1377,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      carnet_transaction_type: ["CREDIT_ISSUED", "CREDIT_REPAID"],
+      carnet_transaction_type: [
+        "CREDIT_ISSUED",
+        "CREDIT_REPAID",
+        "CREDIT_CANCELLED",
+      ],
       markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",
