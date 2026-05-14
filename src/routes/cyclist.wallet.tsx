@@ -292,7 +292,7 @@ function CyclistWalletPage() {
           <CardContent>
             <p className="text-2xl font-semibold">{(summary?.pendingEarningsMad ?? 0).toFixed(2)} MAD</p>
             <p className="text-xs text-muted-foreground">
-              Delivered orders pending settlement: {summary?.pendingSettlementOrdersCount ?? 0}
+              In-progress delivery fees: {summary?.pendingSettlementOrdersCount ?? 0}
             </p>
           </CardContent>
         </Card>
