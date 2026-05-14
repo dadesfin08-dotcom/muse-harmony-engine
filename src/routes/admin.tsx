@@ -5633,6 +5633,18 @@ function SettingsSection({
   onReceiptFormChange,
   onSaveReceiptSettings,
   isReceiptSettingsLoading,
+  markupRules,
+  isMarkupRulesLoading,
+  onAddMarkupRule,
+  onEditMarkupRule,
+  onDeleteMarkupRule,
+  markupRuleForm,
+  onMarkupRuleFormChange,
+  isMarkupRuleDialogOpen,
+  onMarkupRuleDialogOpenChange,
+  onSaveMarkupRule,
+  isSavingMarkupRule,
+  editingMarkupRuleId,
 }: {
   form: {
     id: string;
@@ -5690,6 +5702,32 @@ function SettingsSection({
   >;
   onSaveReceiptSettings: () => Promise<void>;
   isReceiptSettingsLoading: boolean;
+  markupRules: MarkupRuleAdminRow[];
+  isMarkupRulesLoading: boolean;
+  onAddMarkupRule: () => void;
+  onEditMarkupRule: (rule: MarkupRuleAdminRow) => void;
+  onDeleteMarkupRule: (id: string) => Promise<void>;
+  markupRuleForm: {
+    minPrice: string;
+    maxPrice: string;
+    markupType: "fixed" | "percentage";
+    markupValue: string;
+    isActive: boolean;
+  };
+  onMarkupRuleFormChange: Dispatch<
+    SetStateAction<{
+      minPrice: string;
+      maxPrice: string;
+      markupType: "fixed" | "percentage";
+      markupValue: string;
+      isActive: boolean;
+    }>
+  >;
+  isMarkupRuleDialogOpen: boolean;
+  onMarkupRuleDialogOpenChange: (open: boolean) => void;
+  onSaveMarkupRule: () => Promise<void>;
+  isSavingMarkupRule: boolean;
+  editingMarkupRuleId: string | null;
 }) {
   const { i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
@@ -5834,6 +5872,108 @@ function SettingsSection({
       >
         {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
+
+      <div className="rounded-xl border border-border bg-card p-4 md:p-5" dir={isArabic ? "rtl" : "ltr"}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Pricing Rules (إعدادات التسعير)</h3>
+            <p className="text-sm text-muted-foreground">Manage dynamic markup tiers by price range.</p>
+          </div>
+          <Button type="button" className="rounded-md bg-success text-success-foreground hover:bg-success/90" onClick={onAddMarkupRule}>
+            <Plus className="size-4" />
+            Add New Rule
+          </Button>
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-md border border-border">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">Price Range (من - إلى)</th>
+                <th className="px-4 py-3">Markup Type</th>
+                <th className="px-4 py-3">Value (القيمة)</th>
+                <th className="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isMarkupRulesLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Loading pricing rules...</td>
+                </tr>
+              ) : markupRules.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No pricing rules configured.</td>
+                </tr>
+              ) : (
+                markupRules.map((rule) => (
+                  <tr key={rule.id} className="border-t border-border bg-card">
+                    <td className="px-4 py-3 font-medium text-foreground">{rule.minPrice} - {rule.maxPrice} MAD</td>
+                    <td className="px-4 py-3 text-foreground">{rule.markupType === "fixed" ? "درهم ثابت" : "نسبة مئوية"}</td>
+                    <td className="px-4 py-3 text-foreground">{rule.markupType === "fixed" ? `${rule.markupValue} MAD` : `${rule.markupValue}%`}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => onEditMarkupRule(rule)}>
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-md"
+                          onClick={() => {
+                            if (window.confirm("Delete this pricing rule?")) {
+                              void onDeleteMarkupRule(rule.id);
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Dialog open={isMarkupRuleDialogOpen} onOpenChange={onMarkupRuleDialogOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingMarkupRuleId ? "Edit Pricing Rule" : "Add New Pricing Rule"}</DialogTitle>
+            <DialogDescription>Set min/max range and markup strategy.</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3 py-1">
+            <div className="grid grid-cols-2 gap-3">
+              <Input type="number" min={0} step="0.01" placeholder="Min price" value={markupRuleForm.minPrice} onChange={(event) => onMarkupRuleFormChange((current) => ({ ...current, minPrice: event.target.value }))} />
+              <Input type="number" min={0} step="0.01" placeholder="Max price" value={markupRuleForm.maxPrice} onChange={(event) => onMarkupRuleFormChange((current) => ({ ...current, maxPrice: event.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Select value={markupRuleForm.markupType} onValueChange={(value: "fixed" | "percentage") => onMarkupRuleFormChange((current) => ({ ...current, markupType: value }))}>
+                <SelectTrigger><SelectValue placeholder="Markup type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">درهم ثابت</SelectItem>
+                  <SelectItem value="percentage">نسبة مئوية</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="number" min={0} step="0.01" placeholder={markupRuleForm.markupType === "fixed" ? "Amount" : "Percent"} value={markupRuleForm.markupValue} onChange={(event) => onMarkupRuleFormChange((current) => ({ ...current, markupValue: event.target.value }))} />
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
+              <span className="text-sm font-medium text-foreground">Active Rule</span>
+              <Switch checked={markupRuleForm.isActive} onCheckedChange={(checked) => onMarkupRuleFormChange((current) => ({ ...current, isActive: checked }))} />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onMarkupRuleDialogOpenChange(false)}>Cancel</Button>
+            <Button type="button" className="bg-success text-success-foreground hover:bg-success/90" disabled={isSavingMarkupRule} onClick={() => void onSaveMarkupRule()}>
+              {isSavingMarkupRule ? "Saving..." : editingMarkupRuleId ? "Update Rule" : "Create Rule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="mt-2 h-px w-full bg-border" />
 
