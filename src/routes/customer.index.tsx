@@ -2477,6 +2477,12 @@ function Index() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
                     <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
                   </section>
+                  <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                    </p>
+                    <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
+                  </section>
                   <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
                     View & Edit Profile
                   </Button>
@@ -2871,6 +2877,12 @@ function Index() {
                     <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
                       <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
+                    </section>
+                    <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                      </p>
+                      <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                     </section>
                     <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
                       View & Edit Profile
