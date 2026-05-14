@@ -1972,7 +1972,7 @@ function LiveOrdersView({
             Ready ({queue.ready.length})
           </TabsTrigger>
           <TabsTrigger value="inDelivery" className="rounded-lg">
-            In Delivery ({queue.inDelivery.length})
+            In Delivery / في الطريق ({queue.inDelivery.length})
           </TabsTrigger>
         </TabsList>
 
@@ -2796,7 +2796,10 @@ function OrderCard({
                     <Bike className="size-3" />
                     Driver Info
                   </p>
-                  <p className="text-sm font-semibold text-foreground">الليفرور: {order.cyclist.name}</p>
+                  <p className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
+                    <Bike className="size-3.5 text-primary" />
+                    <span>الليفرور: {order.cyclist.name}</span>
+                  </p>
                 </div>
               </div>
 
