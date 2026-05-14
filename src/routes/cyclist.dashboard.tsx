@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ import {
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import { extractDeliveryCode } from "@/lib/extract-delivery-code";
+import appI18n from "@/lib/i18n";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -35,10 +37,10 @@ type CyclistSession = {
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
-      { title: "Cyclist Dashboard | Bzaf Fresh" },
+      { title: appI18n.t("cyclist.dashboardMetaTitle") },
       {
         name: "description",
-        content: "Mobile-first cyclist dashboard for accepting runs and completing local deliveries.",
+        content: appI18n.t("cyclist.dashboardMetaDescription"),
       },
     ],
   }),
@@ -46,6 +48,8 @@ export const Route = createFileRoute("/cyclist/dashboard")({
 });
 
 function CyclistDashboardPage() {
+  const { t, i18n: runtimeI18n } = useTranslation();
+  const isArabic = (runtimeI18n.resolvedLanguage || runtimeI18n.language || "en") === "ar";
   const navigate = useNavigate({ from: "/cyclist/dashboard" });
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
@@ -54,7 +58,7 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerOrder, setScannerOrder] = useState<CyclistOrderCard | null>(null);
-  const [scannerStatus, setScannerStatus] = useState("Ready to scan.");
+  const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [manualCode, setManualCode] = useState("");
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
@@ -109,6 +113,12 @@ function CyclistDashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!isScannerOpen) {
+      setScannerStatus(t("cyclist.readyToScan"));
+    }
+  }, [isScannerOpen, t]);
+
+  useEffect(() => {
     const currentAvailableRunIds = new Set(availableRuns.map((order) => order.id));
 
     if (!hasInitializedRunsRef.current) {
@@ -130,7 +140,7 @@ function CyclistDashboardPage() {
 
     void playActionSound({ enabled: true }).then((played) => {
       if (!played && !hasAudioPermissionHintShown) {
-        toast.info("Click the sound icon to allow pickup alerts in your browser.");
+        toast.info(t("cyclist.soundPermissionHint"));
         setHasAudioPermissionHintShown(true);
       }
     });
@@ -145,24 +155,24 @@ function CyclistDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("Sounds disabled.");
+      toast.success(t("cyclist.soundsDisabled"));
       return;
     }
 
     const played = await playActionSound({ enabled: true });
     if (!played) {
-      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
+      toast.error(t("cyclist.autoplayBlocked"));
       return;
     }
 
-    toast.success("Sounds enabled.");
+    toast.success(t("cyclist.soundsEnabled"));
   };
 
   const onlineCountLabel = useMemo(() => {
     if (activeView === "available") {
-      return `${availableRuns.length} available run${availableRuns.length === 1 ? "" : "s"}`;
+      return t("cyclist.availableRunsCount", { count: availableRuns.length });
     }
-    return `${activeDeliveries.length} active deliver${activeDeliveries.length === 1 ? "y" : "ies"}`;
+    return t("cyclist.activeDeliveriesCount", { count: activeDeliveries.length });
   }, [activeView, availableRuns.length, activeDeliveries.length]);
 
   const updateOnlineState = async (isOnline: boolean) => {
@@ -184,11 +194,11 @@ function CyclistDashboardPage() {
       );
 
       await setActiveState({ data: { cyclistId: cyclist.id, isActive: isOnline } });
-      toast.success(isOnline ? "You are online." : "You are offline.");
+      toast.success(isOnline ? t("cyclist.onlineStateUpdatedOn") : t("cyclist.onlineStateUpdatedOff"));
     } catch (error) {
       console.error("Failed to update cyclist online state:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update online status.");
+      toast.error(t("cyclist.onlineStateFailed"));
     }
   };
 
@@ -212,12 +222,12 @@ function CyclistDashboardPage() {
       });
 
       await acceptRun({ data: { cyclistId: session.cyclistId, orderId: order.id } });
-      toast.success("Delivery accepted.");
+      toast.success(t("cyclist.deliveryAccepted"));
       await dashboardQuery.refetch();
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : "Failed to accept delivery.");
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
     } finally {
       setIsUpdatingOrderId(null);
     }
@@ -229,7 +239,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Ready to scan.");
+    setScannerStatus(t("cyclist.readyToScan"));
     isVerifyingCodeRef.current = false;
   };
 
@@ -240,13 +250,13 @@ function CyclistDashboardPage() {
 
     const extractedCode = extractDeliveryCode(rawValue, order.id);
     if (!extractedCode) {
-      toast.error("Invalid QR/PIN format.");
+      toast.error(t("cyclist.invalidQr"));
       return;
     }
 
     isVerifyingCodeRef.current = true;
     setIsUpdatingOrderId(order.id);
-    setScannerStatus("Verifying delivery pass...");
+    setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
       queryClient.setQueryData(["cyclist", "dashboard", session.cyclistId], (current: any) => {
@@ -271,15 +281,15 @@ function CyclistDashboardPage() {
       });
 
       setIsScannerSuccess(true);
-      setScannerStatus("Delivery verified successfully.");
-      toast.success("Delivery completed successfully.");
+      setScannerStatus(t("cyclist.scannerVerified"));
+      toast.success(t("cyclist.deliveryCompleted"));
       await dashboardQuery.refetch();
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Failed to verify delivery:", error);
       await dashboardQuery.refetch();
-      setScannerStatus("Verification failed. Try scanning again or use manual code.");
-      toast.error(error instanceof Error ? error.message : "Failed to verify delivery.");
+      setScannerStatus(t("cyclist.scannerFailed"));
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedVerify"));
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
@@ -291,7 +301,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Preparing camera...");
+    setScannerStatus(t("cyclist.cameraPreparing"));
     setIsScannerOpen(true);
   };
 
@@ -323,13 +333,13 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus("Point your camera at the customer QR code.");
+          setScannerStatus(t("cyclist.cameraPointToQr"));
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
         if (mounted) {
           setShowManualEntry(true);
-          setScannerStatus("Camera unavailable. Enter code manually.");
+          setScannerStatus(t("cyclist.cameraUnavailableManual"));
         }
       }
     };
@@ -361,7 +371,7 @@ function CyclistDashboardPage() {
   const handleLogout = async () => {
     clearRoleSessions();
     localStorage.removeItem(CYCLIST_SESSION_STORAGE_KEY);
-    toast.success("Logged out successfully.");
+    toast.success(t("cyclist.loggedOut"));
     await navigate({ to: "/cyclist/login" });
   };
 
@@ -369,9 +379,9 @@ function CyclistDashboardPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
         <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
-          <p className="text-sm text-muted-foreground">Your cyclist session has expired.</p>
+          <p className="text-sm text-muted-foreground">{t("cyclist.sessionExpired")}</p>
           <Button className="w-full" onClick={() => navigate({ to: "/cyclist/login" })}>
-            Go to Login
+            {t("cyclist.goToLogin")}
           </Button>
         </div>
       </main>
@@ -388,7 +398,7 @@ function CyclistDashboardPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{cyclist?.fullName ?? session.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">Cyclist Dashboard</p>
+              <p className="truncate text-xs text-muted-foreground">{t("cyclist.dashboardTitle")}</p>
             </div>
           </div>
 
@@ -398,8 +408,8 @@ function CyclistDashboardPage() {
               variant="soft"
               className="rounded-xl"
               onClick={handleToggleSounds}
-              aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
-              title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+              aria-label={isSoundEnabled ? t("cyclist.disableSoundsAria") : t("cyclist.enableSoundsAria")}
+              title={isSoundEnabled ? t("cyclist.disableSoundsAria") : t("cyclist.enableSoundsAria")}
             >
               {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </Button>
@@ -410,7 +420,7 @@ function CyclistDashboardPage() {
         </div>
 
         <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "Online" : "Offline"}</span>
+          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}</span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
@@ -426,7 +436,7 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Available Runs
+            {t("cyclist.availableRunsTab")}
           </button>
           <button
             type="button"
@@ -437,33 +447,33 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Active Deliveries
+            {t("cyclist.activeDeliveriesTab")}
           </button>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
-          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing…</p> : null}
+          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
 
         {activeView === "available" ? (
           <div className="space-y-3">
             {hasActiveDeliveryLock ? (
               <AppEmptyState
-                title="Finish your current run! (كمل التوصيلة اللي فـ يدك أولاً!)"
-                subtitle="You have an active delivery in progress. Complete it to unlock new available runs."
+                title={t("cyclist.lockTitle")}
+                subtitle={t("cyclist.lockSubtitle")}
                 icon={Lock}
                 className="bg-card"
               />
             ) : availableRuns.length === 0 ? (
-              <EmptyState label="No ready deliveries in your neighborhood right now." />
+              <EmptyState label={t("cyclist.noReadyDeliveries")} />
             ) : (
               availableRuns.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   isActiveDelivery={false}
-                  actionLabel="Accept & Pick Up"
+                  actionLabel={t("cyclist.acceptPickup")}
                   actionTone="primary"
                   actionIcon={Truck}
                   isBusy={isUpdatingOrderId === order.id}
@@ -475,14 +485,14 @@ function CyclistDashboardPage() {
         ) : (
           <div className="space-y-3">
             {activeDeliveries.length === 0 ? (
-              <EmptyState label="No active deliveries assigned to you." />
+              <EmptyState label={t("cyclist.noActiveDeliveries")} />
             ) : (
               activeDeliveries.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   isActiveDelivery
-                  actionLabel="Scan to Deliver (مسح الرمز للتسليم)"
+                  actionLabel={t("cyclist.scanToDeliver")}
                   actionTone="success"
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
@@ -498,7 +508,7 @@ function CyclistDashboardPage() {
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="text-base font-semibold">Scan to Deliver</DialogTitle>
+            <DialogTitle className="text-base font-semibold">{t("cyclist.scannerTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
@@ -507,19 +517,19 @@ function CyclistDashboardPage() {
                 <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-success/15 text-success">
                   <CheckCircle2 className="size-10" />
                 </span>
-                <p className="mt-4 text-lg font-semibold text-foreground">Delivery Verified</p>
-                <p className="mt-1 text-sm text-muted-foreground">Order status changed to delivered.</p>
+                <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
               </div>
             ) : showManualEntry ? (
               <div className="flex flex-1 flex-col justify-center gap-4">
                 <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm font-medium text-foreground">Enter customer delivery PIN</p>
+                  <p className="text-sm font-medium text-foreground">{t("cyclist.enterCustomerPin")}</p>
                   <input
                     value={manualCode}
                     onChange={(event) => setManualCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                     inputMode="numeric"
                     maxLength={6}
-                    placeholder="4-6 digit code"
+                    placeholder={t("cyclist.pinPlaceholder")}
                     className="h-11 w-full rounded-xl border border-input bg-background px-3 text-center text-base tracking-wide outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                   />
                   <Button
@@ -527,12 +537,12 @@ function CyclistDashboardPage() {
                     onClick={handleManualVerify}
                     disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
                   >
-                    {isUpdatingOrderId === scannerOrder?.id ? "Verifying..." : "Verify & Deliver"}
+                    {isUpdatingOrderId === scannerOrder?.id ? t("cyclist.verifying") : t("cyclist.verifyAndDeliver")}
                   </Button>
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
                   <Camera className="size-4" />
-                  Back to Camera
+                  {t("cyclist.backToCamera")}
                 </Button>
               </div>
             ) : (
@@ -542,7 +552,7 @@ function CyclistDashboardPage() {
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
                   <Keyboard className="size-4" />
-                  Enter Code Manually (إدخال الرمز يدوياً)
+                  {t("cyclist.enterCodeManually")}
                 </Button>
               </>
             )}
@@ -563,14 +573,14 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Available Runs
+            {t("cyclist.availableRunsTab")}
           </button>
 
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
-            aria-label="Open wallet"
+            aria-label={t("cyclist.walletAria")}
           >
             <Wallet className="size-5" />
           </button>
@@ -584,7 +594,7 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Active Deliveries
+            {t("cyclist.activeDeliveriesTab")}
           </button>
         </div>
       </nav>
@@ -601,9 +611,9 @@ function CyclistDashboardPage() {
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
                 <ChevronRight className="size-4" />
-                Back (رجوع)
+                {t("cyclist.back")}
               </Button>
-              <p className="text-sm font-semibold text-foreground">Order Details</p>
+              <p className="text-sm font-semibold text-foreground">{t("cyclist.orderDetails")}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -614,18 +624,18 @@ function CyclistDashboardPage() {
                 </div>
 
                 {detailsOrder.deliveryInstructions?.trim() ? (
-                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir="rtl">
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                     <div className="flex items-center gap-2">
                       <MessageSquareText className="h-5 w-5 text-amber-500" />
-                      <span className="font-bold text-slate-800">تعليمات التوصيل</span>
+                      <span className="font-bold text-slate-800">{t("cyclist.deliveryInstructions")}</span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsOrder.deliveryInstructions.trim()}</p>
                   </div>
                 ) : null}
 
-                <div className="mb-2 flex items-center gap-2" dir="rtl">
+                <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
                   <PackageSearch className="h-5 w-5 text-slate-600" />
-                  <p className="text-sm font-bold text-slate-800">قائمة المنتجات</p>
+                  <p className="text-sm font-bold text-slate-800">{t("cyclist.productsList")}</p>
                 </div>
 
                 <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" dir="rtl">
@@ -673,36 +683,36 @@ function CyclistDashboardPage() {
                               <TooltipTrigger asChild>
                                 <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
                                   <Package className="h-3 w-3" />
-                                  <span>Qty x{item.quantity}</span>
+                                  <span>{t("cyclist.quantity")} x{item.quantity}</span>
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent side="top">الكمية الحالية هي x{item.quantity}</TooltipContent>
+                              <TooltipContent side="top">{t("cyclist.quantityTooltip", { count: item.quantity })}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="p-4 text-sm text-muted-foreground">No items available for this order.</p>
+                    <p className="p-4 text-sm text-muted-foreground">{t("cyclist.noOrderItems")}</p>
                   )}
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center gap-2" dir="rtl">
+                  <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
                     <ClipboardList className="h-5 w-5 text-slate-600" />
-                    <p className="text-sm font-bold text-slate-800">ملخص الطلب</p>
+                    <p className="text-sm font-bold text-slate-800">{t("cyclist.orderSummary")}</p>
                   </div>
                   <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Subtotal</span>
+                    <span>{t("cyclist.subtotal")}</span>
                     <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Delivery Fee</span>
+                    <span>{t("cyclist.deliveryFee")}</span>
                     <span>{detailsOrder.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-800">
-                    <span>Total</span>
+                    <span>{t("cyclist.total")}</span>
                     <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
                   </div>
                 </div>
@@ -735,6 +745,8 @@ function OrderCard({
   onOpenDetails?: () => void;
   onAction: () => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
   const actionClass =
     actionTone === "success"
       ? "bg-success text-success-foreground hover:bg-success/90"
@@ -750,7 +762,7 @@ function OrderCard({
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
               <AlertTriangle className="size-4" />
-              CREDIT ORDER - DO NOT COLLECT CASH
+              {t("cyclist.creditWarning")}
             </p>
           </div>
         ) : null}
@@ -762,11 +774,11 @@ function OrderCard({
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div dir="rtl" className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
+        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <User className="h-4 w-4 text-slate-400" />
-              الاسم الكامل
+              {t("cyclist.fullName")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.customerName}</div>
           </div>
@@ -774,7 +786,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Phone className="h-4 w-4 text-slate-400" />
-              رقم الهاتف
+              {t("cyclist.phoneNumber")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               <span dir="ltr" className="font-mono text-sm tracking-wide text-slate-700">
@@ -784,7 +796,7 @@ function OrderCard({
                 <a
                   href={`tel:${order.customerPhone}`}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
-                  aria-label="Call customer"
+                  aria-label={t("cyclist.callCustomerAria")}
                 >
                   <PhoneCall className="size-4" />
                 </a>
@@ -794,7 +806,7 @@ function OrderCard({
                   rel="noopener noreferrer"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors hover:bg-emerald-200"
                   onClick={(e) => e.stopPropagation()}
-                  aria-label="Open WhatsApp chat"
+                  aria-label={t("cyclist.whatsappAria")}
                 >
                   <MessageCircle className="h-5 w-5" />
                 </a>
@@ -805,7 +817,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Map className="h-4 w-4 text-slate-400" />
-              المنطقة
+              {t("cyclist.area")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.deliveryZone}</div>
           </div>
@@ -813,7 +825,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <MapPin className="h-4 w-4 text-slate-400" />
-              العنوان
+              {t("cyclist.address")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               <a
@@ -831,16 +843,16 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <CreditCard className="h-4 w-4 text-slate-400" />
-              الدفع
+              {t("cyclist.payment")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               {order.paymentMethod === "COD" ? (
                 <span className="rounded-md border border-orange-200/50 bg-orange-50 px-2.5 py-1 text-[12px] font-semibold text-orange-700">
-                  الدفع عند الاستلام (COD)
+                  {t("cyclist.codBadge")}
                 </span>
               ) : (
                 <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
-                  مدفوع (Carnet)
+                  {t("cyclist.carnetBadge")}
                 </span>
               )}
             </div>
@@ -849,7 +861,7 @@ function OrderCard({
 
         <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
-          {isBusy ? "Updating..." : actionLabel}
+          {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
       </article>
     );
@@ -862,7 +874,7 @@ function OrderCard({
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
               <AlertTriangle className="size-4" />
-              CREDIT ORDER - DO NOT COLLECT CASH
+              {t("cyclist.creditWarning")}
             </p>
           </div>
         ) : null}
@@ -874,25 +886,27 @@ function OrderCard({
           <PhoneCall className="size-4" />
           {order.customerPhone}
         </a>
-        <p className="text-sm text-muted-foreground">Douar: {order.douar}</p>
-        <p className="text-sm font-medium text-foreground">Total: {order.totalMad.toFixed(2)} MAD</p>
-        <p className="text-xs text-muted-foreground">Delivery notes: {order.deliveryNotes || "—"}</p>
-        <p className="text-xs text-muted-foreground">Saved instructions: {order.savedInstructions || "—"}</p>
+        <p className="text-sm text-muted-foreground">{t("cyclist.douar")}: {order.douar}</p>
+        <p className="text-sm font-medium text-foreground">{t("cyclist.total")}: {order.totalMad.toFixed(2)} MAD</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || "—"}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || "—"}</p>
       </div>
 
       <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
-        {isBusy ? "Updating..." : actionLabel}
+        {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
     </article>
   );
 }
 
 function EmptyState({ label }: { label: string }) {
+  const { t } = useTranslation();
+
   return (
     <AppEmptyState
       title={label}
-      subtitle="New delivery tasks will appear here automatically."
+      subtitle={t("cyclist.autoAppearSubtitle")}
       icon={PackageSearch}
       className="bg-card"
     />

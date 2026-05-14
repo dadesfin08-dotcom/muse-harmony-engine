@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
+import { useTranslation } from "react-i18next";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/morocco-phone";
 import { useServerFn } from "@tanstack/react-start";
 import { ADMIN_PHONE, persistRoleSession } from "@/lib/operational-auth";
+import i18n from "@/lib/i18n";
 
 type AdminLoginStep = "phone" | "otp";
 
@@ -26,10 +28,10 @@ const OTP_RESEND_SECONDS = 45;
 export const Route = createFileRoute("/admin-login")({
   head: () => ({
     meta: [
-      { title: "Super-Admin Login | Bzaf Fresh" },
+      { title: i18n.t("adminLogin.metaTitle") },
       {
         name: "description",
-        content: "Secure WhatsApp OTP login for super-admin access.",
+        content: i18n.t("adminLogin.metaDescription"),
       },
     ],
   }),
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/admin-login")({
 });
 
 function AdminLoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate({ from: "/admin-login" });
   const requestOtp = useServerFn(createOtpRequest);
   const verifyOtp = useServerFn(verifyOtpCode);
@@ -72,7 +75,7 @@ function AdminLoginPage() {
     const fullPhoneNumber = phoneForOtp || formatMoroccoPhoneForPayload(normalizedPhone);
 
     if (!phoneForOtp && !isPhoneValid) {
-      toast.error("يرجى إدخال رقم هاتف مغربي صحيح.");
+      toast.error(t("adminLogin.invalidPhone"));
       return;
     }
 
@@ -85,7 +88,7 @@ function AdminLoginPage() {
       setOtpCode("");
       setOtpErrorVisual(false);
       setOtpResendCountdown(OTP_RESEND_SECONDS);
-      toast.success("تم إرسال الرمز عبر واتساب.");
+      toast.success(t("adminLogin.codeSent"));
 
       fetch(OTP_WEBHOOK_URL, {
         method: "POST",
@@ -99,7 +102,7 @@ function AdminLoginPage() {
       });
     } catch (error) {
       console.error("Failed to start admin auth:", error);
-      toast.error("تعذر إرسال الرمز حالياً. حاول مرة أخرى.");
+      toast.error(t("adminLogin.sendFailed"));
     } finally {
       setIsSendingCode(false);
     }
@@ -107,7 +110,7 @@ function AdminLoginPage() {
 
   const verifyAndLogin = async () => {
     if (otpCode.length !== 4) {
-      toast.error("يرجى إدخال رمز مكوّن من 4 أرقام.");
+      toast.error(t("adminLogin.enter4Digits"));
       return;
     }
 
@@ -121,7 +124,7 @@ function AdminLoginPage() {
       });
 
       if (!verified.verified) {
-        toast.error("الرمز غير صحيح.");
+        toast.error(t("adminLogin.wrongCode"));
         setOtpCode("");
         triggerOtpErrorVisual();
         return;
@@ -129,15 +132,15 @@ function AdminLoginPage() {
 
       if (phoneForOtp === AUTHORIZED_ADMIN_PHONE) {
         persistRoleSession("admin", { phoneNumber: phoneForOtp });
-        toast.success("تم التحقق بنجاح.");
+        toast.success(t("adminLogin.verified"));
         await navigate({ to: "/admin" });
         return;
       }
 
-      toast.error("Unauthorized access. Admin privileges required.");
+      toast.error(t("adminLogin.unauthorized"));
     } catch (error) {
       console.error("Admin OTP verification failed:", error);
-      toast.error("تعذر التحقق الآن. حاول مرة أخرى.");
+      toast.error(t("adminLogin.verifyFailed"));
     } finally {
       setIsVerifying(false);
     }
@@ -152,8 +155,8 @@ function AdminLoginPage() {
               <ShieldCheck className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Super-Admin Login</CardTitle>
-              <p className="text-sm text-muted-foreground">تسجيل دخول المشرف</p>
+              <CardTitle className="text-2xl font-semibold">{t("adminLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("adminLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -163,7 +166,7 @@ function AdminLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="admin-phone" className="text-sm">
-                  رقم الهاتف
+                  {t("adminLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -187,7 +190,7 @@ function AdminLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "جاري الإرسال..." : "إرسال الرمز عبر واتساب"}
+                {isSendingCode ? t("adminLogin.sending") : t("adminLogin.sendCode")}
               </Button>
             </div>
 
@@ -195,8 +198,8 @@ function AdminLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">أدخل رمز التحقق</h2>
-                <p className="text-sm text-muted-foreground">أدخل الرمز الذي وصلك عبر واتساب</p>
+                <h2 className="text-base font-semibold text-foreground">{t("adminLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("adminLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -235,10 +238,10 @@ function AdminLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `إعادة الإرسال خلال ${otpResendCountdown} ث`
+                  ? t("adminLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "جاري الإرسال..."
-                    : "إرسال من جديد"}
+                    ? t("adminLogin.sending")
+                    : t("adminLogin.resend")}
               </Button>
 
               <Button
@@ -249,7 +252,7 @@ function AdminLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "جاري التحقق..." : "Verify & Login"}
+                {isVerifying ? t("adminLogin.verifying") : t("adminLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -261,7 +264,7 @@ function AdminLoginPage() {
                   setOtpCode("");
                 }}
               >
-                تغيير رقم الهاتف
+                {t("adminLogin.changePhone")}
               </Button>
             </div>
           </CardContent>

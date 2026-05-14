@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
+import { useTranslation } from "react-i18next";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/morocco-phone";
 import { useServerFn } from "@tanstack/react-start";
 import { persistRoleSession } from "@/lib/operational-auth";
+import i18n from "@/lib/i18n";
 
 type VendorLoginStep = "phone" | "otp";
 
@@ -25,17 +27,15 @@ const OTP_RESEND_SECONDS = 45;
 export const Route = createFileRoute("/vendor/login")({
   head: () => ({
     meta: [
-      { title: "Vendor Login | Vendor Partner Portal" },
+      { title: i18n.t("vendorLogin.metaTitle") },
       {
         name: "description",
-        content:
-          "Vendor Partner Portal login for local store owners. Sign in with phone number and WhatsApp OTP.",
+        content: i18n.t("vendorLogin.metaDescription"),
       },
-      { property: "og:title", content: "Vendor Login | Vendor Partner Portal" },
+      { property: "og:title", content: i18n.t("vendorLogin.metaTitle") },
       {
         property: "og:description",
-        content:
-          "Manage your store orders with a simple mobile-first WhatsApp OTP login flow.",
+        content: i18n.t("vendorLogin.metaDescription"),
       },
     ],
   }),
@@ -43,6 +43,7 @@ export const Route = createFileRoute("/vendor/login")({
 });
 
 function VendorLoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate({ from: "/vendor/login" });
   const requestOtp = useServerFn(createOtpRequest);
   const verifyOtp = useServerFn(verifyOtpCode);
@@ -77,7 +78,7 @@ function VendorLoginPage() {
     const fullPhoneNumber = phoneForOtp || formatMoroccoPhoneForPayload(normalizedPhone);
 
     if (!phoneForOtp && !isPhoneValid) {
-      toast.error("Please enter a valid Moroccan phone number.");
+      toast.error(t("vendorLogin.invalidPhone"));
       return;
     }
 
@@ -103,9 +104,9 @@ function VendorLoginPage() {
       setOtpCode("");
       setOtpErrorVisual(false);
       setOtpResendCountdown(OTP_RESEND_SECONDS);
-      toast.success("Code sent on WhatsApp.");
+      toast.success(t("vendorLogin.codeSent"));
     } catch {
-      toast.error("Unable to send code right now. Please try again.");
+      toast.error(t("vendorLogin.sendFailed"));
     } finally {
       setIsSendingCode(false);
     }
@@ -113,7 +114,7 @@ function VendorLoginPage() {
 
   const verifyAndLogin = async () => {
     if (otpCode.length !== 4) {
-      toast.error("Please enter the 4-digit code.");
+      toast.error(t("vendorLogin.enter4Digits"));
       return;
     }
 
@@ -127,13 +128,13 @@ function VendorLoginPage() {
       });
 
       if (!verified.verified) {
-        toast.error("Wrong code.");
+        toast.error(t("vendorLogin.wrongCode"));
         setOtpCode("");
         triggerOtpErrorVisual();
         return;
       }
 
-      toast.success("Verified successfully. Welcome back!");
+      toast.success(t("vendorLogin.verifiedWelcome"));
       persistRoleSession("vendor", {
         phoneNumber: phoneForOtp,
       });
@@ -152,8 +153,8 @@ function VendorLoginPage() {
               <Store className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Vendor Partner Portal</CardTitle>
-              <p className="text-sm text-muted-foreground">Manage your store orders</p>
+              <CardTitle className="text-2xl font-semibold">{t("vendorLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("vendorLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -163,7 +164,7 @@ function VendorLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="vendor-phone" className="text-sm">
-                  Phone Number
+                  {t("vendorLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -179,7 +180,7 @@ function VendorLoginPage() {
                   />
                 </div>
                 <p id="phone-help" className="text-xs text-muted-foreground">
-                  Enter your store phone linked by the admin.
+                  {t("vendorLogin.phoneHelp")}
                 </p>
               </div>
 
@@ -192,7 +193,7 @@ function VendorLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "Sending..." : "Send Code via WhatsApp"}
+                {isSendingCode ? t("vendorLogin.sending") : t("vendorLogin.sendCode")}
               </Button>
             </div>
 
@@ -200,8 +201,8 @@ function VendorLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">Enter your OTP</h2>
-                <p className="text-sm text-muted-foreground">Enter the code sent to your WhatsApp</p>
+                <h2 className="text-base font-semibold text-foreground">{t("vendorLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("vendorLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -240,10 +241,10 @@ function VendorLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `Resend available in ${otpResendCountdown}s`
+                  ? t("vendorLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "Sending..."
-                    : "Resend code"}
+                    ? t("vendorLogin.sending")
+                    : t("vendorLogin.resend")}
               </Button>
 
               <Button
@@ -255,7 +256,7 @@ function VendorLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "Verifying..." : "Verify & Login"}
+                {isVerifying ? t("vendorLogin.verifying") : t("vendorLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -267,13 +268,13 @@ function VendorLoginPage() {
                   setOtpCode("");
                 }}
               >
-                Change phone number
+                {t("vendorLogin.changePhone")}
               </Button>
             </div>
 
             <div className="pt-1 text-center">
               <Button type="button" variant="link" className="h-auto p-0 text-sm text-muted-foreground">
-                Need help? Contact Admin
+                {t("vendorLogin.needHelp")}
               </Button>
             </div>
           </CardContent>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
+import { useTranslation } from "react-i18next";
 import { getCyclistByPhone } from "@/lib/cyclists.functions";
 import {
   formatMoroccoPhoneForPayload,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/morocco-phone";
 import { persistRoleSession } from "@/lib/operational-auth";
 import { useServerFn } from "@tanstack/react-start";
+import i18n from "@/lib/i18n";
 
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
@@ -27,10 +29,10 @@ type CyclistLoginStep = "phone" | "otp";
 export const Route = createFileRoute("/cyclist/login")({
   head: () => ({
     meta: [
-      { title: "Cyclist Login | Bzaf Fresh" },
+      { title: i18n.t("cyclistLogin.metaTitle") },
       {
         name: "description",
-        content: "Cyclist login for mobile delivery operations using WhatsApp OTP verification.",
+        content: i18n.t("cyclistLogin.metaDescription"),
       },
     ],
   }),
@@ -38,6 +40,7 @@ export const Route = createFileRoute("/cyclist/login")({
 });
 
 function CyclistLoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate({ from: "/cyclist/login" });
   const requestOtp = useServerFn(createOtpRequest);
   const verifyOtp = useServerFn(verifyOtpCode);
@@ -74,7 +77,7 @@ function CyclistLoginPage() {
     const fullPhoneNumber = phoneForOtp || formatMoroccoPhoneForPayload(normalizedPhone);
 
     if (!phoneForOtp && !isPhoneValid) {
-      toast.error("Please enter a valid Moroccan phone number.");
+      toast.error(t("cyclistLogin.invalidPhone"));
       return;
     }
 
@@ -89,7 +92,7 @@ function CyclistLoginPage() {
       setOtpCode("");
       setOtpErrorVisual(false);
       setOtpResendCountdown(OTP_RESEND_SECONDS);
-      toast.success("Code sent on WhatsApp.");
+      toast.success(t("cyclistLogin.codeSent"));
 
       fetch(OTP_WEBHOOK_URL, {
         method: "POST",
@@ -103,7 +106,7 @@ function CyclistLoginPage() {
       });
     } catch (error) {
       console.error("Failed to start cyclist auth:", error);
-      toast.error("Cyclist account not found or code could not be sent.");
+      toast.error(t("cyclistLogin.authFailed"));
     } finally {
       setIsSendingCode(false);
     }
@@ -111,7 +114,7 @@ function CyclistLoginPage() {
 
   const verifyAndLogin = async () => {
     if (otpCode.length !== 4) {
-      toast.error("Please enter the 4-digit code.");
+      toast.error(t("cyclistLogin.enter4Digits"));
       return;
     }
 
@@ -125,7 +128,7 @@ function CyclistLoginPage() {
       });
 
       if (!verified.verified) {
-        toast.error("Wrong code.");
+        toast.error(t("cyclistLogin.wrongCode"));
         setOtpCode("");
         triggerOtpErrorVisual();
         return;
@@ -146,11 +149,11 @@ function CyclistLoginPage() {
         fullName: cyclist.fullName,
       });
 
-      toast.success("Welcome back.");
+      toast.success(t("cyclistLogin.welcome"));
       await navigate({ to: "/cyclist/dashboard" });
     } catch (error) {
       console.error("Cyclist OTP verification failed:", error);
-      toast.error("Unable to verify now. Please retry.");
+      toast.error(t("cyclistLogin.verifyFailed"));
     } finally {
       setIsVerifying(false);
     }
@@ -165,8 +168,8 @@ function CyclistLoginPage() {
               <Bike className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Cyclist App Login</CardTitle>
-              <p className="text-sm text-muted-foreground">Sign in and start delivering</p>
+              <CardTitle className="text-2xl font-semibold">{t("cyclistLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("cyclistLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -176,7 +179,7 @@ function CyclistLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="cyclist-phone" className="text-sm">
-                  Phone Number
+                  {t("cyclistLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -200,7 +203,7 @@ function CyclistLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "Sending..." : "Send Code via WhatsApp"}
+                {isSendingCode ? t("cyclistLogin.sending") : t("cyclistLogin.sendCode")}
               </Button>
             </div>
 
@@ -208,8 +211,8 @@ function CyclistLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">Enter your OTP</h2>
-                <p className="text-sm text-muted-foreground">Use the code sent to your WhatsApp</p>
+                <h2 className="text-base font-semibold text-foreground">{t("cyclistLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("cyclistLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -248,10 +251,10 @@ function CyclistLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `Resend available in ${otpResendCountdown}s`
+                  ? t("cyclistLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "Sending..."
-                    : "Resend code"}
+                    ? t("cyclistLogin.sending")
+                    : t("cyclistLogin.resend")}
               </Button>
 
               <Button
@@ -262,7 +265,7 @@ function CyclistLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "Verifying..." : "Verify & Login"}
+                {isVerifying ? t("cyclistLogin.verifying") : t("cyclistLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -274,7 +277,7 @@ function CyclistLoginPage() {
                   setOtpCode("");
                 }}
               >
-                Change phone number
+                {t("cyclistLogin.changePhone")}
               </Button>
             </div>
           </CardContent>
