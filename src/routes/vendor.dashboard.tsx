@@ -129,6 +129,7 @@ type DashboardOrder = {
   itemCount: number;
   items: Array<{
     name: string;
+    selectedVariant?: string | null;
     quantity: number;
     unitPriceMad: number;
     imageUrl?: string | null;
