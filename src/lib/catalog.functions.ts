@@ -253,7 +253,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
