@@ -16,6 +16,20 @@ const cyclistLookupInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
+function normalizePhoneForLookup(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.startsWith("212")) {
+    return digits.slice(3);
+  }
+
+  if (digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+
+  return digits;
+}
+
 const cyclistDashboardInputSchema = z.object({
   cyclistId: z.string().uuid(),
 });
@@ -377,21 +391,49 @@ export const getCyclistByPhone = createServerFn({ method: "POST" })
   .inputValidator((input) => cyclistLookupInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const requestedLocalPhone = normalizePhoneForLookup(data.phoneNumber);
+
       const { data: cyclist, error } = await (supabaseAdmin as any)
         .from("cyclists")
         .select("id, full_name, phone_number, is_active")
         .eq("phone_number", data.phoneNumber)
-        .single();
+        .maybeSingle();
 
-      if (error || !cyclist?.id) {
-        throw new Error(error?.message ?? "Cyclist not found.");
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      let matchedCyclist = cyclist;
+
+      if (!matchedCyclist?.id) {
+        const { data: cyclists, error: cyclistsError } = await (supabaseAdmin as any)
+          .from("cyclists")
+          .select("id, full_name, phone_number, is_active")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        if (cyclistsError) {
+          throw new Error(cyclistsError.message);
+        }
+
+        matchedCyclist = ((cyclists ?? []) as Array<{
+          id: string;
+          full_name: string;
+          phone_number: string;
+          is_active: boolean;
+        }>).find((row) => normalizePhoneForLookup(String(row.phone_number ?? "")) === requestedLocalPhone) ?? null;
+      }
+
+      if (!matchedCyclist?.id) {
+        throw new Error("Cyclist not found.");
       }
 
       return {
-        id: cyclist.id as string,
-        fullName: cyclist.full_name as string,
-        phoneNumber: cyclist.phone_number as string,
-        isActive: Boolean(cyclist.is_active),
+        id: matchedCyclist.id as string,
+        fullName: matchedCyclist.full_name as string,
+        phoneNumber: matchedCyclist.phone_number as string,
+        isActive: Boolean(matchedCyclist.is_active),
       };
     } catch (error) {
       console.error("getCyclistByPhone failed:", error);
