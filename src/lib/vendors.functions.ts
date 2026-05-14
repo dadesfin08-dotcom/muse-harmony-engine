@@ -81,6 +81,13 @@ const getVendorSalesAnalyticsInputSchema = z.object({
   vendorId: z.string().uuid(),
 });
 
+const collectVendorPlatformDuesInputSchema = z.object({
+  vendorId: z.string().uuid(),
+  amount: z.number().positive(),
+  qrPayload: z.record(z.string(), z.any()).nullable().optional(),
+  adminPhoneNumber: z.string().trim().min(1),
+});
+
 type VendorOrderRow = {
   id: string;
   status: string;
@@ -98,6 +105,12 @@ export type VendorSalesAnalytics = {
     totalMad: number;
     createdAt: string;
   }>;
+};
+
+export type PlatformDuesCollectionResult = {
+  transactionId: string;
+  collectedAmountMad: number;
+  remainingDuesMad: number;
 };
 
 function zoneFromNeighborhoods(neighborhoods: NeighborhoodRow[], communeMap: Map<string, string>) {
@@ -440,5 +453,41 @@ export const getVendorSalesAnalytics = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getVendorSalesAnalytics failed:", error);
       throw new Error("Failed to load vendor sales analytics.");
+    }
+  });
+
+export const collectVendorPlatformDues = createServerFn({ method: "POST" })
+  .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const normalizedAdminPhone = formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(data.adminPhoneNumber));
+      if (normalizedAdminPhone !== "+212605377941") {
+        throw new Error("Unauthorized: admin access required.");
+      }
+
+      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("collect_platform_dues", {
+        p_vendor_id: data.vendorId,
+        p_amount: Number(data.amount.toFixed(2)),
+        p_qr_payload: data.qrPayload ?? null,
+        p_collected_by_user_id: null,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const row = Array.isArray(rpcResult) ? rpcResult[0] : null;
+      if (!row?.transaction_id) {
+        throw new Error("Collection failed. Please try again.");
+      }
+
+      return {
+        transactionId: String(row.transaction_id),
+        collectedAmountMad: Number(row.collected_amount ?? 0),
+        remainingDuesMad: Number(row.remaining_dues ?? 0),
+      } satisfies PlatformDuesCollectionResult;
+    } catch (error) {
+      console.error("collectVendorPlatformDues failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to collect platform dues.");
     }
   });
