@@ -2567,7 +2567,7 @@ function EmptyState({ label }: { label: string }) {
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
   if (tab === "new") {
-    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">New</Badge>;
+    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">New</Badge>;
   }
 
   if (tab === "preparing") {
@@ -2594,6 +2594,10 @@ function getOrderItemKey(
 }
 
 function elapsedLabel(createdAt: string, nowTick: number) {
+  if (!Number.isFinite(nowTick)) {
+    return "--";
+  }
+
   if (Number.isNaN(new Date(createdAt).getTime())) {
     return "--";
   }
