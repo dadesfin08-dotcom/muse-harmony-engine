@@ -92,7 +92,14 @@ type OrderRow = {
   payment_method: "COD" | "Carnet";
   delivery_fee: number;
   total_price: number;
-  status: "ready" | "delivering" | "delivered" | "new" | "preparing";
+  status:
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor"
+    | "new"
+    | "preparing";
   order_items?: Array<{
     name?: string;
     quantity?: number;
@@ -745,7 +752,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         .from("orders")
         .select("delivery_fee")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered");
+        .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
 
       if (deliveredError) {
         throw new Error(deliveredError.message);
@@ -755,7 +762,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         .from("orders")
         .select("delivery_fee, total_price, payment_method")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
+        .eq("status", "delivered_cash_with_cyclist")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingSettlementError) {
@@ -844,7 +851,7 @@ export const getCyclistEarningsHistory = createServerFn({ method: "POST" })
         .from("orders")
         .select("id, delivered_at, delivery_fee")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
+        .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
         .gte("delivered_at", start.toISOString())
         .order("delivered_at", { ascending: false });
 
