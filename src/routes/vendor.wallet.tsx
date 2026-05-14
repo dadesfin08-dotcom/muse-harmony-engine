@@ -213,6 +213,23 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="size-4 text-primary" />
+              Platform Dues · مستحقات المنصة
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">
+              {dashboardQuery.data?.vendor?.platformDuesMad != null
+                ? `${Number(dashboardQuery.data.vendor.platformDuesMad).toFixed(2)} MAD`
+                : "--"}
+            </p>
+            <p className="text-xs text-muted-foreground">This balance is collected by Super-Admin via QR cash collection.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="size-4 text-primary" />
               Owed to Cyclist · مستحقات التوصيل
             </CardTitle>
           </CardHeader>
