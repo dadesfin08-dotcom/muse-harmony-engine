@@ -509,7 +509,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
         for (const row of vendorOrderBreakdown) {
           const { data: carnetRow, error: carnetLookupError } = await (supabaseAdmin as any)
             .from("vendor_carnet")
-            .select("id, current_debt, max_limit")
+            .select("id, max_limit")
             .eq("vendor_id", row.vendorId)
             .eq("customer_phone", data.customerPhone)
             .maybeSingle();
@@ -522,7 +522,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             throw new Error("Customer is not on trusted carnet list.");
           }
 
-          const currentDebt = Number(carnetRow.current_debt ?? 0);
+          const currentDebt = await getDynamicDebtForVendorCustomer(row.vendorId, data.customerPhone);
           const maxLimit = Number(carnetRow.max_limit ?? 0);
           const projectedDebt = roundMoney(currentDebt + row.orderTotalWithDelivery);
 
@@ -572,19 +572,6 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
           const carnetMeta = carnetEligibilityByVendor.get(row.vendorId);
           if (!carnetMeta) {
             throw new Error("Carnet eligibility check failed.");
-          }
-
-          const { error: updateCarnetDebtError } = await (supabaseAdmin as any)
-            .from("vendor_carnet")
-            .update({
-              current_debt: carnetMeta.newDebt,
-              status: "active",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", carnetMeta.vendorCarnetId);
-
-          if (updateCarnetDebtError) {
-            throw new Error(updateCarnetDebtError.message);
           }
 
           const { error: ledgerInsertError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
