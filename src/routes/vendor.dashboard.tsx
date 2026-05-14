@@ -15,7 +15,9 @@ import {
   Clock3,
   History,
   LogOut,
+  Bike,
   Package,
+  PhoneCall,
   Search,
   ShoppingBag,
   Store,
@@ -47,6 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -86,7 +89,7 @@ import {
 } from "@/components/ThermalReceipt";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
-type OrderQueueTab = "new" | "preparing" | "ready";
+type OrderQueueTab = "new" | "preparing" | "ready" | "inDelivery";
 type HistoryFilter = "today" | "week" | "month" | "all";
 type CarnetLedgerTransaction = {
   id: string;
@@ -111,7 +114,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
 const vendorDashboardSearchSchema = z.object({
   tab: fallback(z.enum(["live", "inventory", "flash-sales", "carnet", "history"]), "live").default("live"),
-  sub: fallback(z.enum(["new", "preparing", "ready"]), "new").default("new"),
+  sub: fallback(z.enum(["new", "preparing", "ready", "inDelivery"]), "new").default("new"),
 });
 
 type VendorDashboardSearch = z.infer<typeof vendorDashboardSearchSchema>;
