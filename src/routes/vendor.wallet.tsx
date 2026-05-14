@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -35,6 +36,7 @@ function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isPlatformDuesQrOpen, setIsPlatformDuesQrOpen] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<{ cyclistId: string; amount: number } | null>(null);
   const vendorPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -174,6 +176,21 @@ function VendorWalletPage() {
   const hasSummary = Boolean(summary);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
   const deliveredOrders = (dashboardQuery.data?.orders ?? []).filter((order) => order.status === "delivered").slice(0, 8);
+  const platformCollectionQrPayload = useMemo(() => {
+    if (!vendorId || !dashboardQuery.data?.vendor) return null;
+    const amountMad = Number(dashboardQuery.data.vendor.platformDuesMad ?? 0);
+    if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
+
+    return JSON.stringify({
+      type: "platform_collection_request",
+      v: 1,
+      vendor_id: vendorId,
+      vendor_name: dashboardQuery.data.vendor.storeName,
+      amount: amountMad.toFixed(2),
+      currency: "MAD",
+      requested_at: new Date().toISOString(),
+    });
+  }, [dashboardQuery.data?.vendor, vendorId]);
 
   const confirmationLabel = useMemo(() => {
     if (!confirmPayload) return "";
@@ -223,6 +240,20 @@ function VendorWalletPage() {
                 : "--"}
             </p>
             <p className="text-xs text-muted-foreground">This balance is collected by Super-Admin via QR cash collection.</p>
+            <Button
+              className="mt-3 w-full"
+              variant="outline"
+              onClick={() => {
+                if (!platformCollectionQrPayload) {
+                  toast.info("No platform dues pending right now.");
+                  return;
+                }
+                setIsPlatformDuesQrOpen(true);
+              }}
+            >
+              <QrCode className="size-4" />
+              Pay Admin via QR · أداء مستحقات المنصة
+            </Button>
           </CardContent>
         </Card>
 
@@ -294,6 +325,20 @@ function VendorWalletPage() {
             <DialogTitle>Scan Cyclist Handover QR · مسح رمز السائق</DialogTitle>
           </DialogHeader>
           <div id="vendor-cash-qr-reader" className="overflow-hidden rounded-xl border border-border" />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPlatformDuesQrOpen} onOpenChange={setIsPlatformDuesQrOpen}>
+        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Platform Dues QR · رمز أداء المستحقات</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-muted-foreground">Show this QR to Super-Admin to confirm your dues collection.</p>
+            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
+              {platformCollectionQrPayload ? <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin /> : null}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
