@@ -44,6 +44,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -2737,6 +2748,7 @@ function OrderCard({
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
+  const [isCallConfirmOpen, setIsCallConfirmOpen] = useState(false);
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
@@ -2803,14 +2815,38 @@ function OrderCard({
                 </div>
               </div>
 
-              <a
-                href={`tel:${order.cyclist.phoneNumber}`}
-                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
-                aria-label={`Call driver ${order.cyclist.name}`}
-              >
-                <PhoneCall className="size-3" />
-                {order.cyclist.phoneNumber}
-              </a>
+              <AlertDialog open={isCallConfirmOpen} onOpenChange={setIsCallConfirmOpen}>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
+                    aria-label={`Call driver ${order.cyclist.name}`}
+                  >
+                    <PhoneCall className="size-3" />
+                    {order.cyclist.phoneNumber}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="sm:max-w-sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>تأكيد الاتصال بالسائق</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      واش بغيتي تتاصل دابا مع {order.cyclist.name} على الرقم {order.cyclist.phoneNumber}؟
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          window.location.href = `tel:${order.cyclist.phoneNumber}`;
+                        }
+                      }}
+                    >
+                      نعم، اتصل الآن
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ) : null}
