@@ -80,7 +80,6 @@ const customerOrderDetailsInputSchema = z.object({
 const settleCyclistCashHandoverInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
   cyclistId: z.string().uuid(),
-  expectedAmount: z.number(),
 });
 
 type VendorRow = {
@@ -1367,17 +1366,20 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .from("orders")
           .select("cyclist_id, total_price, delivery_fee, payment_method, status")
           .eq("vendor_id", vendor.id)
+          .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending")
           .not("cyclist_id", "is", null),
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, payment_method, updated_at, status")
           .eq("vendor_id", vendor.id)
+          .eq("status", "cash_transferred_to_vendor")
           .eq("vendor_settlement_status", "settled"),
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, payment_method, status")
           .eq("vendor_id", vendor.id)
+          .eq("status", "cash_transferred_to_vendor")
           .eq("vendor_settlement_status", "settled"),
       ]);
 
@@ -1408,28 +1410,22 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
       }>;
       const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; payment_method: string; status: string | null }>;
 
-      const isDeliveryCompleteStatus = (status: string | null | undefined) => {
-        const normalized = String(status ?? "").trim().toLowerCase();
-        return (
-          normalized === "delivered" ||
-          normalized === "completed" ||
-          normalized === "delivered_cash_with_cyclist" ||
-          normalized === "cash_transferred_to_vendor"
-        );
-      };
-
-      const pendingRowsInScope = pending.filter((row) => isDeliveryCompleteStatus(row.status));
+      const pendingRowsInScope = pending.filter(
+        (row) => String(row.status ?? "").trim().toLowerCase() === "delivered_cash_with_cyclist",
+      );
       const pendingCashRows = pendingRowsInScope.filter((row) => isCashPayment(row.payment_method));
       const pendingCreditRows = pendingRowsInScope.filter((row) => isCreditPayment(row.payment_method));
 
       const receivedTodayRows = received.filter((row) => {
-        if (!isDeliveryCompleteStatus(row.status)) return false;
+        if (String(row.status ?? "").trim().toLowerCase() !== "cash_transferred_to_vendor") return false;
         if (!row.updated_at) return false;
         const date = new Date(row.updated_at);
         return !Number.isNaN(date.getTime()) && isToday(date);
       });
 
-      const lifetimeRowsInScope = lifetime.filter((row) => isDeliveryCompleteStatus(row.status));
+      const lifetimeRowsInScope = lifetime.filter(
+        (row) => String(row.status ?? "").trim().toLowerCase() === "cash_transferred_to_vendor",
+      );
 
       const unsettledCashWithCyclistsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
 
