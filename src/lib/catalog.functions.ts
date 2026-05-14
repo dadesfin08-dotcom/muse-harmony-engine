@@ -1526,9 +1526,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
         throw new Error(rowsError.message);
       }
 
-      return {
-        vendor: vendor as VendorRow,
-        items: ((rows ?? []) as Array<{
+      const items = await Promise.all(
+        ((rows ?? []) as Array<{
           vendor_id: string;
           vendor_price: number;
           is_available: boolean;
@@ -1557,36 +1556,44 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
         }>)
           .filter((row) => !!row.master_products)
           .slice(0, data.pageSize)
-          .map((row) => ({
-            id: row.master_products!.id,
-            vendorId: row.vendor_id,
-            name: row.master_products!.product_name,
-            nameFr: row.master_products!.name_fr,
-            nameAr: row.master_products!.name_ar,
-            productVariants: Array.isArray(row.master_products!.product_variants)
-              ? row.master_products!.product_variants
-                  .map((value) => (typeof value === "string" ? value.trim() : ""))
-                  .filter((value) => value.length > 0)
-              : [],
-            brandId: row.master_products!.brand_id,
-            brand: row.master_products!.brands?.name_en ?? null,
-            brandNameEn: row.master_products!.brands?.name_en ?? null,
-            brandNameFr: row.master_products!.brands?.name_fr ?? null,
-            brandNameAr: row.master_products!.brands?.name_ar ?? null,
-            brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
-            categoryId: row.master_products!.category_id,
-            category: row.master_products!.category,
-            measurementValue:
-              row.master_products!.measurement_value != null
-                ? Number(row.master_products!.measurement_value)
-                : null,
-            measurementUnit: row.master_products!.measurement_unit,
-            imageUrl: row.master_products!.image_url,
-            popularityScore: Number(row.master_products!.popularity_score ?? 0),
-            vendorPrice: Number(row.vendor_price ?? 0),
-            finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-            isAvailable: row.is_available,
-          })),
+          .map(async (row) => {
+            const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+            return {
+              id: row.master_products!.id,
+              vendorId: row.vendor_id,
+              name: row.master_products!.product_name,
+              nameFr: row.master_products!.name_fr,
+              nameAr: row.master_products!.name_ar,
+              productVariants: Array.isArray(row.master_products!.product_variants)
+                ? row.master_products!.product_variants
+                    .map((value) => (typeof value === "string" ? value.trim() : ""))
+                    .filter((value) => value.length > 0)
+                : [],
+              brandId: row.master_products!.brand_id,
+              brand: row.master_products!.brands?.name_en ?? null,
+              brandNameEn: row.master_products!.brands?.name_en ?? null,
+              brandNameFr: row.master_products!.brands?.name_fr ?? null,
+              brandNameAr: row.master_products!.brands?.name_ar ?? null,
+              brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
+              categoryId: row.master_products!.category_id,
+              category: row.master_products!.category,
+              measurementValue:
+                row.master_products!.measurement_value != null
+                  ? Number(row.master_products!.measurement_value)
+                  : null,
+              measurementUnit: row.master_products!.measurement_unit,
+              imageUrl: row.master_products!.image_url,
+              popularityScore: Number(row.master_products!.popularity_score ?? 0),
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: pricing.finalPrice,
+              isAvailable: row.is_available,
+            };
+          }),
+      );
+
+      return {
+        vendor: vendor as VendorRow,
+        items,
         hasMore: (rows?.length ?? 0) > data.pageSize,
       };
     } catch (error) {
@@ -1633,6 +1640,8 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         return null;
       }
 
+      const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
       return {
         id: row.master_products.id,
         vendorId: row.vendor_id,
@@ -1660,7 +1669,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         imageUrl: row.master_products.image_url,
         popularityScore: Number(row.master_products.popularity_score ?? 0),
         vendorPrice: Number(row.vendor_price ?? 0),
-        finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
+        finalVendorPrice: pricing.finalPrice,
         isAvailable: row.is_available,
       };
     } catch (error) {
@@ -1714,8 +1723,7 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
       }
 
       const seen = new Set<string>();
-
-      return ((rows ?? []) as Array<{
+      const uniqueRows = ((rows ?? []) as Array<{
         vendor_id: string;
         vendor_price: number;
         is_available: boolean;
@@ -1737,32 +1745,20 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           image_url: string | null;
           is_active: boolean;
         } | null;
-      }>).reduce<
-        Array<{
-          id: string;
-          vendorId: string;
-          name: string;
-          nameFr: string | null;
-          nameAr: string | null;
-          brandId: string | null;
-          brand: string | null;
-          brandNameEn: string | null;
-          brandNameFr: string | null;
-          brandNameAr: string | null;
-          brandLogoUrl: string | null;
-          measurementValue: number | null;
-          measurementUnit: MeasurementUnit;
-          imageUrl: string | null;
-          vendorPrice: number;
-           finalVendorPrice: number;
-        }>
-      >((acc, row) => {
+      }>).filter((row) => {
         if (!row.master_products || seen.has(row.master_products.id)) {
-          return acc;
+          return false;
         }
-
         seen.add(row.master_products.id);
-        acc.push({
+
+        return true;
+      });
+
+      return Promise.all(
+        uniqueRows.map(async (row) => {
+          const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
+          return {
           id: row.master_products.id,
           vendorId: row.vendor_id,
           name: row.master_products.product_name,
@@ -1781,10 +1777,10 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           measurementUnit: row.master_products.measurement_unit,
           imageUrl: row.master_products.image_url,
           vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-        });
-        return acc;
-      }, []);
+            finalVendorPrice: pricing.finalPrice,
+          };
+        }),
+      );
     } catch (error) {
       console.error("getBrandSuggestionsForNeighborhood failed:", error);
       throw new Error("Failed to load suggested products.");
