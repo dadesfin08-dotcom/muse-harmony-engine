@@ -441,13 +441,12 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
+          .in("status", ["delivered", "completed", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
           .eq("cyclist_id", cyclist.id),
         (supabaseAdmin as any)
           .from("orders")
-          .select("vendor_id, payment_method, total_price")
+          .select("vendor_id, payment_method, total_price, status")
           .eq("cyclist_id", cyclist.id)
-          .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending"),
       ]);
 
@@ -477,9 +476,17 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         vendor_id: string;
         payment_method: string;
         total_price: number;
+        status: string | null;
       }>;
 
-      const pendingCashRows = pendingRows.filter((row) => String(row.payment_method).toUpperCase() === "COD");
+      const isPendingDeliveryStatus = (status: string | null | undefined) => {
+        const normalized = String(status ?? "").trim().toLowerCase();
+        return normalized === "delivered" || normalized === "completed" || normalized === "delivered_cash_with_cyclist";
+      };
+
+      const pendingRowsInScope = pendingRows.filter((row) => isPendingDeliveryStatus(row.status));
+
+      const pendingCashRows = pendingRowsInScope.filter((row) => String(row.payment_method).toUpperCase() === "COD");
       const pendingVendorIds = Array.from(new Set(pendingCashRows.map((row) => row.vendor_id)));
       const { data: pendingVendors, error: pendingVendorsError } = pendingVendorIds.length
         ? await (supabaseAdmin as any).from("vendors").select("id, store_name").in("id", pendingVendorIds)
