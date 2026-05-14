@@ -116,6 +116,7 @@ const bulkImportMasterProductsInputSchema = z.object({
         nameAr: z.string().trim().max(140).nullable(),
         category: z.string().trim().min(1).max(140),
         brand: z.string().trim().max(140).nullable(),
+        productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
         measurementValue: z.string().trim().max(40).nullable(),
         measurementUnit: z.string().trim().min(1).max(30),
         barcode: z.string().trim().max(120).nullable(),
