@@ -756,7 +756,7 @@ function OrderCard({
         ) : null}
 
         <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
-          <button type="button" className="text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
+          <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
             {shortOrderId}
           </button>
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
