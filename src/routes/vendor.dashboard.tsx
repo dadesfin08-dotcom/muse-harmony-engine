@@ -23,9 +23,11 @@ import {
   ShoppingBag,
   Store,
   Truck,
+  User,
   Volume2,
   VolumeX,
   Wallet,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,6 +72,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
+import { formatDistanceToNow } from "date-fns";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
