@@ -237,7 +237,7 @@ type CheckoutPrefs = {
   neighborhoodLabel: string | null;
 };
 
-type AppLanguage = "ar";
+type AppLanguage = "en" | "fr" | "ar";
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -312,7 +312,7 @@ function Index() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const language = "ar" as AppLanguage;
+  const language: AppLanguage = "ar";
   const isMobile = useIsMobile();
   const isArabic = true;
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
@@ -1312,24 +1312,9 @@ function Index() {
   const carnetCurrentDebt = Number(customerCarnet?.currentDebt ?? 0);
   const carnetMaxLimit = Number(customerCarnet?.maxLimit ?? 0);
   const carnetUsagePercent = carnetMaxLimit > 0 ? Math.min((carnetCurrentDebt / carnetMaxLimit) * 100, 100) : 0;
-  const carnetUtilizationLabel =
-    language === "ar"
-      ? "استهلاك الدين"
-      : language === "fr"
-        ? "Utilisation de la dette"
-        : "Debt Utilization";
-  const carnetDebtRatioLabel =
-    language === "ar"
-      ? `المُستَهلَك: ${carnetCurrentDebt.toFixed(2)} درهم / السقف: ${carnetMaxLimit.toFixed(2)} درهم`
-      : language === "fr"
-        ? `Utilisé: ${carnetCurrentDebt.toFixed(2)} / Limite: ${carnetMaxLimit.toFixed(2)} MAD`
-        : `Used: ${carnetCurrentDebt.toFixed(2)} / Limit: ${carnetMaxLimit.toFixed(2)} MAD`;
-  const carnetUsagePercentLabel =
-    language === "ar"
-      ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
-      : language === "fr"
-        ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
-        : `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`;
+  const carnetUtilizationLabel = "استهلاك الدين";
+  const carnetDebtRatioLabel = `المُستَهلَك: ${carnetCurrentDebt.toFixed(2)} درهم / السقف: ${carnetMaxLimit.toFixed(2)} درهم`;
+  const carnetUsagePercentLabel = `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`;
   const carnetProgressIndicatorClassName =
     carnetUsagePercent < 50 ? "bg-success" : carnetUsagePercent <= 80 ? "bg-accent" : "bg-destructive";
   const activeAnnouncements = (siteContentQuery.data?.announcements ?? []) as AnnouncementRow[];
