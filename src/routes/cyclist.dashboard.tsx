@@ -467,15 +467,9 @@ function CyclistDashboardPage() {
                       <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
                     </div>
                   </div>
-                  <Button
-                    className="w-full"
-                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
-                    disabled={confirmCashHandoverMutation.isPending}
-                  >
-                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
-                      ? "Processing..."
-                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
-                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Scan vendor wallet QR ({'{"action":"vendor_handover","vendor_id":"..."}'}) from the scanner to settle.
+                  </p>
                 </div>
               ))}
             </div>
@@ -523,7 +517,7 @@ function CyclistDashboardPage() {
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
                   onOpenDetails={() => setDetailsOrder(order)}
-                  onAction={() => openScannerForOrder(order)}
+                  onAction={() => openScanner()}
                 />
               ))
             )}
@@ -546,40 +540,11 @@ function CyclistDashboardPage() {
                 <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
               </div>
-            ) : showManualEntry ? (
-              <div className="flex flex-1 flex-col justify-center gap-4">
-                <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm font-medium text-foreground">{t("cyclist.enterCustomerPin")}</p>
-                  <input
-                    value={manualCode}
-                    onChange={(event) => setManualCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder={t("cyclist.pinPlaceholder")}
-                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-center text-base tracking-wide outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-                  />
-                  <Button
-                    className="h-11 w-full rounded-xl"
-                    onClick={handleManualVerify}
-                    disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
-                  >
-                    {isUpdatingOrderId === scannerOrder?.id ? t("cyclist.verifying") : t("cyclist.verifyAndDeliver")}
-                  </Button>
-                </div>
-                <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
-                  <Camera className="size-4" />
-                  {t("cyclist.backToCamera")}
-                </Button>
-              </div>
             ) : (
               <>
                 <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
                   <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
                 </div>
-                <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
-                  <Keyboard className="size-4" />
-                  {t("cyclist.enterCodeManually")}
-                </Button>
               </>
             )}
 
