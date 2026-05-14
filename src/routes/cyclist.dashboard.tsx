@@ -551,12 +551,12 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white px-4 py-3">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white px-3 py-2 pb-safe">
         <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-11 flex-1 rounded-xl text-sm font-medium transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -577,7 +577,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-11 flex-1 rounded-xl text-sm font-medium transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
