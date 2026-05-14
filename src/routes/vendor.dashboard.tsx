@@ -563,18 +563,28 @@ function VendorDashboardPage() {
 
           const insertedId = inserted.id;
 
-          if (shownIncomingToastIdsRef.current.has(insertedId)) {
+          const now = Date.now();
+          const seenAt = shownIncomingToastIdsRef.current.get(insertedId);
+          if (typeof seenAt === "number" && now - seenAt <= INCOMING_ALERT_CACHE_TTL_MS) {
             return;
           }
 
-          shownIncomingToastIdsRef.current.add(insertedId);
+          shownIncomingToastIdsRef.current.set(insertedId, now);
 
-          if (shownIncomingToastIdsRef.current.size > 80) {
-            const oldestId = shownIncomingToastIdsRef.current.values().next().value;
-            if (oldestId) {
-              shownIncomingToastIdsRef.current.delete(oldestId);
+          for (const [cachedId, cachedAt] of shownIncomingToastIdsRef.current.entries()) {
+            if (now - cachedAt > INCOMING_ALERT_CACHE_TTL_MS) {
+              shownIncomingToastIdsRef.current.delete(cachedId);
             }
           }
+
+          if (shownIncomingToastIdsRef.current.size > INCOMING_ALERT_CACHE_MAX_ITEMS) {
+            const oldestEntry = [...shownIncomingToastIdsRef.current.entries()].sort((a, b) => a[1] - b[1])[0];
+            if (oldestEntry) {
+              shownIncomingToastIdsRef.current.delete(oldestEntry[0]);
+            }
+          }
+
+          writeIncomingAlertCache(normalizedVendorPhoneNumber, shownIncomingToastIdsRef.current);
 
           const totalMad = roundMoney(Number(inserted.total_price ?? 0));
           const toastId = `incoming-order-${insertedId}`;
