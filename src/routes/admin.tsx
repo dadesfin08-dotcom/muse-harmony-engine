@@ -878,10 +878,10 @@ function AdminPage() {
 
       setManageVendorForm((current) => ({ ...current, isActive }));
       await vendorsQuery.refetch();
-      toast.success(isActive ? "Vendor activated." : "Vendor suspended.");
+      toast.success(isActive ? t("admin.toast.vendorActivated") : t("admin.toast.vendorSuspended"));
     } catch (error) {
       console.error("Failed to update vendor state:", error);
-      toast.error("Failed to update vendor status.");
+      toast.error(t("admin.toast.vendorStatusUpdateFailed"));
     } finally {
       setIsUpdatingVendorState(false);
     }
@@ -897,7 +897,7 @@ function AdminPage() {
       manageVendorForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all vendor details before updating.");
+      toast.error(t("admin.toast.completeVendorDetails"));
       return;
     }
 
@@ -916,10 +916,10 @@ function AdminPage() {
       });
 
       await vendorsQuery.refetch();
-      toast.success("Vendor details updated successfully.");
+      toast.success(t("admin.toast.vendorDetailsUpdated"));
     } catch (error) {
       console.error("Failed to update vendor details:", error);
-      toast.error("Failed to update vendor details.");
+      toast.error(t("admin.toast.vendorDetailsUpdateFailed"));
     } finally {
       setIsUpdatingVendorDetails(false);
     }
@@ -934,7 +934,7 @@ function AdminPage() {
       vendorForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all vendor fields.");
+      toast.error(t("admin.toast.completeVendorFields"));
       return;
     }
 
@@ -963,10 +963,10 @@ function AdminPage() {
         isActive: true,
       });
       setIsVendorPanelOpen(false);
-      toast.success("Vendor saved successfully.");
+      toast.success(t("admin.toast.vendorSaved"));
     } catch (error) {
       console.error("Failed to save vendor:", error);
-      toast.error("Failed to save vendor. Check console for details.");
+      toast.error(t("admin.toast.vendorSaveFailed"));
     }
   };
 
@@ -979,7 +979,7 @@ function AdminPage() {
       cyclistForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all cyclist fields.");
+      toast.error(t("admin.toast.completeCyclistFields"));
       return;
     }
 
@@ -1005,16 +1005,16 @@ function AdminPage() {
         isActive: true,
       });
       setIsCyclistPanelOpen(false);
-      toast.success("Cyclist saved successfully.");
+      toast.success(t("admin.toast.cyclistSaved"));
     } catch (error) {
       console.error("Failed to save cyclist:", error);
-      toast.error("Failed to save cyclist.");
+      toast.error(t("admin.toast.cyclistSaveFailed"));
     }
   };
 
   const saveCommuneHandler = async () => {
     if (!serviceZoneForm.communeNameEn.trim()) {
-      toast.error("Please enter at least Commune Name (EN).");
+      toast.error(t("admin.toast.communeNameRequired"));
       return;
     }
 
@@ -1028,10 +1028,10 @@ function AdminPage() {
       });
       await serviceZonesQuery.refetch();
       setServiceZoneForm((current) => ({ ...current, communeNameEn: "", communeNameFr: "", communeNameAr: "" }));
-      toast.success("Commune created successfully.");
+      toast.success(t("admin.toast.communeCreated"));
     } catch (error) {
       console.error("Failed to create commune:", error);
-      toast.error("Failed to create commune.");
+      toast.error(t("admin.toast.communeCreateFailed"));
     }
   };
 
@@ -1044,7 +1044,7 @@ function AdminPage() {
       Number.isNaN(parsedDeliveryFee) ||
       parsedDeliveryFee < 0
     ) {
-      toast.error("Please select a commune and enter at least Neighborhood Name (EN).");
+      toast.error(t("admin.toast.neighborhoodRequired"));
       return;
     }
 
@@ -1066,10 +1066,10 @@ function AdminPage() {
         neighborhoodNameAr: "",
         neighborhoodDeliveryFee: "0",
       }));
-      toast.success("Neighborhood created successfully.");
+      toast.success(t("admin.toast.neighborhoodCreated"));
     } catch (error) {
       console.error("Failed to create neighborhood:", error);
-      toast.error("Failed to create neighborhood.");
+      toast.error(t("admin.toast.neighborhoodCreateFailed"));
     }
   };
 
