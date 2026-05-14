@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -59,6 +59,7 @@ export function usePushNotifications() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [permissionState, setPermissionState] = useState<NotificationPermission | null>(
     typeof window !== "undefined" && "Notification" in window ? Notification.permission : null,
   );
@@ -75,6 +76,27 @@ export function usePushNotifications() {
   const deniedPermissionMessage = showIosInstallHint
     ? "Notifications are blocked. On iOS, install the app first (Safari → Share → Add to Home Screen), then enable notifications from app/site settings."
     : "Notifications are blocked. Please enable notifications from browser/site settings and try again.";
+
+  useEffect(() => {
+    let mounted = true;
+
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      if (mounted) {
+        setIsAuthenticated(Boolean(user));
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session?.user));
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const syncSubscriptionState = useCallback(async () => {
     if (!isSupported) {
@@ -142,7 +164,7 @@ export function usePushNotifications() {
         } = await supabase.auth.getUser();
 
         if (!user) {
-          throw new Error("User not authenticated.");
+          throw new Error("Please sign in first, then try enabling push notifications again.");
         }
 
         const { error: upsertError } = await supabase.from("push_subscriptions").upsert(
@@ -217,7 +239,7 @@ export function usePushNotifications() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      throw new Error("User not authenticated.");
+      throw new Error("Please sign in first, then try again.");
     }
 
     const response = await fetch("/api/public/send-push-notification", {
@@ -241,6 +263,7 @@ export function usePushNotifications() {
     isSupported,
     showIosInstallHint,
     isPermissionDenied,
+    isAuthenticated,
     isLoading,
     error,
     isSubscribed,
