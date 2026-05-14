@@ -23,7 +23,7 @@ import {
   verifyDeliveryCodeAndComplete,
 } from "@/lib/cyclists.functions";
 import { clearRoleSessions } from "@/lib/operational-auth";
-import { playActionSound } from "@/lib/sound-alerts";
+import { playActionSound, playSuccessSound } from "@/lib/sound-alerts";
 import { extractDeliveryCode } from "@/lib/extract-delivery-code";
 import appI18n from "@/lib/i18n";
 
@@ -143,8 +143,10 @@ function CyclistDashboardPage() {
     onSuccess: async () => {
       setIsVendorQrScannerSuccess(true);
       setVendorQrScannerStatus("تم تسليم العهدة بنجاح");
-      toast.success("تم تسليم العهدة بنجاح");
+      void playSuccessSound();
+      toast.success("تم تسليم العهدة بنجاح والتسوية مع البائع");
       await dashboardQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet"] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
       window.setTimeout(() => {
@@ -321,8 +323,7 @@ function CyclistDashboardPage() {
 
       if (
         parsed?.action !== "vendor_cash_receipt" ||
-        typeof parsed.vendor_id !== "string" ||
-        typeof parsed.timestamp !== "string"
+        typeof parsed.vendor_id !== "string"
       ) {
         throw new Error("Invalid vendor QR payload");
       }
@@ -335,7 +336,7 @@ function CyclistDashboardPage() {
       setVendorQrScannerStatus("جاري التحقق من الرمز...");
       await executeVendorQrCashHandoverMutation.mutateAsync({
         vendorId: parsed.vendor_id,
-        timestamp: parsed.timestamp,
+        timestamp: typeof parsed.timestamp === "string" ? parsed.timestamp : new Date().toISOString(),
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "QR غير صالح");
