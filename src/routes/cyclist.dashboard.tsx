@@ -658,6 +658,7 @@ function OrderCard({
   actionTone,
   actionIcon: ActionIcon,
   isBusy,
+  onOpenDetails,
   onAction,
 }: {
   order: CyclistOrderCard;
@@ -666,6 +667,7 @@ function OrderCard({
   actionTone: "primary" | "success";
   actionIcon: typeof Truck;
   isBusy: boolean;
+  onOpenDetails?: () => void;
   onAction: () => void;
 }) {
   const actionClass =
@@ -689,7 +691,9 @@ function OrderCard({
         ) : null}
 
         <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
-          <p className="text-2xl font-black text-gray-900">{shortOrderId}</p>
+          <button type="button" className="text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
+            {shortOrderId}
+          </button>
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
@@ -777,6 +781,13 @@ function OrderCard({
             </div>
           </div>
         </div>
+
+        {order.deliveryInstructions?.trim() ? (
+          <div className="mt-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-bold text-slate-700">📝 تعليمات هامة من الزبون</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{order.deliveryInstructions.trim()}</p>
+          </div>
+        ) : null}
 
         <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
