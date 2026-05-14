@@ -373,7 +373,7 @@ function CyclistDashboardPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
         <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
-          <p className="text-sm text-muted-foreground">Your cyclist session has expired.</p>
+          <p className="text-sm text-muted-foreground">{t("cyclist.sessionExpired")}</p>
           <Button className="w-full" onClick={() => navigate({ to: "/cyclist/login" })}>
             {t("cyclist.goToLogin")}
           </Button>
@@ -511,19 +511,19 @@ function CyclistDashboardPage() {
                 <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-success/15 text-success">
                   <CheckCircle2 className="size-10" />
                 </span>
-                <p className="mt-4 text-lg font-semibold text-foreground">Delivery Verified</p>
-                <p className="mt-1 text-sm text-muted-foreground">Order status changed to delivered.</p>
+                <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
               </div>
             ) : showManualEntry ? (
               <div className="flex flex-1 flex-col justify-center gap-4">
                 <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm font-medium text-foreground">Enter customer delivery PIN</p>
+                  <p className="text-sm font-medium text-foreground">{t("cyclist.enterCustomerPin")}</p>
                   <input
                     value={manualCode}
                     onChange={(event) => setManualCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                     inputMode="numeric"
                     maxLength={6}
-                    placeholder="4-6 digit code"
+                    placeholder={t("cyclist.pinPlaceholder")}
                     className="h-11 w-full rounded-xl border border-input bg-background px-3 text-center text-base tracking-wide outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                   />
                   <Button
@@ -531,12 +531,12 @@ function CyclistDashboardPage() {
                     onClick={handleManualVerify}
                     disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
                   >
-                    {isUpdatingOrderId === scannerOrder?.id ? "Verifying..." : "Verify & Deliver"}
+                    {isUpdatingOrderId === scannerOrder?.id ? t("cyclist.verifying") : t("cyclist.verifyAndDeliver")}
                   </Button>
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
                   <Camera className="size-4" />
-                  Back to Camera
+                  {t("cyclist.backToCamera")}
                 </Button>
               </div>
             ) : (
@@ -546,7 +546,7 @@ function CyclistDashboardPage() {
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
                   <Keyboard className="size-4" />
-                  Enter Code Manually (إدخال الرمز يدوياً)
+                  {t("cyclist.enterCodeManually")}
                 </Button>
               </>
             )}
