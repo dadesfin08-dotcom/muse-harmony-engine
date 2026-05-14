@@ -472,6 +472,10 @@ function CyclistDashboardPage() {
                   </p>
                 </div>
               ))}
+              <Button className="w-full" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+                <Camera className="size-4" />
+                Open Universal Scanner · فتح الماسح الشامل
+              </Button>
             </div>
           )}
         </section>
