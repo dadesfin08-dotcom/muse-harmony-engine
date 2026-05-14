@@ -173,7 +173,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { clearRoleSessions } from "@/lib/operational-auth";
+import { ADMIN_PHONE, clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -387,6 +387,7 @@ function AdminPage() {
   const fetchCyclists = useServerFn(listCyclists);
   const saveCyclistToDatabase = useServerFn(createCyclist);
   const saveVendorToDatabase = useServerFn(createVendor);
+  const collectPlatformDues = useServerFn(collectVendorPlatformDues);
   const saveVendorDetails = useServerFn(updateVendorDetails);
   const setVendorActiveState = useServerFn(updateVendorActiveState);
   const fetchVendorSalesAnalytics = useServerFn(getVendorSalesAnalytics);
@@ -589,7 +590,24 @@ function AdminPage() {
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isUpdatingVendorState, setIsUpdatingVendorState] = useState(false);
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
+  const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
+  const [platformCollectionVendor, setPlatformCollectionVendor] = useState<AdminVendorRecord | null>(null);
+  const [isPlatformCollectionQrOpen, setIsPlatformCollectionQrOpen] = useState(false);
+  const [isPlatformQrScannerOpen, setIsPlatformQrScannerOpen] = useState(false);
+  const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
+    vendorName: string;
+    amountMad: number;
+    transactionId: string;
+    remainingDuesMad: number;
+    collectedAt: string;
+  } | null>(null);
+  const [platformCollectionConfirmation, setPlatformCollectionConfirmation] = useState<{
+    vendorId: string;
+    vendorName: string;
+    amountMad: number;
+    payload: Record<string, unknown>;
+  } | null>(null);
   const [pendingArchiveProduct, setPendingArchiveProduct] = useState<MasterProductEntity | null>(null);
 
   const [vendorForm, setVendorForm] = useState({
