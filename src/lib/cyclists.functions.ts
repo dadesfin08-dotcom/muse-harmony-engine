@@ -822,7 +822,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         cashToRemitMad,
         owedByVendorMad,
         netCashToHandoverMad,
-        pendingSettlementOrdersCount: pendingCashRows.length,
+        pendingSettlementOrdersCount: inProgressRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
         pendingCarnetSettlementOrdersCount: pendingCreditRows.length,
       } satisfies CyclistWalletSummary;
