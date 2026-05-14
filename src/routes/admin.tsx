@@ -354,13 +354,8 @@ const masterProductFormSchema = z.object({
 });
 
 const platformCollectionQrPayloadSchema = z.object({
-  type: z.literal("platform_collection_request"),
-  v: z.literal(1),
   vendor_id: z.string().uuid(),
-  vendor_name: z.string().trim().min(1),
-  amount: z.union([z.number(), z.string()]),
-  currency: z.literal("MAD"),
-  requested_at: z.string(),
+  amount_owed: z.union([z.number(), z.string()]),
 });
 
 const weeklyOrdersChartConfig = {
@@ -887,13 +882,8 @@ function AdminPage() {
   const platformCollectionQrPayload = useMemo(() => {
     if (!platformCollectionVendor) return "";
     return JSON.stringify({
-      type: "platform_collection_request",
-      v: 1,
       vendor_id: platformCollectionVendor.id,
-      vendor_name: platformCollectionVendor.storeName,
-      amount: Number(platformCollectionVendor.platformDuesMad ?? 0).toFixed(2),
-      currency: "MAD",
-      requested_at: new Date().toISOString(),
+      amount_owed: Number(platformCollectionVendor.platformDuesMad ?? 0).toFixed(2),
     });
   }, [platformCollectionVendor]);
 
@@ -1018,14 +1008,16 @@ function AdminPage() {
           (decodedText: string) => {
             try {
               const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
-              const amountMad = Number(payload.amount);
+              const amountMad = Number(payload.amount_owed);
               if (!Number.isFinite(amountMad) || amountMad <= 0) {
                 throw new Error("Invalid collection amount");
               }
 
+              const matchedVendor = vendors.find((vendor) => vendor.id === payload.vendor_id);
+
               setPlatformCollectionConfirmation({
                 vendorId: payload.vendor_id,
-                vendorName: payload.vendor_name,
+                vendorName: matchedVendor?.storeName ?? "Vendor",
                 amountMad,
                 payload,
               });

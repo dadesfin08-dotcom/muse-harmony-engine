@@ -182,13 +182,8 @@ function VendorWalletPage() {
     if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
 
     return JSON.stringify({
-      type: "platform_collection_request",
-      v: 1,
       vendor_id: vendorId,
-      vendor_name: dashboardQuery.data.vendor.storeName,
-      amount: amountMad.toFixed(2),
-      currency: "MAD",
-      requested_at: new Date().toISOString(),
+      amount_owed: amountMad.toFixed(2),
     });
   }, [dashboardQuery.data?.vendor, vendorId]);
 
