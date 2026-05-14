@@ -17,7 +17,8 @@ import {
   LogOut,
   Bike,
   Package,
-  PhoneCall,
+  Phone,
+  MessageCircle,
   Search,
   ShoppingBag,
   Store,
@@ -2910,7 +2911,10 @@ function OrderCard({
   const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
   const driver = order.cyclist;
   const driverPhoneForCall = driver?.phoneNumber?.trim() ?? "";
-  const driverPhoneForWhatsApp = driverPhoneForCall.replace(/\D/g, "");
+  const driverPhoneDigits = driverPhoneForCall.replace(/\D/g, "");
+  const driverPhoneForWhatsApp = driverPhoneDigits.startsWith("0")
+    ? `212${driverPhoneDigits.slice(1)}`
+    : driverPhoneDigits;
 
   if (compact) {
     return (
@@ -2947,59 +2951,47 @@ function OrderCard({
         </p>
 
         {shouldShowDriverBlock && driver ? (
-          <div className="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 border border-primary/25">
+          <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+            <div className="flex flex-row items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar className="h-10 w-10 rounded-full border border-emerald-200">
                   <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
-                  <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
+                  <AvatarFallback className="bg-emerald-100 text-xs font-semibold text-emerald-700">
                     {cyclistNameInitials}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    <Bike className="size-3" />
-                    Driver Info
-                  </p>
-                  <p className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
-                    <Bike className="size-3.5 text-primary" />
-                    <span>الليفرور: {driver.name}</span>
-                  </p>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Driver / الليفرور</p>
+                  <p className="truncate text-sm font-semibold text-gray-900">{driver.name}</p>
                 </div>
               </div>
 
-              <AlertDialog open={isCallConfirmOpen} onOpenChange={setIsCallConfirmOpen}>
-                <AlertDialogTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
+              <div className="flex items-center gap-2">
+                {driverPhoneForCall ? (
+                  <a
+                    href={`tel:${driverPhoneForCall}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-100"
                     aria-label={`Call driver ${driver.name}`}
                   >
-                    <PhoneCall className="size-3" />
-                    {driver.phoneNumber}
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="sm:max-w-sm">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد الاتصال بالسائق</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      واش بغيتي تتاصل دابا مع {driver.name} على الرقم {driver.phoneNumber}؟
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        if (typeof window !== "undefined") {
-                          window.location.href = `tel:${driver.phoneNumber}`;
-                        }
-                      }}
-                    >
-                      نعم، اتصل الآن
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    <Phone className="h-4 w-4" />
+                  </a>
+                ) : null}
+
+                {driverPhoneForWhatsApp ? (
+                  <a
+                    href={`https://wa.me/${driverPhoneForWhatsApp}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-700 shadow-sm transition hover:bg-green-100"
+                    aria-label={`WhatsApp driver ${driver.name}`}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </a>
+                ) : null}
+              </div>
             </div>
           </div>
         ) : null}
