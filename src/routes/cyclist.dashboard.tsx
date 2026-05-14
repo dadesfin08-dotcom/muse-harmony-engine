@@ -233,7 +233,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Ready to scan.");
+    setScannerStatus(t("cyclist.readyToScan"));
     isVerifyingCodeRef.current = false;
   };
 
@@ -244,13 +244,13 @@ function CyclistDashboardPage() {
 
     const extractedCode = extractDeliveryCode(rawValue, order.id);
     if (!extractedCode) {
-      toast.error("Invalid QR/PIN format.");
+      toast.error(t("cyclist.invalidQr"));
       return;
     }
 
     isVerifyingCodeRef.current = true;
     setIsUpdatingOrderId(order.id);
-    setScannerStatus("Verifying delivery pass...");
+    setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
       queryClient.setQueryData(["cyclist", "dashboard", session.cyclistId], (current: any) => {
@@ -275,15 +275,15 @@ function CyclistDashboardPage() {
       });
 
       setIsScannerSuccess(true);
-      setScannerStatus("Delivery verified successfully.");
-      toast.success("Delivery completed successfully.");
+      setScannerStatus(t("cyclist.scannerVerified"));
+      toast.success(t("cyclist.deliveryCompleted"));
       await dashboardQuery.refetch();
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Failed to verify delivery:", error);
       await dashboardQuery.refetch();
-      setScannerStatus("Verification failed. Try scanning again or use manual code.");
-      toast.error(error instanceof Error ? error.message : "Failed to verify delivery.");
+      setScannerStatus(t("cyclist.scannerFailed"));
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedVerify"));
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
@@ -295,7 +295,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("Preparing camera...");
+    setScannerStatus(t("cyclist.cameraPreparing"));
     setIsScannerOpen(true);
   };
 
