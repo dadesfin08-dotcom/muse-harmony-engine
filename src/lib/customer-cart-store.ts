@@ -10,6 +10,7 @@ export type CustomerCartItem = {
   brandName?: string | null;
   measurementValue?: number | null;
   price: number;
+  basePrice?: number;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   selectedVariant?: string | null;
   image: string;
