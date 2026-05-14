@@ -301,7 +301,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
   try {
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
-      .select("id, product_name, name_fr, name_ar, image_url, barcode, measurement_value, measurement_unit, category, category_id, brand_id")
+      .select("id, product_name, name_fr, name_ar, image_url, barcode, product_variants, measurement_value, measurement_unit, category, category_id, brand_id")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -315,6 +315,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
       name_ar: string | null;
       image_url: string | null;
       barcode: string | null;
+      product_variants: string[] | null;
       measurement_value: number | null;
       measurement_unit: MeasurementUnit;
       category: ProductCategory | null;
@@ -359,6 +360,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
       name_ar: row.name_ar,
       image_url: row.image_url,
       barcode: row.barcode,
+      product_variants: Array.isArray(row.product_variants) ? row.product_variants : [],
       measurement_value: row.measurement_value,
       measurement_unit: row.measurement_unit,
       category_name: (row.category_id ? categoriesById.get(row.category_id) : null) ?? row.category ?? null,
