@@ -2737,6 +2737,15 @@ function OrderCard({
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
+  const cyclistNameInitials = order.cyclist?.name
+    ? order.cyclist.name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("")
+    : "DR";
+  const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
 
   if (compact) {
     return (
@@ -2772,6 +2781,37 @@ function OrderCard({
           ⏱ {elapsed}
         </p>
 
+        {shouldShowDriverBlock && order.cyclist ? (
+          <div className="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8 border border-primary/25">
+                  <AvatarImage src={order.cyclist.avatarUrl ?? undefined} alt={order.cyclist.name} />
+                  <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
+                    {cyclistNameInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    <Bike className="size-3" />
+                    Driver Info
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">الليفرور: {order.cyclist.name}</p>
+                </div>
+              </div>
+
+              <a
+                href={`tel:${order.cyclist.phoneNumber}`}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
+                aria-label={`Call driver ${order.cyclist.name}`}
+              >
+                <PhoneCall className="size-3" />
+                {order.cyclist.phoneNumber}
+              </a>
+            </div>
+          </div>
+        ) : null}
+
         <p className="inline-flex items-center gap-2 text-sm text-foreground">
           <User className="size-4 text-muted-foreground" />
           <span className="font-semibold">{order.customerName}</span>
@@ -2786,7 +2826,7 @@ function OrderCard({
       </div>
 
       <Button variant="hero" className="mt-4 h-10 w-full rounded-xl" onClick={onOpenDetails}>
-        {tab === "ready" ? "Assign Driver" : "View & Process"}
+        {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
       {tab === "new" ? (
@@ -2861,6 +2901,10 @@ function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: Dashboa
 
   if (tab === "preparing") {
     return <Badge className="rounded-md bg-accent/20 text-foreground hover:bg-accent/20">Preparing</Badge>;
+  }
+
+  if (tab === "inDelivery") {
+    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">In Delivery</Badge>;
   }
 
   return status === "ready" ? (
