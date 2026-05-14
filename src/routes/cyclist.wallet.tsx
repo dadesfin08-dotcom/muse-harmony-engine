@@ -129,14 +129,8 @@ function CyclistWalletPage() {
   };
 
   const qrPayload = JSON.stringify({
-    type: "cash_handover",
-    v: 1,
-    cyclist_id: session.cyclistId,
-    cash_to_remit: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    owed_by_vendor: Number(summary?.owedByVendorMad ?? 0).toFixed(2),
-    net_amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    issued_at: new Date().toISOString(),
+    action: "vendor_handover",
+    vendor_id: "SCAN_FROM_VENDOR_WALLET_ONLY",
   });
 
   return (
