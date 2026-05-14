@@ -15,7 +15,9 @@ import {
   Clock3,
   History,
   LogOut,
+  Bike,
   Package,
+  PhoneCall,
   Search,
   ShoppingBag,
   Store,
@@ -47,6 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -86,7 +89,7 @@ import {
 } from "@/components/ThermalReceipt";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
-type OrderQueueTab = "new" | "preparing" | "ready";
+type OrderQueueTab = "new" | "preparing" | "ready" | "inDelivery";
 type HistoryFilter = "today" | "week" | "month" | "all";
 type CarnetLedgerTransaction = {
   id: string;
@@ -111,7 +114,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
 const vendorDashboardSearchSchema = z.object({
   tab: fallback(z.enum(["live", "inventory", "flash-sales", "carnet", "history"]), "live").default("live"),
-  sub: fallback(z.enum(["new", "preparing", "ready"]), "new").default("new"),
+  sub: fallback(z.enum(["new", "preparing", "ready", "inDelivery"]), "new").default("new"),
 });
 
 type VendorDashboardSearch = z.infer<typeof vendorDashboardSearchSchema>;
@@ -125,7 +128,7 @@ type DashboardOrder = {
   communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status: "new" | "preparing" | "ready" | "in_transit" | "delivering" | "delivered";
   deliveryFeeMad: number;
   totalMad: number;
   vendorShareMad: number;
@@ -140,8 +143,32 @@ type DashboardOrder = {
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
+  cyclist?: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    avatarUrl?: string | null;
+  } | null;
   createdAt: string;
 };
+
+function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
+  if (status === "picked_up" || status === "in_transit") {
+    return "in_transit";
+  }
+
+  if (
+    status === "new" ||
+    status === "preparing" ||
+    status === "ready" ||
+    status === "delivering" ||
+    status === "delivered"
+  ) {
+    return status;
+  }
+
+  return "new";
+}
 
 type InventoryItem = {
   id: string;
@@ -496,12 +523,21 @@ function VendorDashboardPage() {
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
-        status: row.status,
+        status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
         totalMad: roundMoney(Number(row.total_price ?? 0)),
         vendorShareMad: roundMoney(Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0)),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
+        cyclist:
+          row.cyclist && typeof row.cyclist.name === "string" && typeof row.cyclist.phoneNumber === "string"
+            ? {
+                id: row.cyclist.id,
+                name: row.cyclist.name,
+                phoneNumber: row.cyclist.phoneNumber,
+                avatarUrl: row.cyclist.avatarUrl ?? null,
+              }
+            : null,
         createdAt: row.created_at,
       }))
       .filter((order) => !rejectedOrderIds[order.id]);
@@ -512,6 +548,7 @@ function VendorDashboardPage() {
       new: orders.filter((order) => order.status === "new"),
       preparing: orders.filter((order) => order.status === "preparing"),
       ready: orders.filter((order) => order.status === "ready"),
+      inDelivery: orders.filter((order) => order.status === "in_transit" || order.status === "delivering"),
       delivered: orders.filter((order) => order.status === "delivered"),
     }),
     [orders],
@@ -1891,7 +1928,13 @@ function LiveOrdersView({
 }: {
   activeTab: OrderQueueTab;
   onTabChange: (tab: OrderQueueTab) => void;
-  queue: { new: DashboardOrder[]; preparing: DashboardOrder[]; ready: DashboardOrder[]; delivered: DashboardOrder[] };
+  queue: {
+    new: DashboardOrder[];
+    preparing: DashboardOrder[];
+    ready: DashboardOrder[];
+    inDelivery: DashboardOrder[];
+    delivered: DashboardOrder[];
+  };
   isLoading: boolean;
   isUpdating: string | null;
   onOpenOrder: (orderId: string) => void;
@@ -1912,7 +1955,11 @@ function LiveOrdersView({
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => (v === "new" || v === "preparing" || v === "ready" ? onTabChange(v) : undefined)}
+        onValueChange={(v) =>
+          v === "new" || v === "preparing" || v === "ready" || v === "inDelivery"
+            ? onTabChange(v)
+            : undefined
+        }
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="new" className="rounded-lg">
@@ -1923,6 +1970,9 @@ function LiveOrdersView({
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
             Ready ({queue.ready.length})
+          </TabsTrigger>
+          <TabsTrigger value="inDelivery" className="rounded-lg">
+            In Delivery / في الطريق ({queue.inDelivery.length})
           </TabsTrigger>
         </TabsList>
 
@@ -1988,6 +2038,29 @@ function LiveOrdersView({
                     key={order.id}
                     order={order}
                     tab="ready"
+                    isUpdating={false}
+                    onOpenDetails={() => onOpenOrder(order.id)}
+                    timeTick={timeTick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="inDelivery" className="mt-4">
+          {isLoading ? (
+            <EmptyState label="Loading live orders..." />
+          ) : queue.inDelivery.length === 0 ? (
+            <EmptyState label="No orders currently in delivery." />
+          ) : (
+            <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {queue.inDelivery.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    tab="inDelivery"
                     isUpdating={false}
                     onOpenDetails={() => onOpenOrder(order.id)}
                     timeTick={timeTick}
@@ -2664,6 +2737,15 @@ function OrderCard({
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
+  const cyclistNameInitials = order.cyclist?.name
+    ? order.cyclist.name
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("")
+    : "DR";
+  const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
 
   if (compact) {
     return (
@@ -2699,6 +2781,40 @@ function OrderCard({
           ⏱ {elapsed}
         </p>
 
+        {shouldShowDriverBlock && order.cyclist ? (
+          <div className="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8 border border-primary/25">
+                  <AvatarImage src={order.cyclist.avatarUrl ?? undefined} alt={order.cyclist.name} />
+                  <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
+                    {cyclistNameInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                    <Bike className="size-3" />
+                    Driver Info
+                  </p>
+                  <p className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
+                    <Bike className="size-3.5 text-primary" />
+                    <span>الليفرور: {order.cyclist.name}</span>
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={`tel:${order.cyclist.phoneNumber}`}
+                className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
+                aria-label={`Call driver ${order.cyclist.name}`}
+              >
+                <PhoneCall className="size-3" />
+                {order.cyclist.phoneNumber}
+              </a>
+            </div>
+          </div>
+        ) : null}
+
         <p className="inline-flex items-center gap-2 text-sm text-foreground">
           <User className="size-4 text-muted-foreground" />
           <span className="font-semibold">{order.customerName}</span>
@@ -2713,7 +2829,7 @@ function OrderCard({
       </div>
 
       <Button variant="hero" className="mt-4 h-10 w-full rounded-xl" onClick={onOpenDetails}>
-        {tab === "ready" ? "Assign Driver" : "View & Process"}
+        {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
       {tab === "new" ? (
@@ -2788,6 +2904,10 @@ function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: Dashboa
 
   if (tab === "preparing") {
     return <Badge className="rounded-md bg-accent/20 text-foreground hover:bg-accent/20">Preparing</Badge>;
+  }
+
+  if (tab === "inDelivery") {
+    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">In Delivery</Badge>;
   }
 
   return status === "ready" ? (

@@ -91,6 +91,7 @@ type OrderRow = {
   id: string;
   vendor_id: string;
   customer_user_id?: string | null;
+  cyclist_id?: string | null;
   specific_address?: string | null;
   neighborhood_id?: string | null;
   neighborhood_name?: string | null;
@@ -99,7 +100,7 @@ type OrderRow = {
   customer_phone: string;
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status: "new" | "preparing" | "ready" | "picked_up" | "in_transit" | "delivering" | "delivered";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
@@ -114,6 +115,12 @@ type OrderRow = {
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
+  cyclist?: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    avatarUrl?: string | null;
+  } | null;
   vendor_settlement_status?: "pending" | "settled";
   created_at: string;
 };
@@ -445,7 +452,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_user_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
+        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -554,6 +561,14 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       ),
     );
 
+    const cyclistIds = Array.from(
+      new Set(
+        (orders ?? [])
+          .map((order: any) => (typeof order?.cyclist_id === "string" ? order.cyclist_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
     const profilesQuery =
       customerUserIds.length > 0
         ? await (supabaseAdmin as any).from("profiles").select("id, address").in("id", customerUserIds)
@@ -563,10 +578,55 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       throw new Error(profilesQuery.error.message);
     }
 
+    const cyclistsQuery =
+      cyclistIds.length > 0
+        ? await (supabaseAdmin as any)
+            .from("cyclists")
+            .select("id, user_id, full_name, phone_number")
+            .in("id", cyclistIds)
+        : { data: [], error: null };
+
+    if (cyclistsQuery.error) {
+      throw new Error(cyclistsQuery.error.message);
+    }
+
+    const cyclistUserIds = Array.from(
+      new Set(
+        ((cyclistsQuery.data ?? []) as Array<{ user_id?: string | null }>)
+          .map((row) => (typeof row.user_id === "string" ? row.user_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const cyclistProfilesQuery =
+      cyclistUserIds.length > 0
+        ? await (supabaseAdmin as any).from("profiles").select("id, avatar_url").in("id", cyclistUserIds)
+        : { data: [], error: null };
+
+    if (cyclistProfilesQuery.error) {
+      throw new Error(cyclistProfilesQuery.error.message);
+    }
+
     const profileAddressById = new Map(
       ((profilesQuery.data ?? []) as Array<{ id: string; address?: string | null }>).map((row) => [
         row.id,
         typeof row.address === "string" ? row.address.trim() : null,
+      ]),
+    );
+
+    const cyclistById = new Map(
+      ((cyclistsQuery.data ?? []) as Array<{
+        id: string;
+        user_id?: string | null;
+        full_name?: string | null;
+        phone_number?: string | null;
+      }>).map((row) => [row.id, row]),
+    );
+
+    const cyclistAvatarByUserId = new Map(
+      ((cyclistProfilesQuery.data ?? []) as Array<{ id: string; avatar_url?: string | null }>).map((row) => [
+        row.id,
+        typeof row.avatar_url === "string" ? row.avatar_url : null,
       ]),
     );
 
@@ -650,6 +710,8 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
           : undefined;
       const specificAddress =
         typeof order?.customer_user_id === "string" ? profileAddressById.get(order.customer_user_id) ?? null : null;
+      const cyclist =
+        typeof order?.cyclist_id === "string" ? cyclistById.get(order.cyclist_id) : undefined;
 
       return {
         ...order,
@@ -657,6 +719,16 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         specific_address: specificAddress,
         neighborhood_name: localizedName(neighborhoodRow) || null,
         commune_name: localizedName(communeRow) || null,
+        cyclist:
+          cyclist && typeof cyclist.full_name === "string" && typeof cyclist.phone_number === "string"
+            ? {
+                id: cyclist.id,
+                name: cyclist.full_name,
+                phoneNumber: cyclist.phone_number,
+                avatarUrl:
+                  typeof cyclist.user_id === "string" ? cyclistAvatarByUserId.get(cyclist.user_id) ?? null : null,
+              }
+            : null,
       };
     });
 
