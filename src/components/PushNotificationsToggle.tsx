@@ -12,7 +12,16 @@ type PushNotificationsToggleProps = {
 };
 
 export function PushNotificationsToggle({ role, label, className }: PushNotificationsToggleProps) {
-  const { isSupported, showIosInstallHint, isSubscribed, isLoading, subscribe, unsubscribe, syncSubscriptionState } =
+  const {
+    isSupported,
+    showIosInstallHint,
+    isPermissionDenied,
+    isSubscribed,
+    isLoading,
+    subscribe,
+    unsubscribe,
+    syncSubscriptionState,
+  } =
     usePushNotifications();
 
   useEffect(() => {
@@ -43,6 +52,12 @@ export function PushNotificationsToggle({ role, label, className }: PushNotifica
         </div>
         <Switch checked={isSubscribed} onCheckedChange={handleCheckedChange} disabled={!isSupported || isLoading} />
       </div>
+
+      {isPermissionDenied ? (
+        <p className="mt-2 text-xs text-destructive">
+          الإشعارات محظورة من إعدادات المتصفح. فعّلها من إعدادات الموقع ثم أعد المحاولة.
+        </p>
+      ) : null}
 
       {showIosInstallHint ? (
         <p className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
