@@ -422,6 +422,7 @@ export type Database = {
           name_fr: string | null
           popularity_score: number
           product_name: string
+          product_variants: string[]
           updated_at: string
         }
         Insert: {
@@ -439,6 +440,7 @@ export type Database = {
           name_fr?: string | null
           popularity_score?: number
           product_name: string
+          product_variants?: string[]
           updated_at?: string
         }
         Update: {
@@ -456,6 +458,7 @@ export type Database = {
           name_fr?: string | null
           popularity_score?: number
           product_name?: string
+          product_variants?: string[]
           updated_at?: string
         }
         Relationships: [
