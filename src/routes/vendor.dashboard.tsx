@@ -111,6 +111,7 @@ type DashboardOrder = {
   id: string;
   customerName: string;
   customerPhone: string;
+  specificAddress?: string | null;
   neighborhoodName: string;
   communeName: string;
   deliveryNotes: string;
@@ -470,6 +471,7 @@ function VendorDashboardPage() {
         id: row.id,
         customerName: row.customer_name,
         customerPhone: row.customer_phone,
+        specificAddress: typeof row.specific_address === "string" ? row.specific_address : null,
         neighborhoodName: typeof row.neighborhood_name === "string" ? row.neighborhood_name : "-",
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
@@ -622,7 +624,7 @@ function VendorDashboardPage() {
             id: printOrder.id,
             customerName: printOrder.customerName,
             customerPhone: printOrder.customerPhone,
-            specificAddress: typeof (printOrder as { specificAddress?: unknown }).specificAddress === "string" ? (printOrder as { specificAddress: string }).specificAddress : null,
+            specificAddress: typeof printOrder.specificAddress === "string" ? printOrder.specificAddress : null,
             neighborhoodName: printOrder.neighborhoodName,
             communeName: printOrder.communeName,
             specialInstructions: printOrder.deliveryNotes,
