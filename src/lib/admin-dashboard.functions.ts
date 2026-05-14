@@ -69,6 +69,8 @@ type GlobalSettingsRow = {
   minimum_order_amount: number;
   free_delivery_threshold: number;
   marketplace_active: boolean;
+  site_name: string;
+  site_logo_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -103,10 +105,18 @@ function normalizeGlobalSettingsRow(row: any): GlobalSettingsRow {
     minimum_order_amount: Number(row.minimum_order_amount ?? 50),
     free_delivery_threshold: Number(row.free_delivery_threshold ?? 500),
     marketplace_active: Boolean(row.marketplace_active ?? true),
+    site_name: typeof row.site_name === "string" && row.site_name.trim().length > 0 ? row.site_name.trim() : "Bzaf Fresh",
+    site_logo_url: typeof row.site_logo_url === "string" && row.site_logo_url.trim().length > 0 ? row.site_logo_url.trim() : null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
+
+const uploadSiteLogoInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1).max(10_000_000),
+});
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
