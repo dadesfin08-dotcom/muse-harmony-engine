@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MapPin, MessageSquareText, Phone, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -67,6 +67,52 @@ function VendorOrderDetailsPage() {
             <p className="text-sm text-destructive">Unable to load this order.</p>
           ) : (
             <>
+              <section className="mb-4 rounded-lg border border-border bg-muted/10 p-4">
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Customer Information</h2>
+                <div className="grid gap-3 text-sm sm:grid-cols-2">
+                  <div className="flex items-start gap-2">
+                    <User className="mt-0.5 size-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Full Name</p>
+                      <p className="font-medium text-foreground">{order.customerName}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Phone className="mt-0.5 size-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Phone Number</p>
+                      {order.customerPhone && order.customerPhone !== "-" ? (
+                        <a
+                          href={`tel:${order.customerPhone}`}
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          {order.customerPhone}
+                        </a>
+                      ) : (
+                        <p className="font-medium text-foreground">-</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 sm:col-span-2">
+                    <MapPin className="mt-0.5 size-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Address</p>
+                      <p className="font-medium text-foreground">{order.customerAddress}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 sm:col-span-2">
+                    <MessageSquareText className="mt-0.5 size-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Special Instructions</p>
+                      <p className="font-medium text-foreground">{order.specialInstructions}</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               <div className="overflow-hidden rounded-md border border-border">
                 <Table className="border-collapse">
                   <TableHeader>
