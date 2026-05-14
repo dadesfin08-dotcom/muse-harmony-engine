@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Bike, Camera, CheckCircle2, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, ShoppingBasket, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, PackageSearch, Phone, PhoneCall, ShoppingBasket, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -592,7 +592,7 @@ function CyclistDashboardPage() {
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
-                <ArrowLeft className="size-4" />
+                <ChevronRight className="size-4" />
                 Back (رجوع)
               </Button>
               <p className="text-sm font-semibold text-foreground">Order Details</p>
@@ -603,6 +603,21 @@ function CyclistDashboardPage() {
                 <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
                   <p className="text-xl font-black text-foreground">#{detailsOrder.id.replace(/-/g, "").slice(-4).toUpperCase()}</p>
                   <p className="text-lg font-bold text-emerald-600">{detailsOrder.totalMad.toFixed(2)} MAD</p>
+                </div>
+
+                {detailsOrder.deliveryInstructions?.trim() ? (
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir="rtl">
+                    <div className="flex items-center gap-2">
+                      <MessageSquareText className="h-5 w-5 text-amber-500" />
+                      <span className="font-bold text-slate-800">تعليمات التوصيل</span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsOrder.deliveryInstructions.trim()}</p>
+                  </div>
+                ) : null}
+
+                <div className="mb-2 flex items-center gap-2" dir="rtl">
+                  <PackageSearch className="h-5 w-5 text-slate-600" />
+                  <p className="text-sm font-bold text-slate-800">قائمة المنتجات</p>
                 </div>
 
                 <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -628,7 +643,12 @@ function CyclistDashboardPage() {
                   )}
                 </div>
 
-                <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center gap-2" dir="rtl">
+                    <ClipboardList className="h-5 w-5 text-slate-600" />
+                    <p className="text-sm font-bold text-slate-800">ملخص الطلب</p>
+                  </div>
+                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
                     <span>Subtotal</span>
                     <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
@@ -641,6 +661,7 @@ function CyclistDashboardPage() {
                     <span>Total</span>
                     <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -781,13 +802,6 @@ function OrderCard({
             </div>
           </div>
         </div>
-
-        {order.deliveryInstructions?.trim() ? (
-          <div className="mt-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-bold text-slate-700">📝 تعليمات هامة من الزبون</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">{order.deliveryInstructions.trim()}</p>
-          </div>
-        ) : null}
 
         <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
