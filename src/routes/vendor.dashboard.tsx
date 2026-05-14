@@ -1462,6 +1462,9 @@ function VendorDashboardPage() {
                         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
                         {(() => {
                           const metadataParts = [
+                            item.selectedVariant?.trim()
+                              ? `النوع: ${item.selectedVariant.trim()}`
+                              : null,
                             item.brandName?.trim()
                               ? `الماركة: ${item.brandName.trim()}`
                               : null,
