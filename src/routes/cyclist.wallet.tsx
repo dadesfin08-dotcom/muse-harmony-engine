@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, HandCoins, History, Wallet } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -127,11 +126,6 @@ function CyclistWalletPage() {
       minute: "2-digit",
     });
   };
-
-  const qrPayload = JSON.stringify({
-    action: "vendor_handover",
-    vendor_id: "SCAN_FROM_VENDOR_WALLET_ONLY",
-  });
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
@@ -284,11 +278,12 @@ function CyclistWalletPage() {
                 Cash to remit - Owed by vendor (carnet delivery fees).
               </p>
             </div>
-            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
-              <QRCodeSVG value={qrPayload} size={220} level="M" includeMargin />
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-5">
+              <p className="text-sm font-medium text-foreground">Use Vendor Wallet QR</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ask the vendor to open Wallet → Receive Cash QR, then scan that code from your dashboard scanner.
+              </p>
             </div>
-            <p className="text-sm font-medium">Full Amount: {(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-muted-foreground">Show this QR to vendor for settlement confirmation.</p>
           </div>
         </DialogContent>
       </Dialog>
