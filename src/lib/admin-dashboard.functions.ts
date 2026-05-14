@@ -14,7 +14,15 @@ import {
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 
-type AdminOrderStatus = "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+type AdminOrderStatus =
+  | "new"
+  | "preparing"
+  | "ready"
+  | "delivering"
+  | "delivered"
+  | "delivered_cash_with_cyclist"
+  | "cash_transferred_to_vendor"
+  | "cancelled";
 
 type AdminOrderRow = {
   id: string;
@@ -137,7 +145,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     (supabaseAdmin as any)
       .from("orders")
       .select("total_price")
-      .eq("status", "delivered"),
+      .in("status", ["delivered", "cash_transferred_to_vendor"]),
     (supabaseAdmin as any)
       .from("orders")
       .select("created_at")
@@ -494,7 +502,7 @@ export const listAdminCustomers = createServerFn({ method: "GET" }).handler(asyn
     (supabaseAdmin as any)
       .from("orders")
       .select("customer_phone, total_price, delivery_fee")
-      .eq("status", "delivered"),
+      .in("status", ["delivered", "cash_transferred_to_vendor"]),
   ]);
 
   if (profilesRes.error) throw new Error(profilesRes.error.message);
