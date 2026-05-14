@@ -2681,40 +2681,40 @@ function AdminPage() {
       <Sheet open={isVendorPanelOpen} onOpenChange={setIsVendorPanelOpen}>
         <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Add New Vendor</SheetTitle>
-            <SheetDescription>Register a vendor for your marketplace network.</SheetDescription>
+            <SheetTitle>{t("admin.modals.vendor.title")}</SheetTitle>
+            <SheetDescription>{t("admin.modals.vendor.description")}</SheetDescription>
           </SheetHeader>
 
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
               <label htmlFor="store-name" className="text-sm font-medium text-foreground">
-                Store Name
+                {t("admin.forms.storeName")}
               </label>
               <input
                 id="store-name"
                 value={vendorForm.storeName}
                 onChange={(event) => setVendorForm((current) => ({ ...current, storeName: event.target.value }))}
-                placeholder="e.g. Casa Fresh Market"
+                placeholder={t("admin.placeholders.storeNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="owner-name" className="text-sm font-medium text-foreground">
-                Owner Name
+                {t("admin.forms.ownerName")}
               </label>
               <input
                 id="owner-name"
                 value={vendorForm.ownerName}
                 onChange={(event) => setVendorForm((current) => ({ ...current, ownerName: event.target.value }))}
-                placeholder="e.g. Amal Benkirane"
+                placeholder={t("admin.placeholders.ownerNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="phone-number" className="text-sm font-medium text-foreground">
-                Phone Number
+                {t("admin.forms.phoneNumber")}
               </label>
               <div className="flex h-10 items-center overflow-hidden rounded-md border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-ring/30">
                 <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
@@ -2727,7 +2727,7 @@ function AdminPage() {
                       phoneNumber: normalizeMoroccoPhoneInput(event.target.value),
                     }))
                   }
-                  placeholder="6XXXXXXXX"
+                  placeholder={t("admin.placeholders.phoneNumberShort")}
                   inputMode="numeric"
                   autoComplete="tel"
                   className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-sm outline-none"
@@ -2737,7 +2737,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="vendor-commune" className="text-sm font-medium text-foreground">
-                Jamaa Tourabiya
+                {t("admin.forms.commune")}
               </label>
               <select
                 id="vendor-commune"
@@ -2751,7 +2751,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select commune</option>
+                 <option value="">{t("admin.common.selectCommune")}</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
                     {getLocalizedCommuneName(commune)}
@@ -2761,12 +2761,12 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Hay / Douar (Multi-select)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.forms.douarMultiSelect")}</label>
               <div className="max-h-52 space-y-2 overflow-y-auto rounded-md border border-input bg-background p-3">
                 {!vendorForm.communeId ? (
-                  <p className="text-sm text-muted-foreground">Select a commune first.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.common.selectCommuneFirst")}</p>
                 ) : addVendorNeighborhoodOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">All neighborhoods in this commune are already claimed.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.forms.noUnassignedNeighborhoods")}</p>
                 ) : (
                   addVendorNeighborhoodOptions.map((neighborhood) => {
                     const isChecked = vendorForm.neighborhoodIds.includes(neighborhood.id);
@@ -2804,8 +2804,8 @@ function AdminPage() {
 
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Active Status</p>
-                <p className="text-xs text-muted-foreground">Enable if this vendor can receive orders now.</p>
+                <p className="text-sm font-medium text-foreground">{t("admin.forms.activeStatus")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.forms.vendorActiveHint")}</p>
               </div>
               <Switch
                 checked={vendorForm.isActive}
@@ -2816,7 +2816,7 @@ function AdminPage() {
 
           <SheetFooter className="mt-6">
             <Button variant="hero" className="w-full rounded-md" onClick={saveVendor}>
-              Save Vendor
+              {t("admin.actions.saveVendor")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -2825,27 +2825,27 @@ function AdminPage() {
       <Sheet open={isCyclistPanelOpen} onOpenChange={setIsCyclistPanelOpen}>
         <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Add New Cyclist</SheetTitle>
-            <SheetDescription>Register a cyclist and assign one or more service neighborhoods.</SheetDescription>
+            <SheetTitle>{t("admin.modals.cyclist.title")}</SheetTitle>
+            <SheetDescription>{t("admin.modals.cyclist.description")}</SheetDescription>
           </SheetHeader>
 
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
               <label htmlFor="cyclist-full-name" className="text-sm font-medium text-foreground">
-                Full Name
+                {t("admin.forms.fullName")}
               </label>
               <input
                 id="cyclist-full-name"
                 value={cyclistForm.fullName}
                 onChange={(event) => setCyclistForm((current) => ({ ...current, fullName: event.target.value }))}
-                placeholder="e.g. Yassine El Idrissi"
+                placeholder={t("admin.placeholders.fullNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="cyclist-phone-number" className="text-sm font-medium text-foreground">
-                Phone Number
+                {t("admin.forms.phoneNumber")}
               </label>
               <div className="flex h-10 items-center overflow-hidden rounded-md border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-ring/30">
                 <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
@@ -2858,7 +2858,7 @@ function AdminPage() {
                       phoneNumber: normalizeMoroccoPhoneInput(event.target.value),
                     }))
                   }
-                  placeholder="6XXXXXXXX"
+                  placeholder={t("admin.placeholders.phoneNumberShort")}
                   inputMode="numeric"
                   autoComplete="tel"
                   className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-sm outline-none"
@@ -2868,7 +2868,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="cyclist-commune" className="text-sm font-medium text-foreground">
-                Jamaa Tourabiya
+                {t("admin.forms.commune")}
               </label>
               <select
                 id="cyclist-commune"
@@ -2882,7 +2882,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select commune</option>
+                <option value="">{t("admin.common.selectCommune")}</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
                     {getLocalizedCommuneName(commune)}
@@ -2893,13 +2893,13 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Hays / Douars (Multi-select)
+                {t("admin.forms.douarsMultiSelect")}
               </label>
               <div className="max-h-52 space-y-2 overflow-y-auto rounded-md border border-input bg-background p-3">
                 {!cyclistForm.communeId ? (
-                  <p className="text-sm text-muted-foreground">Select a commune first.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.common.selectCommuneFirst")}</p>
                 ) : cyclistNeighborhoodOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No neighborhoods available in this commune.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.forms.noNeighborhoodsInCommune")}</p>
                 ) : (
                   cyclistNeighborhoodOptions.map((neighborhood) => {
                     const isChecked = cyclistForm.neighborhoodIds.includes(neighborhood.id);
@@ -2924,7 +2924,7 @@ function AdminPage() {
 
               {cyclistForm.neighborhoodIds.length > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Selected: {cyclistForm.neighborhoodIds.length} neighborhood
+                  {t("admin.forms.selectedNeighborhoods", { count: cyclistForm.neighborhoodIds.length })}
                   {cyclistForm.neighborhoodIds.length === 1 ? "" : "s"}
                 </p>
               ) : null}
@@ -2932,8 +2932,8 @@ function AdminPage() {
 
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Active Status</p>
-                <p className="text-xs text-muted-foreground">Enable if this cyclist can accept deliveries.</p>
+                <p className="text-sm font-medium text-foreground">{t("admin.forms.activeStatus")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.forms.cyclistActiveHint")}</p>
               </div>
               <Switch
                 checked={cyclistForm.isActive}
@@ -2944,7 +2944,7 @@ function AdminPage() {
 
           <SheetFooter className="mt-6">
             <Button variant="hero" className="w-full rounded-md" onClick={saveCyclist}>
-              Save Cyclist
+              {t("admin.actions.saveCyclist")}
             </Button>
           </SheetFooter>
         </SheetContent>
