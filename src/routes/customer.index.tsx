@@ -1193,12 +1193,12 @@ function Index() {
 
     if (cartItems.length === 0) {
       toast.error("Your cart is empty.");
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: "/customer", replace: true });
       return;
     }
 
     openCheckout();
-    void navigate({ to: "/", replace: true });
+    void navigate({ to: "/customer", replace: true });
   }, [cartItems.length, location.hash, navigate, openCheckout]);
 
   const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;

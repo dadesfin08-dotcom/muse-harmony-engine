@@ -15,7 +15,7 @@ function CustomerRouteLayout() {
     <CustomerLayout
       onCheckoutClick={() => {
         closeCart();
-        void navigate({ to: "/", hash: "checkout" });
+        void navigate({ to: "/customer", hash: "checkout" });
       }}
     >
       <Outlet />
