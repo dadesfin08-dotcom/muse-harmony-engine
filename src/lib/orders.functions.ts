@@ -86,6 +86,9 @@ type VendorRow = {
 type OrderRow = {
   id: string;
   vendor_id: string;
+  neighborhood_id?: string | null;
+  neighborhood_name?: string | null;
+  commune_name?: string | null;
   customer_name: string;
   customer_phone: string;
   delivery_notes: string;
@@ -411,7 +414,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
+        "id, vendor_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -450,6 +453,70 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       );
     }
 
+    const neighborhoodIds = Array.from(
+      new Set(
+        (orders ?? [])
+          .map((order: any) => (typeof order?.neighborhood_id === "string" ? order.neighborhood_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const neighborhoodsQuery =
+      neighborhoodIds.length > 0
+        ? await (supabaseAdmin as any)
+            .from("neighborhoods")
+            .select("id, commune_id, name_ar, name_fr, name_en")
+            .in("id", neighborhoodIds)
+        : { data: [], error: null };
+
+    if (neighborhoodsQuery.error) {
+      throw new Error(neighborhoodsQuery.error.message);
+    }
+
+    const communeIds = Array.from(
+      new Set(
+        ((neighborhoodsQuery.data ?? []) as Array<{ commune_id?: string | null }>)
+          .map((row) => (typeof row?.commune_id === "string" ? row.commune_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const communesQuery =
+      communeIds.length > 0
+        ? await (supabaseAdmin as any)
+            .from("communes")
+            .select("id, name_ar, name_fr, name_en")
+            .in("id", communeIds)
+        : { data: [], error: null };
+
+    if (communesQuery.error) {
+      throw new Error(communesQuery.error.message);
+    }
+
+    const localizedName = (row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined) => {
+      if (!row) return "";
+      if (typeof row.name_ar === "string" && row.name_ar.trim().length > 0) return row.name_ar.trim();
+      if (typeof row.name_fr === "string" && row.name_fr.trim().length > 0) return row.name_fr.trim();
+      if (typeof row.name_en === "string" && row.name_en.trim().length > 0) return row.name_en.trim();
+      return "";
+    };
+
+    const neighborhoodsById = new Map(
+      ((neighborhoodsQuery.data ?? []) as Array<{
+        id: string;
+        commune_id?: string | null;
+        name_ar?: string | null;
+        name_fr?: string | null;
+        name_en?: string | null;
+      }>).map((row) => [row.id, row]),
+    );
+
+    const communesById = new Map(
+      ((communesQuery.data ?? []) as Array<{ id: string; name_ar?: string | null; name_fr?: string | null; name_en?: string | null }>).map(
+        (row) => [row.id, row],
+      ),
+    );
+
     const hydratedOrders = (orders ?? []).map((order: any) => {
       const items = Array.isArray(order?.order_items)
         ? order.order_items.map((item: any) => ({
@@ -461,9 +528,18 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
           }))
         : [];
 
+      const neighborhoodRow =
+        typeof order?.neighborhood_id === "string" ? neighborhoodsById.get(order.neighborhood_id) : undefined;
+      const communeRow =
+        neighborhoodRow && typeof neighborhoodRow.commune_id === "string"
+          ? communesById.get(neighborhoodRow.commune_id)
+          : undefined;
+
       return {
         ...order,
         order_items: items,
+        neighborhood_name: localizedName(neighborhoodRow) || null,
+        commune_name: localizedName(communeRow) || null,
       };
     });
 
