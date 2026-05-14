@@ -2554,6 +2554,7 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
                           {activeCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
+                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
 
                             return (
@@ -2581,7 +2582,7 @@ function Index() {
                                       const reached = index <= activeStepIndex;
                                       return (
                                         <div key={step.label} className="space-y-1">
-                                          <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
+                                          <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
                                           <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
                                             {step.label}
                                           </p>
@@ -2603,6 +2604,7 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order History</p>
                           {deliveredCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
+                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
 
                             return (
@@ -2630,7 +2632,7 @@ function Index() {
                                       const reached = index <= activeStepIndex;
                                       return (
                                         <div key={step.label} className="space-y-1">
-                                          <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
+                                          <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
                                           <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
                                             {step.label}
                                           </p>
