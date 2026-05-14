@@ -13,6 +13,8 @@ export interface AdminVendorRecord {
   storeName: string;
   ownerName: string;
   phoneNumber: string;
+  vendorEarningsMad: number;
+  platformDuesMad: number;
   vendorType: "general" | "specialized";
   assignedCategories: string[];
   neighborhoodIds: string[];
@@ -26,6 +28,8 @@ interface VendorRow {
   store_name: string;
   owner_name: string;
   phone_number: string;
+  vendor_earnings: number | null;
+  platform_dues: number | null;
   vendor_type: "general" | "specialized";
   assigned_categories: string[];
   is_active: boolean;
@@ -159,7 +163,9 @@ async function fetchVendorRecord(vendorId: string) {
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
+        .select(
+          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+        )
         .eq("id", vendorId)
         .single(),
       (supabaseAdmin as any)
@@ -191,6 +197,8 @@ async function fetchVendorRecord(vendorId: string) {
     storeName: row.store_name,
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
+    vendorEarningsMad: Number(row.vendor_earnings ?? 0),
+    platformDuesMad: Number(row.platform_dues ?? 0),
     vendorType: row.vendor_type ?? "general",
     assignedCategories: row.vendor_type === "specialized" ? (row.assigned_categories ?? []) : [],
     neighborhoodIds: vendorNeighborhoods.map((n) => n.id),
@@ -205,7 +213,9 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
+        .select(
+          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+        )
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id, vendor_id"),
       (supabaseAdmin as any).from("communes").select("id, name_en, name_fr, name_ar"),
@@ -239,6 +249,8 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       storeName: vendor.store_name,
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
+      vendorEarningsMad: Number(vendor.vendor_earnings ?? 0),
+      platformDuesMad: Number(vendor.platform_dues ?? 0),
       vendorType: vendor.vendor_type ?? "general",
       assignedCategories: vendor.vendor_type === "specialized" ? (vendor.assigned_categories ?? []) : [],
       neighborhoodIds: vendorNeighborhoods.map((neighborhood) => neighborhood.id),
