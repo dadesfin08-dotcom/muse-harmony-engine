@@ -2,14 +2,20 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import {
+  DEFAULT_RECEIPT_ADDRESS,
+  DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_PHONE,
+} from "@/lib/receipt-settings.defaults";
 
 const updateInvoiceSettingsInputSchema = z.object({
   id: z.string().uuid(),
-  storeName: z.string().trim().min(1).max(120),
+  storeName: z.string().trim().min(1).max(1200),
   address: z.string().trim().min(1).max(220),
   phone: z.string().trim().min(3).max(30),
   taxId: z.string().trim().max(120).nullable(),
-  footerMessage: z.string().trim().min(1).max(240),
+  footerMessage: z.string().trim().min(1).max(1200),
 });
 
 export type InvoiceSettingsRecord = {
@@ -24,11 +30,11 @@ export type InvoiceSettingsRecord = {
 };
 
 const DEFAULT_INVOICE_SETTINGS = {
-  store_name: "Bzaf Fresh",
-  address: "Casablanca, Morocco",
-  phone: "+212000000000",
+  store_name: DEFAULT_RECEIPT_HEADER_CONTENT,
+  address: DEFAULT_RECEIPT_ADDRESS,
+  phone: DEFAULT_RECEIPT_PHONE,
   tax_id: null,
-  footer_message: "Thank you for shopping with Bzaf Fresh!",
+  footer_message: DEFAULT_RECEIPT_FOOTER_CONTENT,
 };
 
 export const getInvoiceSettings = createServerFn({ method: "GET" }).handler(async () => {
@@ -45,6 +51,33 @@ export const getInvoiceSettings = createServerFn({ method: "GET" }).handler(asyn
     }
 
     if (row) {
+      const normalizedDefaultsPatch = {
+        store_name: row.store_name?.trim() ? row.store_name : DEFAULT_RECEIPT_HEADER_CONTENT,
+        address: row.address?.trim() ? row.address : DEFAULT_RECEIPT_ADDRESS,
+        phone: row.phone?.trim() ? row.phone : DEFAULT_RECEIPT_PHONE,
+        footer_message: row.footer_message?.trim() ? row.footer_message : DEFAULT_RECEIPT_FOOTER_CONTENT,
+      };
+
+      if (
+        normalizedDefaultsPatch.store_name !== row.store_name ||
+        normalizedDefaultsPatch.address !== row.address ||
+        normalizedDefaultsPatch.phone !== row.phone ||
+        normalizedDefaultsPatch.footer_message !== row.footer_message
+      ) {
+        const { data: patchedRow, error: patchError } = await (supabaseAdmin as any)
+          .from("invoice_settings")
+          .update(normalizedDefaultsPatch)
+          .eq("id", row.id)
+          .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+          .single();
+
+        if (patchError || !patchedRow?.id) {
+          throw new Error(patchError?.message ?? "Unable to apply default receipt settings.");
+        }
+
+        return patchedRow as InvoiceSettingsRecord;
+      }
+
       return row as InvoiceSettingsRecord;
     }
 

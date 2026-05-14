@@ -167,6 +167,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { clearRoleSessions } from "@/lib/operational-auth";
+import {
+  DEFAULT_RECEIPT_ADDRESS,
+  DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_PHONE,
+} from "@/lib/receipt-settings.defaults";
 
 type AdminTab =
   | "overview"
@@ -684,11 +690,11 @@ function AdminPage() {
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
-    storeName: "",
-    address: "",
-    phone: "",
+    storeName: DEFAULT_RECEIPT_HEADER_CONTENT,
+    address: DEFAULT_RECEIPT_ADDRESS,
+    phone: DEFAULT_RECEIPT_PHONE,
     taxId: "",
-    footerMessage: "",
+    footerMessage: DEFAULT_RECEIPT_FOOTER_CONTENT,
   });
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
 
@@ -5163,16 +5169,16 @@ function SettingsSection({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-store-name" className="text-sm font-medium text-foreground">
-            Store Name
+            Receipt Header
           </label>
-          <Input
+          <Textarea
             id="receipt-store-name"
             value={receiptForm.storeName}
             onChange={(event) => onReceiptFormChange((current) => ({ ...current, storeName: event.target.value }))}
-            className="h-10 rounded-md"
-            placeholder="Bzaf Fresh"
+            className="min-h-28 rounded-md"
+            placeholder={DEFAULT_RECEIPT_HEADER_CONTENT}
           />
         </div>
 
@@ -5217,14 +5223,14 @@ function SettingsSection({
 
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-footer" className="text-sm font-medium text-foreground">
-            Footer Message
+            Receipt Footer
           </label>
           <Textarea
             id="receipt-footer"
             value={receiptForm.footerMessage}
             onChange={(event) => onReceiptFormChange((current) => ({ ...current, footerMessage: event.target.value }))}
             className="min-h-20 rounded-md"
-            placeholder="Thank you for shopping with Bzaf Fresh!"
+            placeholder={DEFAULT_RECEIPT_FOOTER_CONTENT}
           />
         </div>
       </div>
