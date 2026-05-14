@@ -100,11 +100,7 @@ function VendorWalletPage() {
       (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
       0,
     );
-    const platformDuesMad = transferredCashOrders.reduce(
-      (sum, order) =>
-        sum + Math.max(Number(order.total_price ?? 0) - Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0), 0),
-      0,
-    );
+    const platformDuesMad = transferredCashOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0);
 
     return {
       totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
