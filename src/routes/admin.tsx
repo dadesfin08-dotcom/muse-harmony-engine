@@ -177,6 +177,7 @@ import {
   DEFAULT_RECEIPT_STORE_NAME,
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
+import i18n from "@/lib/i18n";
 
 type AdminTab =
   | "overview"
@@ -192,17 +193,17 @@ type AdminTab =
   | "settings";
 
 const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
-  { label: "Overview", tab: "overview", icon: LayoutDashboard },
-  { label: "Orders", tab: "orders", icon: PackageCheck },
-  { label: "Customers العملاء", tab: "customers", icon: Users },
-  { label: "Vendors", tab: "vendors", icon: Store },
-  { label: "Cyclists", tab: "cyclists", icon: Bike },
-  { label: "Service Zones", tab: "service-zones", icon: MapPin },
-  { label: "Global Catalog", tab: "catalog", icon: Boxes },
-  { label: "Brands الماركات", tab: "brands", icon: Shapes },
-  { label: "Categories", tab: "categories", icon: Shapes },
-  { label: "Ads & Content", tab: "ads-content", icon: Megaphone },
-  { label: "Settings", tab: "settings", icon: Settings },
+  { label: "admin.nav.overview", tab: "overview", icon: LayoutDashboard },
+  { label: "admin.nav.orders", tab: "orders", icon: PackageCheck },
+  { label: "admin.nav.customers", tab: "customers", icon: Users },
+  { label: "admin.nav.vendors", tab: "vendors", icon: Store },
+  { label: "admin.nav.cyclists", tab: "cyclists", icon: Bike },
+  { label: "admin.nav.serviceZones", tab: "service-zones", icon: MapPin },
+  { label: "admin.nav.catalog", tab: "catalog", icon: Boxes },
+  { label: "admin.nav.brands", tab: "brands", icon: Shapes },
+  { label: "admin.nav.categories", tab: "categories", icon: Shapes },
+  { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
+  { label: "admin.nav.settings", tab: "settings", icon: Settings },
 ];
 
 const initialVendors: AdminVendorRecord[] = [];
@@ -330,7 +331,7 @@ const masterProductFormSchema = z.object({
 
 const weeklyOrdersChartConfig = {
   orders: {
-    label: "Orders",
+    label: i18n.t("admin.nav.orders"),
     color: "oklch(0.72 0.14 157)",
   },
 } satisfies ChartConfig;
@@ -360,11 +361,10 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: "Super Admin Dashboard — Bzaf Fresh" },
+      { title: i18n.t("admin.metaTitle") },
       {
         name: "description",
-        content:
-          "Super-admin command center for orders, vendors, and global catalog operations across the marketplace.",
+        content: i18n.t("admin.metaDescription"),
       },
     ],
   }),
