@@ -194,6 +194,8 @@ function VendorDashboardPage() {
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [expandedLedgerOrderIds, setExpandedLedgerOrderIds] = useState<Record<string, boolean>>({});
   const [rejectedOrderIds, setRejectedOrderIds] = useState<Record<string, boolean>>({});
+  const [packingOrderId, setPackingOrderId] = useState<string | null>(null);
+  const [packingCheckedItemKeys, setPackingCheckedItemKeys] = useState<Record<string, boolean>>({});
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
@@ -833,6 +835,22 @@ function VendorDashboardPage() {
     } finally {
       setIsUpdating(null);
     }
+  };
+
+  const handleOpenPackingModal = (orderId: string) => {
+    const targetOrder = orders.find((order) => order.id === orderId);
+    if (!targetOrder || targetOrder.items.length === 0) {
+      toast.error("This order has no items to pack.");
+      return;
+    }
+
+    const initialChecks = targetOrder.items.reduce<Record<string, boolean>>((acc, item, index) => {
+      acc[getOrderItemKey(targetOrder.id, item, index)] = false;
+      return acc;
+    }, {});
+
+    setPackingCheckedItemKeys(initialChecks);
+    setPackingOrderId(orderId);
   };
 
   const handleRejectOrder = (orderId: string) => {
