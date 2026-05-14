@@ -11,6 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { executeVendorQrCashHandover } from "@/lib/cyclists.functions";
 
+const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
+
+type CyclistSession = {
+  cyclistId: string;
+  phoneNumber: string;
+  fullName: string;
+};
+
 type WalletSummary = {
   cyclistId: string;
   cyclistName: string;
@@ -32,48 +40,36 @@ function CyclistWalletPage() {
   const queryClient = useQueryClient();
   const executeQrCashHandover = useServerFn(executeVendorQrCashHandover);
 
-  const [authReady, setAuthReady] = useState(false);
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const [session] = useState<CyclistSession | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(CYCLIST_SESSION_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CyclistSession;
+      if (!parsed?.cyclistId || !parsed?.fullName || !parsed?.phoneNumber) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  });
 
   const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
   const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
   const vendorQrScannerRef = useRef<any>(null);
   const isVerifyingVendorQrRef = useRef(false);
 
-  useEffect(() => {
-    let mounted = true;
-
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      setAuthUserId(session?.user?.id ?? null);
-      setAuthReady(true);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUserId(session?.user?.id ?? null);
-      setAuthReady(true);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
   const walletQuery = useQuery<WalletSummary>({
-    queryKey: ["cyclist", "wallet", "rewrite", authUserId],
-    enabled: authReady && Boolean(authUserId),
+    queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null],
+    enabled: Boolean(session?.cyclistId),
     queryFn: async () => {
-      if (!authUserId) {
-        throw new Error("User not authenticated.");
+      if (!session?.cyclistId) {
+        throw new Error("Cyclist session expired.");
       }
 
       const { data: cyclistRow, error: cyclistError } = await supabase
         .from("cyclists")
         .select("id, full_name")
-        .eq("user_id", authUserId)
+        .eq("id", session.cyclistId)
         .maybeSingle();
 
       if (cyclistError) {
@@ -84,7 +80,7 @@ function CyclistWalletPage() {
         throw new Error("Cyclist account is not linked to this user.");
       }
 
-      const cyclistId = String(cyclistRow.id);
+      const cyclistId = String(session.cyclistId);
 
       const [myEarningsResult, pendingEarningsResult, cashToRemitResult, owedByVendorResult] = await Promise.all([
         supabase
@@ -209,7 +205,7 @@ function CyclistWalletPage() {
           filter: `cyclist_id=eq.${cyclistId}`,
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", authUserId] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
         },
       )
       .subscribe();
@@ -217,7 +213,7 @@ function CyclistWalletPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [authUserId, queryClient, walletQuery.data?.cyclistId]);
+  }, [queryClient, session?.cyclistId, walletQuery.data?.cyclistId]);
 
   useEffect(() => {
     if (!isVendorQrScannerOpen) {
@@ -271,11 +267,7 @@ function CyclistWalletPage() {
     };
   }, [isVendorQrScannerOpen]);
 
-  if (!authReady) {
-    return <main className="min-h-screen bg-muted/20" />;
-  }
-
-  if (!authUserId) {
+  if (!session?.cyclistId) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
         <Card className="w-full max-w-sm">
