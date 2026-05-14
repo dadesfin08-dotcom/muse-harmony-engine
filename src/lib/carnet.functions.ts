@@ -476,53 +476,47 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
         throw new Error("Carnet customer not found.");
       }
 
-      const [{ data: carnetOrders, error: ordersError }, { data: payments, error: paymentsError }] =
-        await Promise.all([
-          (supabaseAdmin as any)
-            .from("orders")
-            .select("id, total_price, delivery_fee, created_at")
-            .eq("vendor_id", vendor.id)
-            .eq("customer_phone", data.customerPhone)
-            .eq("status", "delivered")
-            .eq("payment_method", "Carnet")
-            .order("created_at", { ascending: false }),
-          (supabaseAdmin as any)
-            .from("carnet_payments")
-            .select("id, amount, created_at")
-            .eq("vendor_id", vendor.id)
-            .eq("vendor_carnet_id", customer.id)
-            .order("created_at", { ascending: false }),
-        ]);
+      const { data: ledgerRows, error: ledgerError } = await (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("id, order_id, payment_id, transaction_type, amount, created_at")
+        .eq("vendor_id", vendor.id)
+        .eq("customer_phone", data.customerPhone)
+        .order("created_at", { ascending: false });
 
-      if (ordersError) {
-        throw new Error(ordersError.message);
+      if (ledgerError) {
+        throw new Error(ledgerError.message);
       }
 
-      if (paymentsError) {
-        throw new Error(paymentsError.message);
-      }
+      const transactions = ((ledgerRows ?? []) as Array<{
+        id: string;
+        order_id?: string | null;
+        payment_id?: string | null;
+        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID";
+        amount?: number | null;
+        created_at: string;
+      }>)
+        .map((row) => {
+          const isIssued = row.transaction_type === "CREDIT_ISSUED";
+          const orderId = row.order_id ? String(row.order_id) : null;
+          const paymentId = row.payment_id ? String(row.payment_id) : null;
 
-      const orderTransactions = (carnetOrders ?? []).map((order: any) => ({
-        id: `order:${order.id}`,
-        createdAt: order.created_at as string,
-        description: `Order #${String(order.id).slice(0, 8).toUpperCase()}`,
-        amount: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
-        kind: "debt" as const,
-      }));
-
-      const paymentTransactions = (payments ?? []).map((payment: any) => ({
-        id: `payment:${payment.id}`,
-        createdAt: payment.created_at as string,
-        description: "Payment Received",
-        amount: Number(payment.amount ?? 0),
-        kind: "payment" as const,
-      }));
-
-      const transactions = [...orderTransactions, ...paymentTransactions].sort((a, b) => {
+          return {
+            id: isIssued
+              ? `order:${orderId ?? row.id}`
+              : `payment:${paymentId ?? row.id}`,
+            createdAt: row.created_at,
+            description: isIssued
+              ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+              : "Payment recorded",
+            amount: Number(row.amount ?? 0),
+            kind: isIssued ? ("debt" as const) : ("payment" as const),
+          };
+        })
+        .sort((a, b) => {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
         return bTime - aTime;
-      });
+        });
 
       return {
         customer: {
@@ -689,52 +683,48 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         return { carnet: null, transactions: [] as Array<any> };
       }
 
-      const [{ data: carnetOrders, error: ordersError }, { data: payments, error: paymentsError }] =
-        await Promise.all([
-          (supabaseAdmin as any)
-            .from("orders")
-            .select("id, total_price, delivery_fee, created_at")
-            .in("vendor_id", vendorIds)
-            .eq("customer_phone", data.customerPhone)
-            .eq("status", "delivered")
-            .eq("payment_method", "Carnet")
-            .order("created_at", { ascending: false }),
-          (supabaseAdmin as any)
-            .from("carnet_payments")
-            .select("id, amount, created_at")
-            .in("vendor_carnet_id", carnetIds)
-            .order("created_at", { ascending: false }),
-        ]);
+      const { data: ledgerRows, error: ledgerError } = await (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("id, order_id, payment_id, vendor_carnet_id, transaction_type, amount, created_at")
+        .in("vendor_id", vendorIds)
+        .in("vendor_carnet_id", carnetIds)
+        .eq("customer_phone", data.customerPhone)
+        .order("created_at", { ascending: false });
 
-      if (ordersError) {
-        throw new Error(ordersError.message);
+      if (ledgerError) {
+        throw new Error(ledgerError.message);
       }
 
-      if (paymentsError) {
-        throw new Error(paymentsError.message);
-      }
+      const transactions = ((ledgerRows ?? []) as Array<{
+        id: string;
+        order_id?: string | null;
+        payment_id?: string | null;
+        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID";
+        amount?: number | null;
+        created_at: string;
+      }>)
+        .map((row) => {
+          const isIssued = row.transaction_type === "CREDIT_ISSUED";
+          const orderId = row.order_id ? String(row.order_id) : null;
+          const paymentId = row.payment_id ? String(row.payment_id) : null;
 
-      const orderTransactions = (carnetOrders ?? []).map((order: any) => ({
-        id: `order:${order.id}`,
-        createdAt: order.created_at as string,
-        description: `Order #${String(order.id).slice(0, 8).toUpperCase()}`,
-        amount: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
-        kind: "debt" as const,
-      }));
-
-      const paymentTransactions = (payments ?? []).map((payment: any) => ({
-        id: `payment:${payment.id}`,
-        createdAt: payment.created_at as string,
-        description: "Payment Received",
-        amount: Number(payment.amount ?? 0),
-        kind: "payment" as const,
-      }));
-
-      const transactions = [...orderTransactions, ...paymentTransactions].sort((a, b) => {
+          return {
+            id: isIssued
+              ? `order:${orderId ?? row.id}`
+              : `payment:${paymentId ?? row.id}`,
+            createdAt: row.created_at,
+            description: isIssued
+              ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+              : "Payment recorded",
+            amount: Number(row.amount ?? 0),
+            kind: isIssued ? ("debt" as const) : ("payment" as const),
+          };
+        })
+        .sort((a, b) => {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
         return bTime - aTime;
-      });
+        });
 
       const totalCurrentDebtMad = activeRows.reduce(
         (sum, row) => sum + Number(row.current_debt ?? 0),
