@@ -1465,7 +1465,9 @@ function VendorDashboardPage() {
                             item.brandName?.trim()
                               ? `الماركة: ${item.brandName.trim()}`
                               : null,
-                            item.measurementValue != null && item.measurementUnit?.trim()
+                            item.measurementValue != null &&
+                            Number.isFinite(item.measurementValue) &&
+                            item.measurementUnit?.trim()
                               ? `الحجم: ${item.measurementValue} ${item.measurementUnit.trim()}`
                               : null,
                           ].filter((part): part is string => Boolean(part));
