@@ -537,13 +537,38 @@ function Index() {
   }, [queryClient]);
 
   useEffect(() => {
+    if (!customerSession?.phoneNumber) return;
+
+    const ordersChannel = supabase
+      .channel(`customer-orders-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ordersChannel);
+    };
+  }, [customerSession?.phoneNumber, queryClient]);
+
+  useEffect(() => {
     const orders = customerOrdersQuery.data ?? [];
     if (orders.length === 0) {
       trackedOrderStatusRef.current = null;
       return;
     }
 
-    const activeOrder = orders.find((order) => order.status !== "delivered") ?? orders[0];
+    const activeOrder =
+      orders.find(
+        (order) =>
+          !["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"].includes(
+            String(order.status ?? "").toLowerCase(),
+          ),
+      ) ?? orders[0];
     const previous = trackedOrderStatusRef.current;
 
     if (!previous || previous.orderId !== activeOrder.id) {
@@ -554,7 +579,11 @@ function Index() {
     if (previous.status !== activeOrder.status) {
       trackedOrderStatusRef.current = { orderId: activeOrder.id, status: activeOrder.status };
 
-      if (activeOrder.status === "delivering" || activeOrder.status === "delivered") {
+      if (
+        ["delivering", "out_for_delivery", "picked_up", "on_the_way", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"].includes(
+          String(activeOrder.status ?? "").toLowerCase(),
+        )
+      ) {
         void playSuccessSound({ enabled: true });
       }
     }
