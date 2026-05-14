@@ -314,6 +314,7 @@ function Index() {
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const locationSyncRef = useRef<string | null>(null);
   const checkoutPrefsHydrationRef = useRef<string | null>(null);
+  const locationModalHydratedRef = useRef(false);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
@@ -712,8 +713,15 @@ function Index() {
 
   useEffect(() => {
     if (!isLocationModalOpen) {
+      locationModalHydratedRef.current = false;
       return;
     }
+
+    if (locationModalHydratedRef.current) {
+      return;
+    }
+
+    locationModalHydratedRef.current = true;
 
     const hydrateLocationDrawer = async () => {
       const persistedLocation = readPersistedLocation();
@@ -3167,7 +3175,7 @@ function Index() {
                         onChange={(event) => {
                           const nextValue = event.target.value;
                           setCommuneSearchInput(nextValue);
-                          if (selectedCommuneId && nextValue.trim().length === 0) {
+                          if (selectedCommuneId) {
                             setSelectedCommuneId("");
                             setSelectedCommuneOption(null);
                             setSelectedNeighborhoodId("");
