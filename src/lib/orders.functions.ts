@@ -1463,7 +1463,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
       const vendor = await resolveVendorByPhone(data.phoneNumber);
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, total_price, delivery_fee, payment_method")
+        .select("id, vendor_id, cyclist_id, total_price, delivery_fee, payment_method, status, vendor_settlement_status")
         .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
         .eq("payment_method", "COD")
