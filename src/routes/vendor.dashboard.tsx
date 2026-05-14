@@ -127,7 +127,15 @@ type DashboardOrder = {
   totalMad: number;
   vendorShareMad: number;
   itemCount: number;
-  items: Array<{ name: string; quantity: number; unitPriceMad: number; imageUrl?: string | null }>;
+  items: Array<{
+    name: string;
+    quantity: number;
+    unitPriceMad: number;
+    imageUrl?: string | null;
+    brandName?: string | null;
+    measurementValue?: number | null;
+    measurementUnit?: string | null;
+  }>;
   createdAt: string;
 };
 
@@ -1452,6 +1460,26 @@ function VendorDashboardPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                        {(() => {
+                          const metadataParts = [
+                            item.brandName?.trim()
+                              ? `الماركة: ${item.brandName.trim()}`
+                              : null,
+                            item.measurementValue != null && item.measurementUnit?.trim()
+                              ? `الحجم: ${item.measurementValue} ${item.measurementUnit.trim()}`
+                              : null,
+                          ].filter((part): part is string => Boolean(part));
+
+                          if (metadataParts.length === 0) {
+                            return null;
+                          }
+
+                          return (
+                            <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
+                              {metadataParts.join(" • ")}
+                            </p>
+                          );
+                        })()}
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <Checkbox
