@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { Minus, Package, Plus, ShoppingCart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -15,13 +16,15 @@ type ProductCardProps = {
   imageUrl: string | null;
   price: number;
   cartQuantity: number;
+  selectedVariant?: string | null;
+  productVariants?: string[];
   addLabel: string;
   isFlashDeal?: boolean;
   oldPrice?: number | null;
   discountPercent?: number;
-  onAdd: () => void;
-  onIncrease: () => void;
-  onDecrease: () => void;
+  onAdd: (selectedVariant?: string | null) => void;
+  onIncrease: (selectedVariant?: string | null) => void;
+  onDecrease: (selectedVariant?: string | null) => void;
 };
 
 export function ProductCard({
@@ -33,6 +36,8 @@ export function ProductCard({
   imageUrl,
   price,
   cartQuantity,
+  selectedVariant = null,
+  productVariants = [],
   addLabel,
   isFlashDeal = false,
   oldPrice,
@@ -41,6 +46,34 @@ export function ProductCard({
   onIncrease,
   onDecrease,
 }: ProductCardProps) {
+  const normalizedVariants = useMemo(
+    () =>
+      productVariants
+        .map((variant) => (typeof variant === "string" ? variant.trim() : ""))
+        .filter((variant) => variant.length > 0),
+    [productVariants],
+  );
+
+  const [variantValue, setVariantValue] = useState<string>(selectedVariant ?? normalizedVariants[0] ?? "");
+
+  useEffect(() => {
+    if (selectedVariant && normalizedVariants.includes(selectedVariant)) {
+      setVariantValue(selectedVariant);
+      return;
+    }
+
+    if (normalizedVariants.length > 0 && !normalizedVariants.includes(variantValue)) {
+      setVariantValue(normalizedVariants[0] ?? "");
+      return;
+    }
+
+    if (normalizedVariants.length === 0) {
+      setVariantValue("");
+    }
+  }, [normalizedVariants, selectedVariant, variantValue]);
+
+  const resolvedVariant = normalizedVariants.length > 0 ? variantValue || normalizedVariants[0] : null;
+
   return (
     <article className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       <Link to="/customer/product/$id" params={{ id }} className="block">
@@ -60,6 +93,21 @@ export function ProductCard({
       </Link>
 
       <div className="space-y-1.5 p-3">
+        {normalizedVariants.length > 0 ? (
+          <select
+            value={resolvedVariant ?? ""}
+            onChange={(event) => setVariantValue(event.target.value)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground"
+            aria-label={`Select variant for ${name}`}
+          >
+            {normalizedVariants.map((variant) => (
+              <option key={variant} value={variant}>
+                {variant}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
         <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
           {brand || "—"}
         </span>
@@ -106,7 +154,7 @@ export function ProductCard({
                   "inline-flex size-6 items-center justify-center rounded-full",
                   isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
                 )}
-                onClick={onDecrease}
+                onClick={() => onDecrease(resolvedVariant)}
                 aria-label="Decrease quantity"
               >
                 <Minus className="size-3" />
@@ -118,7 +166,7 @@ export function ProductCard({
                   "inline-flex size-6 items-center justify-center rounded-full",
                   isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
                 )}
-                onClick={onIncrease}
+                onClick={() => onIncrease(resolvedVariant)}
                 aria-label="Increase quantity"
               >
                 <Plus className="size-3" />
@@ -131,7 +179,7 @@ export function ProductCard({
                 "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
                 isFlashDeal ? "bg-red-600 hover:bg-red-700" : "bg-[#2A7543] hover:bg-green-800",
               )}
-              onClick={onAdd}
+              onClick={() => onAdd(resolvedVariant)}
             >
               <ShoppingCart className="size-3.5" />
               {addLabel}
