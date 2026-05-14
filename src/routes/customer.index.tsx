@@ -1272,6 +1272,7 @@ function Index() {
             measurementUnit: item.measurementUnit ?? null,
             quantity: item.quantity,
             unitPriceMad: item.price,
+            basePriceMad: Number(item.basePrice ?? item.price ?? 0),
           })),
         },
       });
@@ -1603,7 +1604,9 @@ function Index() {
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                          </span>
                         </button>
                       ))
                     ) : (
@@ -1703,7 +1706,9 @@ function Index() {
                             </span>
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">{item.vendorPrice} MAD</span>
+                          <span className="shrink-0 text-sm font-bold text-emerald-600">
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                          </span>
                         </button>
                       ))
                     ) : (
