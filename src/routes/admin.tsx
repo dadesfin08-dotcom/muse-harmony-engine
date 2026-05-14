@@ -3784,15 +3784,16 @@ function CyclistsSection({
   isLoading: boolean;
   onAddCyclist: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Cyclists Management</h2>
-          <p className="text-sm text-muted-foreground">Assign and manage neighborhood-level delivery riders.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.cyclists.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.cyclists.subtitle")}</p>
         </div>
         <Button variant="hero" className="rounded-md" onClick={onAddCyclist}>
-          + Add New Cyclist
+          {t("admin.cyclists.addNew")}
         </Button>
       </div>
 
@@ -3800,25 +3801,25 @@ function CyclistsSection({
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Cyclist</th>
-              <th className="px-4 py-3">Assigned Zone</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.cyclist")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.assignedZone")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.phone")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.status")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  <AppEmptyState title="Loading cyclists..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
+                  <AppEmptyState title={t("admin.cyclists.loadingTitle")} subtitle={t("admin.cyclists.loadingSubtitle")} className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : cyclists.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   <AppEmptyState
-                    title="No cyclists yet."
-                    subtitle="Add your first cyclist to dispatch deliveries."
+                      title={t("admin.cyclists.emptyTitle")}
+                      subtitle={t("admin.cyclists.emptySubtitle")}
                     className="border-0 bg-transparent py-2"
                   />
                 </td>
