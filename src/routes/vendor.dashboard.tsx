@@ -1481,9 +1481,9 @@ function VendorDashboardPage() {
                                                   Unit: {item.unitPriceMad.toFixed(2)} MAD
                                                 </p>
                                               </div>
-                                              <p className="shrink-0 font-semibold text-foreground">
-                                                {(item.quantity * item.unitPriceMad).toFixed(2)} MAD
-                                              </p>
+                                                <p className="shrink-0 font-semibold text-foreground">
+                                                  {roundMoney(Number(item.quantity ?? 0) * Number(item.unitPriceMad ?? 0)).toFixed(2)} MAD
+                                                </p>
                                             </div>
                                           ))}
 
@@ -2594,7 +2594,7 @@ function OrderCard({
                 </div>
 
                 <p className="shrink-0 text-xs font-medium text-muted-foreground">
-                  {(item.quantity * item.unitPriceMad).toFixed(2)} MAD
+                  {roundMoney(Number(item.quantity ?? 0) * Number(item.unitPriceMad ?? 0)).toFixed(2)} MAD
                 </p>
               </label>
             );
