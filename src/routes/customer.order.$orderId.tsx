@@ -146,7 +146,7 @@ function CustomerOrderDetailsPage() {
   }, [language]);
 
   const statusBadge = useMemo(() => {
-    const status = order?.status ?? "new";
+    const status = String(order?.status ?? "new").toLowerCase();
     if (status === "delivered") return { label: copy.statusDelivered, className: "bg-primary/15 text-primary border-primary/30" };
     if (status === "delivering" || status === "out_for_delivery") return { label: copy.statusOutForDelivery, className: "bg-accent/30 text-foreground border-border" };
     if (status === "preparing" || status === "ready") return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
@@ -154,7 +154,8 @@ function CustomerOrderDetailsPage() {
     return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
   }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
 
-  const isOutForDelivery = order?.status === "delivering" || order?.status === "out_for_delivery";
+  const normalizedOrderStatus = String(order?.status ?? "").toLowerCase();
+  const isOutForDelivery = normalizedOrderStatus === "delivering" || normalizedOrderStatus === "out_for_delivery";
   const handoverQrPayload = useMemo(() => {
     if (!order?.id || !isOutForDelivery) return "";
     return JSON.stringify({ order_id: order.id, delivery_auth_code: order.deliveryAuthCode ?? null });
