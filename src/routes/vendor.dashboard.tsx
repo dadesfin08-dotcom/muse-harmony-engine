@@ -872,9 +872,21 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      totalCashInHandMad: roundMoney(Number(dashboardQuery.data?.vendor?.totalCashInHandMad ?? 0)),
-      myNetProfitMad: roundMoney(Number(dashboardQuery.data?.vendor?.myNetProfitMad ?? 0)),
-      platformDuesMad: roundMoney(Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0)),
+      totalCashInHandMad: roundMoney(
+        deliveredInFilter.reduce((sum, order) => {
+          const isCash = String(order.paymentMethod ?? "").trim().toUpperCase() === "COD";
+          return isCash ? sum + Number(order.totalMad ?? 0) : sum;
+        }, 0),
+      ),
+      myNetProfitMad: roundMoney(
+        deliveredInFilter.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
+      ),
+      platformDuesMad: roundMoney(
+        deliveredInFilter.reduce(
+          (sum, order) => sum + Math.max(Number(order.totalMad ?? 0) - Number(order.vendorShareMad ?? 0), 0),
+          0,
+        ),
+      ),
       cashEarningsMad: roundMoney(cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
       creditIssuedMad: roundMoney(carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
       outstandingCreditMad: roundMoney(outstandingCreditMad),
