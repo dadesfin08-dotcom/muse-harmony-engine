@@ -177,6 +177,7 @@ import {
   DEFAULT_RECEIPT_STORE_NAME,
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
+import i18n from "@/lib/i18n";
 
 type AdminTab =
   | "overview"
@@ -192,17 +193,17 @@ type AdminTab =
   | "settings";
 
 const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
-  { label: "Overview", tab: "overview", icon: LayoutDashboard },
-  { label: "Orders", tab: "orders", icon: PackageCheck },
-  { label: "Customers العملاء", tab: "customers", icon: Users },
-  { label: "Vendors", tab: "vendors", icon: Store },
-  { label: "Cyclists", tab: "cyclists", icon: Bike },
-  { label: "Service Zones", tab: "service-zones", icon: MapPin },
-  { label: "Global Catalog", tab: "catalog", icon: Boxes },
-  { label: "Brands الماركات", tab: "brands", icon: Shapes },
-  { label: "Categories", tab: "categories", icon: Shapes },
-  { label: "Ads & Content", tab: "ads-content", icon: Megaphone },
-  { label: "Settings", tab: "settings", icon: Settings },
+  { label: "admin.nav.overview", tab: "overview", icon: LayoutDashboard },
+  { label: "admin.nav.orders", tab: "orders", icon: PackageCheck },
+  { label: "admin.nav.customers", tab: "customers", icon: Users },
+  { label: "admin.nav.vendors", tab: "vendors", icon: Store },
+  { label: "admin.nav.cyclists", tab: "cyclists", icon: Bike },
+  { label: "admin.nav.serviceZones", tab: "service-zones", icon: MapPin },
+  { label: "admin.nav.catalog", tab: "catalog", icon: Boxes },
+  { label: "admin.nav.brands", tab: "brands", icon: Shapes },
+  { label: "admin.nav.categories", tab: "categories", icon: Shapes },
+  { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
+  { label: "admin.nav.settings", tab: "settings", icon: Settings },
 ];
 
 const initialVendors: AdminVendorRecord[] = [];
@@ -330,7 +331,7 @@ const masterProductFormSchema = z.object({
 
 const weeklyOrdersChartConfig = {
   orders: {
-    label: "Orders",
+    label: i18n.t("admin.nav.orders"),
     color: "oklch(0.72 0.14 157)",
   },
 } satisfies ChartConfig;
@@ -360,11 +361,10 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
   head: () => ({
     meta: [
-      { title: "Super Admin Dashboard — Bzaf Fresh" },
+      { title: i18n.t("admin.metaTitle") },
       {
         name: "description",
-        content:
-          "Super-admin command center for orders, vendors, and global catalog operations across the marketplace.",
+        content: i18n.t("admin.metaDescription"),
       },
     ],
   }),
@@ -878,10 +878,10 @@ function AdminPage() {
 
       setManageVendorForm((current) => ({ ...current, isActive }));
       await vendorsQuery.refetch();
-      toast.success(isActive ? "Vendor activated." : "Vendor suspended.");
+      toast.success(isActive ? t("admin.toast.vendorActivated") : t("admin.toast.vendorSuspended"));
     } catch (error) {
       console.error("Failed to update vendor state:", error);
-      toast.error("Failed to update vendor status.");
+      toast.error(t("admin.toast.vendorStatusUpdateFailed"));
     } finally {
       setIsUpdatingVendorState(false);
     }
@@ -897,7 +897,7 @@ function AdminPage() {
       manageVendorForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all vendor details before updating.");
+      toast.error(t("admin.toast.completeVendorDetails"));
       return;
     }
 
@@ -916,10 +916,10 @@ function AdminPage() {
       });
 
       await vendorsQuery.refetch();
-      toast.success("Vendor details updated successfully.");
+      toast.success(t("admin.toast.vendorDetailsUpdated"));
     } catch (error) {
       console.error("Failed to update vendor details:", error);
-      toast.error("Failed to update vendor details.");
+      toast.error(t("admin.toast.vendorDetailsUpdateFailed"));
     } finally {
       setIsUpdatingVendorDetails(false);
     }
@@ -934,7 +934,7 @@ function AdminPage() {
       vendorForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all vendor fields.");
+      toast.error(t("admin.toast.completeVendorFields"));
       return;
     }
 
@@ -963,10 +963,10 @@ function AdminPage() {
         isActive: true,
       });
       setIsVendorPanelOpen(false);
-      toast.success("Vendor saved successfully.");
+      toast.success(t("admin.toast.vendorSaved"));
     } catch (error) {
       console.error("Failed to save vendor:", error);
-      toast.error("Failed to save vendor. Check console for details.");
+      toast.error(t("admin.toast.vendorSaveFailed"));
     }
   };
 
@@ -979,7 +979,7 @@ function AdminPage() {
       cyclistForm.neighborhoodIds.length === 0 ||
       !isValidMoroccoPhone(normalizedPhone)
     ) {
-      toast.error("Please complete all cyclist fields.");
+      toast.error(t("admin.toast.completeCyclistFields"));
       return;
     }
 
@@ -1005,16 +1005,16 @@ function AdminPage() {
         isActive: true,
       });
       setIsCyclistPanelOpen(false);
-      toast.success("Cyclist saved successfully.");
+      toast.success(t("admin.toast.cyclistSaved"));
     } catch (error) {
       console.error("Failed to save cyclist:", error);
-      toast.error("Failed to save cyclist.");
+      toast.error(t("admin.toast.cyclistSaveFailed"));
     }
   };
 
   const saveCommuneHandler = async () => {
     if (!serviceZoneForm.communeNameEn.trim()) {
-      toast.error("Please enter at least Commune Name (EN).");
+      toast.error(t("admin.toast.communeNameRequired"));
       return;
     }
 
@@ -1028,10 +1028,10 @@ function AdminPage() {
       });
       await serviceZonesQuery.refetch();
       setServiceZoneForm((current) => ({ ...current, communeNameEn: "", communeNameFr: "", communeNameAr: "" }));
-      toast.success("Commune created successfully.");
+      toast.success(t("admin.toast.communeCreated"));
     } catch (error) {
       console.error("Failed to create commune:", error);
-      toast.error("Failed to create commune.");
+      toast.error(t("admin.toast.communeCreateFailed"));
     }
   };
 
@@ -1044,7 +1044,7 @@ function AdminPage() {
       Number.isNaN(parsedDeliveryFee) ||
       parsedDeliveryFee < 0
     ) {
-      toast.error("Please select a commune and enter at least Neighborhood Name (EN).");
+      toast.error(t("admin.toast.neighborhoodRequired"));
       return;
     }
 
@@ -1066,10 +1066,10 @@ function AdminPage() {
         neighborhoodNameAr: "",
         neighborhoodDeliveryFee: "0",
       }));
-      toast.success("Neighborhood created successfully.");
+      toast.success(t("admin.toast.neighborhoodCreated"));
     } catch (error) {
       console.error("Failed to create neighborhood:", error);
-      toast.error("Failed to create neighborhood.");
+      toast.error(t("admin.toast.neighborhoodCreateFailed"));
     }
   };
 
@@ -1124,7 +1124,7 @@ function AdminPage() {
     const isXlsx = lowerCaseName.endsWith(".xlsx");
 
     if (!isCsv && !isXlsx) {
-      toast.error("Please upload an XLSX or CSV file.");
+      toast.error(t("admin.toast.uploadXlsxOrCsv"));
       return;
     }
 
@@ -1206,14 +1206,18 @@ function AdminPage() {
         .filter((row) => row.communeEn.length > 0 && row.douarEn.length > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least Commune_EN and Douar_EN in one row.");
+        toast.error(t("admin.toast.noValidServiceZonesRows"));
         return;
       }
 
       const result = await importServiceZonesBulkInDatabase({ data: { rows: preparedRows } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      const summary = `Bulk service zones import done — New: ${result.insertedCount}, Updated: ${result.updatedCount}${result.skippedCount > 0 ? `, Skipped: ${result.skippedCount}` : ""}.`;
+      const summary = t("admin.toast.serviceZonesImportSummary", {
+        inserted: result.insertedCount,
+        updated: result.updatedCount,
+        skippedSuffix: result.skippedCount > 0 ? t("admin.toast.skippedSuffix", { skipped: result.skippedCount }) : "",
+      });
 
       if (result.skippedCount > 0) {
         toast.warning(summary);
@@ -1288,18 +1292,18 @@ function AdminPage() {
     });
 
     if (!parsedForm.success) {
-      toast.error("Please provide valid product data, including a valid category.");
+      toast.error(t("admin.toast.invalidProductData"));
       return;
     }
 
     const selectedCategory = activeCategories.find((category) => category.id === productForm.categoryId);
     if (!selectedCategory) {
-      toast.error("Selected category is invalid.");
+      toast.error(t("admin.toast.invalidSelectedCategory"));
       return;
     }
 
     if (!editingProductId && !productImageFile) {
-      toast.error("Please select a product image.");
+      toast.error(t("admin.toast.productImageRequired"));
       return;
     }
 
@@ -1351,7 +1355,7 @@ function AdminPage() {
         });
 
         await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-        toast.success("Master product updated successfully.");
+        toast.success(t("admin.toast.masterProductUpdated"));
       } else {
         const payload = {
           name: productForm.name.trim(),
@@ -1373,7 +1377,7 @@ function AdminPage() {
         });
 
         await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-        toast.success("Master product saved successfully.");
+        toast.success(t("admin.toast.masterProductSaved"));
       }
 
       setProductForm({
@@ -1409,7 +1413,7 @@ function AdminPage() {
     }
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+      toast.error(t("admin.toast.uploadValidImage"));
       return;
     }
 
@@ -1418,7 +1422,7 @@ function AdminPage() {
       setProductImageFile(file);
       setProductImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => toast.error(t("admin.toast.previewImageFailed"));
     reader.readAsDataURL(file);
   };
 
@@ -1502,7 +1506,7 @@ function AdminPage() {
   const applyBrandLogoFile = (file: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+      toast.error(t("admin.toast.uploadValidImage"));
       return;
     }
     const reader = new FileReader();
@@ -1510,7 +1514,7 @@ function AdminPage() {
       setBrandLogoFile(file);
       setBrandLogoPreviewUrl(typeof reader.result === "string" ? reader.result : null);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => toast.error(t("admin.toast.previewImageFailed"));
     reader.readAsDataURL(file);
   };
 
@@ -1520,7 +1524,7 @@ function AdminPage() {
 
   const saveBrandHandler = async () => {
     if (!brandForm.nameEn.trim()) {
-      toast.error("Brand English name is required.");
+      toast.error(t("admin.toast.brandEnglishNameRequired"));
       return;
     }
 
@@ -1571,27 +1575,27 @@ function AdminPage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
-      toast.success(editingBrandId ? "Brand updated." : "Brand created.");
+      toast.success(editingBrandId ? t("admin.toast.brandUpdated") : t("admin.toast.brandCreated"));
       setIsBrandModalOpen(false);
       resetBrandForm();
     } catch (error) {
       console.error("Failed to save brand:", error);
-      toast.error("Failed to save brand.");
+      toast.error(t("admin.toast.brandSaveFailed"));
     } finally {
       setIsSavingBrand(false);
     }
   };
 
   const deleteBrandHandler = async (brand: BrandAdminRow) => {
-    if (!window.confirm(`Delete ${brand.name_en}?`)) return;
+      if (!window.confirm(t("admin.confirm.deleteBrand", { name: brand.name_en }))) return;
     try {
       await deleteBrandInDatabase({ data: { id: brand.id } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
       await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-      toast.success("Brand deleted.");
+      toast.success(t("admin.toast.brandDeleted"));
     } catch (error) {
       console.error("Failed to delete brand:", error);
-      toast.error("Failed to delete brand.");
+      toast.error(t("admin.toast.brandDeleteFailed"));
     }
   };
 
@@ -1610,7 +1614,7 @@ function AdminPage() {
 
   const importBrandsFromCsv = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Please upload a CSV file.");
+      toast.error(t("admin.toast.uploadCsvOnly"));
       return;
     }
 
@@ -1646,7 +1650,7 @@ function AdminPage() {
         .filter((row) => row.nameEn.length > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least English in one row.");
+        toast.error(t("admin.toast.noValidBrandRows"));
         return;
       }
 
@@ -1811,7 +1815,7 @@ function AdminPage() {
     const isXlsx = lowerCaseName.endsWith(".xlsx");
 
     if (!isCsv && !isXlsx) {
-      toast.error("Please upload an XLSX or CSV file.");
+      toast.error(t("admin.toast.uploadXlsxOrCsv"));
       return;
     }
 
@@ -2474,13 +2478,13 @@ function AdminPage() {
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
             <div>
-              <h1 className="text-base font-bold tracking-tight text-foreground">Super-Admin Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Marketplace operations and control center</p>
+              <h1 className="text-base font-bold tracking-tight text-foreground">{t("admin.header.title")}</h1>
+              <p className="text-xs text-muted-foreground">{t("admin.header.subtitle")}</p>
             </div>
             <div className="ml-auto">
               <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
                 <LogOut className="size-4" />
-                <span>تسجيل الخروج</span>
+                <span>{t("admin.actions.logout")}</span>
               </Button>
             </div>
           </header>
@@ -2491,14 +2495,14 @@ function AdminPage() {
                 <div className="flex items-start gap-3">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0" />
                   <div className="space-y-1 text-sm">
-                    <p className="font-semibold">Database health check failed</p>
+                    <p className="font-semibold">{t("admin.health.failedTitle")}</p>
                     <p>
                       {dbHealthQuery.data?.error
                         ? dbHealthQuery.data.error
-                        : "Required tables are missing. Please run backend migrations before using admin data."}
+                        : t("admin.health.requiredTablesMissing")}
                     </p>
                     {dbHealthQuery.data?.missingTables?.length ? (
-                      <p>Missing tables: {dbHealthQuery.data.missingTables.join(", ")}</p>
+                      <p>{t("admin.health.missingTables", { tables: dbHealthQuery.data.missingTables.join(", ") })}</p>
                     ) : null}
                   </div>
                 </div>
@@ -2677,40 +2681,40 @@ function AdminPage() {
       <Sheet open={isVendorPanelOpen} onOpenChange={setIsVendorPanelOpen}>
         <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Add New Vendor</SheetTitle>
-            <SheetDescription>Register a vendor for your marketplace network.</SheetDescription>
+            <SheetTitle>{t("admin.modals.vendor.title")}</SheetTitle>
+            <SheetDescription>{t("admin.modals.vendor.description")}</SheetDescription>
           </SheetHeader>
 
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
               <label htmlFor="store-name" className="text-sm font-medium text-foreground">
-                Store Name
+                {t("admin.forms.storeName")}
               </label>
               <input
                 id="store-name"
                 value={vendorForm.storeName}
                 onChange={(event) => setVendorForm((current) => ({ ...current, storeName: event.target.value }))}
-                placeholder="e.g. Casa Fresh Market"
+                placeholder={t("admin.placeholders.storeNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="owner-name" className="text-sm font-medium text-foreground">
-                Owner Name
+                {t("admin.forms.ownerName")}
               </label>
               <input
                 id="owner-name"
                 value={vendorForm.ownerName}
                 onChange={(event) => setVendorForm((current) => ({ ...current, ownerName: event.target.value }))}
-                placeholder="e.g. Amal Benkirane"
+                placeholder={t("admin.placeholders.ownerNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="phone-number" className="text-sm font-medium text-foreground">
-                Phone Number
+                {t("admin.forms.phoneNumber")}
               </label>
               <div className="flex h-10 items-center overflow-hidden rounded-md border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-ring/30">
                 <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
@@ -2723,7 +2727,7 @@ function AdminPage() {
                       phoneNumber: normalizeMoroccoPhoneInput(event.target.value),
                     }))
                   }
-                  placeholder="6XXXXXXXX"
+                  placeholder={t("admin.placeholders.phoneNumberShort")}
                   inputMode="numeric"
                   autoComplete="tel"
                   className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-sm outline-none"
@@ -2733,7 +2737,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="vendor-commune" className="text-sm font-medium text-foreground">
-                Jamaa Tourabiya
+                {t("admin.forms.commune")}
               </label>
               <select
                 id="vendor-commune"
@@ -2747,7 +2751,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select commune</option>
+                 <option value="">{t("admin.common.selectCommune")}</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
                     {getLocalizedCommuneName(commune)}
@@ -2757,12 +2761,12 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Hay / Douar (Multi-select)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.forms.douarMultiSelect")}</label>
               <div className="max-h-52 space-y-2 overflow-y-auto rounded-md border border-input bg-background p-3">
                 {!vendorForm.communeId ? (
-                  <p className="text-sm text-muted-foreground">Select a commune first.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.common.selectCommuneFirst")}</p>
                 ) : addVendorNeighborhoodOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">All neighborhoods in this commune are already claimed.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.forms.noUnassignedNeighborhoods")}</p>
                 ) : (
                   addVendorNeighborhoodOptions.map((neighborhood) => {
                     const isChecked = vendorForm.neighborhoodIds.includes(neighborhood.id);
@@ -2800,8 +2804,8 @@ function AdminPage() {
 
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Active Status</p>
-                <p className="text-xs text-muted-foreground">Enable if this vendor can receive orders now.</p>
+                <p className="text-sm font-medium text-foreground">{t("admin.forms.activeStatus")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.forms.vendorActiveHint")}</p>
               </div>
               <Switch
                 checked={vendorForm.isActive}
@@ -2812,7 +2816,7 @@ function AdminPage() {
 
           <SheetFooter className="mt-6">
             <Button variant="hero" className="w-full rounded-md" onClick={saveVendor}>
-              Save Vendor
+              {t("admin.actions.saveVendor")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -2821,27 +2825,27 @@ function AdminPage() {
       <Sheet open={isCyclistPanelOpen} onOpenChange={setIsCyclistPanelOpen}>
         <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Add New Cyclist</SheetTitle>
-            <SheetDescription>Register a cyclist and assign one or more service neighborhoods.</SheetDescription>
+            <SheetTitle>{t("admin.modals.cyclist.title")}</SheetTitle>
+            <SheetDescription>{t("admin.modals.cyclist.description")}</SheetDescription>
           </SheetHeader>
 
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
               <label htmlFor="cyclist-full-name" className="text-sm font-medium text-foreground">
-                Full Name
+                {t("admin.forms.fullName")}
               </label>
               <input
                 id="cyclist-full-name"
                 value={cyclistForm.fullName}
                 onChange={(event) => setCyclistForm((current) => ({ ...current, fullName: event.target.value }))}
-                placeholder="e.g. Yassine El Idrissi"
+                placeholder={t("admin.placeholders.fullNameExample")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="cyclist-phone-number" className="text-sm font-medium text-foreground">
-                Phone Number
+                {t("admin.forms.phoneNumber")}
               </label>
               <div className="flex h-10 items-center overflow-hidden rounded-md border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-ring/30">
                 <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
@@ -2854,7 +2858,7 @@ function AdminPage() {
                       phoneNumber: normalizeMoroccoPhoneInput(event.target.value),
                     }))
                   }
-                  placeholder="6XXXXXXXX"
+                  placeholder={t("admin.placeholders.phoneNumberShort")}
                   inputMode="numeric"
                   autoComplete="tel"
                   className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-sm outline-none"
@@ -2864,7 +2868,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="cyclist-commune" className="text-sm font-medium text-foreground">
-                Jamaa Tourabiya
+                {t("admin.forms.commune")}
               </label>
               <select
                 id="cyclist-commune"
@@ -2878,7 +2882,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select commune</option>
+                <option value="">{t("admin.common.selectCommune")}</option>
                 {communeOptions.map((commune) => (
                   <option key={commune.id} value={commune.id}>
                     {getLocalizedCommuneName(commune)}
@@ -2889,13 +2893,13 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Hays / Douars (Multi-select)
+                {t("admin.forms.douarsMultiSelect")}
               </label>
               <div className="max-h-52 space-y-2 overflow-y-auto rounded-md border border-input bg-background p-3">
                 {!cyclistForm.communeId ? (
-                  <p className="text-sm text-muted-foreground">Select a commune first.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.common.selectCommuneFirst")}</p>
                 ) : cyclistNeighborhoodOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No neighborhoods available in this commune.</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.forms.noNeighborhoodsInCommune")}</p>
                 ) : (
                   cyclistNeighborhoodOptions.map((neighborhood) => {
                     const isChecked = cyclistForm.neighborhoodIds.includes(neighborhood.id);
@@ -2920,16 +2924,15 @@ function AdminPage() {
 
               {cyclistForm.neighborhoodIds.length > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Selected: {cyclistForm.neighborhoodIds.length} neighborhood
-                  {cyclistForm.neighborhoodIds.length === 1 ? "" : "s"}
+                  {t("admin.forms.selectedNeighborhoods", { count: cyclistForm.neighborhoodIds.length })}
                 </p>
               ) : null}
             </div>
 
             <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 p-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Active Status</p>
-                <p className="text-xs text-muted-foreground">Enable if this cyclist can accept deliveries.</p>
+                <p className="text-sm font-medium text-foreground">{t("admin.forms.activeStatus")}</p>
+                <p className="text-xs text-muted-foreground">{t("admin.forms.cyclistActiveHint")}</p>
               </div>
               <Switch
                 checked={cyclistForm.isActive}
@@ -2940,7 +2943,7 @@ function AdminPage() {
 
           <SheetFooter className="mt-6">
             <Button variant="hero" className="w-full rounded-md" onClick={saveCyclist}>
-              Save Cyclist
+              {t("admin.actions.saveCyclist")}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -3193,11 +3196,11 @@ function AdminPage() {
       >
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingProductId ? "Edit Master Product" : "Add Master Product"}</DialogTitle>
+            <DialogTitle>{editingProductId ? t("admin.catalog.modals.editMasterProduct") : t("admin.catalog.modals.addMasterProduct")}</DialogTitle>
             <DialogDescription>
               {editingProductId
-                ? "Update the shared product reference across all vendors."
-                : "Set the shared product reference for all vendors."}
+                ? t("admin.catalog.modals.editMasterProductDescription")
+                : t("admin.catalog.modals.addMasterProductDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -3227,10 +3230,10 @@ function AdminPage() {
                   <ImagePlus className="size-5" />
                 </span>
               )}
-              <p className="mt-2 text-sm font-medium text-foreground">
-                {productImagePreviewUrl ? "Image selected" : "Upload product image"}
-              </p>
-              <p className="text-xs text-muted-foreground">Click or drag and drop an image file</p>
+                <p className="mt-2 text-sm font-medium text-foreground">
+                  {productImagePreviewUrl ? t("admin.catalog.modals.imageSelected") : t("admin.catalog.modals.uploadProductImage")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("admin.catalog.modals.clickOrDragImage")}</p>
             </button>
 
             <div className="space-y-2">
@@ -3241,7 +3244,7 @@ function AdminPage() {
                 id="product-name-en"
                 value={productForm.name}
                 onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="e.g. Olive Oil 1L"
+                placeholder={t("admin.catalog.modals.placeholders.productNameEn")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
@@ -3254,7 +3257,7 @@ function AdminPage() {
                 id="product-name-fr"
                 value={productForm.nameFr}
                 onChange={(event) => setProductForm((current) => ({ ...current, nameFr: event.target.value }))}
-                placeholder="e.g. Huile d'olive 1L"
+                placeholder={t("admin.catalog.modals.placeholders.productNameFr")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
@@ -3267,14 +3270,14 @@ function AdminPage() {
                 id="product-name-ar"
                 value={productForm.nameAr}
                 onChange={(event) => setProductForm((current) => ({ ...current, nameAr: event.target.value }))}
-                placeholder="مثال: زيت الزيتون 1 لتر"
+                placeholder={t("admin.catalog.modals.placeholders.productNameAr")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="product-brand" className="text-sm font-medium text-foreground">
-                Brand (المركة)
+                {t("admin.catalog.modals.brand")}
               </label>
               <Popover open={brandPickerOpen} onOpenChange={setBrandPickerOpen}>
                 <PopoverTrigger asChild>
@@ -3286,16 +3289,16 @@ function AdminPage() {
                     className="h-10 w-full justify-between rounded-md"
                   >
                     <span className="truncate">
-                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || "No brand"}
+                      {brands.find((brand) => brand.id === productForm.brandId)?.name_en || t("admin.catalog.modals.noBrand")}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[320px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search brand..." />
+                    <CommandInput placeholder={t("admin.catalog.modals.searchBrand")} />
                     <CommandList>
-                      <CommandEmpty>No brand found.</CommandEmpty>
+                      <CommandEmpty>{t("admin.catalog.modals.noBrandFound")}</CommandEmpty>
                       <CommandItem
                         value="no-brand"
                         onSelect={() => {
@@ -3303,7 +3306,7 @@ function AdminPage() {
                           setBrandPickerOpen(false);
                         }}
                       >
-                        No brand
+                        {t("admin.catalog.modals.noBrand")}
                       </CommandItem>
                       {brands.map((brand) => (
                         <CommandItem
@@ -3325,7 +3328,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="category" className="text-sm font-medium text-foreground">
-                Category
+                {t("admin.catalog.modals.category")}
               </label>
               <select
                 id="category"
@@ -3338,7 +3341,7 @@ function AdminPage() {
                 }
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               >
-                <option value="">Select category</option>
+                <option value="">{t("admin.catalog.modals.selectCategory")}</option>
                 {activeCategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name_en}
@@ -3348,7 +3351,7 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Measurement</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.catalog.modals.measurement")}</label>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   id="measurement-value"
@@ -3362,7 +3365,7 @@ function AdminPage() {
                       measurementValue: event.target.value,
                     }))
                   }
-                  placeholder="2"
+                  placeholder={t("admin.catalog.modals.placeholders.measurementValue")}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                 />
                 <select
@@ -3387,7 +3390,7 @@ function AdminPage() {
 
             <div className="space-y-2">
               <label htmlFor="product-variant-input" className="text-sm font-medium text-foreground">
-                Product Variants / الأنواع أو النكهات
+                {t("admin.catalog.modals.productVariants")}
               </label>
               <Input
                 id="product-variant-input"
@@ -3404,7 +3407,7 @@ function AdminPage() {
                     addProductVariantTag(productVariantInput);
                   }
                 }}
-                placeholder="Type variant (e.g. Vanilla) and press Enter"
+                placeholder={t("admin.catalog.modals.placeholders.variantInput")}
               />
               {parsedProductVariants.length > 0 ? (
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -3420,13 +3423,13 @@ function AdminPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">No variants added yet.</p>
+                <p className="text-xs text-muted-foreground">{t("admin.catalog.modals.noVariants")}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="popularity-score" className="text-sm font-medium text-foreground">
-                Popularity Score
+                {t("admin.catalog.modals.popularityScore")}
               </label>
               <input
                 id="popularity-score"
@@ -3452,7 +3455,7 @@ function AdminPage() {
               onClick={saveMasterProduct}
               disabled={isUploadingProduct}
             >
-              {isUploadingProduct ? "Uploading..." : editingProductId ? "Update Product" : "Save Product"}
+              {isUploadingProduct ? t("admin.common.uploading") : editingProductId ? t("admin.catalog.modals.updateProduct") : t("admin.catalog.modals.saveProduct")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3469,8 +3472,8 @@ function AdminPage() {
       >
         <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingBrandId ? "Edit Brand" : "Add New Brand"}</DialogTitle>
-            <DialogDescription>Manage multilingual brand names and logo.</DialogDescription>
+            <DialogTitle>{editingBrandId ? t("admin.brands.modals.editBrand") : t("admin.brands.modals.addNewBrand")}</DialogTitle>
+            <DialogDescription>{t("admin.brands.modals.description")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -3497,38 +3500,38 @@ function AdminPage() {
                   <ImagePlus className="size-5" />
                 </span>
               )}
-              <p className="mt-2 text-sm font-medium text-foreground">Upload brand logo</p>
+              <p className="mt-2 text-sm font-medium text-foreground">{t("admin.brands.modals.uploadBrandLogo")}</p>
             </button>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (EN)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameEn")}</label>
               <Input
                 value={brandForm.nameEn}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameEn: event.target.value }))}
-                placeholder="e.g. Lesieur"
+                placeholder={t("admin.brands.modals.placeholders.nameEn")}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (FR)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameFr")}</label>
               <Input
                 value={brandForm.nameFr}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameFr: event.target.value }))}
-                placeholder="Ex: Lesieur"
+                placeholder={t("admin.brands.modals.placeholders.nameFr")}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (AR)</label>
+              <label className="text-sm font-medium text-foreground">{t("admin.brands.modals.nameAr")}</label>
               <Input
                 value={brandForm.nameAr}
                 onChange={(event) => setBrandForm((current) => ({ ...current, nameAr: event.target.value }))}
-                placeholder="مثال: ليزيور"
+                placeholder={t("admin.brands.modals.placeholders.nameAr")}
               />
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="hero" className="w-full rounded-md" onClick={saveBrandHandler} disabled={isSavingBrand}>
-              {isSavingBrand ? "Saving..." : editingBrandId ? "Update Brand" : "Save Brand"}
+              {isSavingBrand ? t("admin.common.saving") : editingBrandId ? t("admin.brands.modals.updateBrand") : t("admin.brands.modals.saveBrand")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3555,6 +3558,7 @@ function AdminPage() {
 }
 
 function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
+  const { t } = useTranslation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -3562,19 +3566,19 @@ function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
     <Sidebar collapsible="icon" className="border-r border-border/60">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{collapsed ? "" : "Control Center"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{collapsed ? "" : t("admin.sidebar.controlCenter")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.tab}>
-                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={t(item.label)}>
                     <Link
                       to="/admin"
                       search={{ tab: item.tab }}
                       className="flex items-center gap-2 rounded-md hover:bg-sidebar-accent/70"
                     >
                       <item.icon className="size-4" />
-                      {!collapsed ? <span>{item.label}</span> : null}
+                      {!collapsed ? <span>{t(item.label)}</span> : null}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -3603,19 +3607,20 @@ function OverviewSection({
   isLoading: boolean;
   error: Error | null;
 }) {
+  const { t } = useTranslation();
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load overview analytics.
+        {t("admin.overview.loadFailed")}
       </section>
     );
   }
 
   const metrics = [
-    { label: "Total Orders Today", value: String(analytics?.totalOrdersToday ?? 0), icon: PackageCheck },
-    { label: "Active Vendors", value: String(analytics?.activeVendors ?? 0), icon: Store },
+    { label: t("admin.overview.metrics.totalOrdersToday"), value: String(analytics?.totalOrdersToday ?? 0), icon: PackageCheck },
+    { label: t("admin.overview.metrics.activeVendors"), value: String(analytics?.activeVendors ?? 0), icon: Store },
     {
-      label: "Total Revenue",
+      label: t("admin.overview.metrics.totalRevenue"),
       value: `${Math.round(analytics?.totalRevenueMad ?? 0)} MAD`,
       icon: CircleDollarSign,
     },
@@ -3633,7 +3638,7 @@ function OverviewSection({
               </span>
             </div>
             <p className="mt-3 text-2xl font-semibold text-foreground">
-              {isLoading ? <span className="text-base text-muted-foreground">Loading...</span> : metric.value}
+               {isLoading ? <span className="text-base text-muted-foreground">{t("admin.common.loading")}</span> : metric.value}
             </p>
           </article>
         ))}
@@ -3641,16 +3646,16 @@ function OverviewSection({
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Weekly Order Trends</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.overview.weeklyOrderTrends")}</h2>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
             <TrendingUp className="size-3.5" />
-            Last 7 days
+            {t("admin.overview.last7Days")}
           </span>
         </div>
 
         {isLoading ? (
           <div className="flex h-64 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
-            Loading trends...
+            {t("admin.overview.loadingTrends")}
           </div>
         ) : (
           <ChartContainer config={weeklyOrdersChartConfig} className="h-64 w-full">
@@ -3679,15 +3684,16 @@ function VendorsSection({
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Vendors Management</h2>
-          <p className="text-sm text-muted-foreground">Manage onboarding and zone availability</p>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.vendors.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.vendors.subtitle")}</p>
         </div>
         <Button variant="hero" className="rounded-md" onClick={onAddVendor}>
-          + Add New Vendor
+          {t("admin.vendors.addNew")}
         </Button>
       </div>
 
@@ -3695,25 +3701,25 @@ function VendorsSection({
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Vendor Name</th>
-              <th className="px-4 py-3">Zone / Location</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Action</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.vendorName")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.zone")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.status")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.action")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  <AppEmptyState title="Loading vendors..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
+                  <AppEmptyState title={t("admin.vendors.loadingTitle")} subtitle={t("admin.vendors.loadingSubtitle")} className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : vendors.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   <AppEmptyState
-                    title="No vendors yet."
-                    subtitle="Add your first vendor to begin onboarding."
+                      title={t("admin.vendors.emptyTitle")}
+                      subtitle={t("admin.vendors.emptySubtitle")}
                     className="border-0 bg-transparent py-2"
                   />
                 </td>
@@ -3750,7 +3756,7 @@ function VendorsSection({
                 <td className="px-4 py-3">
                   <div className="space-y-2">
                     <Button variant="soft" size="sm" className="rounded-md" onClick={() => onManageVendor(vendor)}>
-                      Manage
+                      {t("admin.common.manage")}
                     </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
@@ -3777,15 +3783,16 @@ function CyclistsSection({
   isLoading: boolean;
   onAddCyclist: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Cyclists Management</h2>
-          <p className="text-sm text-muted-foreground">Assign and manage neighborhood-level delivery riders.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.cyclists.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.cyclists.subtitle")}</p>
         </div>
         <Button variant="hero" className="rounded-md" onClick={onAddCyclist}>
-          + Add New Cyclist
+          {t("admin.cyclists.addNew")}
         </Button>
       </div>
 
@@ -3793,25 +3800,25 @@ function CyclistsSection({
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Cyclist</th>
-              <th className="px-4 py-3">Assigned Zone</th>
-              <th className="px-4 py-3">Phone</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.cyclist")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.assignedZone")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.phone")}</th>
+              <th className="px-4 py-3">{t("admin.cyclists.table.status")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  <AppEmptyState title="Loading cyclists..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
+                  <AppEmptyState title={t("admin.cyclists.loadingTitle")} subtitle={t("admin.cyclists.loadingSubtitle")} className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : cyclists.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   <AppEmptyState
-                    title="No cyclists yet."
-                    subtitle="Add your first cyclist to dispatch deliveries."
+                      title={t("admin.cyclists.emptyTitle")}
+                      subtitle={t("admin.cyclists.emptySubtitle")}
                     className="border-0 bg-transparent py-2"
                   />
                 </td>
@@ -3900,6 +3907,7 @@ function ServiceZonesSection({
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
 }) {
+  const { t } = useTranslation();
   const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
     const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
       .map((value) => value?.trim())
@@ -3910,14 +3918,14 @@ function ServiceZonesSection({
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Service Zones</h2>
-        <p className="text-sm text-muted-foreground">Define communes and neighborhoods for strict routing.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("admin.serviceZones.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("admin.serviceZones.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" className="rounded-md" onClick={onDownloadExport}>
           <Download className="size-4" />
-          Download / Export Service Zones (XLSX)
+          {t("admin.serviceZones.downloadExportXlsx")}
         </Button>
         <input
           ref={serviceZonesCsvInputRef}
@@ -3933,42 +3941,42 @@ function ServiceZonesSection({
           disabled={isImporting}
         >
           <FileUp className="size-4" />
-          {isImporting ? "Importing..." : "Import Bulk Service Zones"}
+          {isImporting ? t("admin.common.importing") : t("admin.serviceZones.importBulk")}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 rounded-md border border-border bg-background p-3">
           <label htmlFor="new-commune" className="text-sm font-medium text-foreground">
-            New Jamaa Tourabiya
+            {t("admin.serviceZones.newCommune")}
           </label>
           <input
             id="new-commune"
             value={form.communeNameEn}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameEn: event.target.value }))}
-            placeholder="Commune Name (EN) — e.g. Sidi Bernoussi"
+            placeholder={t("admin.serviceZones.placeholders.communeNameEnExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.communeNameFr}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameFr: event.target.value }))}
-            placeholder="Commune Name (FR)"
+            placeholder={t("admin.serviceZones.placeholders.communeNameFr")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.communeNameAr}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameAr: event.target.value }))}
-            placeholder="Commune Name (AR) - مثال: سيدي البرنوصي"
+            placeholder={t("admin.serviceZones.placeholders.communeNameArExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <Button variant="hero" className="w-full rounded-md" onClick={onSaveCommune}>
-            Add Commune
+            {t("admin.serviceZones.addCommune")}
           </Button>
         </div>
 
         <div className="space-y-2 rounded-md border border-border bg-background p-3">
           <label htmlFor="neighborhood-commune" className="text-sm font-medium text-foreground">
-            Commune for New Hay / Douar
+            {t("admin.serviceZones.communeForNewDouar")}
           </label>
           <select
             id="neighborhood-commune"
@@ -3981,7 +3989,7 @@ function ServiceZonesSection({
             }
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           >
-            <option value="">Select commune</option>
+            <option value="">{t("admin.common.selectCommune")}</option>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {localizeCommuneName(zone)}
@@ -3992,19 +4000,19 @@ function ServiceZonesSection({
             id="new-neighborhood"
             value={form.neighborhoodNameEn}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameEn: event.target.value }))}
-            placeholder="Neighborhood Name (EN)"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameEn")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.neighborhoodNameFr}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameFr: event.target.value }))}
-            placeholder="Neighborhood Name (FR)"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameFr")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.neighborhoodNameAr}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameAr: event.target.value }))}
-            placeholder="Neighborhood Name (AR) - مثال: حي الفرح"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameArExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
@@ -4014,26 +4022,26 @@ function ServiceZonesSection({
             step="0.01"
             value={form.neighborhoodDeliveryFee}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodDeliveryFee: event.target.value }))}
-            placeholder="Delivery Fee (MAD)"
+            placeholder={t("admin.serviceZones.placeholders.deliveryFeeMad")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <Button variant="hero" className="w-full rounded-md" onClick={onSaveNeighborhood}>
-            Add Neighborhood / Douar
+            {t("admin.serviceZones.addNeighborhoodDouar")}
           </Button>
         </div>
       </div>
 
       <div className="rounded-md border border-border">
         <div className="border-b border-border bg-muted/40 px-4 py-2 text-sm font-medium text-foreground">
-          Configured Zones
+          {t("admin.serviceZones.configuredZones")}
         </div>
         {isLoading ? (
           <div className="p-4">
-            <AppEmptyState title="Loading service zones..." subtitle="Fetching configured communes and neighborhoods." />
+            <AppEmptyState title={t("admin.serviceZones.loadingTitle")} subtitle={t("admin.serviceZones.loadingSubtitle")} />
           </div>
         ) : zones.length === 0 ? (
           <div className="p-4">
-            <AppEmptyState title="No service zones yet." subtitle="Create your first commune and neighborhood to start dispatching." />
+            <AppEmptyState title={t("admin.serviceZones.emptyTitle")} subtitle={t("admin.serviceZones.emptySubtitle")} />
           </div>
         ) : (
           <div className="space-y-3 p-4">
@@ -4048,12 +4056,12 @@ function ServiceZonesSection({
                     {localizeCommuneName(zone)}
                   </button>
                   <Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => onOpenCommuneProfile(zone.id)}>
-                    Manage
+                    {t("admin.common.manage")}
                   </Button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {zone.neighborhoods.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">No neighborhoods yet</span>
+                    <span className="text-xs text-muted-foreground">{t("admin.serviceZones.noNeighborhoodsYet")}</span>
                   ) : (
                     zone.neighborhoods.map((neighborhood) => (
                       <div key={neighborhood.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-2 py-1">
@@ -4114,23 +4122,24 @@ function CatalogSection({
   onEditProduct: (product: MasterProductEntity) => void;
   onArchiveProduct: (product: MasterProductEntity) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Master Product List</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.catalog.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Add standard grocery items once for shared vendor distribution.
+            {t("admin.catalog.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button variant="outline" className="rounded-md" onClick={onDownloadTemplate}>
             <Download className="size-4" />
-            Download / Export Catalog (XLSX)
+            {t("admin.catalog.downloadExportXlsx")}
           </Button>
           <Button variant="outline" className="rounded-md" onClick={onDownloadExample}>
             <Download className="size-4" />
-            Download Example CSV
+            {t("admin.catalog.downloadExampleCsv")}
           </Button>
           <input
             ref={masterProductsCsvInputRef}
@@ -4146,10 +4155,10 @@ function CatalogSection({
             disabled={isImporting}
           >
             <FileUp className="size-4" />
-            {isImporting ? "Importing..." : "Import Bulk Products"}
+            {isImporting ? t("admin.common.importing") : t("admin.catalog.importBulkProducts")}
           </Button>
           <Button variant="hero" className="rounded-md" onClick={onAddProduct}>
-            + Add Master Product
+            {t("admin.catalog.addMasterProduct")}
           </Button>
         </div>
       </div>
@@ -4160,17 +4169,17 @@ function CatalogSection({
           <Input
             value={searchTerm}
             onChange={(event) => onSearchTermChange(event.target.value)}
-            placeholder="Search by name (EN/FR/AR) or barcode"
+            placeholder={t("admin.catalog.searchPlaceholder")}
             className="pl-9"
           />
         </div>
 
         <Select value={selectedCategoryId} onValueChange={onCategoryChange}>
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder={t("admin.catalog.allCategories")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("admin.catalog.allCategories")}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name_en}
@@ -4181,10 +4190,10 @@ function CatalogSection({
 
         <Select value={selectedBrandId} onValueChange={onBrandChange}>
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="All Brands" />
+            <SelectValue placeholder={t("admin.catalog.allBrands")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
+            <SelectItem value="all">{t("admin.catalog.allBrands")}</SelectItem>
             {brands.map((brand) => (
               <SelectItem key={brand.id} value={brand.id}>
                 {brand.name_en}
@@ -4193,7 +4202,7 @@ function CatalogSection({
           </SelectContent>
         </Select>
 
-        <p className="text-xs text-muted-foreground">Showing {products.length} of {allProductsCount} products</p>
+        <p className="text-xs text-muted-foreground">{t("admin.catalog.showingProducts", { shown: products.length, total: allProductsCount })}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
