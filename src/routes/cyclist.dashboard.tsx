@@ -59,6 +59,8 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
+  const [manualPayload, setManualPayload] = useState("");
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
