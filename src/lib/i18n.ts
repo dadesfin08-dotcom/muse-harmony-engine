@@ -4,7 +4,6 @@ import { initReactI18next } from "react-i18next";
 export const LANGUAGE_STORAGE_KEY = "bzaf.language";
 export const supportedLanguages = ["en", "fr", "ar"] as const;
 export type AppLanguage = (typeof supportedLanguages)[number];
-export const LOCKED_LANGUAGE: AppLanguage = "ar";
 
 const resources = {
   en: {
@@ -286,25 +285,19 @@ const resources = {
 } as const;
 
 function getInitialLanguage(): AppLanguage {
-  return LOCKED_LANGUAGE;
+  return "en";
 }
 
 if (!i18n.isInitialized) {
   i18n.use(initReactI18next).init({
     resources,
     lng: getInitialLanguage(),
-    fallbackLng: LOCKED_LANGUAGE,
+    fallbackLng: "en",
     initAsync: false,
     react: { useSuspense: false },
     interpolation: { escapeValue: false },
-    supportedLngs: [LOCKED_LANGUAGE],
+    supportedLngs: [...supportedLanguages],
   });
 }
-
-i18n.on("languageChanged", (lang) => {
-  if (lang !== LOCKED_LANGUAGE) {
-    void i18n.changeLanguage(LOCKED_LANGUAGE);
-  }
-});
 
 export default i18n;

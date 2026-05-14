@@ -35,7 +35,7 @@ type CyclistSession = {
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
-      { title: "حساب الموصّل | بزاف فريش" },
+      { title: "Cyclist Dashboard | Bzaf Fresh" },
       {
         name: "description",
         content: "Mobile-first cyclist dashboard for accepting runs and completing local deliveries.",
@@ -130,7 +130,7 @@ function CyclistDashboardPage() {
 
     void playActionSound({ enabled: true }).then((played) => {
       if (!played && !hasAudioPermissionHintShown) {
-        toast.info("اضغط على زر الصوت لتفعيل تنبيهات الطلبات.");
+        toast.info("Click the sound icon to allow pickup alerts in your browser.");
         setHasAudioPermissionHintShown(true);
       }
     });
@@ -145,24 +145,24 @@ function CyclistDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("تم إيقاف الصوت.");
+      toast.success("Sounds disabled.");
       return;
     }
 
     const played = await playActionSound({ enabled: true });
     if (!played) {
-      toast.error("المتصفح منع التشغيل التلقائي. تفاعل مع الصفحة ثم حاول مرة أخرى.");
+      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
       return;
     }
 
-    toast.success("تم تفعيل الصوت.");
+    toast.success("Sounds enabled.");
   };
 
   const onlineCountLabel = useMemo(() => {
     if (activeView === "available") {
-      return `${availableRuns.length} طلب متاح`;
+      return `${availableRuns.length} available run${availableRuns.length === 1 ? "" : "s"}`;
     }
-    return `${activeDeliveries.length} توصيل نشط`;
+    return `${activeDeliveries.length} active deliver${activeDeliveries.length === 1 ? "y" : "ies"}`;
   }, [activeView, availableRuns.length, activeDeliveries.length]);
 
   const updateOnlineState = async (isOnline: boolean) => {
@@ -184,11 +184,11 @@ function CyclistDashboardPage() {
       );
 
       await setActiveState({ data: { cyclistId: cyclist.id, isActive: isOnline } });
-      toast.success(isOnline ? "أنت الآن متصل." : "أنت الآن غير متصل.");
+      toast.success(isOnline ? "You are online." : "You are offline.");
     } catch (error) {
       console.error("Failed to update cyclist online state:", error);
       await dashboardQuery.refetch();
-      toast.error("تعذر تحديث حالة الاتصال.");
+      toast.error("Failed to update online status.");
     }
   };
 
@@ -212,12 +212,12 @@ function CyclistDashboardPage() {
       });
 
       await acceptRun({ data: { cyclistId: session.cyclistId, orderId: order.id } });
-      toast.success("تم قبول التوصيل.");
+      toast.success("Delivery accepted.");
       await dashboardQuery.refetch();
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : "تعذر قبول التوصيل.");
+      toast.error(error instanceof Error ? error.message : "Failed to accept delivery.");
     } finally {
       setIsUpdatingOrderId(null);
     }
@@ -229,7 +229,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("جاهز للمسح.");
+    setScannerStatus("Ready to scan.");
     isVerifyingCodeRef.current = false;
   };
 
@@ -240,13 +240,13 @@ function CyclistDashboardPage() {
 
     const extractedCode = extractDeliveryCode(rawValue, order.id);
     if (!extractedCode) {
-      toast.error("صيغة QR/PIN غير صحيحة.");
+      toast.error("Invalid QR/PIN format.");
       return;
     }
 
     isVerifyingCodeRef.current = true;
     setIsUpdatingOrderId(order.id);
-    setScannerStatus("جاري التحقق من رمز التسليم...");
+    setScannerStatus("Verifying delivery pass...");
 
     try {
       queryClient.setQueryData(["cyclist", "dashboard", session.cyclistId], (current: any) => {
@@ -271,15 +271,15 @@ function CyclistDashboardPage() {
       });
 
       setIsScannerSuccess(true);
-      setScannerStatus("تم التحقق من التسليم بنجاح.");
-      toast.success("تم إكمال التسليم بنجاح.");
+      setScannerStatus("Delivery verified successfully.");
+      toast.success("Delivery completed successfully.");
       await dashboardQuery.refetch();
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Failed to verify delivery:", error);
       await dashboardQuery.refetch();
-      setScannerStatus("فشل التحقق. حاول المسح مجددًا أو أدخل الرمز يدويًا.");
-      toast.error(error instanceof Error ? error.message : "تعذر التحقق من التسليم.");
+      setScannerStatus("Verification failed. Try scanning again or use manual code.");
+      toast.error(error instanceof Error ? error.message : "Failed to verify delivery.");
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
@@ -291,7 +291,7 @@ function CyclistDashboardPage() {
     setManualCode("");
     setShowManualEntry(false);
     setIsScannerSuccess(false);
-    setScannerStatus("جاري تجهيز الكاميرا...");
+    setScannerStatus("Preparing camera...");
     setIsScannerOpen(true);
   };
 
@@ -323,13 +323,13 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus("وجّه الكاميرا إلى رمز QR الخاص بالزبون.");
+          setScannerStatus("Point your camera at the customer QR code.");
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
         if (mounted) {
           setShowManualEntry(true);
-          setScannerStatus("الكاميرا غير متاحة. أدخل الرمز يدويًا.");
+          setScannerStatus("Camera unavailable. Enter code manually.");
         }
       }
     };
@@ -361,7 +361,7 @@ function CyclistDashboardPage() {
   const handleLogout = async () => {
     clearRoleSessions();
     localStorage.removeItem(CYCLIST_SESSION_STORAGE_KEY);
-      toast.success("تم تسجيل الخروج بنجاح.");
+    toast.success("Logged out successfully.");
     await navigate({ to: "/cyclist/login" });
   };
 
@@ -369,9 +369,9 @@ function CyclistDashboardPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
         <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
-          <p className="text-sm text-muted-foreground">انتهت جلسة حساب الموصّل.</p>
+          <p className="text-sm text-muted-foreground">Your cyclist session has expired.</p>
           <Button className="w-full" onClick={() => navigate({ to: "/cyclist/login" })}>
-            الذهاب لتسجيل الدخول
+            Go to Login
           </Button>
         </div>
       </main>
@@ -388,7 +388,7 @@ function CyclistDashboardPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{cyclist?.fullName ?? session.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">حساب الموصّل</p>
+              <p className="truncate text-xs text-muted-foreground">Cyclist Dashboard</p>
             </div>
           </div>
 
@@ -398,8 +398,8 @@ function CyclistDashboardPage() {
               variant="soft"
               className="rounded-xl"
               onClick={handleToggleSounds}
-              aria-label={isSoundEnabled ? "إيقاف الصوت" : "تفعيل الصوت"}
-              title={isSoundEnabled ? "إيقاف الصوت" : "تفعيل الصوت"}
+              aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+              title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
             >
               {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </Button>
@@ -410,7 +410,7 @@ function CyclistDashboardPage() {
         </div>
 
         <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-            <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "متصل" : "غير متصل"}</span>
+          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "Online" : "Offline"}</span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
@@ -426,7 +426,7 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            الطلبات المتاحة
+            Available Runs
           </button>
           <button
             type="button"
@@ -437,13 +437,13 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            التوصيلات النشطة
+            Active Deliveries
           </button>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
-          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">جاري التحديث…</p> : null}
+          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing…</p> : null}
         </div>
 
         {activeView === "available" ? (
@@ -463,7 +463,7 @@ function CyclistDashboardPage() {
                   key={order.id}
                   order={order}
                   isActiveDelivery={false}
-                  actionLabel="قبول وبدء الالتقاط"
+                  actionLabel="Accept & Pick Up"
                   actionTone="primary"
                   actionIcon={Truck}
                   isBusy={isUpdatingOrderId === order.id}
@@ -482,7 +482,7 @@ function CyclistDashboardPage() {
                   key={order.id}
                   order={order}
                   isActiveDelivery
-                  actionLabel="مسح الرمز للتسليم"
+                  actionLabel="Scan to Deliver (مسح الرمز للتسليم)"
                   actionTone="success"
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
@@ -498,7 +498,7 @@ function CyclistDashboardPage() {
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="text-base font-semibold">مسح الرمز للتسليم</DialogTitle>
+            <DialogTitle className="text-base font-semibold">Scan to Deliver</DialogTitle>
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
@@ -527,12 +527,12 @@ function CyclistDashboardPage() {
                     onClick={handleManualVerify}
                     disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
                   >
-                    {isUpdatingOrderId === scannerOrder?.id ? "جاري التحقق..." : "تحقق وسلّم"}
+                    {isUpdatingOrderId === scannerOrder?.id ? "Verifying..." : "Verify & Deliver"}
                   </Button>
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
                   <Camera className="size-4" />
-                  الرجوع للكاميرا
+                  Back to Camera
                 </Button>
               </div>
             ) : (
@@ -542,7 +542,7 @@ function CyclistDashboardPage() {
                 </div>
                 <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
                   <Keyboard className="size-4" />
-                  إدخال الرمز يدوياً
+                  Enter Code Manually (إدخال الرمز يدوياً)
                 </Button>
               </>
             )}
@@ -563,14 +563,14 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            الطلبات المتاحة
+            Available Runs
           </button>
 
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
-            aria-label="فتح المحفظة"
+            aria-label="Open wallet"
           >
             <Wallet className="size-5" />
           </button>
@@ -584,7 +584,7 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            التوصيلات النشطة
+            Active Deliveries
           </button>
         </div>
       </nav>
@@ -601,9 +601,9 @@ function CyclistDashboardPage() {
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
                 <ChevronRight className="size-4" />
-                رجوع
+                Back (رجوع)
               </Button>
-              <p className="text-sm font-semibold text-foreground">تفاصيل الطلب</p>
+              <p className="text-sm font-semibold text-foreground">Order Details</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -673,7 +673,7 @@ function CyclistDashboardPage() {
                               <TooltipTrigger asChild>
                                 <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
                                   <Package className="h-3 w-3" />
-                                  <span>الكمية x{item.quantity}</span>
+                                  <span>Qty x{item.quantity}</span>
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent side="top">الكمية الحالية هي x{item.quantity}</TooltipContent>
@@ -683,7 +683,7 @@ function CyclistDashboardPage() {
                       </div>
                     ))
                   ) : (
-                    <p className="p-4 text-sm text-muted-foreground">لا توجد منتجات متاحة لهذا الطلب.</p>
+                    <p className="p-4 text-sm text-muted-foreground">No items available for this order.</p>
                   )}
                 </div>
 
@@ -694,15 +694,15 @@ function CyclistDashboardPage() {
                   </div>
                   <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>المجموع الفرعي</span>
+                    <span>Subtotal</span>
                     <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>رسوم التوصيل</span>
+                    <span>Delivery Fee</span>
                     <span>{detailsOrder.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-800">
-                    <span>الإجمالي</span>
+                    <span>Total</span>
                     <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
                   </div>
                 </div>
@@ -875,7 +875,7 @@ function OrderCard({
           {order.customerPhone}
         </a>
         <p className="text-sm text-muted-foreground">Douar: {order.douar}</p>
-        <p className="text-sm font-medium text-foreground">الإجمالي: {order.totalMad.toFixed(2)} MAD</p>
+        <p className="text-sm font-medium text-foreground">Total: {order.totalMad.toFixed(2)} MAD</p>
         <p className="text-xs text-muted-foreground">Delivery notes: {order.deliveryNotes || "—"}</p>
         <p className="text-xs text-muted-foreground">Saved instructions: {order.savedInstructions || "—"}</p>
       </div>
