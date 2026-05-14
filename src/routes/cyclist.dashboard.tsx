@@ -405,9 +405,6 @@ function CyclistDashboardPage() {
             <Button size="icon" variant="soft" className="rounded-xl" onClick={handleLogout}>
               <LogOut className="size-4" />
             </Button>
-            <Button size="icon" variant="soft" className="rounded-xl" onClick={() => navigate({ to: "/cyclist/wallet" })}>
-              <Wallet className="size-4" />
-            </Button>
           </div>
         </div>
 
@@ -554,12 +551,12 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 px-4 py-2 backdrop-blur">
-        <div className="mx-auto grid w-full max-w-lg grid-cols-2 gap-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white px-4 py-3">
+        <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-11 rounded-xl text-sm font-medium transition ${
+            className={`h-11 flex-1 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -567,10 +564,20 @@ function CyclistDashboardPage() {
           >
             Available Runs
           </button>
+
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/cyclist/wallet" })}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
+            aria-label="Open wallet"
+          >
+            <Wallet className="size-5" />
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-11 rounded-xl text-sm font-medium transition ${
+            className={`h-11 flex-1 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
