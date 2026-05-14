@@ -112,6 +112,56 @@ export type PlatformDuesCollectionResult = {
   remainingDuesMad: number;
 };
 
+type PendingPlatformDuesRow = {
+  vendor_id: string;
+  payment_method: string | null;
+  platform_profit: number | null;
+  delivery_fee: number | null;
+};
+
+function roundMad(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+function isCashPaymentMethod(paymentMethod: string | null | undefined) {
+  const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+  return normalized === "cod" || normalized === "cash";
+}
+
+function platformDueFromOrder(row: { platform_profit?: number | null; delivery_fee?: number | null }) {
+  const profit = Number(row.platform_profit ?? Number.NaN);
+  if (Number.isFinite(profit) && profit > 0) return profit;
+  return Number(row.delivery_fee ?? 0);
+}
+
+async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
+  if (vendorIds.length === 0) return new Map<string, number>();
+
+  const { data, error } = await (supabaseAdmin as any)
+    .from("orders")
+    .select("vendor_id, payment_method, platform_profit, delivery_fee")
+    .in("vendor_id", vendorIds)
+    .eq("status", "cash_transferred_to_vendor")
+    .or("admin_settled.is.null,admin_settled.eq.false");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const dueByVendor = new Map<string, number>();
+  for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
+    if (!isCashPaymentMethod(row.payment_method)) continue;
+    const current = dueByVendor.get(row.vendor_id) ?? 0;
+    dueByVendor.set(row.vendor_id, current + platformDueFromOrder(row));
+  }
+
+  for (const vendorId of vendorIds) {
+    dueByVendor.set(vendorId, roundMad(dueByVendor.get(vendorId) ?? 0));
+  }
+
+  return dueByVendor;
+}
+
 function zoneFromNeighborhoods(neighborhoods: NeighborhoodRow[], communeMap: Map<string, string>) {
   if (neighborhoods.length === 0) {
     return "Unassigned";
