@@ -1917,9 +1917,9 @@ function VendorDashboardPage() {
 
                     try {
                       setIsRecordingPayment(true);
-                      await ledgerQuery.refetch();
+                      const refreshedLedger = await ledgerQuery.refetch();
                       const recalculatedDebt = Number(
-                        ledgerQuery.data?.customer?.currentDebt ?? selectedCarnetCustomer.currentDebt ?? 0,
+                        refreshedLedger.data?.customer?.currentDebt ?? selectedCarnetCustomer.currentDebt ?? 0,
                       );
 
                       if (recalculatedDebt <= 0.01) {
