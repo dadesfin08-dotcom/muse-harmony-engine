@@ -5437,13 +5437,38 @@ function OrdersSection({
     vendorName: string;
     customerPhone: string;
     totalPrice: number;
-    status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+    status:
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+      | "cancelled";
   }>;
   isLoading: boolean;
   error: Error | null;
-  statusFilter: "all" | "new" | "preparing" | "ready" | "delivering" | "delivered";
+  statusFilter:
+    | "all"
+    | "new"
+    | "preparing"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor";
   onStatusFilterChange: Dispatch<
-    SetStateAction<"all" | "new" | "preparing" | "ready" | "delivering" | "delivered">
+    SetStateAction<
+      | "all"
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+    >
   >;
 }) {
   const statusBadgeClass: Record<string, string> = {
@@ -5474,7 +5499,15 @@ function OrdersSection({
           value={statusFilter}
           onChange={(event) =>
             onStatusFilterChange(
-              event.target.value as "all" | "new" | "preparing" | "ready" | "delivering" | "delivered",
+              event.target.value as
+                | "all"
+                | "new"
+                | "preparing"
+                | "ready"
+                | "delivering"
+                | "delivered"
+                | "delivered_cash_with_cyclist"
+                | "cash_transferred_to_vendor",
             )
           }
           className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
@@ -5485,6 +5518,8 @@ function OrdersSection({
           <option value="ready">Ready</option>
           <option value="delivering">Dispatched</option>
           <option value="delivered">Delivered</option>
+          <option value="delivered_cash_with_cyclist">Delivered (Cash with Cyclist)</option>
+          <option value="cash_transferred_to_vendor">Cash Transferred to Vendor</option>
         </select>
       </div>
 
