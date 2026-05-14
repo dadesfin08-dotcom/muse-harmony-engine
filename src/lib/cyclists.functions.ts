@@ -88,6 +88,13 @@ type OrderRow = {
   delivery_fee: number;
   total_price: number;
   status: "ready" | "delivering" | "delivered" | "new" | "preparing";
+  order_items?: Array<{
+    name?: string;
+    quantity?: number;
+    unitPriceMad?: number;
+    selectedVariant?: string | null;
+    productId?: string;
+  }>;
   neighborhood_id: string;
   delivery_auth_code: string;
   created_at: string;
@@ -121,6 +128,14 @@ export type CyclistOrderCard = {
   deliveryFeeMad: number;
   totalMad: number;
   paymentMethod: "COD" | "Carnet";
+  items: Array<{
+    name: string;
+    quantity: number;
+    unitPriceMad: number;
+    selectedVariant: string | null;
+    imageUrl: string | null;
+    lineTotalMad: number;
+  }>;
   savedInstructions: string;
   deliveryNotes: string;
   deliveryAuthCode: string;
