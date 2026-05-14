@@ -188,11 +188,11 @@ function CyclistDashboardPage() {
       );
 
       await setActiveState({ data: { cyclistId: cyclist.id, isActive: isOnline } });
-      toast.success(isOnline ? "You are online." : "You are offline.");
+      toast.success(isOnline ? t("cyclist.onlineStateUpdatedOn") : t("cyclist.onlineStateUpdatedOff"));
     } catch (error) {
       console.error("Failed to update cyclist online state:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update online status.");
+      toast.error(t("cyclist.onlineStateFailed"));
     }
   };
 
@@ -216,12 +216,12 @@ function CyclistDashboardPage() {
       });
 
       await acceptRun({ data: { cyclistId: session.cyclistId, orderId: order.id } });
-      toast.success("Delivery accepted.");
+      toast.success(t("cyclist.deliveryAccepted"));
       await dashboardQuery.refetch();
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : "Failed to accept delivery.");
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
     } finally {
       setIsUpdatingOrderId(null);
     }
