@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { executeVendorQrCashHandover } from "@/lib/cyclists.functions";
+import { playSuccessSound } from "@/lib/sound-alerts";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
@@ -146,6 +147,8 @@ function CyclistWalletPage() {
       });
     },
     onSuccess: async () => {
+      void playSuccessSound();
+      await queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
       toast.success("Cash handover confirmed successfully.");
       await walletQuery.refetch();
       setIsVendorQrScannerOpen(false);
@@ -171,8 +174,7 @@ function CyclistWalletPage() {
 
       if (
         parsed?.action !== "vendor_cash_receipt" ||
-        typeof parsed.vendor_id !== "string" ||
-        typeof parsed.timestamp !== "string"
+        typeof parsed.vendor_id !== "string"
       ) {
         throw new Error("Invalid vendor QR payload");
       }
@@ -181,7 +183,7 @@ function CyclistWalletPage() {
       setVendorQrScannerStatus("جاري التحقق من الرمز...");
       await executeVendorQrCashHandoverMutation.mutateAsync({
         vendorId: parsed.vendor_id,
-        timestamp: parsed.timestamp,
+        timestamp: typeof parsed.timestamp === "string" ? parsed.timestamp : new Date().toISOString(),
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "QR غير صالح");
