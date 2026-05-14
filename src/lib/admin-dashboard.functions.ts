@@ -354,7 +354,7 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
 export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data: singletonRow, error: singletonError } = await (supabaseAdmin as any)
     .from("global_settings")
-    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
     .eq("id", GLOBAL_SETTINGS_SINGLETON_ID)
     .maybeSingle();
 
@@ -368,7 +368,7 @@ export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async
 
   const { data: fallbackRow, error: fallbackError } = await (supabaseAdmin as any)
     .from("global_settings")
-    .select("global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active")
+    .select("global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -386,10 +386,15 @@ export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async
         minimum_order_amount: Number(fallbackRow?.minimum_order_amount ?? 50),
         free_delivery_threshold: Number(fallbackRow?.free_delivery_threshold ?? 500),
         marketplace_active: Boolean(fallbackRow?.marketplace_active ?? true),
+        site_name: typeof fallbackRow?.site_name === "string" && fallbackRow.site_name.trim() ? fallbackRow.site_name.trim() : "Bzaf Fresh",
+        site_logo_url:
+          typeof fallbackRow?.site_logo_url === "string" && fallbackRow.site_logo_url.trim()
+            ? fallbackRow.site_logo_url.trim()
+            : null,
       },
       { onConflict: "id" },
     )
-    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
     .single();
 
   if (upsertError || !upserted?.id) {
@@ -408,6 +413,8 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
         minimumOrderAmount: z.coerce.number().min(0).max(100000),
         freeDeliveryThreshold: z.coerce.number().min(0).max(1000000),
         marketplaceActive: z.boolean(),
+        siteName: z.string().trim().min(1).max(120),
+        siteLogoUrl: z.string().trim().url().max(2000).nullable(),
       })
       .parse(input),
   )
@@ -421,10 +428,12 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
           minimum_order_amount: data.minimumOrderAmount,
           free_delivery_threshold: data.freeDeliveryThreshold,
           marketplace_active: data.marketplaceActive,
+          site_name: data.siteName,
+          site_logo_url: data.siteLogoUrl,
         },
         { onConflict: "id" },
       )
-      .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+      .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
       .single();
 
     if (error || !updated?.id) {
