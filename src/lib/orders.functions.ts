@@ -259,6 +259,11 @@ export type CustomerOrderDetails = {
   deliveryFeeMad: number;
   subtotalMad: number;
   grandTotalMad: number;
+  cyclist: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+  } | null;
   items: Array<{
     productName: string;
     quantity: number;
@@ -1158,7 +1163,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
         .select(
-          "id, customer_user_id, neighborhood_id, delivery_notes, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items",
+          "id, customer_user_id, neighborhood_id, cyclist_id, delivery_notes, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items",
         )
         .eq("id", data.orderId)
         .eq("customer_user_id", customerUserId)
@@ -1268,6 +1273,19 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
         throw new Error(communeQuery.error.message);
       }
 
+      const cyclistId =
+        typeof (orderRow as { cyclist_id?: unknown }).cyclist_id === "string"
+          ? (orderRow as { cyclist_id: string }).cyclist_id
+          : null;
+
+      const cyclistQuery = cyclistId
+        ? await (supabaseAdmin as any).from("cyclists").select("id, full_name, phone_number").eq("id", cyclistId).maybeSingle()
+        : { data: null, error: null };
+
+      if (cyclistQuery.error) {
+        throw new Error(cyclistQuery.error.message);
+      }
+
       const neighborhoodName =
         typeof neighborhoodQuery.data?.name_ar === "string"
           ? neighborhoodQuery.data.name_ar.trim()
@@ -1305,6 +1323,17 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
         deliveryFeeMad,
         subtotalMad,
         grandTotalMad: roundMoney(subtotalMad + deliveryFeeMad),
+        cyclist:
+          cyclistQuery.data &&
+          typeof cyclistQuery.data.id === "string" &&
+          typeof cyclistQuery.data.full_name === "string" &&
+          typeof cyclistQuery.data.phone_number === "string"
+            ? {
+                id: cyclistQuery.data.id,
+                name: cyclistQuery.data.full_name,
+                phoneNumber: cyclistQuery.data.phone_number,
+              }
+            : null,
         items,
       } satisfies CustomerOrderDetails;
     } catch (error) {
