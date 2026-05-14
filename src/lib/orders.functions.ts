@@ -582,13 +582,15 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       throw new Error(communesQuery.error.message);
     }
 
-    const localizedName = (row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined) => {
+    function localizedName(
+      row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined,
+    ) {
       if (!row) return "";
       if (typeof row.name_ar === "string" && row.name_ar.trim().length > 0) return row.name_ar.trim();
       if (typeof row.name_fr === "string" && row.name_fr.trim().length > 0) return row.name_fr.trim();
       if (typeof row.name_en === "string" && row.name_en.trim().length > 0) return row.name_en.trim();
       return "";
-    };
+    }
 
     const neighborhoodsById = new Map(
       ((neighborhoodsQuery.data ?? []) as Array<{
