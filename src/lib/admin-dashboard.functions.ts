@@ -14,6 +14,7 @@ import {
   DEFAULT_RECEIPT_STORE_NAME,
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
+import { isAdminReconciliationAllowedStatus } from "@/lib/settlement-status-rules";
 
 type AdminOrderStatus =
   | "new"
@@ -154,8 +155,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   }
 
   const recentOrders = (ordersRes.data ?? []) as Array<{ created_at: string; status: string | null; total_price: number | null }>;
-  const completedStatuses = new Set(["cash_transferred_to_vendor"]);
-
   for (const row of recentOrders) {
     const createdAt = new Date(row.created_at);
     if (Number.isNaN(createdAt.getTime())) continue;
@@ -172,8 +171,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   }));
 
   const totalRevenueMad = recentOrders.reduce((sum, row) => {
-    const normalizedStatus = String(row.status ?? "").trim().toLowerCase();
-    return completedStatuses.has(normalizedStatus) ? sum + Number(row.total_price ?? 0) : sum;
+    return isAdminReconciliationAllowedStatus(row.status) ? sum + Number(row.total_price ?? 0) : sum;
   }, 0);
 
   const totalOrdersToday = recentOrders.reduce((count, row) => {
