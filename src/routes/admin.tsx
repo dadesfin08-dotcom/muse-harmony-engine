@@ -173,7 +173,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ADMIN_PHONE, clearRoleSessions } from "@/lib/operational-auth";
+import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -939,7 +939,6 @@ function AdminPage() {
           vendorId: platformCollectionConfirmation.vendorId,
           amount: Number(platformCollectionConfirmation.amountMad.toFixed(2)),
           qrPayload: platformCollectionConfirmation.payload,
-          adminPhoneNumber: ADMIN_PHONE,
         },
       });
 
