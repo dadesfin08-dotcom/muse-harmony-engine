@@ -1901,7 +1901,10 @@ function VendorDashboardPage() {
                       return;
                     }
 
-                    const liveDebt = Number(selectedCarnetCustomer.currentDebt ?? 0);
+                    const freshestLedgerDebt = Number(ledgerQuery.data?.customer?.currentDebt ?? NaN);
+                    const liveDebt = Number.isFinite(freshestLedgerDebt)
+                      ? freshestLedgerDebt
+                      : Number(selectedCarnetCustomer.currentDebt ?? 0);
                     if (liveDebt <= 0.01) {
                       toast.error("No outstanding debt for this customer.");
                       return;
@@ -1914,6 +1917,21 @@ function VendorDashboardPage() {
 
                     try {
                       setIsRecordingPayment(true);
+                      const refreshedLedger = await ledgerQuery.refetch();
+                      const recalculatedDebt = Number(
+                        refreshedLedger.data?.customer?.currentDebt ?? selectedCarnetCustomer.currentDebt ?? 0,
+                      );
+
+                      if (recalculatedDebt <= 0.01) {
+                        toast.error("No outstanding debt for this customer.");
+                        return;
+                      }
+
+                      if (amount > recalculatedDebt + 0.01) {
+                        toast.error(`Payment exceeds current debt (${recalculatedDebt.toFixed(2)} MAD).`);
+                        return;
+                      }
+
                       await recordCarnetPayment({
                         data: {
                           customerPhone: selectedCarnetCustomer.customerPhone,
