@@ -627,60 +627,65 @@ function OrderCard({
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div dir="rtl" className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+        <div dir="rtl" className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <User className="h-4 w-4 text-slate-400" />
               الاسم الكامل
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">{order.customerName}</div>
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.customerName}</div>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Phone className="h-4 w-4 text-slate-400" />
               رقم الهاتف
             </div>
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
-              <a
-                href={`tel:${order.customerPhone}`}
-                className="flex items-center justify-center rounded-full bg-emerald-100 p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
-              >
-                <PhoneCall className="size-4" />
-              </a>
-              <span className="truncate text-sm font-bold text-slate-900">{order.customerPhone}</span>
-              <a
-                href={`https://wa.me/${whatsappPhone}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center rounded-full bg-emerald-100 p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Open WhatsApp chat"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+              <span dir="ltr" className="font-mono text-sm tracking-wide text-slate-700">
+                {order.customerPhone}
+              </span>
+              <div className="mt-1.5 flex flex-row items-center gap-2">
+                <a
+                  href={`tel:${order.customerPhone}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                  aria-label="Call customer"
+                >
+                  <PhoneCall className="size-4" />
+                </a>
+                <a
+                  href={`https://wa.me/${whatsappPhone}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors hover:bg-emerald-200"
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Open WhatsApp chat"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </a>
+              </div>
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Map className="h-4 w-4 text-slate-400" />
               المنطقة
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">{order.deliveryZone}</div>
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.deliveryZone}</div>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <MapPin className="h-4 w-4 text-slate-400" />
               العنوان
             </div>
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex max-w-full items-center justify-end gap-1 truncate text-right text-sm font-bold text-blue-600 hover:underline"
+                className="inline-flex max-w-full items-center justify-end gap-1 whitespace-normal text-right leading-tight text-sm font-bold text-emerald-700 hover:text-emerald-800"
               >
                 <MapPin className="h-4 w-4" />
                 {order.deliveryAddress}
@@ -688,26 +693,36 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Info className="h-4 w-4 text-slate-400" />
               تعليمات التوصيل
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
-              {briefingText ? <span className="rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-800">{briefingText}</span> : "—"}
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+              {briefingText ? (
+                <span className="rounded-md border border-amber-200/50 bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-700">
+                  {briefingText}
+                </span>
+              ) : (
+                "—"
+              )}
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
-            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <CreditCard className="h-4 w-4 text-slate-400" />
               الدفع
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
+            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               {order.paymentMethod === "COD" ? (
-                <span className="rounded-md bg-orange-100 px-2 py-1 text-xs text-orange-800">الدفع عند الاستلام (COD)</span>
+                <span className="rounded-md border border-orange-200/50 bg-orange-50 px-2.5 py-1 text-[12px] font-semibold text-orange-700">
+                  الدفع عند الاستلام (COD)
+                </span>
               ) : (
-                <span className="rounded-md bg-emerald-100 px-2 py-1 text-xs text-emerald-800">مدفوع (Carnet)</span>
+                <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
+                  مدفوع (Carnet)
+                </span>
               )}
             </div>
           </div>
