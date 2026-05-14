@@ -73,8 +73,13 @@ import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_FOOTER_MESSAGE,
   DEFAULT_RECEIPT_HEADER_CONTENT,
   DEFAULT_RECEIPT_PHONE,
+  DEFAULT_RECEIPT_SLOGAN,
+  DEFAULT_RECEIPT_SOCIAL_SUPPORT,
+  DEFAULT_RECEIPT_STORE_NAME,
+  DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 import {
   ThermalReceipt,
@@ -656,11 +661,22 @@ function VendorDashboardPage() {
   );
   const printableSettings = useMemo<ThermalInvoiceSettings>(
     () => ({
-      storeName: invoiceSettingsQuery.data?.store_name ?? DEFAULT_RECEIPT_HEADER_CONTENT,
-      address: invoiceSettingsQuery.data?.address ?? DEFAULT_RECEIPT_ADDRESS,
-      phone: invoiceSettingsQuery.data?.phone ?? DEFAULT_RECEIPT_PHONE,
+      receiptLogoUrl: invoiceSettingsQuery.data?.receipt_logo_url ?? null,
+      receiptStoreName:
+        invoiceSettingsQuery.data?.receipt_store_name ??
+        invoiceSettingsQuery.data?.store_name ??
+        DEFAULT_RECEIPT_STORE_NAME,
+      receiptSlogan: invoiceSettingsQuery.data?.receipt_slogan ?? DEFAULT_RECEIPT_SLOGAN,
+      receiptPhone: invoiceSettingsQuery.data?.receipt_phone ?? invoiceSettingsQuery.data?.phone ?? DEFAULT_RECEIPT_PHONE,
+      receiptAddress:
+        invoiceSettingsQuery.data?.receipt_address ?? invoiceSettingsQuery.data?.address ?? DEFAULT_RECEIPT_ADDRESS,
+      receiptWebsite: invoiceSettingsQuery.data?.receipt_website ?? DEFAULT_RECEIPT_WEBSITE,
       taxId: invoiceSettingsQuery.data?.tax_id ?? null,
-      footerMessage: invoiceSettingsQuery.data?.footer_message ?? DEFAULT_RECEIPT_FOOTER_CONTENT,
+      receiptFooterMessage:
+        invoiceSettingsQuery.data?.receipt_footer_message ??
+        invoiceSettingsQuery.data?.footer_message ??
+        DEFAULT_RECEIPT_FOOTER_MESSAGE,
+      receiptSocialSupport: invoiceSettingsQuery.data?.receipt_social_support ?? DEFAULT_RECEIPT_SOCIAL_SUPPORT,
     }),
     [invoiceSettingsQuery.data],
   );
