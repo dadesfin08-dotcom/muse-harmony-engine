@@ -189,7 +189,14 @@ function ProductDetailPage() {
           <div className="relative -mx-0 rounded-b-3xl bg-slate-50 pb-8 pt-4">
             <button
               type="button"
-              onClick={() => void navigate({ to: "/customer/all-products" })}
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  window.history.back();
+                  return;
+                }
+
+                void navigate({ to: "/customer/all-products" });
+              }}
               aria-label={t("common.back", { defaultValue: "Back" })}
               className="absolute left-4 top-4 inline-flex rounded-full bg-white/80 p-2 text-slate-700 shadow-sm backdrop-blur"
             >
@@ -313,12 +320,13 @@ function ProductDetailPage() {
                     return;
                   }
                 }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
+                disabled={currentCartQuantity === 0}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
                 <Minus className="size-4" />
               </button>
 
-              <span className="min-w-8 text-center text-base font-bold text-slate-900">{Math.max(currentCartQuantity, 1)}</span>
+              <span className="min-w-8 text-center text-base font-bold text-slate-900">{currentCartQuantity}</span>
 
               <button
                 type="button"
