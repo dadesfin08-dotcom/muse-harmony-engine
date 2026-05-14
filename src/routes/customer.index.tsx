@@ -25,7 +25,6 @@ import {
   MessageCircle,
   ClipboardList,
   BookOpen,
-  Globe,
   Share2,
   Flame,
   Clock3,
@@ -72,12 +71,6 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -246,12 +239,6 @@ type CheckoutPrefs = {
 
 type AppLanguage = "en" | "fr" | "ar";
 
-const languageOptions: Array<{ code: AppLanguage; label: string }> = [
-  { code: "ar", label: "🇲🇦 العربية" },
-  { code: "fr", label: "🇫🇷 Français" },
-  { code: "en", label: "🇬🇧 English" },
-];
-
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -283,7 +270,7 @@ function useCustomerCarnet(
 }
 
 function Index() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate({ from: "/customer/" });
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -325,9 +312,9 @@ function Index() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
+  const language: AppLanguage = "ar";
   const isMobile = useIsMobile();
-  const isArabic = language === "ar";
+  const isArabic = true;
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
   const [isBottomPromoDismissed, setIsBottomPromoDismissed] = useState(false);
   const flashDealsAutoplayRef = useRef(
@@ -336,10 +323,6 @@ function Index() {
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
-
-  const changeLanguage = (nextLanguage: AppLanguage) => {
-    void i18n.changeLanguage(nextLanguage);
-  };
 
   const getLocalizedText = ({
     en,
@@ -354,23 +337,15 @@ function Index() {
     const normalizedFr = fr?.trim() || "";
     const normalizedAr = ar?.trim() || "";
 
-    if (language === "ar") return normalizedAr || normalizedFr || normalizedEn;
-    if (language === "fr") return normalizedFr || normalizedEn || normalizedAr;
-    return normalizedEn || normalizedFr || normalizedAr;
+    return normalizedAr || normalizedFr || normalizedEn;
   };
   const getLocalizedNeighborhoodName = (zone: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
   const getLocalizedCommuneName = (zone: { nameEn?: string | null; nameFr?: string | null; nameAr?: string | null; name: string }) =>
     getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
-  const getLocalizedDeliveryLabel = () => {
-    if (language === "ar") return "ثمن التوصيل";
-    if (language === "fr") return "Livraison";
-    return "Delivery";
-  };
+  const getLocalizedDeliveryLabel = () => "ثمن التوصيل";
   const getLocalizedDeliveryFeeToLocationLabel = () => {
-    if (language === "ar") return "ثمن التوصيل إلى هذا الحي";
-    if (language === "fr") return "Frais de livraison vers cette zone";
-    return "Delivery fee to this location";
+    return "ثمن التوصيل إلى هذا الحي";
   };
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
@@ -1337,24 +1312,9 @@ function Index() {
   const carnetCurrentDebt = Number(customerCarnet?.currentDebt ?? 0);
   const carnetMaxLimit = Number(customerCarnet?.maxLimit ?? 0);
   const carnetUsagePercent = carnetMaxLimit > 0 ? Math.min((carnetCurrentDebt / carnetMaxLimit) * 100, 100) : 0;
-  const carnetUtilizationLabel =
-    language === "ar"
-      ? "استهلاك الدين"
-      : language === "fr"
-        ? "Utilisation de la dette"
-        : "Debt Utilization";
-  const carnetDebtRatioLabel =
-    language === "ar"
-      ? `المُستَهلَك: ${carnetCurrentDebt.toFixed(2)} درهم / السقف: ${carnetMaxLimit.toFixed(2)} درهم`
-      : language === "fr"
-        ? `Utilisé: ${carnetCurrentDebt.toFixed(2)} / Limite: ${carnetMaxLimit.toFixed(2)} MAD`
-        : `Used: ${carnetCurrentDebt.toFixed(2)} / Limit: ${carnetMaxLimit.toFixed(2)} MAD`;
-  const carnetUsagePercentLabel =
-    language === "ar"
-      ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
-      : language === "fr"
-        ? `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`
-        : `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`;
+  const carnetUtilizationLabel = "استهلاك الدين";
+  const carnetDebtRatioLabel = `المُستَهلَك: ${carnetCurrentDebt.toFixed(2)} درهم / السقف: ${carnetMaxLimit.toFixed(2)} درهم`;
+  const carnetUsagePercentLabel = `${carnetUtilizationLabel} ${carnetUsagePercent.toFixed(0)}%`;
   const carnetProgressIndicatorClassName =
     carnetUsagePercent < 50 ? "bg-success" : carnetUsagePercent <= 80 ? "bg-accent" : "bg-destructive";
   const activeAnnouncements = (siteContentQuery.data?.announcements ?? []) as AnnouncementRow[];
@@ -1469,29 +1429,6 @@ function Index() {
                 className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("language.label")}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted"
-                >
-                  <Globe className="size-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 rounded-md">
-                {languageOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.code}
-                    onClick={() => changeLanguage(option.code)}
-                    className={option.code === language ? "bg-accent text-accent-foreground" : undefined}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             <button
               aria-label={t("header.userProfile")}
@@ -2156,9 +2093,9 @@ function Index() {
                     </div>
                     <div className="border-t border-border pt-3">
                       <div className="mb-1.5 flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
+                      <p className="text-sm text-muted-foreground">رسوم التوصيل</p>
                         <p className="text-sm font-medium text-foreground">
-                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : isArabic ? "قيد التحديد" : "Pending"}
+                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : "قيد التحديد"}
                         </p>
                       </div>
                       {selectedNeighborhoodId ? (
@@ -2166,24 +2103,18 @@ function Index() {
                           <p className="inline-flex items-center gap-2 text-xs font-semibold text-success">
                             <Gift className="size-3.5" />
                             {amountToFreeDeliveryMad > 0
-                              ? isArabic
-                                ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
-                                : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
-                              : isArabic
-                                ? "مبروك! عندك توصيل فابور"
-                                : "You have unlocked Free Delivery! 🎉"}
+                              ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
+                              : "مبروك! عندك توصيل فابور"}
                           </p>
                         </div>
                       ) : null}
                       {!isMinimumOrderMet ? (
                         <p className="mb-2 text-xs font-medium text-destructive">
-                          {isArabic
-                            ? `الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`
-                            : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
+                          {`الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`}
                         </p>
                       ) : null}
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Final Total</p>
+                        <p className="text-sm text-muted-foreground">المجموع النهائي</p>
                         <p className="text-lg font-semibold text-foreground">{finalTotalMad.toFixed(2)} MAD</p>
                       </div>
                     </div>
@@ -2312,35 +2243,35 @@ function Index() {
                             neighborhoodId: selectedNeighborhoodId || null,
                           },
                         });
-                        toast.success("Profile updated.");
+                        toast.success("تم تحديث الملف بنجاح.");
                         setCustomerPanelView("account");
                       } catch (error) {
                         console.error("Failed to update customer profile:", error);
-                        toast.error("Failed to update profile.");
+                        toast.error("تعذر تحديث الملف.");
                       }
                     }}
                   >
-                    Save Profile
+                    حفظ الملف
                   </Button>
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
                   {customerOrdersQuery.isLoading ? (
-                    <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
+                    <AppEmptyState title="جاري تحميل طلباتك..." subtitle="المرجو الانتظار لحظة." className="p-5" />
                   ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
                     <AppEmptyState
-                      title="No orders yet."
-                      subtitle="Your order history will appear here after checkout."
+                      title="لا توجد طلبات بعد."
+                      subtitle="سيظهر سجل طلباتك هنا بعد أول عملية شراء."
                       className="p-5"
                     />
                   ) : (
                     <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                       {activeCustomerOrders.length > 0 ? (
                         <div className="space-y-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">الطلبات النشطة</p>
                           {activeCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
                             const orderDate = new Date(order.created_at);
@@ -2439,17 +2370,17 @@ function Index() {
                   )}
 
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                   {customerCarnetQuery.isLoading ? (
-                    <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
+                    <AppEmptyState title="جاري تحميل دفترك..." subtitle="نجلب آخر تفاصيل الرصيد." className="p-5" />
                   ) : !customerCarnet ? (
                     <AppEmptyState
-                      title="No active carnet found for your account."
-                      subtitle="Ask your vendor to enable carnet access for your phone number."
+                      title="ما كاينش دفتر فعّال لحسابك حالياً."
+                      subtitle="تواصل مع التاجر باش يفعّل لك الدفتر برقم الهاتف ديالك."
                       className="p-5"
                     />
                   ) : (
@@ -2457,7 +2388,7 @@ function Index() {
                       <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
                         <div className="rounded-xl border border-border bg-muted/30 p-3">
                           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                            الرصيد الحالي
                           </p>
                           <p className="mt-1 text-xl font-semibold text-destructive">
                             {carnetCurrentDebt.toFixed(2)} MAD
@@ -2524,7 +2455,7 @@ function Index() {
                   )}
 
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : authStep === "phone" ? (
@@ -2582,7 +2513,7 @@ function Index() {
                     onClick={verifyCustomerOtpAndLogin}
                     disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
                   >
-                    {isVerifyingAuthOtp ? "Verifying..." : "Verify & Login"}
+                    {isVerifyingAuthOtp ? "جاري التحقق..." : "تحقق وادخل"}
                   </Button>
 
                   <Button
@@ -2594,7 +2525,7 @@ function Index() {
                       setAuthOtpCode("");
                     }}
                   >
-                    Change phone number
+                    تغيير رقم الهاتف
                   </Button>
                   </div>
                 )}
@@ -2705,35 +2636,35 @@ function Index() {
                               neighborhoodId: selectedNeighborhoodId || null,
                             },
                           });
-                          toast.success("Profile updated.");
+                          toast.success("تم تحديث الملف بنجاح.");
                           setCustomerPanelView("account");
                         } catch (error) {
                           console.error("Failed to update customer profile:", error);
-                          toast.error("Failed to update profile.");
+                          toast.error("تعذر تحديث الملف.");
                         }
                       }}
                     >
-                      Save Profile
+                      حفظ الملف
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
                     {customerOrdersQuery.isLoading ? (
-                      <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
+                      <AppEmptyState title="جاري تحميل طلباتك..." subtitle="المرجو الانتظار لحظة." className="p-5" />
                     ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
                       <AppEmptyState
-                        title="No orders yet."
-                        subtitle="Your order history will appear here after checkout."
+                        title="لا توجد طلبات بعد."
+                        subtitle="سيظهر سجل طلباتك هنا بعد أول عملية شراء."
                         className="p-5"
                       />
                     ) : (
                       <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                         {activeCustomerOrders.length > 0 ? (
                           <div className="space-y-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">الطلبات النشطة</p>
                             {activeCustomerOrders.map((order) => {
                               const activeStepIndex = getOrderStepIndex(order.status);
                               const orderDate = new Date(order.created_at);
@@ -2832,17 +2763,17 @@ function Index() {
                     )}
 
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                     {customerCarnetQuery.isLoading ? (
-                      <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
+                      <AppEmptyState title="جاري تحميل دفترك..." subtitle="نجلب آخر تفاصيل الرصيد." className="p-5" />
                     ) : !customerCarnet ? (
                       <AppEmptyState
-                        title="No active carnet found for your account."
-                        subtitle="Ask your vendor to enable carnet access for your phone number."
+                        title="ما كاينش دفتر فعّال لحسابك حالياً."
+                        subtitle="تواصل مع التاجر باش يفعّل لك الدفتر برقم الهاتف ديالك."
                         className="p-5"
                       />
                     ) : (
@@ -2850,7 +2781,7 @@ function Index() {
                         <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
                           <div className="rounded-xl border border-border bg-muted/30 p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                              الرصيد الحالي
                             </p>
                             <p className="mt-1 text-xl font-semibold text-destructive">
                               {carnetCurrentDebt.toFixed(2)} MAD
@@ -2917,7 +2848,7 @@ function Index() {
                     )}
 
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : authStep === "phone" ? (
@@ -2975,7 +2906,7 @@ function Index() {
                       onClick={verifyCustomerOtpAndLogin}
                       disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
                     >
-                      {isVerifyingAuthOtp ? "Verifying..." : "Verify & Login"}
+                      {isVerifyingAuthOtp ? "جاري التحقق..." : "تحقق وادخل"}
                     </Button>
 
                     <Button
@@ -2987,7 +2918,7 @@ function Index() {
                         setAuthOtpCode("");
                       }}
                     >
-                      Change phone number
+                      تغيير رقم الهاتف
                     </Button>
                   </div>
                 )}
@@ -3059,9 +2990,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : communeSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">جاري تحميل المدن...</p>
                     ) : filteredCommuneOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No commune found.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">لم يتم العثور على مدينة.</p>
                     ) : (
                       <ul className="py-1">
                         {filteredCommuneOptions.map((commune) => (
@@ -3110,7 +3041,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                        placeholder={selectedCommuneId ? "ابحث عن الحي / الدوار..." : "اختر المدينة أولاً"}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
@@ -3126,7 +3057,7 @@ function Index() {
                   </div>
                   <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
                     {!selectedCommuneId ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Select a commune first.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">اختر المدينة أولاً.</p>
                     ) : !hasEnoughNeighborhoodChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
@@ -3136,9 +3067,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">جاري تحميل الأحياء...</p>
                     ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">لا يوجد حي بهذا الاسم في هذه المدينة.</p>
                     ) : (
                       <ul className="py-1">
                         {filteredNeighborhoodOptions.map((neighborhood) => (
