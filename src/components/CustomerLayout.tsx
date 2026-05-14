@@ -291,9 +291,9 @@ export function CustomerLayout({
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="relative inline-flex h-16 w-16 -translate-y-5 items-center justify-center rounded-full border-4 border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110"
+                  className="relative inline-flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full border-3 border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110 sm:h-16 sm:w-16 sm:-translate-y-5 sm:border-4"
                 >
-                  <Languages className="size-7" />
+                  <Languages className="size-6 sm:size-7" />
                   <span className="pointer-events-none absolute inset-0 rounded-full animate-pulse bg-emerald-400/20" />
                 </button>
               }
