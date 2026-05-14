@@ -1124,7 +1124,7 @@ function AdminPage() {
     const isXlsx = lowerCaseName.endsWith(".xlsx");
 
     if (!isCsv && !isXlsx) {
-      toast.error("Please upload an XLSX or CSV file.");
+      toast.error(t("admin.toast.uploadXlsxOrCsv"));
       return;
     }
 
@@ -1206,14 +1206,18 @@ function AdminPage() {
         .filter((row) => row.communeEn.length > 0 && row.douarEn.length > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least Commune_EN and Douar_EN in one row.");
+        toast.error(t("admin.toast.noValidServiceZonesRows"));
         return;
       }
 
       const result = await importServiceZonesBulkInDatabase({ data: { rows: preparedRows } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      const summary = `Bulk service zones import done — New: ${result.insertedCount}, Updated: ${result.updatedCount}${result.skippedCount > 0 ? `, Skipped: ${result.skippedCount}` : ""}.`;
+      const summary = t("admin.toast.serviceZonesImportSummary", {
+        inserted: result.insertedCount,
+        updated: result.updatedCount,
+        skippedSuffix: result.skippedCount > 0 ? t("admin.toast.skippedSuffix", { skipped: result.skippedCount }) : "",
+      });
 
       if (result.skippedCount > 0) {
         toast.warning(summary);
@@ -1288,18 +1292,18 @@ function AdminPage() {
     });
 
     if (!parsedForm.success) {
-      toast.error("Please provide valid product data, including a valid category.");
+      toast.error(t("admin.toast.invalidProductData"));
       return;
     }
 
     const selectedCategory = activeCategories.find((category) => category.id === productForm.categoryId);
     if (!selectedCategory) {
-      toast.error("Selected category is invalid.");
+      toast.error(t("admin.toast.invalidSelectedCategory"));
       return;
     }
 
     if (!editingProductId && !productImageFile) {
-      toast.error("Please select a product image.");
+      toast.error(t("admin.toast.productImageRequired"));
       return;
     }
 
@@ -1351,7 +1355,7 @@ function AdminPage() {
         });
 
         await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-        toast.success("Master product updated successfully.");
+        toast.success(t("admin.toast.masterProductUpdated"));
       } else {
         const payload = {
           name: productForm.name.trim(),
@@ -1373,7 +1377,7 @@ function AdminPage() {
         });
 
         await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-        toast.success("Master product saved successfully.");
+        toast.success(t("admin.toast.masterProductSaved"));
       }
 
       setProductForm({
@@ -1409,7 +1413,7 @@ function AdminPage() {
     }
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+      toast.error(t("admin.toast.uploadValidImage"));
       return;
     }
 
@@ -1418,7 +1422,7 @@ function AdminPage() {
       setProductImageFile(file);
       setProductImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => toast.error(t("admin.toast.previewImageFailed"));
     reader.readAsDataURL(file);
   };
 
