@@ -2243,11 +2243,11 @@ function Index() {
                             neighborhoodId: selectedNeighborhoodId || null,
                           },
                         });
-                        toast.success("Profile updated.");
+                        toast.success("تم تحديث الملف بنجاح.");
                         setCustomerPanelView("account");
                       } catch (error) {
                         console.error("Failed to update customer profile:", error);
-                        toast.error("Failed to update profile.");
+                        toast.error("تعذر تحديث الملف.");
                       }
                     }}
                   >
@@ -2455,7 +2455,7 @@ function Index() {
                   )}
 
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : authStep === "phone" ? (
@@ -2513,7 +2513,7 @@ function Index() {
                     onClick={verifyCustomerOtpAndLogin}
                     disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
                   >
-                    {isVerifyingAuthOtp ? "Verifying..." : "Verify & Login"}
+                    {isVerifyingAuthOtp ? "جاري التحقق..." : "تحقق وادخل"}
                   </Button>
 
                   <Button
@@ -2525,7 +2525,7 @@ function Index() {
                       setAuthOtpCode("");
                     }}
                   >
-                    Change phone number
+                    تغيير رقم الهاتف
                   </Button>
                   </div>
                 )}
@@ -2636,15 +2636,15 @@ function Index() {
                               neighborhoodId: selectedNeighborhoodId || null,
                             },
                           });
-                          toast.success("Profile updated.");
+                          toast.success("تم تحديث الملف بنجاح.");
                           setCustomerPanelView("account");
                         } catch (error) {
                           console.error("Failed to update customer profile:", error);
-                          toast.error("Failed to update profile.");
+                          toast.error("تعذر تحديث الملف.");
                         }
                       }}
                     >
-                      Save Profile
+                      حفظ الملف
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
                       رجوع للحساب
@@ -2848,7 +2848,7 @@ function Index() {
                     )}
 
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : authStep === "phone" ? (
@@ -2906,7 +2906,7 @@ function Index() {
                       onClick={verifyCustomerOtpAndLogin}
                       disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
                     >
-                      {isVerifyingAuthOtp ? "Verifying..." : "Verify & Login"}
+                      {isVerifyingAuthOtp ? "جاري التحقق..." : "تحقق وادخل"}
                     </Button>
 
                     <Button
@@ -2918,7 +2918,7 @@ function Index() {
                         setAuthOtpCode("");
                       }}
                     >
-                      Change phone number
+                      تغيير رقم الهاتف
                     </Button>
                   </div>
                 )}
@@ -2990,9 +2990,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : communeSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">جاري تحميل المدن...</p>
                     ) : filteredCommuneOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No commune found.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">لم يتم العثور على مدينة.</p>
                     ) : (
                       <ul className="py-1">
                         {filteredCommuneOptions.map((commune) => (
@@ -3041,7 +3041,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                        placeholder={selectedCommuneId ? "ابحث عن الحي / الدوار..." : "اختر المدينة أولاً"}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
@@ -3057,7 +3057,7 @@ function Index() {
                   </div>
                   <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
                     {!selectedCommuneId ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Select a commune first.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">اختر المدينة أولاً.</p>
                     ) : !hasEnoughNeighborhoodChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
@@ -3067,9 +3067,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">جاري تحميل الأحياء...</p>
                     ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">لا يوجد حي بهذا الاسم في هذه المدينة.</p>
                     ) : (
                       <ul className="py-1">
                         {filteredNeighborhoodOptions.map((neighborhood) => (
