@@ -118,6 +118,8 @@ export type VendorOrderDetails = {
   id: string;
   customerName: string;
   customerPhone: string;
+  customerAddress: string;
+  specialInstructions: string;
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered";
   createdAt: string;
@@ -527,7 +529,9 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, vendor_id, customer_name, customer_phone, payment_method, status, created_at, delivery_fee, total_price, order_items")
+        .select(
+          "id, vendor_id, customer_user_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, created_at, delivery_fee, total_price, order_items",
+        )
         .eq("id", data.orderId)
         .eq("vendor_id", vendor.id)
         .maybeSingle();
@@ -539,6 +543,63 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
       if (!orderRow?.id) {
         throw new Error("Order not found.");
       }
+
+      const [profileQuery, neighborhoodQuery] = await Promise.all([
+        orderRow.customer_user_id
+          ? (supabaseAdmin as any)
+              .from("profiles")
+              .select("address")
+              .eq("id", orderRow.customer_user_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        orderRow.neighborhood_id
+          ? (supabaseAdmin as any)
+              .from("neighborhoods")
+              .select("name_en, name_fr, name_ar, commune_id")
+              .eq("id", orderRow.neighborhood_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      if (profileQuery.error) {
+        throw new Error(profileQuery.error.message);
+      }
+
+      if (neighborhoodQuery.error) {
+        throw new Error(neighborhoodQuery.error.message);
+      }
+
+      const communeQuery = neighborhoodQuery.data?.commune_id
+        ? await (supabaseAdmin as any)
+            .from("communes")
+            .select("name_en, name_fr, name_ar")
+            .eq("id", neighborhoodQuery.data.commune_id)
+            .maybeSingle()
+        : { data: null, error: null };
+
+      if (communeQuery.error) {
+        throw new Error(communeQuery.error.message);
+      }
+
+      const addressParts = [
+        typeof profileQuery.data?.address === "string" ? profileQuery.data.address.trim() : "",
+        typeof neighborhoodQuery.data?.name_ar === "string"
+          ? neighborhoodQuery.data.name_ar.trim()
+          : typeof neighborhoodQuery.data?.name_fr === "string"
+            ? neighborhoodQuery.data.name_fr.trim()
+            : typeof neighborhoodQuery.data?.name_en === "string"
+              ? neighborhoodQuery.data.name_en.trim()
+              : "",
+        typeof communeQuery.data?.name_ar === "string"
+          ? communeQuery.data.name_ar.trim()
+          : typeof communeQuery.data?.name_fr === "string"
+            ? communeQuery.data.name_fr.trim()
+            : typeof communeQuery.data?.name_en === "string"
+              ? communeQuery.data.name_en.trim()
+              : "",
+      ].filter((part) => part.length > 0);
+
+      const customerAddress = addressParts.length > 0 ? Array.from(new Set(addressParts)).join("، ") : "-";
 
       const rawItems = Array.isArray(orderRow.order_items) ? orderRow.order_items : [];
 
@@ -615,6 +676,11 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         id: String(orderRow.id),
         customerName: String(orderRow.customer_name ?? "-"),
         customerPhone: String(orderRow.customer_phone ?? "-"),
+        customerAddress,
+        specialInstructions:
+          typeof orderRow.delivery_notes === "string" && orderRow.delivery_notes.trim().length > 0
+            ? orderRow.delivery_notes.trim()
+            : "None",
         paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
         status: (orderRow.status ?? "new") as "new" | "preparing" | "ready" | "delivering" | "delivered",
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
