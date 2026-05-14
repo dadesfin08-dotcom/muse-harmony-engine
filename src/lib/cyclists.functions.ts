@@ -481,7 +481,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       const isPendingDeliveryStatus = (status: string | null | undefined) => {
         const normalized = String(status ?? "").trim().toLowerCase();
-        return normalized === "delivered" || normalized === "completed" || normalized === "delivered_cash_with_cyclist";
+        return normalized === "delivered_cash_with_cyclist";
       };
 
       const pendingRowsInScope = pendingRows.filter((row) => isPendingDeliveryStatus(row.status));
@@ -789,11 +789,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
 
       const isPendingDeliveryStatus = (status: string | null | undefined) => {
         const normalized = String(status ?? "").trim().toLowerCase();
-        return (
-          normalized === "delivered" ||
-          normalized === "completed" ||
-          normalized === "delivered_cash_with_cyclist"
-        );
+        return normalized === "delivered_cash_with_cyclist";
       };
 
       const pendingRowsInScope = pendingRows.filter((row) => isPendingDeliveryStatus(row.status));

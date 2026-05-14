@@ -154,7 +154,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   }
 
   const recentOrders = (ordersRes.data ?? []) as Array<{ created_at: string; status: string | null; total_price: number | null }>;
-  const completedStatuses = new Set(["delivered", "completed", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
+  const completedStatuses = new Set(["cash_transferred_to_vendor"]);
 
   for (const row of recentOrders) {
     const createdAt = new Date(row.created_at);
