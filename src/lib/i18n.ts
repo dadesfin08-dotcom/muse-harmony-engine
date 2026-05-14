@@ -524,6 +524,15 @@ const resources = {
 } as const;
 
 function getInitialLanguage(): AppLanguage {
+  if (typeof window === "undefined") {
+    return "en";
+  }
+
+  const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  if (stored && supportedLanguages.includes(stored as AppLanguage)) {
+    return stored as AppLanguage;
+  }
+
   return "en";
 }
 
