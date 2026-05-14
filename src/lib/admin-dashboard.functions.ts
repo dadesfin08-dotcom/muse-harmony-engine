@@ -451,6 +451,59 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
     return normalizeGlobalSettingsRow(updated);
   });
 
+const resetFactoryDataInputSchema = z.object({
+  confirmationText: z.literal("RESET_ALL"),
+});
+
+export const resetFactoryData = createServerFn({ method: "POST" })
+  .inputValidator((input) => resetFactoryDataInputSchema.parse(input))
+  .handler(async () => {
+    const wipeTable = async (tableName: string) => {
+      const { error } = await (supabaseAdmin as any)
+        .from(tableName)
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      if (error) {
+        throw new Error(`Failed while clearing ${tableName}: ${error.message}`);
+      }
+    };
+
+    const tablesInDeleteOrder = [
+      "platform_collections",
+      "carnet_payments",
+      "vendor_carnet",
+      "orders",
+      "vendor_products",
+      "master_products",
+      "brands",
+      "categories",
+      "site_ads",
+      "announcements",
+      "vendor_service_zones",
+      "cyclist_coverage",
+      "neighborhoods",
+      "communes",
+      "customers",
+      "vendors",
+      "cyclists",
+      "profiles",
+      "markup_rules",
+      "global_settings",
+      "invoice_settings",
+      "otp_requests",
+    ] as const;
+
+    for (const tableName of tablesInDeleteOrder) {
+      await wipeTable(tableName);
+    }
+
+    return {
+      ok: true,
+      message: "Factory reset completed.",
+    };
+  });
+
 export const uploadSiteLogo = createServerFn({ method: "POST" })
   .inputValidator((input) => uploadSiteLogoInputSchema.parse(input))
   .handler(async ({ data }) => {
