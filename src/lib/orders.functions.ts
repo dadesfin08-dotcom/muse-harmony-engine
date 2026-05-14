@@ -421,36 +421,86 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
 
       const insertedOrderIds: string[] = [];
       const vendorEntries = Array.from(itemsByVendor.entries());
-
-      for (const [vendorId, vendorItems] of vendorEntries) {
+      const vendorOrderBreakdown = vendorEntries.map(([vendorId, vendorItems]) => {
         const totalPrice = vendorItems.reduce((sum, item) => sum + Number(item.unitPriceMad ?? 0) * Number(item.quantity ?? 0), 0);
         const subtotalBasePrice = vendorItems.reduce(
           (sum, item) => sum + Number(item.basePriceMad ?? item.unitPriceMad ?? 0) * Number(item.quantity ?? 0),
           0,
         );
-        const platformProfit = roundMoney(totalPrice - subtotalBasePrice);
-        const vendorRevenue = roundMoney(subtotalBasePrice);
         const itemCount = vendorItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0);
         const deliveryFee = vendorEntries.length > 1 ? 0 : data.deliveryFee;
+        const orderTotalWithDelivery = roundMoney(totalPrice + deliveryFee);
 
+        return {
+          vendorId,
+          vendorItems,
+          totalPrice,
+          subtotalBasePrice,
+          platformProfit: roundMoney(totalPrice - subtotalBasePrice),
+          vendorRevenue: roundMoney(subtotalBasePrice),
+          itemCount,
+          deliveryFee,
+          orderTotalWithDelivery,
+        };
+      });
+
+      const carnetEligibilityByVendor = new Map<
+        string,
+        { vendorCarnetId: string; newDebt: number; maxLimit: number }
+      >();
+
+      if (data.paymentMethod === "Carnet") {
+        for (const row of vendorOrderBreakdown) {
+          const { data: carnetRow, error: carnetLookupError } = await (supabaseAdmin as any)
+            .from("vendor_carnet")
+            .select("id, current_debt, max_limit")
+            .eq("vendor_id", row.vendorId)
+            .eq("customer_phone", data.customerPhone)
+            .maybeSingle();
+
+          if (carnetLookupError) {
+            throw new Error(carnetLookupError.message);
+          }
+
+          if (!carnetRow?.id) {
+            throw new Error("Customer is not on trusted carnet list.");
+          }
+
+          const currentDebt = Number(carnetRow.current_debt ?? 0);
+          const maxLimit = Number(carnetRow.max_limit ?? 0);
+          const projectedDebt = roundMoney(currentDebt + row.orderTotalWithDelivery);
+
+          if (projectedDebt > maxLimit) {
+            throw new Error("This order would exceed your carnet limit.");
+          }
+
+          carnetEligibilityByVendor.set(row.vendorId, {
+            vendorCarnetId: String(carnetRow.id),
+            newDebt: projectedDebt,
+            maxLimit,
+          });
+        }
+      }
+
+      for (const row of vendorOrderBreakdown) {
         const { data: inserted, error } = await (supabaseAdmin as any)
           .from("orders")
           .insert({
             customer_user_id: customerUserId,
-            vendor_id: vendorId,
+            vendor_id: row.vendorId,
             customer_name: data.customerName,
             customer_phone: data.customerPhone,
             neighborhood_id: data.neighborhoodId,
             delivery_notes: data.deliveryNotes,
             payment_method: data.paymentMethod,
             status: "new",
-            delivery_fee: deliveryFee,
-            subtotal_base_price: roundMoney(subtotalBasePrice),
-            platform_profit: platformProfit,
-            vendor_revenue: vendorRevenue,
-            total_price: totalPrice,
-            item_count: itemCount,
-            order_items: vendorItems,
+            delivery_fee: row.deliveryFee,
+            subtotal_base_price: roundMoney(row.subtotalBasePrice),
+            platform_profit: row.platformProfit,
+            vendor_revenue: row.vendorRevenue,
+            total_price: row.totalPrice,
+            item_count: row.itemCount,
+            order_items: row.vendorItems,
           })
           .select("id")
           .single();
@@ -459,7 +509,45 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
           throw new Error(error?.message ?? "Order insert failed.");
         }
 
-        insertedOrderIds.push(String(inserted.id));
+        const insertedOrderId = String(inserted.id);
+        insertedOrderIds.push(insertedOrderId);
+
+        if (data.paymentMethod === "Carnet") {
+          const carnetMeta = carnetEligibilityByVendor.get(row.vendorId);
+          if (!carnetMeta) {
+            throw new Error("Carnet eligibility check failed.");
+          }
+
+          const { error: updateCarnetDebtError } = await (supabaseAdmin as any)
+            .from("vendor_carnet")
+            .update({
+              current_debt: carnetMeta.newDebt,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", carnetMeta.vendorCarnetId);
+
+          if (updateCarnetDebtError) {
+            throw new Error(updateCarnetDebtError.message);
+          }
+
+          const { error: ledgerInsertError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
+            vendor_id: row.vendorId,
+            vendor_carnet_id: carnetMeta.vendorCarnetId,
+            customer_phone: data.customerPhone,
+            order_id: insertedOrderId,
+            transaction_type: "CREDIT_ISSUED",
+            amount: row.orderTotalWithDelivery,
+            metadata: {
+              source: "order_creation",
+              status: "new",
+            },
+          });
+
+          if (ledgerInsertError) {
+            throw new Error(ledgerInsertError.message);
+          }
+        }
       }
 
       return { id: insertedOrderIds[0] as string, orderIds: insertedOrderIds };
