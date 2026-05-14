@@ -22,7 +22,7 @@ import {
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import { extractDeliveryCode } from "@/lib/extract-delivery-code";
-import i18n from "@/lib/i18n";
+import appI18n from "@/lib/i18n";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -37,10 +37,10 @@ type CyclistSession = {
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
-      { title: i18n.t("cyclist.dashboardMetaTitle") },
+      { title: appI18n.t("cyclist.dashboardMetaTitle") },
       {
         name: "description",
-        content: i18n.t("cyclist.dashboardMetaDescription"),
+        content: appI18n.t("cyclist.dashboardMetaDescription"),
       },
     ],
   }),
@@ -48,8 +48,8 @@ export const Route = createFileRoute("/cyclist/dashboard")({
 });
 
 function CyclistDashboardPage() {
-  const { t, i18n } = useTranslation();
-  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+  const { t, i18n: runtimeI18n } = useTranslation();
+  const isArabic = (runtimeI18n.resolvedLanguage || runtimeI18n.language || "en") === "ar";
   const navigate = useNavigate({ from: "/cyclist/dashboard" });
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
@@ -58,7 +58,7 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerOrder, setScannerOrder] = useState<CyclistOrderCard | null>(null);
-  const [scannerStatus, setScannerStatus] = useState(() => i18n.t("cyclist.readyToScan"));
+  const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [manualCode, setManualCode] = useState("");
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
