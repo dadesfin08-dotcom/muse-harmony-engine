@@ -12,6 +12,23 @@ type NotificationPayload = {
   url?: string;
 };
 
+async function resolveVapidPublicKey() {
+  const viteKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (viteKey) return viteKey;
+
+  const response = await fetch("/api/public/push-config");
+  if (!response.ok) {
+    throw new Error("Missing VAPID public key configuration.");
+  }
+
+  const data = (await response.json()) as { publicKey?: string };
+  if (!data.publicKey) {
+    throw new Error("Missing VAPID public key configuration.");
+  }
+
+  return data.publicKey;
+}
+
 function base64UrlToUint8Array(base64UrlString: string) {
   const padding = "=".repeat((4 - (base64UrlString.length % 4)) % 4);
   const base64 = (base64UrlString + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -70,10 +87,7 @@ export function usePushNotifications() {
         throw new Error("Push notifications are not supported on this device/browser.");
       }
 
-      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      if (!vapidPublicKey) {
-        throw new Error("Missing VITE_VAPID_PUBLIC_KEY.");
-      }
+      const vapidPublicKey = await resolveVapidPublicKey();
 
       setIsLoading(true);
       setError(null);
