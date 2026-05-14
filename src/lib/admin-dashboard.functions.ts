@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { format, isToday, subDays } from "date-fns";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -128,45 +129,37 @@ const uploadSiteLogoInputSchema = z.object({
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
-  const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).toISOString();
+  const sevenDaysAgo = subDays(now, 6);
 
-  const [ordersTodayRes, activeVendorsRes, revenueRes, weeklyOrdersRes] = await Promise.all([
+  const [ordersRes, activeVendorsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayStart)
-      .lt("created_at", tomorrowStart),
+      .select("id, status, created_at, total_price")
+      .gte("created_at", sevenDaysAgo.toISOString())
+      .order("created_at", { ascending: true }),
     (supabaseAdmin as any)
       .from("vendors")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
-    (supabaseAdmin as any)
-      .from("orders")
-      .select("total_price")
-      .in("status", ["delivered", "cash_transferred_to_vendor"]),
-    (supabaseAdmin as any)
-      .from("orders")
-      .select("created_at")
-      .gte("created_at", sevenDaysAgo)
-      .order("created_at", { ascending: true }),
   ]);
 
-  if (ordersTodayRes.error) throw new Error(ordersTodayRes.error.message);
+  if (ordersRes.error) throw new Error(ordersRes.error.message);
   if (activeVendorsRes.error) throw new Error(activeVendorsRes.error.message);
-  if (revenueRes.error) throw new Error(revenueRes.error.message);
-  if (weeklyOrdersRes.error) throw new Error(weeklyOrdersRes.error.message);
 
   const weeklyCounts = new Map<string, number>();
   for (let i = 0; i < 7; i += 1) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
-    const dayKey = day.toISOString().slice(0, 10);
+    const day = subDays(now, 6 - i);
+    const dayKey = format(day, "yyyy-MM-dd");
     weeklyCounts.set(dayKey, 0);
   }
 
-  for (const row of (weeklyOrdersRes.data ?? []) as Array<{ created_at: string }>) {
-    const dayKey = row.created_at.slice(0, 10);
+  const recentOrders = (ordersRes.data ?? []) as Array<{ created_at: string; status: string | null; total_price: number | null }>;
+  const completedStatuses = new Set(["delivered", "completed", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
+
+  for (const row of recentOrders) {
+    const createdAt = new Date(row.created_at);
+    if (Number.isNaN(createdAt.getTime())) continue;
+    const dayKey = format(createdAt, "yyyy-MM-dd");
     if (weeklyCounts.has(dayKey)) {
       weeklyCounts.set(dayKey, (weeklyCounts.get(dayKey) ?? 0) + 1);
     }
@@ -178,13 +171,19 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     orders: count,
   }));
 
-  const totalRevenueMad = ((revenueRes.data ?? []) as Array<{ total_price: number | null }>).reduce(
-    (sum, row) => sum + Number(row.total_price ?? 0),
-    0,
-  );
+  const totalRevenueMad = recentOrders.reduce((sum, row) => {
+    const normalizedStatus = String(row.status ?? "").trim().toLowerCase();
+    return completedStatuses.has(normalizedStatus) ? sum + Number(row.total_price ?? 0) : sum;
+  }, 0);
+
+  const totalOrdersToday = recentOrders.reduce((count, row) => {
+    const createdAt = new Date(row.created_at);
+    if (Number.isNaN(createdAt.getTime())) return count;
+    return isToday(createdAt) ? count + 1 : count;
+  }, 0);
 
   return {
-    totalOrdersToday: ordersTodayRes.count ?? 0,
+    totalOrdersToday,
     activeVendors: activeVendorsRes.count ?? 0,
     totalRevenueMad,
     weeklyTrends,
