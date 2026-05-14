@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
-  confirmCashHandoverToVendor,
+  executeVendorQrCashHandover,
   getCyclistDashboardData,
   setCyclistActiveState,
   type CyclistOrderCard,
@@ -56,7 +56,13 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
-  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
+  const [vendorSettlementTarget, setVendorSettlementTarget] = useState<{
+    vendorId: string;
+    vendorName: string;
+  } | null>(null);
+  const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
+  const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
+  const [isVendorQrScannerSuccess, setIsVendorQrScannerSuccess] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -69,7 +75,9 @@ function CyclistDashboardPage() {
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
+  const vendorQrScannerRef = useRef<any>(null);
   const isVerifyingCodeRef = useRef(false);
+  const isVerifyingVendorQrRef = useRef(false);
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -94,7 +102,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
-  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
+  const executeQrCashHandover = useServerFn(executeVendorQrCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -109,34 +117,47 @@ function CyclistDashboardPage() {
   const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
 
-  const confirmCashHandoverMutation = useMutation({
-    mutationFn: async ({ vendorId }: { vendorId: string }) => {
+  const executeVendorQrCashHandoverMutation = useMutation({
+    mutationFn: async ({
+      vendorId,
+      timestamp,
+    }: {
+      vendorId: string;
+      timestamp: string;
+    }) => {
       if (!session?.cyclistId) {
         throw new Error("Session expired.");
       }
-      return confirmCashHandover({
+      return executeQrCashHandover({
         data: {
           cyclistId: session.cyclistId,
-          vendorId,
+          qr: {
+            action: "vendor_cash_receipt",
+            vendor_id: vendorId,
+            timestamp,
+          },
         },
       });
     },
-    onMutate: ({ vendorId }) => {
-      setSettlingVendorId(vendorId);
-    },
-    onSuccess: async (result) => {
-      toast.success(
-        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
-      );
+    onSuccess: async () => {
+      setIsVendorQrScannerSuccess(true);
+      setVendorQrScannerStatus("تم تسليم العهدة بنجاح");
+      toast.success("تم تسليم العهدة بنجاح");
       await dashboardQuery.refetch();
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+      window.setTimeout(() => {
+        setIsVendorQrScannerOpen(false);
+        setVendorSettlementTarget(null);
+        setIsVendorQrScannerSuccess(false);
+        setVendorQrScannerStatus("");
+        isVerifyingVendorQrRef.current = false;
+      }, 900);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
-    },
-    onSettled: () => {
-      setSettlingVendorId(null);
+      setVendorQrScannerStatus("فشل التحقق من رمز التاجر");
+      isVerifyingVendorQrRef.current = false;
     },
   });
 
@@ -279,6 +300,49 @@ function CyclistDashboardPage() {
     isVerifyingCodeRef.current = false;
   };
 
+  const closeVendorQrScanner = () => {
+    setIsVendorQrScannerOpen(false);
+    setVendorSettlementTarget(null);
+    setIsVendorQrScannerSuccess(false);
+    setVendorQrScannerStatus("");
+    isVerifyingVendorQrRef.current = false;
+  };
+
+  const handleVendorQrScan = async (decodedText: string) => {
+    if (!session?.cyclistId || !vendorSettlementTarget || isVerifyingVendorQrRef.current) return;
+
+    try {
+      const parsed = JSON.parse(decodedText) as {
+        action?: string;
+        vendor_id?: string;
+        timestamp?: string;
+      };
+
+      if (
+        parsed?.action !== "vendor_cash_receipt" ||
+        typeof parsed.vendor_id !== "string" ||
+        typeof parsed.timestamp !== "string"
+      ) {
+        throw new Error("Invalid vendor QR payload");
+      }
+
+      if (parsed.vendor_id !== vendorSettlementTarget.vendorId) {
+        throw new Error("هذا الرمز لا يخص نفس التاجر.");
+      }
+
+      isVerifyingVendorQrRef.current = true;
+      setVendorQrScannerStatus("جاري التحقق من الرمز...");
+      await executeVendorQrCashHandoverMutation.mutateAsync({
+        vendorId: parsed.vendor_id,
+        timestamp: parsed.timestamp,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "QR غير صالح");
+      isVerifyingVendorQrRef.current = false;
+      setVendorQrScannerStatus("رمز غير صالح، حاول مرة أخرى.");
+    }
+  };
+
   const handleVerifyDeliveryCode = async (order: CyclistOrderCard, rawValue: string) => {
     if (!session?.cyclistId || isVerifyingCodeRef.current) {
       return;
@@ -397,6 +461,58 @@ function CyclistDashboardPage() {
     };
   }, [isScannerOpen, scannerOrder, showManualEntry, isScannerSuccess]);
 
+  useEffect(() => {
+    if (!isVendorQrScannerOpen || !vendorSettlementTarget || isVendorQrScannerSuccess) {
+      return;
+    }
+
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        const scanner = new Html5Qrcode("vendor-cash-receipt-qr-reader");
+        vendorQrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            void handleVendorQrScan(decodedText);
+          },
+          () => undefined,
+        );
+
+        if (mounted) {
+          setVendorQrScannerStatus("وجّه الكاميرا إلى رمز التاجر");
+        }
+      } catch {
+        if (mounted) {
+          setVendorQrScannerStatus("تعذر فتح الكاميرا لمسح كود التاجر.");
+          toast.error("تعذر فتح الكاميرا لمسح كود التاجر.");
+        }
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      const scanner = vendorQrScannerRef.current;
+      vendorQrScannerRef.current = null;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isVendorQrScannerOpen, vendorSettlementTarget, isVendorQrScannerSuccess]);
+
   const handleManualVerify = async () => {
     if (!scannerOrder) {
       return;
@@ -512,12 +628,17 @@ function CyclistDashboardPage() {
                   </div>
                   <Button
                     className="w-full"
-                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
-                    disabled={confirmCashHandoverMutation.isPending}
+                    onClick={() => {
+                      setVendorSettlementTarget({ vendorId: settlement.vendorId, vendorName: settlement.vendorName });
+                      setVendorQrScannerStatus("جاري تجهيز الكاميرا...");
+                      setIsVendorQrScannerSuccess(false);
+                      setIsVendorQrScannerOpen(true);
+                    }}
+                    disabled={executeVendorQrCashHandoverMutation.isPending}
                   >
-                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
+                    {executeVendorQrCashHandoverMutation.isPending && vendorSettlementTarget?.vendorId === settlement.vendorId
                       ? "Processing..."
-                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
+                      : "مسح كود التاجر لتسليم النقد"}
                   </Button>
                 </div>
               ))}
@@ -627,6 +748,31 @@ function CyclistDashboardPage() {
             )}
 
             <p className="text-center text-xs text-muted-foreground">{scannerStatus}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isVendorQrScannerOpen} onOpenChange={(open) => (!open ? closeVendorQrScanner() : undefined)}>
+        <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
+          <DialogHeader className="border-b border-border px-4 py-3">
+            <DialogTitle className="text-base font-semibold">مسح كود التاجر لتسليم النقد</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex h-full flex-col gap-3 p-4">
+            {isVendorQrScannerSuccess ? (
+              <div className="flex flex-1 flex-col items-center justify-center text-center">
+                <span className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-success/15 text-success">
+                  <CheckCircle2 className="size-14" />
+                </span>
+                <p className="mt-4 text-2xl font-bold text-success">تم تسليم العهدة بنجاح</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
+                <div id="vendor-cash-receipt-qr-reader" className="min-h-[340px] w-full" />
+              </div>
+            )}
+
+            <p className="text-center text-xs text-muted-foreground">{vendorQrScannerStatus}</p>
           </div>
         </DialogContent>
       </Dialog>

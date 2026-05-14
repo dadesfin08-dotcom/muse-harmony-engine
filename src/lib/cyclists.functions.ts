@@ -55,6 +55,15 @@ const confirmCashHandoverInputSchema = z.object({
   vendorId: z.string().uuid(),
 });
 
+const executeVendorQrCashHandoverInputSchema = z.object({
+  cyclistId: z.string().uuid(),
+  qr: z.object({
+    action: z.literal("vendor_cash_receipt"),
+    vendor_id: z.string().uuid(),
+    timestamp: z.string().datetime(),
+  }),
+});
+
 type CyclistRow = {
   id: string;
   full_name: string;
@@ -1074,5 +1083,65 @@ export const confirmCashHandoverToVendor = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("confirmCashHandoverToVendor failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to confirm cash handover.");
+    }
+  });
+
+export const executeVendorQrCashHandover = createServerFn({ method: "POST" })
+  .inputValidator((input) => executeVendorQrCashHandoverInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const qrTimestamp = Date.parse(data.qr.timestamp);
+      if (Number.isNaN(qrTimestamp)) {
+        throw new Error("Invalid QR timestamp.");
+      }
+
+      const now = Date.now();
+      const qrAgeMs = now - qrTimestamp;
+      const maxQrAgeMs = 5 * 60 * 1000;
+      const futureToleranceMs = 2 * 60 * 1000;
+      if (qrAgeMs > maxQrAgeMs || qrAgeMs < -futureToleranceMs) {
+        throw new Error("QR code expired. Please ask vendor to refresh and try again.");
+      }
+
+      const { count: pendingCount, error: pendingError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id", { head: true, count: "exact" })
+        .eq("cyclist_id", data.cyclistId)
+        .eq("vendor_id", data.qr.vendor_id)
+        .eq("status", "delivered_cash_with_cyclist")
+        .eq("vendor_settlement_status", "pending");
+
+      if (pendingError) {
+        throw new Error(pendingError.message);
+      }
+
+      if (!pendingCount || pendingCount <= 0) {
+        throw new Error("No pending cash handover found for this vendor.");
+      }
+
+      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("confirm_cash_transferred_to_vendor", {
+        p_cyclist_id: data.cyclistId,
+        p_vendor_id: data.qr.vendor_id,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : null;
+      if (!result) {
+        throw new Error("No settlement result returned.");
+      }
+
+      return {
+        vendorId: data.qr.vendor_id,
+        settledOrdersCount: Number(result.settled_orders_count ?? 0),
+        settledAmountMad: Number(result.total_cash_received_added ?? 0),
+        vendorEarningsAddedMad: Number(result.vendor_earnings_added ?? 0),
+        platformDuesAddedMad: Number(result.platform_dues_added ?? 0),
+      };
+    } catch (error) {
+      console.error("executeVendorQrCashHandover failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to execute vendor QR cash handover.");
     }
   });
