@@ -160,6 +160,7 @@ import {
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  resetFactoryData,
   uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
@@ -434,6 +435,7 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
   const fetchAdminOrders = useServerFn(listAdminOrders);
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
@@ -776,6 +778,9 @@ function AdminPage() {
   const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
   const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
+  const [isFactoryResetDialogOpen, setIsFactoryResetDialogOpen] = useState(false);
+  const [factoryResetConfirmationText, setFactoryResetConfirmationText] = useState("");
+  const [isResettingFactoryData, setIsResettingFactoryData] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
     receiptLogoUrl: "",
