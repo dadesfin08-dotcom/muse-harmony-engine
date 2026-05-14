@@ -521,6 +521,9 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           nameAr: row.nameAr?.trim() ? row.nameAr.trim() : null,
           categoryLabel: row.category.trim(),
           brandLabel: row.brand?.trim() ? row.brand.trim() : null,
+          productVariants: Array.from(
+            new Set(row.productVariants.map((variant) => variant.trim()).filter((variant) => variant.length > 0)),
+          ),
           measurementValueRaw: row.measurementValue?.trim() ? row.measurementValue.trim() : null,
           measurementUnitRaw: row.measurementUnit.trim(),
           barcode: row.barcode?.trim() ? row.barcode.trim() : null,
@@ -676,6 +679,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           category_id: matchedCategory.id,
           category: parsedCategory.data,
           brand_id: matchedBrandId,
+          product_variants: row.productVariants,
           measurement_value: parsedMeasurementValue,
           measurement_unit: parsedMeasurementUnit.data,
           image_url: row.imageUrl,
