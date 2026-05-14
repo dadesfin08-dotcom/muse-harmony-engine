@@ -265,6 +265,60 @@ function ProductDetailPage() {
                   className="max-h-full w-full object-contain object-center [filter:drop-shadow(0_10px_12px_rgba(0,0,0,0.18))_drop-shadow(0_0_10px_rgba(255,255,255,0.45))_drop-shadow(0_0_20px_rgba(255,215,0,0.22))_drop-shadow(0_0_28px_rgba(0,206,209,0.18))]"
                   loading="lazy"
                 />
+
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-0 top-0 z-20 h-12 w-12"
+                  style={{
+                    clipPath: "polygon(0 0, 100% 0, 0 100%)",
+                    background:
+                      "linear-gradient(140deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.86) 58%, rgba(226,232,240,0.86) 100%)",
+                    boxShadow: "2px 2px 10px rgba(15,23,42,0.12), inset -1px -1px 6px rgba(15,23,42,0.08)",
+                    backdropFilter: "blur(1.8px)",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-0 top-0 z-20 h-12 w-12"
+                  style={{
+                    clipPath: "polygon(0 0, 100% 0, 100% 100%)",
+                    background:
+                      "linear-gradient(220deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.86) 58%, rgba(226,232,240,0.86) 100%)",
+                    boxShadow: "-2px 2px 10px rgba(15,23,42,0.12), inset 1px -1px 6px rgba(15,23,42,0.08)",
+                    backdropFilter: "blur(1.8px)",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0 left-0 z-20 h-12 w-12"
+                  style={{
+                    clipPath: "polygon(0 0, 0 100%, 100% 100%)",
+                    background:
+                      "linear-gradient(40deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.86) 58%, rgba(226,232,240,0.86) 100%)",
+                    boxShadow: "2px -2px 10px rgba(15,23,42,0.12), inset -1px 1px 6px rgba(15,23,42,0.08)",
+                    backdropFilter: "blur(1.8px)",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0 right-0 z-20 h-12 w-12"
+                  style={{
+                    clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+                    background:
+                      "linear-gradient(320deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.86) 58%, rgba(226,232,240,0.86) 100%)",
+                    boxShadow: "-2px -2px 10px rgba(15,23,42,0.12), inset 1px 1px 6px rgba(15,23,42,0.08)",
+                    backdropFilter: "blur(1.8px)",
+                  }}
+                />
+
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-8 top-6 z-30 h-4 w-4 rounded-full"
+                  style={{
+                    background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,215,0,0.65) 44%, rgba(255,255,255,0) 100%)",
+                    filter: "blur(0.6px)",
+                  }}
+                />
               </div>
             </div>
           </div>
