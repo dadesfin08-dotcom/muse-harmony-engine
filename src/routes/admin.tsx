@@ -316,6 +316,7 @@ const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
+  productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
@@ -513,6 +514,11 @@ function AdminPage() {
         name: row.product_name,
         nameFr: row.name_fr,
         nameAr: row.name_ar,
+        productVariants: Array.isArray(row.product_variants)
+          ? row.product_variants
+              .map((value) => (typeof value === "string" ? value.trim() : ""))
+              .filter((value) => value.length > 0)
+          : [],
         barcode: row.barcode,
         brandId: row.brand_id,
         brandNameEn: row.brands?.name_en,
@@ -606,6 +612,7 @@ function AdminPage() {
     name: "",
     nameFr: "",
     nameAr: "",
+    productVariants: "",
     brandId: "",
     categoryId: "",
     measurementValue: "",
