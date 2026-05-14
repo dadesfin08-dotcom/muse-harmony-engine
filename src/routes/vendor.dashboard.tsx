@@ -179,7 +179,15 @@ type DashboardOrder = {
   communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "in_transit" | "delivering" | "delivered";
+  status:
+    | "new"
+    | "preparing"
+    | "ready"
+    | "in_transit"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor";
   deliveryFeeMad: number;
   totalMad: number;
   vendorShareMad: number;
@@ -208,13 +216,11 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
     return "in_transit";
   }
 
-  if (
-    status === "new" ||
-    status === "preparing" ||
-    status === "ready" ||
-    status === "delivering" ||
-    status === "delivered"
-  ) {
+  if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
+    return "delivered";
+  }
+
+  if (status === "new" || status === "preparing" || status === "ready" || status === "delivering" || status === "delivered") {
     return status;
   }
 
