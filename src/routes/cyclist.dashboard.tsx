@@ -17,6 +17,7 @@ import {
   acceptDeliveryRun,
   confirmCashHandoverToVendor,
   getCyclistDashboardData,
+  markDeliveryAsDelivered,
   setCyclistActiveState,
   type CyclistOrderCard,
   verifyDeliveryCodeAndComplete,
@@ -94,6 +95,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
+  const markDelivered = useServerFn(markDeliveryAsDelivered);
   const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
 
   const dashboardQuery = useQuery({
@@ -141,6 +143,34 @@ function CyclistDashboardPage() {
     },
     onSettled: () => {
       setSettlingVendorId(null);
+    },
+  });
+
+  const markDeliveryByQrMutation = useMutation({
+    mutationFn: async ({ orderId }: { orderId: string }) => {
+      if (!session?.cyclistId) {
+        throw new Error("Session expired.");
+      }
+      return markDelivered({
+        data: {
+          cyclistId: session.cyclistId,
+          orderId,
+        },
+      });
+    },
+    onSuccess: async () => {
+      setIsScannerSuccess(true);
+      setScannerStatus(t("cyclist.scannerVerified"));
+      toast.success(t("cyclist.deliveryCompleted"));
+      await dashboardQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+      window.setTimeout(() => closeScanner(), 900);
+    },
+    onError: async (error) => {
+      await dashboardQuery.refetch();
+      setScannerStatus(t("cyclist.scannerFailed"));
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedVerify"));
     },
   });
 
