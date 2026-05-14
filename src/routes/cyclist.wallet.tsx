@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, HandCoins, History, Wallet } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { ArrowLeft, CheckCircle2, HandCoins, History, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
-import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
+import {
+  executeVendorQrCashHandover,
+  getCyclistEarningsHistory,
+  getCyclistWalletSummary,
+} from "@/lib/cyclists.functions";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
@@ -31,6 +34,11 @@ function CyclistWalletPage() {
   const navigate = useNavigate({ from: "/cyclist/wallet" });
   const queryClient = useQueryClient();
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
+  const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
+  const [isVendorQrScannerSuccess, setIsVendorQrScannerSuccess] = useState(false);
+  const vendorQrScannerRef = useRef<any>(null);
+  const isVerifyingVendorQrRef = useRef(false);
   const [earningsPeriod, setEarningsPeriod] = useState<EarningsPeriod>("today");
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") return null;
@@ -45,6 +53,74 @@ function CyclistWalletPage() {
 
   const fetchWalletSummary = useServerFn(getCyclistWalletSummary);
   const fetchEarningsHistory = useServerFn(getCyclistEarningsHistory);
+  const executeQrCashHandover = useServerFn(executeVendorQrCashHandover);
+
+  const executeVendorQrCashHandoverMutation = useMutation({
+    mutationFn: async ({ vendorId, timestamp }: { vendorId: string; timestamp: string }) => {
+      if (!session?.cyclistId) {
+        throw new Error("Session expired.");
+      }
+      return executeQrCashHandover({
+        data: {
+          cyclistId: session.cyclistId,
+          qr: {
+            action: "vendor_cash_receipt",
+            vendor_id: vendorId,
+            timestamp,
+          },
+        },
+      });
+    },
+    onSuccess: async () => {
+      setIsVendorQrScannerSuccess(true);
+      setVendorQrScannerStatus("تم تسليم العهدة بنجاح");
+      toast.success("تم تسليم العهدة بنجاح");
+      await walletQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null] });
+      window.setTimeout(() => {
+        setIsVendorQrScannerOpen(false);
+        setIsVendorQrScannerSuccess(false);
+        setVendorQrScannerStatus("");
+        isVerifyingVendorQrRef.current = false;
+      }, 900);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
+      setVendorQrScannerStatus("فشل التحقق من رمز التاجر");
+      isVerifyingVendorQrRef.current = false;
+    },
+  });
+
+  const handleVendorQrScan = async (decodedText: string) => {
+    if (!session?.cyclistId || isVerifyingVendorQrRef.current) return;
+
+    try {
+      const parsed = JSON.parse(decodedText) as {
+        action?: string;
+        vendor_id?: string;
+        timestamp?: string;
+      };
+
+      if (
+        parsed?.action !== "vendor_cash_receipt" ||
+        typeof parsed.vendor_id !== "string" ||
+        typeof parsed.timestamp !== "string"
+      ) {
+        throw new Error("Invalid vendor QR payload");
+      }
+
+      isVerifyingVendorQrRef.current = true;
+      setVendorQrScannerStatus("جاري التحقق من الرمز...");
+      await executeVendorQrCashHandoverMutation.mutateAsync({
+        vendorId: parsed.vendor_id,
+        timestamp: parsed.timestamp,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "QR غير صالح");
+      setVendorQrScannerStatus("رمز غير صالح، حاول مرة أخرى.");
+      isVerifyingVendorQrRef.current = false;
+    }
+  };
 
   const walletQuery = useQuery({
     queryKey: ["cyclist", "wallet", session?.cyclistId ?? null],
@@ -92,6 +168,58 @@ function CyclistWalletPage() {
     };
   }, [queryClient, session?.cyclistId]);
 
+  useEffect(() => {
+    if (!isVendorQrScannerOpen || isVendorQrScannerSuccess) {
+      return;
+    }
+
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        const scanner = new Html5Qrcode("wallet-vendor-cash-receipt-qr-reader");
+        vendorQrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            void handleVendorQrScan(decodedText);
+          },
+          () => undefined,
+        );
+
+        if (mounted) {
+          setVendorQrScannerStatus("وجّه الكاميرا إلى رمز التاجر");
+        }
+      } catch {
+        if (mounted) {
+          setVendorQrScannerStatus("تعذر فتح الكاميرا لمسح كود التاجر.");
+          toast.error("تعذر فتح الكاميرا لمسح كود التاجر.");
+        }
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      const scanner = vendorQrScannerRef.current;
+      vendorQrScannerRef.current = null;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isVendorQrScannerOpen, isVendorQrScannerSuccess]);
+
   if (!session?.cyclistId) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
@@ -127,17 +255,6 @@ function CyclistWalletPage() {
       minute: "2-digit",
     });
   };
-
-  const qrPayload = JSON.stringify({
-    type: "cash_handover",
-    v: 1,
-    cyclist_id: session.cyclistId,
-    cash_to_remit: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    owed_by_vendor: Number(summary?.owedByVendorMad ?? 0).toFixed(2),
-    net_amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
-    issued_at: new Date().toISOString(),
-  });
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
@@ -215,7 +332,9 @@ function CyclistWalletPage() {
                   toast.info("No pending settlement. · ما كاين حتى تسوية معلقة دابا");
                   return;
                 }
-                setIsQrOpen(true);
+                setVendorQrScannerStatus("جاري تجهيز الكاميرا...");
+                setIsVendorQrScannerSuccess(false);
+                setIsVendorQrScannerOpen(true);
               }}
             >
               Handover Cash · تسليم النقود
@@ -277,24 +396,39 @@ function CyclistWalletPage() {
         </Card>
       </div>
 
-      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
+      <Dialog
+        open={isVendorQrScannerOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsVendorQrScannerOpen(false);
+            setIsVendorQrScannerSuccess(false);
+            setVendorQrScannerStatus("");
+            isVerifyingVendorQrRef.current = false;
+          }
+        }}
+      >
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Cash Handover QR · رمز تسليم النقود</DialogTitle>
+            <DialogTitle>مسح كود التاجر لتسليم النقد</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-center">
+            {isVendorQrScannerSuccess ? (
+              <div className="flex flex-col items-center justify-center py-6">
+                <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
+                  <CheckCircle2 className="size-10" />
+                </span>
+                <p className="mt-3 text-lg font-semibold text-success">تم تسليم العهدة بنجاح</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
+                <div id="wallet-vendor-cash-receipt-qr-reader" className="min-h-[320px] w-full" />
+              </div>
+            )}
             <div className="rounded-lg border border-border bg-muted/40 p-3">
               <p className="text-xs text-muted-foreground">Full Cash to Handover · المبلغ الكامل للتسليم</p>
               <p className="text-xl font-semibold">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
-              <p className="text-[11px] text-muted-foreground">
-                Cash to remit - Owed by vendor (carnet delivery fees).
-              </p>
             </div>
-            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
-              <QRCodeSVG value={qrPayload} size={220} level="M" includeMargin />
-            </div>
-            <p className="text-sm font-medium">Full Amount: {(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-muted-foreground">Show this QR to vendor for settlement confirmation.</p>
+            <p className="text-xs text-muted-foreground">{vendorQrScannerStatus}</p>
           </div>
         </DialogContent>
       </Dialog>
