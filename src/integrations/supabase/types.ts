@@ -327,6 +327,8 @@ export type Database = {
           id: string
           marketplace_active: boolean
           minimum_order_amount: number
+          site_logo_url: string | null
+          site_name: string
           updated_at: string
         }
         Insert: {
@@ -336,6 +338,8 @@ export type Database = {
           id?: string
           marketplace_active?: boolean
           minimum_order_amount?: number
+          site_logo_url?: string | null
+          site_name?: string
           updated_at?: string
         }
         Update: {
@@ -345,6 +349,8 @@ export type Database = {
           id?: string
           marketplace_active?: boolean
           minimum_order_amount?: number
+          site_logo_url?: string | null
+          site_name?: string
           updated_at?: string
         }
         Relationships: []
