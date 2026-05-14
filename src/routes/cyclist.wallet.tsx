@@ -134,8 +134,8 @@ function CyclistWalletPage() {
     cyclist_id: session.cyclistId,
     cash_to_remit: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
     owed_by_vendor: Number(summary?.owedByVendorMad ?? 0).toFixed(2),
-    net_amount: Number(summary?.netCashToHandoverMad ?? 0).toFixed(2),
-    amount: Number(summary?.netCashToHandoverMad ?? 0).toFixed(2),
+    net_amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
     issued_at: new Date().toISOString(),
   });
 
@@ -284,8 +284,8 @@ function CyclistWalletPage() {
           </DialogHeader>
           <div className="space-y-3 text-center">
             <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">Net Cash to Handover · الصافي لتسليمه</p>
-              <p className="text-xl font-semibold">{(summary?.netCashToHandoverMad ?? 0).toFixed(2)} MAD</p>
+              <p className="text-xs text-muted-foreground">Full Cash to Handover · المبلغ الكامل للتسليم</p>
+              <p className="text-xl font-semibold">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
               <p className="text-[11px] text-muted-foreground">
                 Cash to remit - Owed by vendor (carnet delivery fees).
               </p>
@@ -293,7 +293,7 @@ function CyclistWalletPage() {
             <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
               <QRCodeSVG value={qrPayload} size={220} level="M" includeMargin />
             </div>
-            <p className="text-sm font-medium">Net Amount: {(summary?.netCashToHandoverMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-sm font-medium">Full Amount: {(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
             <p className="text-xs text-muted-foreground">Show this QR to vendor for settlement confirmation.</p>
           </div>
         </DialogContent>
