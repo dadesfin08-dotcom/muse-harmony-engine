@@ -618,18 +618,18 @@ function CyclistDashboardPage() {
                 </div>
 
                 {detailsOrder.deliveryInstructions?.trim() ? (
-                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir="rtl">
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                     <div className="flex items-center gap-2">
                       <MessageSquareText className="h-5 w-5 text-amber-500" />
-                      <span className="font-bold text-slate-800">تعليمات التوصيل</span>
+                      <span className="font-bold text-slate-800">{t("cyclist.deliveryInstructions")}</span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsOrder.deliveryInstructions.trim()}</p>
                   </div>
                 ) : null}
 
-                <div className="mb-2 flex items-center gap-2" dir="rtl">
+                <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
                   <PackageSearch className="h-5 w-5 text-slate-600" />
-                  <p className="text-sm font-bold text-slate-800">قائمة المنتجات</p>
+                  <p className="text-sm font-bold text-slate-800">{t("cyclist.productsList")}</p>
                 </div>
 
                 <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" dir="rtl">
@@ -677,36 +677,36 @@ function CyclistDashboardPage() {
                               <TooltipTrigger asChild>
                                 <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
                                   <Package className="h-3 w-3" />
-                                  <span>Qty x{item.quantity}</span>
+                                  <span>{t("cyclist.quantity")} x{item.quantity}</span>
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent side="top">الكمية الحالية هي x{item.quantity}</TooltipContent>
+                              <TooltipContent side="top">{t("cyclist.quantityTooltip", { count: item.quantity })}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="p-4 text-sm text-muted-foreground">No items available for this order.</p>
+                    <p className="p-4 text-sm text-muted-foreground">{t("cyclist.noOrderItems")}</p>
                   )}
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center gap-2" dir="rtl">
+                  <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
                     <ClipboardList className="h-5 w-5 text-slate-600" />
-                    <p className="text-sm font-bold text-slate-800">ملخص الطلب</p>
+                    <p className="text-sm font-bold text-slate-800">{t("cyclist.orderSummary")}</p>
                   </div>
                   <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Subtotal</span>
+                    <span>{t("cyclist.subtotal")}</span>
                     <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-600">
-                    <span>Delivery Fee</span>
+                    <span>{t("cyclist.deliveryFee")}</span>
                     <span>{detailsOrder.deliveryFeeMad.toFixed(2)} MAD</span>
                   </div>
                   <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-800">
-                    <span>Total</span>
+                    <span>{t("cyclist.total")}</span>
                     <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
                   </div>
                 </div>
