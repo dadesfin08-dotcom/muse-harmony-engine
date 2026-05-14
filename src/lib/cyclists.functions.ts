@@ -16,20 +16,6 @@ const cyclistLookupInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
-function normalizePhoneForLookup(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-
-  if (digits.startsWith("212")) {
-    return digits.slice(3);
-  }
-
-  if (digits.startsWith("0")) {
-    return digits.slice(1);
-  }
-
-  return digits;
-}
-
 const cyclistDashboardInputSchema = z.object({
   cyclistId: z.string().uuid(),
 });
@@ -67,15 +53,6 @@ const verifyDeliveryInputSchema = z.object({
 const confirmCashHandoverInputSchema = z.object({
   cyclistId: z.string().uuid(),
   vendorId: z.string().uuid(),
-});
-
-const executeVendorQrCashHandoverInputSchema = z.object({
-  cyclistId: z.string().uuid(),
-  qr: z.object({
-    action: z.literal("vendor_cash_receipt"),
-    vendor_id: z.string().uuid(),
-    timestamp: z.string().datetime().optional(),
-  }),
 });
 
 type CyclistRow = {
@@ -391,57 +368,21 @@ export const getCyclistByPhone = createServerFn({ method: "POST" })
   .inputValidator((input) => cyclistLookupInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const requestedLocalPhone = normalizePhoneForLookup(data.phoneNumber);
-
-      const { data: exactMatches, error } = await (supabaseAdmin as any)
+      const { data: cyclist, error } = await (supabaseAdmin as any)
         .from("cyclists")
-        .select("id, full_name, phone_number, is_active, created_at")
+        .select("id, full_name, phone_number, is_active")
         .eq("phone_number", data.phoneNumber)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .single();
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      let matchedCyclist = (exactMatches?.[0] as
-        | {
-            id: string;
-            full_name: string;
-            phone_number: string;
-            is_active: boolean;
-          }
-        | undefined) ?? null;
-
-      if (!matchedCyclist?.id) {
-        const { data: cyclists, error: cyclistsError } = await (supabaseAdmin as any)
-          .from("cyclists")
-          .select("id, full_name, phone_number, is_active")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(200);
-
-        if (cyclistsError) {
-          throw new Error(cyclistsError.message);
-        }
-
-        matchedCyclist = ((cyclists ?? []) as Array<{
-          id: string;
-          full_name: string;
-          phone_number: string;
-          is_active: boolean;
-        }>).find((row) => normalizePhoneForLookup(String(row.phone_number ?? "")) === requestedLocalPhone) ?? null;
-      }
-
-      if (!matchedCyclist?.id) {
-        throw new Error("Cyclist not found.");
+      if (error || !cyclist?.id) {
+        throw new Error(error?.message ?? "Cyclist not found.");
       }
 
       return {
-        id: matchedCyclist.id as string,
-        fullName: matchedCyclist.full_name as string,
-        phoneNumber: matchedCyclist.phone_number as string,
-        isActive: Boolean(matchedCyclist.is_active),
+        id: cyclist.id as string,
+        fullName: cyclist.full_name as string,
+        phoneNumber: cyclist.phone_number as string,
+        isActive: Boolean(cyclist.is_active),
       };
     } catch (error) {
       console.error("getCyclistByPhone failed:", error);
@@ -817,47 +758,42 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         throw new Error(deliveredError.message);
       }
 
-      const [cashToRemitResult, owedByVendorResult, pendingEarningsResult] = await Promise.all([
-        (supabaseAdmin as any)
-          .from("orders")
-          .select("total_price")
-          .eq("cyclist_id", data.cyclistId)
-          .eq("status", "delivered_cash_with_cyclist")
-          .eq("payment_method", "COD"),
-        (supabaseAdmin as any)
-          .from("orders")
-          .select("delivery_fee")
-          .eq("cyclist_id", data.cyclistId)
-          .eq("payment_method", "Carnet")
-          .eq("vendor_settlement_status", "pending")
-          .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]),
-        (supabaseAdmin as any)
-          .from("orders")
-          .select("delivery_fee")
-          .eq("cyclist_id", data.cyclistId)
-          .eq("status", "delivering"),
-      ]);
+      const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("delivery_fee, total_price, payment_method")
+        .eq("cyclist_id", data.cyclistId)
+        .eq("status", "delivered_cash_with_cyclist")
+        .eq("vendor_settlement_status", "pending");
 
-      if (cashToRemitResult.error) {
-        throw new Error(cashToRemitResult.error.message);
-      }
-      if (owedByVendorResult.error) {
-        throw new Error(owedByVendorResult.error.message);
-      }
-      if (pendingEarningsResult.error) {
-        throw new Error(pendingEarningsResult.error.message);
+      if (pendingSettlementError) {
+        throw new Error(pendingSettlementError.message);
       }
 
       const lifetimeRows = (deliveredRows ?? []) as Array<{
         delivery_fee: number;
       }>;
 
-      const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingCashRows = (cashToRemitResult.data ?? []) as Array<{ total_price: number }>;
-      const pendingCreditRows = (owedByVendorResult.data ?? []) as Array<{ delivery_fee: number }>;
-      const inProgressRows = (pendingEarningsResult.data ?? []) as Array<{ delivery_fee: number }>;
+      const pendingRows = (pendingSettlementRows ?? []) as Array<{
+        total_price: number;
+        delivery_fee: number;
+        payment_method: string;
+      }>;
 
-      const pendingEarningsMad = inProgressRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const isCashPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "cash" || normalized === "cod";
+      };
+
+      const isCreditPayment = (paymentMethod: string | null | undefined) => {
+        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+        return normalized === "credit" || normalized === "carnet";
+      };
+
+      const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const pendingCashRows = pendingRows.filter((row) => isCashPayment(row.payment_method));
+      const pendingCreditRows = pendingRows.filter((row) => isCreditPayment(row.payment_method));
+
+      const pendingEarningsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const cashToRemitMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
       const owedByVendorMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const netCashToHandoverMad = cashToRemitMad - owedByVendorMad;
@@ -872,7 +808,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         cashToRemitMad,
         owedByVendorMad,
         netCashToHandoverMad,
-        pendingSettlementOrdersCount: inProgressRows.length,
+        pendingSettlementOrdersCount: pendingRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
         pendingCarnetSettlementOrdersCount: pendingCreditRows.length,
       } satisfies CyclistWalletSummary;
@@ -1138,67 +1074,5 @@ export const confirmCashHandoverToVendor = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("confirmCashHandoverToVendor failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to confirm cash handover.");
-    }
-  });
-
-export const executeVendorQrCashHandover = createServerFn({ method: "POST" })
-  .inputValidator((input) => executeVendorQrCashHandoverInputSchema.parse(input))
-  .handler(async ({ data }) => {
-    try {
-      if (data.qr.timestamp) {
-        const qrTimestamp = Date.parse(data.qr.timestamp);
-        if (Number.isNaN(qrTimestamp)) {
-          throw new Error("Invalid QR timestamp.");
-        }
-
-        const now = Date.now();
-        const qrAgeMs = now - qrTimestamp;
-        const maxQrAgeMs = 5 * 60 * 1000;
-        const futureToleranceMs = 2 * 60 * 1000;
-        if (qrAgeMs > maxQrAgeMs || qrAgeMs < -futureToleranceMs) {
-          throw new Error("QR code expired. Please ask vendor to refresh and try again.");
-        }
-      }
-
-      const { count: pendingCount, error: pendingError } = await (supabaseAdmin as any)
-        .from("orders")
-        .select("id", { head: true, count: "exact" })
-        .eq("cyclist_id", data.cyclistId)
-        .eq("vendor_id", data.qr.vendor_id)
-        .eq("status", "delivered_cash_with_cyclist")
-        .eq("vendor_settlement_status", "pending");
-
-      if (pendingError) {
-        throw new Error(pendingError.message);
-      }
-
-      if (!pendingCount || pendingCount <= 0) {
-        throw new Error("No pending cash handover found for this vendor.");
-      }
-
-      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("confirm_cash_transferred_to_vendor", {
-        p_cyclist_id: data.cyclistId,
-        p_vendor_id: data.qr.vendor_id,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const result = Array.isArray(rpcResult) ? rpcResult[0] : null;
-      if (!result) {
-        throw new Error("No settlement result returned.");
-      }
-
-      return {
-        vendorId: data.qr.vendor_id,
-        settledOrdersCount: Number(result.settled_orders_count ?? 0),
-        settledAmountMad: Number(result.total_cash_received_added ?? 0),
-        vendorEarningsAddedMad: Number(result.vendor_earnings_added ?? 0),
-        platformDuesAddedMad: Number(result.platform_dues_added ?? 0),
-      };
-    } catch (error) {
-      console.error("executeVendorQrCashHandover failed:", error);
-      throw new Error(error instanceof Error ? error.message : "Failed to execute vendor QR cash handover.");
     }
   });

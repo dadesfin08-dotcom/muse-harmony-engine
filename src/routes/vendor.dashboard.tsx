@@ -7,7 +7,6 @@ import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
   Banknote,
   BadgeCheck,
-  Bell,
   Boxes,
   Zap,
   BookUser,
@@ -55,7 +54,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PushNotificationsToggle } from "@/components/PushNotificationsToggle";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -102,7 +100,7 @@ type CarnetLedgerTransaction = {
   createdAt: string;
   description: string;
   amount: number;
-  kind: "debt" | "payment" | "cancelled";
+  kind: "debt" | "payment";
 };
 
 type LedgerOrderItem = {
@@ -1362,7 +1360,6 @@ function VendorDashboardPage() {
                   <span className="text-xs text-muted-foreground sm:text-sm">{isOnline ? "Online" : "Offline"}</span>
                   <Switch checked={isOnline} onCheckedChange={setIsOnline} />
                 </div>
-                <PushNotificationsToggle role="vendor" label="Push Notifications" />
                 <Button variant="soft" className="rounded-xl" onClick={handleLogout}>
                   <LogOut className="size-4" />
                   Logout
@@ -2014,23 +2011,12 @@ function VendorDashboardPage() {
                                       }`}
                                     />
                                   ) : null}
-                                  <span className={transaction.kind === "cancelled" ? "line-through text-muted-foreground" : ""}>
-                                    {transaction.description}
-                                  </span>
-                                  {transaction.kind === "cancelled" ? (
-                                    <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
-                                      Cancelled / Reversed
-                                    </span>
-                                  ) : null}
+                                  <span>{transaction.description}</span>
                                 </div>
                               </TableCell>
                               <TableCell
                                 className={`text-right font-semibold ${
-                                  transaction.kind === "debt"
-                                    ? "text-destructive"
-                                    : transaction.kind === "cancelled"
-                                      ? "text-amber-600"
-                                      : "text-success"
+                                  transaction.kind === "debt" ? "text-destructive" : "text-success"
                                 }`}
                               >
                                 {transaction.kind === "debt" ? "+" : "-"}
@@ -2236,32 +2222,16 @@ function LiveOrdersView({
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="new" className="rounded-lg">
-            <span className="flex items-center gap-2">
-              <Bell size={16} className="text-current" />
-              <span>New</span>
-              <span>({queue.new.length})</span>
-            </span>
+            New ({queue.new.length})
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
-            <span className="flex items-center gap-2">
-              <Package size={16} className="text-current" />
-              <span>Preparing</span>
-              <span>({queue.preparing.length})</span>
-            </span>
+            Preparing ({queue.preparing.length})
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-current" />
-              <span>Ready</span>
-              <span>({queue.ready.length})</span>
-            </span>
+            Ready ({queue.ready.length})
           </TabsTrigger>
           <TabsTrigger value="inDelivery" className="rounded-lg">
-            <span className="flex items-center gap-2">
-              <Bike size={16} className="text-current" />
-              <span>In Delivery / في الطريق</span>
-              <span>({queue.inDelivery.length})</span>
-            </span>
+            In Delivery / في الطريق ({queue.inDelivery.length})
           </TabsTrigger>
         </TabsList>
 

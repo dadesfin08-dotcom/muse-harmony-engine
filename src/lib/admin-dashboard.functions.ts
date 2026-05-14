@@ -469,7 +469,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       }
     };
 
-    const tablesInDeleteOrder = ["carnet_transactions", "carnet_payments", "orders"] as const;
+    const tablesInDeleteOrder = ["orders"] as const;
 
     for (const tableName of tablesInDeleteOrder) {
       await wipeTable(tableName);
@@ -480,7 +480,6 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       .update({
         vendor_earnings: 0,
         platform_dues: 0,
-        total_cash_received: 0,
         updated_at: new Date().toISOString(),
       })
       .neq("id", "00000000-0000-0000-0000-000000000000");
@@ -489,21 +488,9 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       throw new Error(`Failed while resetting vendor balances: ${resetVendorsError.message}`);
     }
 
-    const { error: resetCarnetError } = await (supabaseAdmin as any)
-      .from("vendor_carnet")
-      .update({
-        current_debt: 0,
-        updated_at: new Date().toISOString(),
-      })
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-
-    if (resetCarnetError) {
-      throw new Error(`Failed while resetting carnet balances: ${resetCarnetError.message}`);
-    }
-
     return {
       ok: true,
-      message: "Orders and Carnet data reset completed, with vendor and carnet balances reset.",
+      message: "Orders data reset completed and vendor balances were reset.",
     };
   });
 

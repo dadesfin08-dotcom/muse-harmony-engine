@@ -1,19 +1,32 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getVendorDashboardData,
   getVendorSettlementSummary,
+  settleCyclistCashHandover,
 } from "@/lib/orders.functions";
+
+const qrPayloadSchema = z.object({
+  type: z.literal("cash_handover"),
+  v: z.literal(1),
+  cyclist_id: z.string().uuid(),
+  cash_to_remit: z.union([z.number(), z.string()]).optional(),
+  owed_by_vendor: z.union([z.number(), z.string()]).optional(),
+  net_amount: z.union([z.number(), z.string()]).optional(),
+  amount: z.union([z.number(), z.string()]),
+  issued_at: z.string().optional(),
+});
 
 export const Route = createFileRoute("/vendor/wallet")({
   component: VendorWalletPage,
@@ -22,9 +35,9 @@ export const Route = createFileRoute("/vendor/wallet")({
 function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
-  const [isReceiveCashQrOpen, setIsReceiveCashQrOpen] = useState(false);
-  const [qrIssuedAt, setQrIssuedAt] = useState<string>(new Date().toISOString());
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isPlatformDuesQrOpen, setIsPlatformDuesQrOpen] = useState(false);
+  const [confirmPayload, setConfirmPayload] = useState<{ cyclistId: string; amount: number } | null>(null);
   const vendorPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
     try {
@@ -37,6 +50,7 @@ function VendorWalletPage() {
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
+  const settleHandover = useServerFn(settleCyclistCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
@@ -67,13 +81,7 @@ function VendorWalletPage() {
           table: "orders",
           filter: `vendor_id=eq.${vendorId}`,
         },
-        (payload) => {
-          const updatedStatus = (payload.new as { status?: string } | null)?.status;
-          if (updatedStatus === "cash_transferred_to_vendor" && isReceiveCashQrOpen) {
-            setIsReceiveCashQrOpen(false);
-            toast.success("تم استلام النقد، تمت إضافة الأرباح لمحفظتك");
-          }
-
+        () => {
           void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId] });
           void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
         },
@@ -83,7 +91,86 @@ function VendorWalletPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [isReceiveCashQrOpen, queryClient, vendorId]);
+  }, [queryClient, vendorId]);
+
+  const settleMutation = useMutation({
+    mutationFn: async ({ cyclistId, amount }: { cyclistId: string; amount: number }) => {
+      if (!vendorId) throw new Error("Vendor session missing.");
+      return settleHandover({
+        data: {
+          phoneNumber: vendorPhoneNumber,
+          cyclistId,
+          expectedAmount: amount,
+        },
+      });
+    },
+    onSuccess: async (result) => {
+      toast.success(`Cash handover confirmed: ${result.settledAmountMad.toFixed(2)} MAD · تم تأكيد استلام المبلغ الكامل`);
+      setConfirmPayload(null);
+      setIsScannerOpen(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId] }),
+        queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Settlement failed.");
+    },
+  });
+
+  useEffect(() => {
+    if (!isScannerOpen) return;
+
+    let mounted = true;
+    let scanner: any = null;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        scanner = new Html5Qrcode("vendor-cash-qr-reader");
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (decodedText: string) => {
+            try {
+              const parsed = qrPayloadSchema.parse(JSON.parse(decodedText));
+              const amount = Number(parsed.amount);
+              if (!Number.isFinite(amount) || amount < 0) {
+                if (!Number.isFinite(amount)) {
+                  throw new Error("Invalid amount in QR payload.");
+                }
+              }
+
+              setConfirmPayload({ cyclistId: parsed.cyclist_id, amount });
+              setIsScannerOpen(false);
+            } catch {
+              toast.error("Invalid QR payload. · الرمز غير صالح");
+            }
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        console.error("Vendor QR scanner failed:", error);
+        toast.error("Unable to open camera scanner.");
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isScannerOpen]);
 
   const summary = settlementQuery.data;
   const hasSummary = Boolean(summary);
@@ -102,14 +189,10 @@ function VendorWalletPage() {
     });
   }, [summary?.platformDuesMad, vendorId]);
 
-  const receiveCashQrPayload = useMemo(() => {
-    if (!vendorId) return null;
-    return JSON.stringify({
-      action: "vendor_cash_receipt",
-      vendor_id: vendorId,
-      timestamp: qrIssuedAt,
-    });
-  }, [qrIssuedAt, vendorId]);
+  const confirmationLabel = useMemo(() => {
+    if (!confirmPayload) return "";
+    return `${confirmPayload.amount.toFixed(2)} MAD`;
+  }, [confirmPayload]);
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
@@ -196,15 +279,9 @@ function VendorWalletPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-2xl font-semibold">{formatMad(summary?.totalReceivedTodayMad)}</p>
-            <Button
-              className="w-full"
-              onClick={() => {
-                setQrIssuedAt(new Date().toISOString());
-                setIsReceiveCashQrOpen(true);
-              }}
-            >
+            <Button className="w-full" onClick={() => setIsScannerOpen(true)}>
               <QrCode className="size-4" />
-              استلام النقد من عامل التوصيل
+              Receive Cash / Scan QR · استلام النقود / مسح الرمز
             </Button>
           </CardContent>
         </Card>
@@ -245,17 +322,12 @@ function VendorWalletPage() {
         </Card>
       </div>
 
-      <Dialog open={isReceiveCashQrOpen} onOpenChange={setIsReceiveCashQrOpen}>
+      <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Vendor Cash Receipt QR · رمز استلام النقد</DialogTitle>
+            <DialogTitle>Scan Cyclist Handover QR · مسح رمز السائق</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 text-center">
-            <p className="text-sm text-muted-foreground">اعرض هذا الرمز للسائق ليقوم بمسحه لإتمام التسليم النقدي.</p>
-            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
-              {receiveCashQrPayload ? <QRCodeSVG value={receiveCashQrPayload} size={220} includeMargin /> : null}
-            </div>
-          </div>
+          <div id="vendor-cash-qr-reader" className="overflow-hidden rounded-xl border border-border" />
         </DialogContent>
       </Dialog>
 
@@ -273,6 +345,31 @@ function VendorWalletPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={Boolean(confirmPayload)} onOpenChange={(open) => (!open ? setConfirmPayload(null) : undefined)}>
+        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm Cash Reception · تأكيد استلام النقود</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Full cash handover: {confirmationLabel}. Confirm settlement for all pending delivered cash orders from this
+            cyclist? · المبلغ الكامل للتسليم: {confirmationLabel}. واش كتأكد تسوية جميع الطلبات النقدية المسلمة والمعلقة لهاد السائق؟
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmPayload(null)} disabled={settleMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!confirmPayload) return;
+                settleMutation.mutate(confirmPayload);
+              }}
+              disabled={!confirmPayload || settleMutation.isPending}
+            >
+              {settleMutation.isPending ? "Confirming..." : "Confirm · تأكيد"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

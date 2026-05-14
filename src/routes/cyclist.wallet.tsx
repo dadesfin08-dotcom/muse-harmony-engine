@@ -1,36 +1,27 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Banknote, Clock3, QrCode, ReceiptText, Wallet } from "lucide-react";
+import { ArrowLeft, HandCoins, History, Wallet } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
-import { executeVendorQrCashHandover } from "@/lib/cyclists.functions";
-import { playSuccessSound } from "@/lib/sound-alerts";
+import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
 type CyclistSession = {
   cyclistId: string;
-  phoneNumber: string;
   fullName: string;
+  phoneNumber: string;
 };
 
-type WalletSummary = {
-  cyclistId: string;
-  cyclistName: string;
-  myEarningsMad: number;
-  pendingEarningsMad: number;
-  cashToRemitMad: number;
-  owedByVendorMad: number;
-  pendingEarningsCount: number;
-  pendingCashCount: number;
-  owedByVendorCount: number;
-};
+type EarningsPeriod = "today" | "week" | "month";
 
 export const Route = createFileRoute("/cyclist/wallet")({
   component: CyclistWalletPage,
@@ -39,175 +30,59 @@ export const Route = createFileRoute("/cyclist/wallet")({
 function CyclistWalletPage() {
   const navigate = useNavigate({ from: "/cyclist/wallet" });
   const queryClient = useQueryClient();
-  const executeQrCashHandover = useServerFn(executeVendorQrCashHandover);
-
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [earningsPeriod, setEarningsPeriod] = useState<EarningsPeriod>("today");
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") return null;
     try {
       const raw = localStorage.getItem(CYCLIST_SESSION_STORAGE_KEY);
       if (!raw) return null;
-      const parsed = JSON.parse(raw) as CyclistSession;
-      if (!parsed?.cyclistId || !parsed?.fullName || !parsed?.phoneNumber) return null;
-      return parsed;
+      return JSON.parse(raw) as CyclistSession;
     } catch {
       return null;
     }
   });
 
-  const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
-  const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
-  const vendorQrScannerRef = useRef<any>(null);
-  const isVerifyingVendorQrRef = useRef(false);
+  const fetchWalletSummary = useServerFn(getCyclistWalletSummary);
+  const fetchEarningsHistory = useServerFn(getCyclistEarningsHistory);
 
-  const walletQuery = useQuery<WalletSummary>({
-    queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null],
+  const walletQuery = useQuery({
+    queryKey: ["cyclist", "wallet", session?.cyclistId ?? null],
     enabled: Boolean(session?.cyclistId),
-    queryFn: async () => {
-      if (!session?.cyclistId) {
-        throw new Error("Cyclist session expired.");
-      }
-
-      const { data: cyclistRow, error: cyclistError } = await supabase
-        .from("cyclists")
-        .select("id, full_name")
-        .eq("id", session.cyclistId)
-        .maybeSingle();
-
-      if (cyclistError) {
-        throw new Error(cyclistError.message);
-      }
-
-      if (!cyclistRow?.id) {
-        throw new Error("Cyclist account is not linked to this user.");
-      }
-
-      const cyclistId = String(session.cyclistId);
-
-      const [myEarningsResult, pendingEarningsResult, cashToRemitResult, owedByVendorResult] = await Promise.all([
-        supabase
-          .from("orders")
-          .select("delivery_fee")
-          .eq("cyclist_id", cyclistId)
-          .in("status", ["delivered", "cash_transferred_to_vendor"]),
-        supabase.from("orders").select("delivery_fee").eq("cyclist_id", cyclistId).eq("status", "delivering"),
-        supabase
-          .from("orders")
-          .select("total_price")
-          .eq("cyclist_id", cyclistId)
-          .eq("status", "delivered_cash_with_cyclist")
-          .eq("payment_method", "COD"),
-        supabase
-          .from("orders")
-          .select("delivery_fee")
-          .eq("cyclist_id", cyclistId)
-          .eq("status", "delivered")
-          .eq("payment_method", "Carnet")
-          .eq("vendor_settlement_status", "pending"),
-      ]);
-
-      if (myEarningsResult.error) throw new Error(myEarningsResult.error.message);
-      if (pendingEarningsResult.error) throw new Error(pendingEarningsResult.error.message);
-      if (cashToRemitResult.error) throw new Error(cashToRemitResult.error.message);
-      if (owedByVendorResult.error) throw new Error(owedByVendorResult.error.message);
-
-      const myEarningsRows = (myEarningsResult.data ?? []) as Array<{ delivery_fee: number | null }>;
-      const pendingEarningsRows = (pendingEarningsResult.data ?? []) as Array<{ delivery_fee: number | null }>;
-      const cashRows = (cashToRemitResult.data ?? []) as Array<{ total_price: number | null }>;
-      const owedRows = (owedByVendorResult.data ?? []) as Array<{ delivery_fee: number | null }>;
-
-      return {
-        cyclistId,
-        cyclistName: String(cyclistRow.full_name ?? "Cyclist"),
-        myEarningsMad: myEarningsRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0),
-        pendingEarningsMad: pendingEarningsRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0),
-        cashToRemitMad: cashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0),
-        owedByVendorMad: owedRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0),
-        pendingEarningsCount: pendingEarningsRows.length,
-        pendingCashCount: cashRows.length,
-        owedByVendorCount: owedRows.length,
-      };
-    },
+    queryFn: () => fetchWalletSummary({ data: { cyclistId: session!.cyclistId } }),
+    refetchInterval: 4_000,
   });
 
-  const executeVendorQrCashHandoverMutation = useMutation({
-    mutationFn: async ({ vendorId, timestamp }: { vendorId: string; timestamp: string }) => {
-      if (!walletQuery.data?.cyclistId) {
-        throw new Error("Cyclist session is missing.");
-      }
-
-      return executeQrCashHandover({
+  const earningsHistoryQuery = useQuery({
+    queryKey: ["cyclist", "wallet", "earnings-history", session?.cyclistId ?? null, earningsPeriod],
+    enabled: Boolean(session?.cyclistId),
+    queryFn: () =>
+      fetchEarningsHistory({
         data: {
-          cyclistId: walletQuery.data.cyclistId,
-          qr: {
-            action: "vendor_cash_receipt",
-            vendor_id: vendorId,
-            timestamp,
-          },
+          cyclistId: session!.cyclistId,
+          period: earningsPeriod,
         },
-      });
-    },
-    onSuccess: async () => {
-      void playSuccessSound();
-      await queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
-      toast.success("تم تسليم العهدة بنجاح والتسوية مع البائع");
-      await walletQuery.refetch();
-      setIsVendorQrScannerOpen(false);
-      setVendorQrScannerStatus("");
-      isVerifyingVendorQrRef.current = false;
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to confirm handover.");
-      setVendorQrScannerStatus("فشل التحقق من رمز التاجر");
-      isVerifyingVendorQrRef.current = false;
-    },
+      }),
+    refetchInterval: 4_000,
   });
-
-  const handleVendorQrScan = async (decodedText: string) => {
-    if (isVerifyingVendorQrRef.current) return;
-
-    try {
-      const parsed = JSON.parse(decodedText) as {
-        action?: string;
-        vendor_id?: string;
-        timestamp?: string;
-      };
-
-      if (
-        parsed?.action !== "vendor_cash_receipt" ||
-        typeof parsed.vendor_id !== "string"
-      ) {
-        throw new Error("Invalid vendor QR payload");
-      }
-
-      isVerifyingVendorQrRef.current = true;
-      setVendorQrScannerStatus("جاري التحقق من الرمز...");
-      await executeVendorQrCashHandoverMutation.mutateAsync({
-        vendorId: parsed.vendor_id,
-        timestamp: typeof parsed.timestamp === "string" ? parsed.timestamp : new Date().toISOString(),
-      });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "QR غير صالح");
-      setVendorQrScannerStatus("رمز غير صالح، حاول مرة أخرى.");
-      isVerifyingVendorQrRef.current = false;
-    }
-  };
 
   useEffect(() => {
-    const cyclistId = walletQuery.data?.cyclistId;
-    if (!cyclistId) return;
+    if (!session?.cyclistId) return;
 
     const channel = supabase
-      .channel(`cyclist-wallet-rewrite-${cyclistId}`)
+      .channel(`cyclist-wallet-${session.cyclistId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `cyclist_id=eq.${cyclistId}`,
+          filter: `cyclist_id=eq.${session.cyclistId}`,
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "rewrite", session?.cyclistId ?? null] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "earnings-history", session.cyclistId] });
         },
       )
       .subscribe();
@@ -215,59 +90,7 @@ function CyclistWalletPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient, session?.cyclistId, walletQuery.data?.cyclistId]);
-
-  useEffect(() => {
-    if (!isVendorQrScannerOpen) {
-      return;
-    }
-
-    let mounted = true;
-
-    const startScanner = async () => {
-      try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (!mounted) return;
-
-        const scanner = new Html5Qrcode("wallet-vendor-cash-receipt-qr-reader");
-        vendorQrScannerRef.current = scanner;
-
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText: string) => {
-            void handleVendorQrScan(decodedText);
-          },
-          () => undefined,
-        );
-
-        if (mounted) {
-          setVendorQrScannerStatus("وجّه الكاميرا إلى رمز التاجر");
-        }
-      } catch {
-        if (mounted) {
-          setVendorQrScannerStatus("تعذر فتح الكاميرا لمسح كود التاجر.");
-          toast.error("تعذر فتح الكاميرا لمسح كود التاجر.");
-        }
-      }
-    };
-
-    void startScanner();
-
-    return () => {
-      mounted = false;
-      const scanner = vendorQrScannerRef.current;
-      vendorQrScannerRef.current = null;
-      if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
-      }
-    };
-  }, [isVendorQrScannerOpen]);
+  }, [queryClient, session?.cyclistId]);
 
   if (!session?.cyclistId) {
     return (
@@ -285,104 +108,193 @@ function CyclistWalletPage() {
   }
 
   const summary = walletQuery.data;
+  const earningsHistory = earningsHistoryQuery.data;
+
+  const periodLabels: Array<{ value: EarningsPeriod; label: string }> = [
+    { value: "today", label: "Today · اليوم" },
+    { value: "week", label: "This Week · هذا الأسبوع" },
+    { value: "month", label: "This Month · هذا الشهر" },
+  ];
+
+  const formatOrderDateTime = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("fr-MA", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const qrPayload = JSON.stringify({
+    type: "cash_handover",
+    v: 1,
+    cyclist_id: session.cyclistId,
+    cash_to_remit: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    owed_by_vendor: Number(summary?.owedByVendorMad ?? 0).toFixed(2),
+    net_amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    issued_at: new Date().toISOString(),
+  });
 
   return (
-    <main className="min-h-screen bg-muted/20 pb-6">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-xl items-center gap-2 px-4 py-3">
+    <main className="min-h-screen bg-muted/20 px-4 py-4">
+      <div className="mx-auto w-full max-w-xl space-y-4">
+        <header className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/cyclist/dashboard" })}>
-            <ArrowLeft className="size-5" />
+            <ArrowLeft className="size-4" />
           </Button>
-          <h1 className="text-sm font-semibold text-foreground">Cyclist Wallet · محفظة السائق</h1>
-        </div>
-      </header>
+          <div className="text-center">
+            <h1 className="text-sm font-bold tracking-tight text-foreground">Cyclist Wallet</h1>
+            <p className="text-xs text-muted-foreground">محفظة السائق</p>
+          </div>
+          <span className="w-9" />
+        </header>
 
-      <section className="mx-auto w-full max-w-xl space-y-4 px-4 pt-4">
-        <Card className="bg-background">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Wallet className="size-4 text-emerald-600" />
-              My Earnings
+              <Wallet className="size-4 text-primary" />
+              My Earnings · أرباح التوصيل
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-emerald-600">{(summary?.myEarningsMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-2xl font-semibold">{(summary?.myEarningsMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">All-time delivered earnings · أرباح التوصيل منذ البداية</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-background">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Clock3 className="size-4 text-slate-500" />
-              Pending Earnings
+              <HandCoins className="size-4 text-primary" />
+              Pending Earnings · أرباح قيد التسوية
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-3xl font-bold text-slate-700">{(summary?.pendingEarningsMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-muted-foreground">{summary?.pendingEarningsCount ?? 0} active delivery orders.</p>
+          <CardContent>
+            <p className="text-2xl font-semibold">{(summary?.pendingEarningsMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">
+              Delivered orders pending settlement: {summary?.pendingSettlementOrdersCount ?? 0}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-red-200 bg-red-50">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base text-red-700">
-              <Banknote className="size-4" />
-              Cash to Remit · الروسيطة للبائع
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-3xl font-extrabold text-red-600">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs font-medium text-red-700">Cash you must hand over to the vendor.</p>
-            <button
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-4 font-bold text-white"
-              onClick={() => {
-                if ((summary?.cashToRemitMad ?? 0) <= 0) {
-                  toast.info("No cash liability to hand over right now.");
-                  return;
-                }
-                setVendorQrScannerStatus("جاري تجهيز الكاميرا...");
-                setIsVendorQrScannerOpen(true);
-              }}
-            >
-              <QrCode className="size-5" />
-              Scan Vendor QR / مسح كود التاجر لتسليم النقد
-            </button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base text-amber-800">
-              <ReceiptText className="size-4" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HandCoins className="size-4 text-primary" />
               Owed by Vendor · مستحقاتي على البائع
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-3xl font-bold text-amber-700">{(summary?.owedByVendorMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-amber-800">Delivery fees for Carnet orders.</p>
+          <CardContent>
+            <p className="text-2xl font-semibold">{(summary?.owedByVendorMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">
+              Pending carnet delivery fees: {summary?.pendingCarnetSettlementOrdersCount ?? 0}
+            </p>
           </CardContent>
         </Card>
-      </section>
 
-      <Dialog
-        open={isVendorQrScannerOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsVendorQrScannerOpen(false);
-            setVendorQrScannerStatus("");
-            isVerifyingVendorQrRef.current = false;
-          }
-        }}
-      >
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HandCoins className="size-4 text-primary" />
+              Cash to Remit · الروسيطة للبائع
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-2xl font-semibold">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">
+              Pending cash orders: {summary?.pendingCashSettlementOrdersCount ?? 0}
+            </p>
+            <Button
+              className="w-full"
+              onClick={() => {
+                if ((summary?.pendingSettlementOrdersCount ?? 0) <= 0) {
+                  toast.info("No pending settlement. · ما كاين حتى تسوية معلقة دابا");
+                  return;
+                }
+                setIsQrOpen(true);
+              }}
+            >
+              Handover Cash · تسليم النقود
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="space-y-3 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="size-4 text-primary" />
+              Earnings History · سجل الأرباح
+            </CardTitle>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {periodLabels.map((period) => (
+                <Button
+                  key={period.value}
+                  type="button"
+                  size="sm"
+                  variant={earningsPeriod === period.value ? "default" : "outline"}
+                  onClick={() => setEarningsPeriod(period.value)}
+                >
+                  {period.label}
+                </Button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Total Delivery Fees · مجموع رسوم التوصيل</p>
+              <p className="text-2xl font-semibold">{(earningsHistory?.totalEarningsMad ?? 0).toFixed(2)} MAD</p>
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-2">
+              <p className="text-xs text-muted-foreground">Completed Deliveries · الطلبات المكتملة</p>
+              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                {(earningsHistory?.deliveries?.length ?? 0) === 0 ? (
+                  <AppEmptyState
+                    title="No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة."
+                    subtitle="Completed delivery records will appear here automatically."
+                    className="py-5"
+                  />
+                ) : (
+                  earningsHistory!.deliveries.map((delivery) => (
+                    <div key={delivery.orderId} className="rounded-md border border-border bg-background px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-medium">Order #{delivery.orderId.slice(0, 8)}</p>
+                          <p className="text-[11px] text-muted-foreground">{formatOrderDateTime(delivery.deliveredAt)}</p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-primary">+ {delivery.deliveryFeeMad.toFixed(2)} MAD</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Vendor QR / مسح كود التاجر</DialogTitle>
+            <DialogTitle>Cash Handover QR · رمز تسليم النقود</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-center">
-            <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
-              <div id="wallet-vendor-cash-receipt-qr-reader" className="min-h-[320px] w-full" />
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground">Full Cash to Handover · المبلغ الكامل للتسليم</p>
+              <p className="text-xl font-semibold">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
+              <p className="text-[11px] text-muted-foreground">
+                Cash to remit - Owed by vendor (carnet delivery fees).
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">{vendorQrScannerStatus}</p>
+            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
+              <QRCodeSVG value={qrPayload} size={220} level="M" includeMargin />
+            </div>
+            <p className="text-sm font-medium">Full Amount: {(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">Show this QR to vendor for settlement confirmation.</p>
           </div>
         </DialogContent>
       </Dialog>
