@@ -627,33 +627,33 @@ function OrderCard({
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
-          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+        <div dir="rtl" className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <User className="h-4 w-4 text-slate-400" />
               الاسم الكامل
             </div>
-            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">{order.customerName}</div>
+            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">{order.customerName}</div>
           </div>
 
-          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <Phone className="h-4 w-4 text-slate-400" />
               رقم الهاتف
             </div>
-            <div className="mt-1 flex w-full gap-2 justify-start sm:mt-0 sm:w-2/3 sm:justify-end">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               <a
                 href={`tel:${order.customerPhone}`}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700"
+                className="flex items-center justify-center rounded-full bg-emerald-100 p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
               >
                 <PhoneCall className="size-4" />
-                {order.customerPhone}
               </a>
+              <span className="truncate text-sm font-bold text-slate-900">{order.customerPhone}</span>
               <a
                 href={`https://wa.me/${whatsappPhone}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors hover:bg-emerald-200"
+                className="flex items-center justify-center rounded-full bg-emerald-100 p-1.5 text-emerald-600 transition-colors hover:bg-emerald-200"
                 onClick={(e) => e.stopPropagation()}
                 aria-label="Open WhatsApp chat"
               >
@@ -662,25 +662,25 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <Map className="h-4 w-4 text-slate-400" />
               المنطقة
             </div>
-            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">{order.douar}</div>
+            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">{order.deliveryZone}</div>
           </div>
 
-          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <MapPin className="h-4 w-4 text-slate-400" />
               العنوان
             </div>
-            <div className="mt-1 w-full sm:mt-0 sm:w-2/3 sm:text-right">
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline"
+                className="inline-flex max-w-full items-center justify-end gap-1 truncate text-right text-sm font-bold text-blue-600 hover:underline"
               >
                 <MapPin className="h-4 w-4" />
                 {order.deliveryAddress}
@@ -688,22 +688,22 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <Info className="h-4 w-4 text-slate-400" />
               تعليمات التوصيل
             </div>
-            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">
+            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               {briefingText ? <span className="rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-800">{briefingText}</span> : "—"}
             </div>
           </div>
 
-          <div className="flex flex-col items-start pb-0 sm:flex-row sm:justify-between">
-            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="flex w-full flex-row items-center justify-between border-b border-slate-200/60 py-3 last:border-0">
+            <div className="flex w-1/3 shrink-0 flex-row items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-500">
               <CreditCard className="h-4 w-4 text-slate-400" />
               الدفع
             </div>
-            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">
+            <div className="flex flex-1 items-center justify-end gap-2 text-left text-sm font-bold text-slate-900 text-wrap">
               {order.paymentMethod === "COD" ? (
                 <span className="rounded-md bg-orange-100 px-2 py-1 text-xs text-orange-800">الدفع عند الاستلام (COD)</span>
               ) : (
