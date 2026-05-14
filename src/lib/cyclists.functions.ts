@@ -903,13 +903,13 @@ export const markDeliveryAsDelivered = createServerFn({ method: "POST" })
     }
   });
 
-export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
-  .inputValidator((input) => verifyDeliveryInputSchema.parse(input))
+export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" })
+  .inputValidator((input) => completeCustomerDeliveryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
       const { data: order, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, cyclist_id, status, delivery_auth_code")
+        .select("id, cyclist_id, status, payment_method")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivering")
@@ -920,58 +920,80 @@ export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
       }
 
       if (!order?.id) {
-        throw new Error("Only the assigned cyclist can validate this delivery.");
+        throw new Error("Order is not an active delivery for this cyclist.");
       }
 
-      if ((order.delivery_auth_code as string) !== data.deliveryAuthCode) {
-        throw new Error("Invalid delivery code.");
-      }
+      const normalizedMethod = String(order.payment_method ?? "").trim().toLowerCase();
+      const nextStatus = normalizedMethod === "cod" || normalizedMethod === "cash" ? "delivered_cash_with_cyclist" : "delivered";
 
-      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("complete_delivery_and_apply_payment", {
-        p_cyclist_id: data.cyclistId,
-        p_order_id: data.orderId,
-      });
+      const { error } = await (supabaseAdmin as any)
+        .from("orders")
+        .update({
+          status: nextStatus,
+          vendor_settlement_status: nextStatus === "delivered_cash_with_cyclist" ? "pending" : "settled",
+          delivered_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.orderId)
+        .eq("cyclist_id", data.cyclistId)
+        .eq("status", "delivering");
 
       if (error) {
         throw new Error(error.message);
       }
 
-      if (!Array.isArray(rpcResult) || !rpcResult[0]?.order_id) {
-        throw new Error("Delivery not found or already completed.");
-      }
-
-      return { ok: true };
+      return { ok: true, nextStatus };
     } catch (error) {
-      console.error("verifyDeliveryCodeAndComplete failed:", error);
-      throw new Error(error instanceof Error ? error.message : "Failed to verify delivery code.");
+      console.error("completeCustomerDeliveryByOrder failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to complete customer delivery.");
     }
   });
 
-export const confirmCashHandoverToVendor = createServerFn({ method: "POST" })
-  .inputValidator((input) => confirmCashHandoverInputSchema.parse(input))
+export const settleVendorCashHandover = createServerFn({ method: "POST" })
+  .inputValidator((input) => settleVendorHandoverInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("confirm_cash_transferred_to_vendor", {
-        p_cyclist_id: data.cyclistId,
-        p_vendor_id: data.vendorId,
-      });
+      const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, total_price")
+        .eq("cyclist_id", data.cyclistId)
+        .eq("vendor_id", data.vendorId)
+        .eq("status", "delivered_cash_with_cyclist");
 
-      if (error) {
-        throw new Error(error.message);
+      if (pendingError) {
+        throw new Error(pendingError.message);
       }
 
-      const result = Array.isArray(rpcResult) ? rpcResult[0] : null;
-      if (!result) {
-        throw new Error("No settlement result returned.");
+      const rows = (pendingRows ?? []) as Array<{ id: string; total_price: number }>;
+      if (rows.length === 0) {
+        return { settledOrdersCount: 0, settledCashMad: 0 };
+      }
+
+      const orderIds = rows.map((row) => row.id);
+      const settledCashMad = rows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
+
+      const { error: updateError } = await (supabaseAdmin as any)
+        .from("orders")
+        .update({
+          status: "cash_transferred_to_vendor",
+          vendor_settlement_status: "settled",
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", orderIds)
+        .eq("cyclist_id", data.cyclistId)
+        .eq("vendor_id", data.vendorId)
+        .eq("status", "delivered_cash_with_cyclist");
+
+      if (updateError) {
+        throw new Error(updateError.message);
       }
 
       return {
-        settledOrdersCount: Number(result.settled_orders_count ?? 0),
-        vendorEarningsAddedMad: Number(result.vendor_earnings_added ?? 0),
-        platformDuesAddedMad: Number(result.platform_dues_added ?? 0),
+        settledOrdersCount: orderIds.length,
+        settledCashMad,
       };
     } catch (error) {
-      console.error("confirmCashHandoverToVendor failed:", error);
-      throw new Error(error instanceof Error ? error.message : "Failed to confirm cash handover.");
+      console.error("settleVendorCashHandover failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to settle cash handover.");
     }
   });
