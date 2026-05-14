@@ -21,7 +21,7 @@ function CustomerOrderDetailsPage() {
   const navigate = useNavigate({ from: "/customer/order/$orderId" });
   const getDetails = useServerFn(getCustomerOrderDetails);
   const queryClient = useQueryClient();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   const customerPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -65,86 +65,30 @@ function CustomerOrderDetailsPage() {
     };
   }, [customerPhoneNumber, orderId, queryClient]);
 
-  const copy = useMemo(() => {
-    if (language === "ar") {
-      return {
-        back: "رجوع إلى طلباتي",
-        title: "تفاصيل الطلب / الوصل الرقمي",
-        loadingOrder: "جاري تحميل الطلب...",
-        loadingReceipt: "جاري تحميل تفاصيل الوصل...",
-        loadError: "تعذر تحميل هذا الطلب.",
-        orderDate: "تاريخ الطلب",
-        product: "اسم المنتوج",
-        quantity: "الكمية",
-        unitPrice: "ثمن الوحدة",
-        lineTotal: "المجموع",
-        subtotal: "المجموع الفرعي",
-        deliveryFee: "Delivery Fee (ثمن التوصيل)",
-        grandTotal: "Grand Total (المجموع)",
-        paymentCash: "الدفع نقداً",
-        paymentCarnet: "كريدي / كارني",
-        statusPending: "قيد المعالجة",
-        statusOutForDelivery: "خرج للتوصيل",
-        statusDelivered: "تم التسليم",
-        statusCancelled: "ملغى",
-        handoverTitle: "رمز تأكيد التسليم",
-        handoverHint: "ورّي هاد الرمز للسائق باش يأكد التسليم.",
-        handoverDelivered: "تم تسليم الطلب بنجاح",
-      };
-    }
-
-    if (language === "fr") {
-      return {
-        back: "Retour à mes commandes",
-        title: "Détails de commande / Reçu numérique",
-        loadingOrder: "Chargement de la commande...",
-        loadingReceipt: "Chargement des détails du reçu...",
-        loadError: "Impossible de charger cette commande.",
-        orderDate: "Date de commande",
-        product: "Nom du produit",
-        quantity: "Quantité",
-        unitPrice: "Prix unitaire",
-        lineTotal: "Total ligne",
-        subtotal: "Sous-total",
-        deliveryFee: "Delivery Fee (ثمن التوصيل)",
-        grandTotal: "Grand Total (المجموع)",
-        paymentCash: "Paiement cash",
-        paymentCarnet: "Carnet / Crédit",
-        statusPending: "En attente",
-        statusOutForDelivery: "En livraison",
-        statusDelivered: "Livrée",
-        statusCancelled: "Annulée",
-        handoverTitle: "Code QR de remise",
-        handoverHint: "Présentez ce QR au livreur pour confirmer la remise.",
-        handoverDelivered: "Commande livrée avec succès",
-      };
-    }
-
-    return {
-      back: "Back to My Orders",
-      title: "Order Details / Digital Receipt",
-      loadingOrder: "Loading order...",
-      loadingReceipt: "Loading receipt details...",
-      loadError: "Unable to load this order.",
-      orderDate: "Order Date",
-      product: "Product",
-      quantity: "Quantity",
-      unitPrice: "Unit Price",
-      lineTotal: "Total",
-      subtotal: "Subtotal",
-      deliveryFee: "Delivery Fee (ثمن التوصيل)",
-      grandTotal: "Grand Total (المجموع)",
-      paymentCash: "Cash",
-      paymentCarnet: "Carnet / Credit",
-      statusPending: "Pending",
-      statusOutForDelivery: "Out for Delivery",
-      statusDelivered: "Delivered",
-      statusCancelled: "Cancelled",
-      handoverTitle: "Delivery handover QR",
-      handoverHint: "Show this QR code to the driver to complete handover.",
-      handoverDelivered: "Order Delivered Successfully",
-    };
-  }, [language]);
+  const copy = useMemo(() => ({
+    back: t("customerOrder.back"),
+    title: t("customerOrder.title"),
+    loadingOrder: t("customerOrder.loadingOrder"),
+    loadingReceipt: t("customerOrder.loadingReceipt"),
+    loadError: t("customerOrder.loadError"),
+    orderDate: t("customerOrder.orderDate"),
+    product: t("customerOrder.product"),
+    quantity: t("customerOrder.quantity"),
+    unitPrice: t("customerOrder.unitPrice"),
+    lineTotal: t("customerOrder.lineTotal"),
+    subtotal: t("customerOrder.subtotal"),
+    deliveryFee: t("customerOrder.deliveryFee"),
+    grandTotal: t("customerOrder.grandTotal"),
+    paymentCash: t("customerOrder.paymentCash"),
+    paymentCarnet: t("customerOrder.paymentCarnet"),
+    statusPending: t("customerOrder.statusPending"),
+    statusOutForDelivery: t("customerOrder.statusOutForDelivery"),
+    statusDelivered: t("customerOrder.statusDelivered"),
+    statusCancelled: t("customerOrder.statusCancelled"),
+    handoverTitle: t("customerOrder.handoverTitle"),
+    handoverHint: t("customerOrder.handoverHint"),
+    handoverDelivered: t("customerOrder.handoverDelivered"),
+  }), [t]);
 
   const statusBadge = useMemo(() => {
     const status = String(order?.status ?? "new").toLowerCase();
