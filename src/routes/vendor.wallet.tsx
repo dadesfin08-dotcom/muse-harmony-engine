@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { formatMoroccoPhoneForPayload, normalizeMoroccoPhoneInput } from "@/lib/morocco-phone";
 import {
   getVendorDashboardData,
   getVendorSettlementSummary,
@@ -33,13 +34,17 @@ function VendorWalletPage() {
       return "";
     }
   }, []);
+  const normalizedVendorPhoneNumber = useMemo(
+    () => formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
+    [vendorPhoneNumber],
+  );
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboard({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryFn: () => fetchDashboard({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
@@ -47,9 +52,9 @@ function VendorWalletPage() {
   const vendorId = dashboardQuery.data?.vendor?.id ?? null;
 
   const settlementQuery = useQuery({
-    queryKey: ["vendor", "wallet", vendorId, vendorPhoneNumber],
-    enabled: Boolean(vendorId && vendorPhoneNumber),
-    queryFn: () => fetchSettlementSummary({ data: { phoneNumber: vendorPhoneNumber } }),
+    queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber],
+    enabled: Boolean(vendorId && normalizedVendorPhoneNumber),
+    queryFn: () => fetchSettlementSummary({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
   });
 
@@ -80,6 +85,32 @@ function VendorWalletPage() {
 
 
   const summary = settlementQuery.data;
+  const cashBreakdown = useMemo(() => {
+    const dashboardOrders = dashboardQuery.data?.orders ?? [];
+    const transferredCashOrders = dashboardOrders.filter((order) => {
+      const isTransferred = order.status === "cash_transferred_to_vendor";
+      const paymentMethod = String(order.payment_method ?? "").trim().toLowerCase();
+      const isCash = paymentMethod === "cod" || paymentMethod === "cash";
+      return isTransferred && isCash;
+    });
+
+    const totalCashInHandMad = transferredCashOrders.reduce((sum, order) => sum + Number(order.total_price ?? 0), 0);
+    const myNetProfitMad = transferredCashOrders.reduce(
+      (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
+      0,
+    );
+    const platformDuesMad = transferredCashOrders.reduce(
+      (sum, order) =>
+        sum + Math.max(Number(order.total_price ?? 0) - Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0), 0),
+      0,
+    );
+
+    return {
+      totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
+      myNetProfitMad: Math.round(myNetProfitMad * 100) / 100,
+      platformDuesMad: Math.round(platformDuesMad * 100) / 100,
+    };
+  }, [dashboardQuery.data?.orders]);
   const hasSummary = Boolean(summary);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
   const deliveredOrders = (dashboardQuery.data?.orders ?? [])
@@ -87,14 +118,14 @@ function VendorWalletPage() {
     .slice(0, 8);
   const platformCollectionQrPayload = useMemo(() => {
     if (!vendorId) return null;
-    const amountMad = Number(summary?.platformDuesMad ?? 0);
+    const amountMad = Number(cashBreakdown.platformDuesMad ?? 0);
     if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
 
     return JSON.stringify({
       vendor_id: vendorId,
       amount_owed: amountMad.toFixed(2),
     });
-  }, [summary?.platformDuesMad, vendorId]);
+  }, [cashBreakdown.platformDuesMad, vendorId]);
 
   const vendorHandoverQrPayload = useMemo(() => {
     if (!vendorId) return null;
@@ -140,15 +171,15 @@ function VendorWalletPage() {
           <CardContent className="space-y-3">
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
               <p className="text-xs text-muted-foreground">إجمالي النقد المستلم · Total Cash in Hand</p>
-              <p className="text-2xl font-semibold text-foreground">{formatMad(summary?.totalCashInHandMad)}</p>
+              <p className="text-2xl font-semibold text-foreground">{formatMad(cashBreakdown.totalCashInHandMad)}</p>
             </div>
             <div className="rounded-lg border border-success/30 bg-success/10 px-3 py-2">
               <p className="text-xs text-muted-foreground">صافي أرباحي · My Net Profit</p>
-              <p className="text-xl font-semibold text-success">{formatMad(summary?.myNetProfitMad)}</p>
+              <p className="text-xl font-semibold text-success">{formatMad(cashBreakdown.myNetProfitMad)}</p>
             </div>
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
               <p className="text-xs text-muted-foreground">مستحقات المنصة · Platform Dues</p>
-              <p className="text-xl font-semibold text-destructive">{formatMad(summary?.platformDuesMad)}</p>
+              <p className="text-xl font-semibold text-destructive">{formatMad(cashBreakdown.platformDuesMad)}</p>
             </div>
             <Button
               className="w-full"
