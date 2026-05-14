@@ -109,7 +109,10 @@ function CustomerOrderDetailsPage() {
   const isDelivered = deliveredStatuses.includes(normalizedOrderStatus);
   const handoverQrPayload = useMemo(() => {
     if (!order?.id || !isOutForDelivery) return "";
-    return JSON.stringify({ order_id: order.id, delivery_auth_code: order.deliveryAuthCode ?? null });
+    return JSON.stringify({
+      action: "customer_delivery_confirmation",
+      order_id: order.id,
+    });
   }, [isOutForDelivery, order?.deliveryAuthCode, order?.id]);
 
   const paymentBadge = useMemo(() => {
