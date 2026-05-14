@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, Info, Keyboard, Lock, LogOut, MapPin, MessageCircle, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, CreditCard, Info, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -627,45 +627,90 @@ function OrderCard({
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div>
-          <p className="text-lg font-bold text-foreground">{order.customerName}</p>
-          <div className="mt-1 flex flex-row items-center gap-2">
-            <a
-              href={`tel:${order.customerPhone}`}
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700"
-            >
-              <PhoneCall className="size-4" />
-              {order.customerPhone}
-            </a>
-            <a
-              href={`https://wa.me/${whatsappPhone}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors hover:bg-emerald-200"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Open WhatsApp chat"
-            >
-              <MessageCircle className="h-5 w-5" />
-            </a>
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <User className="h-4 w-4 text-slate-400" />
+              الاسم الكامل
+            </div>
+            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">{order.customerName}</div>
           </div>
-        </div>
 
-        <div className="mt-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-          <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-          >
-            <MapPin className="h-4 w-4" />
-            {order.deliveryAddress}
-          </a>
-          {briefingText ? (
-            <p className="mt-2 flex items-start gap-2 border-t border-slate-200 pt-2 text-sm italic text-gray-600">
-              <Info className="mt-0.5 size-4 shrink-0" />
-              <span className="min-w-0">{briefingText}</span>
-            </p>
-          ) : null}
+          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <Phone className="h-4 w-4 text-slate-400" />
+              رقم الهاتف
+            </div>
+            <div className="mt-1 flex w-full gap-2 justify-start sm:mt-0 sm:w-2/3 sm:justify-end">
+              <a
+                href={`tel:${order.customerPhone}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700"
+              >
+                <PhoneCall className="size-4" />
+                {order.customerPhone}
+              </a>
+              <a
+                href={`https://wa.me/${whatsappPhone}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors hover:bg-emerald-200"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Open WhatsApp chat"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <Map className="h-4 w-4 text-slate-400" />
+              المنطقة
+            </div>
+            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">{order.douar}</div>
+          </div>
+
+          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <MapPin className="h-4 w-4 text-slate-400" />
+              العنوان
+            </div>
+            <div className="mt-1 w-full sm:mt-0 sm:w-2/3 sm:text-right">
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline"
+              >
+                <MapPin className="h-4 w-4" />
+                {order.deliveryAddress}
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start border-b border-slate-200/60 pb-2 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <Info className="h-4 w-4 text-slate-400" />
+              تعليمات التوصيل
+            </div>
+            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">
+              {briefingText ? <span className="rounded-md bg-amber-100 px-2 py-1 text-xs text-amber-800">{briefingText}</span> : "—"}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start pb-0 sm:flex-row sm:justify-between">
+            <div className="flex w-1/3 items-center gap-2 text-sm font-medium text-slate-500">
+              <CreditCard className="h-4 w-4 text-slate-400" />
+              الدفع
+            </div>
+            <div className="mt-1 w-full text-sm font-bold text-slate-900 sm:mt-0 sm:w-2/3 sm:text-right">
+              {order.paymentMethod === "COD" ? (
+                <span className="rounded-md bg-orange-100 px-2 py-1 text-xs text-orange-800">الدفع عند الاستلام (COD)</span>
+              ) : (
+                <span className="rounded-md bg-emerald-100 px-2 py-1 text-xs text-emerald-800">مدفوع (Carnet)</span>
+              )}
+            </div>
+          </div>
         </div>
 
         <Button className={`mt-5 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
