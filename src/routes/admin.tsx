@@ -3375,6 +3375,45 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
+              <label htmlFor="product-variant-input" className="text-sm font-medium text-foreground">
+                Product Variants / الأنواع أو النكهات
+              </label>
+              <Input
+                id="product-variant-input"
+                value={productVariantInput}
+                onChange={(event) => setProductVariantInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addProductVariantTag(productVariantInput);
+                  }
+                }}
+                onBlur={() => {
+                  if (productVariantInput.trim().length > 0) {
+                    addProductVariantTag(productVariantInput);
+                  }
+                }}
+                placeholder="Type variant (e.g. Vanilla) and press Enter"
+              />
+              {parsedProductVariants.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {parsedProductVariants.map((variant) => (
+                    <button
+                      key={variant}
+                      type="button"
+                      onClick={() => removeProductVariantTag(variant)}
+                      className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
+                    >
+                      {variant} ×
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No variants added yet.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <label htmlFor="popularity-score" className="text-sm font-medium text-foreground">
                 Popularity Score
               </label>
