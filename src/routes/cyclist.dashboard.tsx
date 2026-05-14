@@ -604,10 +604,11 @@ function OrderCard({
       : "bg-primary text-primary-foreground hover:bg-primary/90";
 
   const shortOrderId = `#${order.id.replace(/-/g, "").slice(-4).toUpperCase()}`;
-  const notes = [order.deliveryNotes?.trim(), order.savedInstructions?.trim()].filter(
+  const notes = [order.deliveryInstructions?.trim(), order.savedInstructions?.trim()].filter(
     (note): note is string => Boolean(note),
   );
   const briefingText = notes.length ? Array.from(new Set(notes)).join(" • ") : null;
+  const whatsappPhone = order.customerPhone.replace(/\D/g, "");
 
   if (isActiveDelivery) {
     return (
@@ -637,7 +638,7 @@ function OrderCard({
               {order.customerPhone}
             </a>
             <a
-              href={`https://wa.me/${order.customerPhone}`}
+              href={`https://wa.me/${whatsappPhone}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors hover:bg-emerald-200"
@@ -651,13 +652,13 @@ function OrderCard({
 
         <div className="mt-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
           <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(order.douar)}`}
+            href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
           >
             <MapPin className="h-4 w-4" />
-            {order.douar}
+            {order.deliveryAddress}
           </a>
           {briefingText ? (
             <p className="mt-2 flex items-start gap-2 border-t border-slate-200 pt-2 text-sm italic text-gray-600">
