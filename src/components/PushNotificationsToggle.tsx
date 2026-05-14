@@ -55,7 +55,7 @@ export function PushNotificationsToggle({ role, label, className }: PushNotifica
 
       {isPermissionDenied ? (
         <p className="mt-2 text-xs text-destructive">
-          الإشعارات محظورة من إعدادات المتصفح. فعّلها من إعدادات الموقع ثم أعد المحاولة.
+          ​
         </p>
       ) : null}
 
