@@ -94,6 +94,12 @@ type OrderRow = {
     unitPriceMad?: number;
     selectedVariant?: string | null;
     productId?: string;
+    brand_name?: string;
+    brandName?: string;
+    measurement_value?: number | string;
+    measurementValue?: number | string;
+    measurement_unit?: string;
+    measurementUnit?: string;
   }>;
   neighborhood_id: string;
   delivery_auth_code: string;
@@ -135,6 +141,9 @@ export type CyclistOrderCard = {
     selectedVariant: string | null;
     imageUrl: string | null;
     lineTotalMad: number;
+    brandName: string | null;
+    measurementValue: string | null;
+    measurementUnit: string | null;
   }>;
   savedInstructions: string;
   deliveryNotes: string;
@@ -499,6 +508,24 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
                     : null,
                 imageUrl: null,
                 lineTotalMad: quantity * unitPriceMad,
+                brandName:
+                  typeof item?.brand_name === "string" && item.brand_name.trim().length > 0
+                    ? item.brand_name.trim()
+                    : typeof item?.brandName === "string" && item.brandName.trim().length > 0
+                      ? item.brandName.trim()
+                      : null,
+                measurementValue:
+                  item?.measurement_value !== undefined && item?.measurement_value !== null
+                    ? String(item.measurement_value).trim() || null
+                    : item?.measurementValue !== undefined && item?.measurementValue !== null
+                      ? String(item.measurementValue).trim() || null
+                      : null,
+                measurementUnit:
+                  typeof item?.measurement_unit === "string" && item.measurement_unit.trim().length > 0
+                    ? item.measurement_unit.trim()
+                    : typeof item?.measurementUnit === "string" && item.measurementUnit.trim().length > 0
+                      ? item.measurementUnit.trim()
+                      : null,
               };
             })
           : [];
