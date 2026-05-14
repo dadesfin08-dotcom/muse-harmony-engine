@@ -394,7 +394,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           ? (supabaseAdmin as any)
               .from("orders")
               .select(
-                "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
+                "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
               )
               .eq("status", "ready")
               .in("neighborhood_id", coverageNeighborhoodIds)
@@ -404,7 +404,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select(
-            "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, neighborhood_id, delivery_auth_code, created_at",
+            "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
           )
           .eq("status", "delivering")
           .eq("cyclist_id", cyclist.id)
@@ -485,6 +485,23 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         const deliveryAddress =
           checkoutAddress || neighborhoodName;
         const deliveryInstructions = (row.delivery_notes ?? "").trim();
+        const items = Array.isArray(row.order_items)
+          ? row.order_items.map((item) => {
+              const quantity = Number(item?.quantity ?? 1);
+              const unitPriceMad = Number(item?.unitPriceMad ?? 0);
+              return {
+                name: typeof item?.name === "string" && item.name.trim().length > 0 ? item.name.trim() : "Product",
+                quantity,
+                unitPriceMad,
+                selectedVariant:
+                  typeof item?.selectedVariant === "string" && item.selectedVariant.trim().length > 0
+                    ? item.selectedVariant.trim()
+                    : null,
+                imageUrl: null,
+                lineTotalMad: quantity * unitPriceMad,
+              };
+            })
+          : [];
 
         return {
           id: row.id,
@@ -497,6 +514,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           deliveryFeeMad: Number(row.delivery_fee ?? 0),
           totalMad: Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
           paymentMethod: row.payment_method === "Carnet" ? "Carnet" : "COD",
+          items,
           savedInstructions,
           deliveryNotes: row.delivery_notes,
           deliveryAuthCode: row.delivery_auth_code,
