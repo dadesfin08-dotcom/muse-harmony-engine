@@ -457,6 +457,10 @@ function AdminPage() {
   const createAnnouncementInDatabase = useServerFn(createAnnouncement);
   const updateAnnouncementInDatabase = useServerFn(updateAnnouncement);
   const deleteAnnouncementInDatabase = useServerFn(deleteAnnouncement);
+  const fetchMarkupRules = useServerFn(listMarkupRules);
+  const createMarkupRuleInDatabase = useServerFn(createMarkupRule);
+  const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
+  const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
@@ -531,6 +535,12 @@ function AdminPage() {
     queryKey: ["admin", "global-settings"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchGlobalSettings(),
+  });
+  const markupRulesQuery = useQuery({
+    queryKey: ["admin", "markup-rules"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchMarkupRules(),
+    staleTime: 60_000,
   });
 
   const vendors = vendorsQuery.data ?? initialVendors;
@@ -777,6 +787,16 @@ function AdminPage() {
   const [receiptLogoFile, setReceiptLogoFile] = useState<File | null>(null);
   const [receiptLogoPreviewUrl, setReceiptLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
+  const [isMarkupRuleDialogOpen, setIsMarkupRuleDialogOpen] = useState(false);
+  const [editingMarkupRuleId, setEditingMarkupRuleId] = useState<string | null>(null);
+  const [isSavingMarkupRule, setIsSavingMarkupRule] = useState(false);
+  const [markupRuleForm, setMarkupRuleForm] = useState({
+    minPrice: "",
+    maxPrice: "",
+    markupType: "fixed" as "fixed" | "percentage",
+    markupValue: "",
+    isActive: true,
+  });
 
   useEffect(() => {
     const row = globalSettingsQuery.data;
@@ -2661,6 +2681,89 @@ function AdminPage() {
       toast.error(error instanceof Error ? error.message : "Failed to save global settings.");
     } finally {
       setIsSavingGlobalSettings(false);
+    }
+  };
+
+  const resetMarkupRuleForm = () => {
+    setEditingMarkupRuleId(null);
+    setMarkupRuleForm({
+      minPrice: "",
+      maxPrice: "",
+      markupType: "fixed",
+      markupValue: "",
+      isActive: true,
+    });
+  };
+
+  const openCreateMarkupRuleDialog = () => {
+    resetMarkupRuleForm();
+    setIsMarkupRuleDialogOpen(true);
+  };
+
+  const openEditMarkupRuleDialog = (rule: MarkupRuleAdminRow) => {
+    setEditingMarkupRuleId(rule.id);
+    setMarkupRuleForm({
+      minPrice: String(rule.minPrice),
+      maxPrice: String(rule.maxPrice),
+      markupType: rule.markupType,
+      markupValue: String(rule.markupValue),
+      isActive: rule.isActive,
+    });
+    setIsMarkupRuleDialogOpen(true);
+  };
+
+  const saveMarkupRule = async () => {
+    const minPrice = Number(markupRuleForm.minPrice);
+    const maxPrice = Number(markupRuleForm.maxPrice);
+    const markupValue = Number(markupRuleForm.markupValue);
+
+    if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice) || !Number.isFinite(markupValue)) {
+      toast.error("Please enter valid numeric values for pricing rule.");
+      return;
+    }
+
+    if (minPrice < 0 || maxPrice <= minPrice || markupValue < 0) {
+      toast.error("Please ensure range and markup values are valid.");
+      return;
+    }
+
+    try {
+      setIsSavingMarkupRule(true);
+      const payload = {
+        minPrice,
+        maxPrice,
+        markupType: markupRuleForm.markupType,
+        markupValue,
+        isActive: markupRuleForm.isActive,
+      };
+
+      if (editingMarkupRuleId) {
+        await updateMarkupRuleInDatabase({ data: { id: editingMarkupRuleId, ...payload } });
+        toast.success("Pricing rule updated.");
+      } else {
+        await createMarkupRuleInDatabase({ data: payload });
+        toast.success("Pricing rule created.");
+      }
+
+      await markupRulesQuery.refetch();
+      setIsMarkupRuleDialogOpen(false);
+      resetMarkupRuleForm();
+    } catch (error) {
+      console.error("Failed to save pricing rule:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save pricing rule.");
+    } finally {
+      setIsSavingMarkupRule(false);
+    }
+  };
+
+  const removeMarkupRule = async (ruleId: string) => {
+    try {
+      await deleteMarkupRuleInDatabase({ data: { id: ruleId } });
+      await markupRulesQuery.refetch();
+      toast.success("Pricing rule deleted.");
+    } catch (error) {
+      console.error("Failed to delete pricing rule:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete pricing rule.");
     }
   };
 
