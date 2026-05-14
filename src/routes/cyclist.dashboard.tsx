@@ -125,9 +125,13 @@ function CyclistDashboardPage() {
       setSettlingVendorId(vendorId);
     },
     onSuccess: async (result) => {
-      toast.success(
-        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
-      );
+      if (result.settledOrdersCount <= 0) {
+        toast.info("لا توجد طلبات نقدية معلقة لهذا التاجر حالياً. تم تحديث البيانات.");
+      } else {
+        toast.success(
+          `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
+        );
+      }
       await dashboardQuery.refetch();
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
