@@ -31,6 +31,7 @@ import { Route as CustomerProductIdRouteImport } from './routes/customer.product
 import { Route as CustomerOrderOrderIdRouteImport } from './routes/customer.order.$orderId'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 import { Route as ApiPublicSendPushNotificationRouteImport } from './routes/api/public/send-push-notification'
+import { Route as ApiPublicPushConfigRouteImport } from './routes/api/public/push-config'
 import { Route as AdminServiceZonesCommuneIdRouteImport } from './routes/admin.service-zones.$communeId'
 
 const StaffPortalRoute = StaffPortalRouteImport.update({
@@ -144,6 +145,11 @@ const ApiPublicSendPushNotificationRoute =
     path: '/api/public/send-push-notification',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPushConfigRoute = ApiPublicPushConfigRouteImport.update({
+  id: '/api/public/push-config',
+  path: '/api/public/push-config',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminServiceZonesCommuneIdRoute =
   AdminServiceZonesCommuneIdRouteImport.update({
     id: '/service-zones/$communeId',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
+  '/api/public/push-config': typeof ApiPublicPushConfigRoute
   '/api/public/send-push-notification': typeof ApiPublicSendPushNotificationRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer': typeof CustomerIndexRoute
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
+  '/api/public/push-config': typeof ApiPublicPushConfigRoute
   '/api/public/send-push-notification': typeof ApiPublicSendPushNotificationRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/vendor/wallet': typeof VendorWalletRoute
   '/customer/': typeof CustomerIndexRoute
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
+  '/api/public/push-config': typeof ApiPublicPushConfigRoute
   '/api/public/send-push-notification': typeof ApiPublicSendPushNotificationRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer/'
     | '/admin/service-zones/$communeId'
+    | '/api/public/push-config'
     | '/api/public/send-push-notification'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer'
     | '/admin/service-zones/$communeId'
+    | '/api/public/push-config'
     | '/api/public/send-push-notification'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/vendor/wallet'
     | '/customer/'
     | '/admin/service-zones/$communeId'
+    | '/api/public/push-config'
     | '/api/public/send-push-notification'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
@@ -316,6 +328,7 @@ export interface RootRouteChildren {
   VendorDashboardRoute: typeof VendorDashboardRoute
   VendorLoginRoute: typeof VendorLoginRoute
   VendorWalletRoute: typeof VendorWalletRoute
+  ApiPublicPushConfigRoute: typeof ApiPublicPushConfigRoute
   ApiPublicSendPushNotificationRoute: typeof ApiPublicSendPushNotificationRoute
   VendorOrderOrderIdRoute: typeof VendorOrderOrderIdRoute
 }
@@ -476,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSendPushNotificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/push-config': {
+      id: '/api/public/push-config'
+      path: '/api/public/push-config'
+      fullPath: '/api/public/push-config'
+      preLoaderRoute: typeof ApiPublicPushConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/service-zones/$communeId': {
       id: '/admin/service-zones/$communeId'
       path: '/service-zones/$communeId'
@@ -554,19 +574,10 @@ const rootRouteChildren: RootRouteChildren = {
   VendorDashboardRoute: VendorDashboardRoute,
   VendorLoginRoute: VendorLoginRoute,
   VendorWalletRoute: VendorWalletRoute,
+  ApiPublicPushConfigRoute: ApiPublicPushConfigRoute,
   ApiPublicSendPushNotificationRoute: ApiPublicSendPushNotificationRoute,
   VendorOrderOrderIdRoute: VendorOrderOrderIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
