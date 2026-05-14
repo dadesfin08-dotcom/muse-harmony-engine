@@ -1399,7 +1399,6 @@ function VendorDashboardPage() {
         onOpenChange={(isOpen) => {
           if (!isOpen) {
             setPackingOrderId(null);
-            setPackingCheckedItemKeys({});
           }
         }}
       >
@@ -1416,7 +1415,7 @@ function VendorDashboardPage() {
               <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
                 {packingOrder.items.map((item, index) => {
                   const itemKey = getOrderItemKey(packingOrder.id, item, index);
-                  const checked = !!packingCheckedItemKeys[itemKey];
+                  const checked = !!packingProgressByOrder[packingOrder.id]?.[itemKey];
 
                   return (
                     <label
@@ -1480,7 +1479,6 @@ function VendorDashboardPage() {
               className="rounded-xl"
               onClick={() => {
                 setPackingOrderId(null);
-                setPackingCheckedItemKeys({});
               }}
             >
               Cancel
