@@ -69,6 +69,8 @@ type GlobalSettingsRow = {
   minimum_order_amount: number;
   free_delivery_threshold: number;
   marketplace_active: boolean;
+  site_name: string;
+  site_logo_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -103,10 +105,18 @@ function normalizeGlobalSettingsRow(row: any): GlobalSettingsRow {
     minimum_order_amount: Number(row.minimum_order_amount ?? 50),
     free_delivery_threshold: Number(row.free_delivery_threshold ?? 500),
     marketplace_active: Boolean(row.marketplace_active ?? true),
+    site_name: typeof row.site_name === "string" && row.site_name.trim().length > 0 ? row.site_name.trim() : "Bzaf Fresh",
+    site_logo_url: typeof row.site_logo_url === "string" && row.site_logo_url.trim().length > 0 ? row.site_logo_url.trim() : null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
+
+const uploadSiteLogoInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1).max(10_000_000),
+});
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
@@ -344,7 +354,7 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
 export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data: singletonRow, error: singletonError } = await (supabaseAdmin as any)
     .from("global_settings")
-    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
     .eq("id", GLOBAL_SETTINGS_SINGLETON_ID)
     .maybeSingle();
 
@@ -358,7 +368,7 @@ export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async
 
   const { data: fallbackRow, error: fallbackError } = await (supabaseAdmin as any)
     .from("global_settings")
-    .select("global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active")
+    .select("global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -376,10 +386,15 @@ export const getGlobalSettings = createServerFn({ method: "GET" }).handler(async
         minimum_order_amount: Number(fallbackRow?.minimum_order_amount ?? 50),
         free_delivery_threshold: Number(fallbackRow?.free_delivery_threshold ?? 500),
         marketplace_active: Boolean(fallbackRow?.marketplace_active ?? true),
+        site_name: typeof fallbackRow?.site_name === "string" && fallbackRow.site_name.trim() ? fallbackRow.site_name.trim() : "Bzaf Fresh",
+        site_logo_url:
+          typeof fallbackRow?.site_logo_url === "string" && fallbackRow.site_logo_url.trim()
+            ? fallbackRow.site_logo_url.trim()
+            : null,
       },
       { onConflict: "id" },
     )
-    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+    .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
     .single();
 
   if (upsertError || !upserted?.id) {
@@ -398,6 +413,8 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
         minimumOrderAmount: z.coerce.number().min(0).max(100000),
         freeDeliveryThreshold: z.coerce.number().min(0).max(1000000),
         marketplaceActive: z.boolean(),
+        siteName: z.string().trim().min(1).max(120),
+        siteLogoUrl: z.string().trim().url().max(2000).nullable(),
       })
       .parse(input),
   )
@@ -411,10 +428,12 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
           minimum_order_amount: data.minimumOrderAmount,
           free_delivery_threshold: data.freeDeliveryThreshold,
           marketplace_active: data.marketplaceActive,
+          site_name: data.siteName,
+          site_logo_url: data.siteLogoUrl,
         },
         { onConflict: "id" },
       )
-      .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, created_at, updated_at")
+      .select("id, global_delivery_fee, minimum_order_amount, free_delivery_threshold, marketplace_active, site_name, site_logo_url, created_at, updated_at")
       .single();
 
     if (error || !updated?.id) {
@@ -422,6 +441,48 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
     }
 
     return normalizeGlobalSettingsRow(updated);
+  });
+
+export const uploadSiteLogo = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadSiteLogoInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (!data.contentType.startsWith("image/")) {
+      throw new Error("Only image uploads are allowed.");
+    }
+
+    const commaIndex = data.dataUrl.indexOf(",");
+    if (commaIndex === -1) {
+      throw new Error("Invalid image payload.");
+    }
+
+    const base64Payload = data.dataUrl.slice(commaIndex + 1);
+    const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+    const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "png";
+    const safeBaseName = data.fileName
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .slice(0, 60);
+    const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "site-logo"}.${extensionFromName}`;
+    const path = `branding/${generatedFileName}`;
+
+    const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+      .from("public-assets")
+      .upload(path, bytes, {
+        contentType: data.contentType,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError || !uploadData?.path) {
+      throw new Error(uploadError?.message ?? "Image upload failed.");
+    }
+
+    const { data: publicUrlData } = (supabaseAdmin as any).storage.from("public-assets").getPublicUrl(uploadData.path);
+
+    return {
+      path: uploadData.path,
+      publicUrl: publicUrlData.publicUrl,
+    };
   });
 
 export const listAdminCustomers = createServerFn({ method: "GET" }).handler(async () => {

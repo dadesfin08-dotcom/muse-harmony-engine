@@ -155,6 +155,7 @@ import {
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
@@ -403,6 +404,7 @@ function AdminPage() {
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
+  const uploadSiteLogoToStorage = useServerFn(uploadSiteLogo);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
@@ -704,7 +706,11 @@ function AdminPage() {
     minimumOrderMad: "50",
     freeDeliveryThresholdMad: "500",
     marketplaceActive: true,
+    siteName: "Bzaf Fresh",
+    siteLogoUrl: "",
   });
+  const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
+  const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
@@ -739,8 +745,13 @@ function AdminPage() {
         minimumOrderMad: String(Number(row.minimum_order_amount ?? 50)),
         freeDeliveryThresholdMad: String(Number(row.free_delivery_threshold ?? 500)),
         marketplaceActive: Boolean(row.marketplace_active ?? true),
+        siteName: row.site_name?.trim() || "Bzaf Fresh",
+        siteLogoUrl: row.site_logo_url?.trim() || "",
       };
     });
+
+    setSiteLogoFile(null);
+    setSiteLogoPreviewUrl(row.site_logo_url?.trim() || null);
   }, [globalSettingsQuery.data]);
 
   useEffect(() => {
@@ -2423,6 +2434,7 @@ function AdminPage() {
     const globalDeliveryFee = Number(settingsForm.deliveryFeeMad);
     const minimumOrderAmount = Number(settingsForm.minimumOrderMad);
     const freeDeliveryThreshold = Number(settingsForm.freeDeliveryThresholdMad);
+    const normalizedSiteName = settingsForm.siteName.trim();
 
     if (
       Number.isNaN(globalDeliveryFee) ||
@@ -2436,8 +2448,37 @@ function AdminPage() {
       return;
     }
 
+    if (!normalizedSiteName) {
+      toast.error("Please provide a site name.");
+      return;
+    }
+
     try {
       setIsSavingGlobalSettings(true);
+
+      let siteLogoUrl = settingsForm.siteLogoUrl.trim() || null;
+      if (siteLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(siteLogoFile);
+        });
+
+        const uploaded = await uploadSiteLogoToStorage({
+          data: {
+            fileName: siteLogoFile.name,
+            contentType: siteLogoFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+
+        siteLogoUrl = uploaded.publicUrl;
+      }
+
       await saveGlobalSettingsToDatabase({
         data: {
           id: settingsForm.id,
@@ -2445,11 +2486,14 @@ function AdminPage() {
           minimumOrderAmount,
           freeDeliveryThreshold,
           marketplaceActive: settingsForm.marketplaceActive,
+          siteName: normalizedSiteName,
+          siteLogoUrl,
         },
       });
 
       await globalSettingsQuery.refetch();
-      toast.success("Configuration saved successfully");
+      setSiteLogoFile(null);
+      toast.success("Settings updated successfully");
     } catch (error) {
       console.error("Failed to save global settings:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save global settings.");
@@ -2662,6 +2706,9 @@ function AdminPage() {
                 <SettingsSection
                   form={settingsForm}
                   onFormChange={setSettingsForm}
+                  siteLogoPreviewUrl={siteLogoPreviewUrl}
+                  onSiteLogoFileChange={(file: File | null) => setSiteLogoFile(file)}
+                  onSiteLogoPreviewChange={(url: string | null) => setSiteLogoPreviewUrl(url)}
                   onSaveGlobalSettings={saveGlobalSettings}
                   isGlobalSettingsLoading={isSavingGlobalSettings || dbHealthQuery.isLoading || globalSettingsQuery.isLoading}
                   receiptForm={receiptForm}
@@ -5199,6 +5246,9 @@ function CustomersSection({
 function SettingsSection({
   form,
   onFormChange,
+  siteLogoPreviewUrl,
+  onSiteLogoFileChange,
+  onSiteLogoPreviewChange,
   onSaveGlobalSettings,
   isGlobalSettingsLoading,
   receiptForm,
@@ -5215,6 +5265,8 @@ function SettingsSection({
     minimumOrderMad: string;
     freeDeliveryThresholdMad: string;
     marketplaceActive: boolean;
+    siteName: string;
+    siteLogoUrl: string;
   };
   onFormChange: Dispatch<
     SetStateAction<{
@@ -5223,8 +5275,13 @@ function SettingsSection({
       minimumOrderMad: string;
       freeDeliveryThresholdMad: string;
       marketplaceActive: boolean;
+      siteName: string;
+      siteLogoUrl: string;
     }>
   >;
+  siteLogoPreviewUrl: string | null;
+  onSiteLogoFileChange: (file: File | null) => void;
+  onSiteLogoPreviewChange: (url: string | null) => void;
   onSaveGlobalSettings: () => Promise<void>;
   isGlobalSettingsLoading: boolean;
   receiptForm: {
@@ -5259,14 +5316,81 @@ function SettingsSection({
   onSaveReceiptSettings: () => Promise<void>;
   isReceiptSettingsLoading: boolean;
 }) {
+  const { i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
-      <div>
-        <h2 className="text-base font-semibold text-foreground">Global Configuration</h2>
-        <p className="text-sm text-muted-foreground">Set default marketplace-level operational parameters.</p>
+      <div className="rounded-xl border border-border bg-white p-4 shadow-sm md:p-5" dir={isArabic ? "rtl" : "ltr"}>
+        <div>
+          <h2 className="text-base font-semibold text-foreground">General Settings · إعدادات عامة</h2>
+          <p className="text-sm text-muted-foreground">Update storefront brand identity and global defaults.</p>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <label htmlFor="site-name" className="text-sm font-medium text-foreground">
+              Site Name (اسم الموقع)
+            </label>
+            <Input
+              id="site-name"
+              value={form.siteName}
+              onChange={(event) => onFormChange((current) => ({ ...current, siteName: event.target.value }))}
+              className="h-11 rounded-lg"
+              placeholder="Bzaf Fresh"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium text-foreground">Site Logo (شعار الموقع)</label>
+            <div className="flex items-center gap-4 rounded-lg border border-border bg-background p-3">
+              {siteLogoPreviewUrl ? (
+                <img
+                  src={siteLogoPreviewUrl}
+                  alt="Site logo preview"
+                  className="h-12 w-auto max-w-[140px] rounded-md border border-border bg-white object-contain p-1"
+                />
+              ) : (
+                <div className="flex h-12 w-28 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-xs text-muted-foreground">
+                  No logo
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="site-logo-upload"
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    onSiteLogoFileChange(file);
+                    if (!file) {
+                      onSiteLogoPreviewChange(form.siteLogoUrl || null);
+                      return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      onSiteLogoPreviewChange(typeof reader.result === "string" ? reader.result : null);
+                    reader.onerror = () => toast.error("Unable to preview selected logo.");
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-lg"
+                  onClick={() => document.getElementById("site-logo-upload")?.click()}
+                >
+                  Upload Logo
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 rounded-xl border border-border bg-card p-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="delivery-fee" className="text-sm font-medium text-foreground">
             Global Delivery Fee (MAD)
@@ -5333,7 +5457,7 @@ function SettingsSection({
         }}
         disabled={isGlobalSettingsLoading || !form.id}
       >
-        {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes"}
+        {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
 
       <div className="mt-2 h-px w-full bg-border" />
