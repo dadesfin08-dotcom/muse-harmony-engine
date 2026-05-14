@@ -2600,49 +2600,103 @@ function Index() {
                       />
                     ) : (
                       <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
-                        {(customerOrdersQuery.data ?? []).map((order) => {
-                          const activeStepIndex = getOrderStepIndex(order.status);
-                          const orderDate = new Date(order.created_at);
+                        {activeCustomerOrders.length > 0 ? (
+                          <div className="space-y-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
+                            {activeCustomerOrders.map((order) => {
+                              const activeStepIndex = getOrderStepIndex(order.status);
+                              const orderDate = new Date(order.created_at);
 
-                          return (
-                            <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
-                              <button
-                                type="button"
-                                className="w-full text-left"
-                                onClick={() => {
-                                  void navigate({ to: "/customer/order/$orderId", params: { orderId: order.id } });
-                                }}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
-                                    <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
-                                    <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 grid grid-cols-4 gap-2">
-                                  {statusSteps.map((step, index) => {
-                                    const reached = index <= activeStepIndex;
-                                    return (
-                                      <div key={step.label} className="space-y-1">
-                                        <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
-                                        <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
-                                          {step.label}
-                                        </p>
+                              return (
+                                <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
+                                  <button
+                                    type="button"
+                                    className="w-full text-left"
+                                    onClick={() => {
+                                      void navigate({ to: "/customer/order/$orderId", params: { orderId: order.id } });
+                                    }}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
-                                    );
-                                  })}
-                                </div>
+                                      <div className="text-right">
+                                        <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
+                                      </div>
+                                    </div>
 
-                                <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">Open digital receipt</div>
-                              </button>
-                            </article>
-                          );
-                        })}
+                                    <div className="mt-4 grid grid-cols-4 gap-2">
+                                      {statusSteps.map((step, index) => {
+                                        const reached = index <= activeStepIndex;
+                                        return (
+                                          <div key={step.label} className="space-y-1">
+                                            <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
+                                            <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                              {step.label}
+                                            </p>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+
+                                    <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">Open digital receipt</div>
+                                  </button>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        {deliveredCustomerOrders.length > 0 ? (
+                          <div className="space-y-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order History</p>
+                            {deliveredCustomerOrders.map((order) => {
+                              const activeStepIndex = getOrderStepIndex(order.status);
+                              const orderDate = new Date(order.created_at);
+
+                              return (
+                                <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
+                                  <button
+                                    type="button"
+                                    className="w-full text-left"
+                                    onClick={() => {
+                                      void navigate({ to: "/customer/order/$orderId", params: { orderId: order.id } });
+                                    }}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-4 gap-2">
+                                      {statusSteps.map((step, index) => {
+                                        const reached = index <= activeStepIndex;
+                                        return (
+                                          <div key={step.label} className="space-y-1">
+                                            <div className={`h-1.5 rounded-full ${reached ? "bg-primary" : "bg-muted"}`} />
+                                            <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                              {step.label}
+                                            </p>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+
+                                    <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">Open digital receipt</div>
+                                  </button>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        ) : null}
                       </div>
                     )}
 
