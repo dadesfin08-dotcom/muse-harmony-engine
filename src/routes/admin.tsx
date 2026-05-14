@@ -1891,6 +1891,11 @@ function AdminPage() {
           nameAr: row.Name_AR?.trim() || null,
           category: row.Category?.trim() || "",
           brand: row.Brand?.trim() || null,
+          productVariants: row.Product_Variants
+            ? row.Product_Variants.split(",")
+                .map((variant) => variant.trim())
+                .filter((variant) => variant.length > 0)
+            : [],
           measurementValue: row.Measurement_Value?.trim() || null,
           measurementUnit: row.Measurement_Unit?.trim() || "",
           barcode: row.Barcode?.trim() || null,
