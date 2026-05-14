@@ -3046,6 +3046,7 @@ function AdminPage() {
                   onSaveMarkupRule={saveMarkupRule}
                   isSavingMarkupRule={isSavingMarkupRule}
                   editingMarkupRuleId={editingMarkupRuleId}
+                  onOpenFactoryResetDialog={() => setIsFactoryResetDialogOpen(true)}
                 />
               ) : null}
             </div>
