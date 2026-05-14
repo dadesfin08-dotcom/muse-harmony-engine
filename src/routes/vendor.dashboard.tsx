@@ -30,6 +30,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -1420,7 +1421,9 @@ function VendorDashboardPage() {
                       <Checkbox
                         className="h-6 w-6"
                         checked={checked}
-                        onCheckedChange={(value) => togglePackingItem(itemKey, Boolean(value))}
+                        onCheckedChange={(value: boolean | "indeterminate") =>
+                          togglePackingItem(itemKey, value === true)
+                        }
                         aria-label={`Mark ${item.name} packed`}
                       />
                     </label>
