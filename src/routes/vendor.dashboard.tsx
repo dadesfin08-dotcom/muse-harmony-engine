@@ -61,6 +61,7 @@ import { getVendorDashboardData, updateVendorOrderStatus } from "@/lib/orders.fu
 import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
 import { cn } from "@/lib/utils";
+import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
