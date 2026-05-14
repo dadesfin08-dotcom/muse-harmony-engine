@@ -375,7 +375,7 @@ function CyclistDashboardPage() {
         <div className="w-full max-w-sm space-y-4 rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
           <p className="text-sm text-muted-foreground">Your cyclist session has expired.</p>
           <Button className="w-full" onClick={() => navigate({ to: "/cyclist/login" })}>
-            Go to Login
+            {t("cyclist.goToLogin")}
           </Button>
         </div>
       </main>
@@ -392,7 +392,7 @@ function CyclistDashboardPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">{cyclist?.fullName ?? session.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">Cyclist Dashboard</p>
+              <p className="truncate text-xs text-muted-foreground">{t("cyclist.dashboardTitle")}</p>
             </div>
           </div>
 
@@ -402,8 +402,8 @@ function CyclistDashboardPage() {
               variant="soft"
               className="rounded-xl"
               onClick={handleToggleSounds}
-              aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
-              title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+              aria-label={isSoundEnabled ? t("cyclist.disableSoundsAria") : t("cyclist.enableSoundsAria")}
+              title={isSoundEnabled ? t("cyclist.disableSoundsAria") : t("cyclist.enableSoundsAria")}
             >
               {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
             </Button>
@@ -414,7 +414,7 @@ function CyclistDashboardPage() {
         </div>
 
         <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? "Online" : "Offline"}</span>
+          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}</span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
@@ -430,7 +430,7 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Available Runs
+            {t("cyclist.availableRunsTab")}
           </button>
           <button
             type="button"
@@ -441,33 +441,33 @@ function CyclistDashboardPage() {
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Active Deliveries
+            {t("cyclist.activeDeliveriesTab")}
           </button>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
-          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing…</p> : null}
+          {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
 
         {activeView === "available" ? (
           <div className="space-y-3">
             {hasActiveDeliveryLock ? (
               <AppEmptyState
-                title="Finish your current run! (كمل التوصيلة اللي فـ يدك أولاً!)"
-                subtitle="You have an active delivery in progress. Complete it to unlock new available runs."
+                title={t("cyclist.lockTitle")}
+                subtitle={t("cyclist.lockSubtitle")}
                 icon={Lock}
                 className="bg-card"
               />
             ) : availableRuns.length === 0 ? (
-              <EmptyState label="No ready deliveries in your neighborhood right now." />
+              <EmptyState label={t("cyclist.noReadyDeliveries")} />
             ) : (
               availableRuns.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   isActiveDelivery={false}
-                  actionLabel="Accept & Pick Up"
+                  actionLabel={t("cyclist.acceptPickup")}
                   actionTone="primary"
                   actionIcon={Truck}
                   isBusy={isUpdatingOrderId === order.id}
@@ -479,14 +479,14 @@ function CyclistDashboardPage() {
         ) : (
           <div className="space-y-3">
             {activeDeliveries.length === 0 ? (
-              <EmptyState label="No active deliveries assigned to you." />
+              <EmptyState label={t("cyclist.noActiveDeliveries")} />
             ) : (
               activeDeliveries.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
                   isActiveDelivery
-                  actionLabel="Scan to Deliver (مسح الرمز للتسليم)"
+                  actionLabel={t("cyclist.scanToDeliver")}
                   actionTone="success"
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
@@ -502,7 +502,7 @@ function CyclistDashboardPage() {
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="text-base font-semibold">Scan to Deliver</DialogTitle>
+            <DialogTitle className="text-base font-semibold">{t("cyclist.scannerTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
