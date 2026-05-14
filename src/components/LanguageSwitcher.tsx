@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Languages } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 import type { AppLanguage } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const languageOptions: Array<{ code: AppLanguage; label: string; flag: string }> = [
   { code: "ar", label: "العربية (المغربية)", flag: "🇲🇦" },
@@ -12,41 +13,14 @@ const languageOptions: Array<{ code: AppLanguage; label: string; flag: string }>
   { code: "en", label: "English", flag: "🇬🇧" },
 ];
 
-export function LanguageSwitcher({ className, menuClassName }: { className?: string; menuClassName?: string }) {
+export function LanguageSwitcher({ className }: { className?: string }) {
   const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const activeLanguage = useMemo(
     () => (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage,
     [i18n.language, i18n.resolvedLanguage],
   );
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("mousedown", onPointerDown);
-    window.addEventListener("keydown", onEscape);
-
-    return () => {
-      window.removeEventListener("mousedown", onPointerDown);
-      window.removeEventListener("keydown", onEscape);
-    };
-  }, [isOpen]);
 
   const handleLanguageSelect = (nextLanguage: AppLanguage) => {
     void i18n.changeLanguage(nextLanguage);
@@ -54,27 +28,34 @@ export function LanguageSwitcher({ className, menuClassName }: { className?: str
   };
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
-      <button
-        type="button"
-        aria-label={t("language.label")}
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
-      >
-        <Languages className="size-5" />
-      </button>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("language.label")}
+          className={cn(
+            "inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted",
+            className,
+          )}
+        >
+          <Languages className="size-5" />
+        </button>
+      </DialogTrigger>
 
-      <AnimatePresence>
-        {isOpen ? (
+      <DialogContent
+        className="w-[92vw] max-w-sm border-border bg-card p-4 shadow-2xl sm:p-5"
+        overlayClassName="bg-black/20 backdrop-blur-sm"
+      >
+        <DialogTitle className="mb-2 text-center text-base font-semibold sm:text-lg">{t("language.label")}</DialogTitle>
+
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className={cn(
-              "absolute right-0 top-12 z-50 w-56 rounded-xl border border-border bg-popover p-1.5 text-popover-foreground shadow-lg",
-              menuClassName,
-            )}
+            key="language-modal-list"
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 6 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="space-y-2"
           >
             {languageOptions.map((option) => {
               const isActive = option.code === activeLanguage;
@@ -85,21 +66,23 @@ export function LanguageSwitcher({ className, menuClassName }: { className?: str
                   type="button"
                   onClick={() => handleLanguageSelect(option.code)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-sm transition-colors",
-                    isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted",
+                    "flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors",
+                    isActive
+                      ? "border-primary/30 bg-primary/10 text-foreground"
+                      : "border-border/70 hover:bg-accent/40",
                   )}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <span className="text-base leading-none">{option.flag}</span>
-                    <span>{option.label}</span>
+                  <span className="inline-flex items-center gap-3 text-base">
+                    <span className="text-lg leading-none">{option.flag}</span>
+                    <span className="font-medium">{option.label}</span>
                   </span>
-                  {isActive ? <Check className="size-4" /> : null}
+                  {isActive ? <Check className="size-5 text-primary" /> : null}
                 </button>
               );
             })}
           </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </DialogContent>
+    </Dialog>
   );
 }
