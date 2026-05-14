@@ -1163,7 +1163,7 @@ function VendorDashboardPage() {
                 isUpdating={isUpdating}
                 onOpenOrder={(orderId) => navigate({ to: "/vendor/order/$orderId", params: { orderId } })}
                 onAcceptOrder={handleAcceptOrder}
-                onMarkReady={handleMarkReady}
+                onMarkReady={handleOpenPackingModal}
                 onRejectOrder={handleRejectOrder}
                 timeTick={timeTick}
               />
@@ -1370,6 +1370,110 @@ function VendorDashboardPage() {
               }}
             >
               {isSavingCarnet ? "Verifying..." : "Verify & Add to Carnet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={packingOrder !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setPackingOrderId(null);
+            setPackingCheckedItemKeys({});
+          }
+        }}
+      >
+        <DialogContent className="w-[96vw] max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
+            <DialogDescription>
+              Check every item to fill the bag and unlock the final confirmation.
+            </DialogDescription>
+          </DialogHeader>
+
+          {packingOrder ? (
+            <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
+              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
+                {packingOrder.items.map((item, index) => {
+                  const itemKey = getOrderItemKey(packingOrder.id, item, index);
+                  const checked = !!packingCheckedItemKeys[itemKey];
+
+                  return (
+                    <label
+                      key={itemKey}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all",
+                        checked && "opacity-60",
+                      )}
+                    >
+                      <img
+                        src={item.imageUrl ?? fallbackProductImage}
+                        alt={item.name}
+                        className="h-12 w-12 rounded-md border border-border object-cover"
+                        loading="lazy"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                      </div>
+                      <Checkbox
+                        className="h-6 w-6"
+                        checked={checked}
+                        onCheckedChange={(value) => togglePackingItem(itemKey, Boolean(value))}
+                        aria-label={`Mark ${item.name} packed`}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/10 p-4">
+                <div
+                  className={cn(
+                    "relative mx-auto h-72 w-48 overflow-hidden rounded-[1.5rem_1.5rem_1rem_1rem] border-2 border-dashed border-border bg-background",
+                    isPackingComplete && "border-success shadow-[0_0_24px_hsl(var(--success)/0.45)]",
+                  )}
+                >
+                  <div className="absolute inset-x-0 bottom-0 transition-all duration-700 ease-in-out" style={{ height: `${fillPercentage}%` }}>
+                    <div className="absolute inset-0 bg-success/80" />
+                    <div className="absolute -top-2 left-0 h-4 w-full rounded-full bg-success/90" />
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <ShoppingBag className="size-14 text-muted-foreground/40" />
+                    <p className="mt-2 text-center text-xl font-black text-foreground">{fillPercentage}%</p>
+                    <p className="text-xs text-muted-foreground">Bag fill progress</p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-center text-sm text-muted-foreground">
+                  {packedItemsCount}/{totalPackingItems} items packed
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setPackingOrderId(null);
+                setPackingCheckedItemKeys({});
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              className={cn(
+                "rounded-xl",
+                isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
+              )}
+              disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
+              onClick={handleConfirmPackedOrder}
+            >
+              {packingOrderId && isUpdating === packingOrderId ? "Updating..." : "Confirm & Mark Ready"}
             </Button>
           </DialogFooter>
         </DialogContent>
