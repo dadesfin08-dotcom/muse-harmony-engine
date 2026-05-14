@@ -94,13 +94,19 @@ function VendorWalletPage() {
       const isCash = paymentMethod === "cod" || paymentMethod === "cash";
       return isTransferred && isCash;
     });
+    const unsettledTransferredCashOrders = transferredCashOrders.filter(
+      (order) => !Boolean(order.admin_settled),
+    );
 
     const totalCashInHandMad = transferredCashOrders.reduce((sum, order) => sum + Number(order.total_price ?? 0), 0);
     const myNetProfitMad = transferredCashOrders.reduce(
       (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
       0,
     );
-    const platformDuesMad = transferredCashOrders.reduce((sum, order) => sum + Number(order.delivery_fee ?? 0), 0);
+    const platformDuesMad = unsettledTransferredCashOrders.reduce(
+      (sum, order) => sum + Number(order.delivery_fee ?? 0),
+      0,
+    );
 
     return {
       totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
@@ -122,6 +128,7 @@ function VendorWalletPage() {
     if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
 
     return JSON.stringify({
+      action: "admin_collection",
       vendor_id: vendorId,
       amount_owed: amountMad.toFixed(2),
     });

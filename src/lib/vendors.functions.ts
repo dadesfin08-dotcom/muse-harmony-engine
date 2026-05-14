@@ -112,6 +112,56 @@ export type PlatformDuesCollectionResult = {
   remainingDuesMad: number;
 };
 
+type PendingPlatformDuesRow = {
+  vendor_id: string;
+  payment_method: string | null;
+  platform_profit: number | null;
+  delivery_fee: number | null;
+};
+
+function roundMad(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+function isCashPaymentMethod(paymentMethod: string | null | undefined) {
+  const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+  return normalized === "cod" || normalized === "cash";
+}
+
+function platformDueFromOrder(row: { platform_profit?: number | null; delivery_fee?: number | null }) {
+  const profit = Number(row.platform_profit ?? Number.NaN);
+  if (Number.isFinite(profit) && profit > 0) return profit;
+  return Number(row.delivery_fee ?? 0);
+}
+
+async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
+  if (vendorIds.length === 0) return new Map<string, number>();
+
+  const { data, error } = await (supabaseAdmin as any)
+    .from("orders")
+    .select("vendor_id, payment_method, platform_profit, delivery_fee")
+    .in("vendor_id", vendorIds)
+    .eq("status", "cash_transferred_to_vendor")
+    .or("admin_settled.is.null,admin_settled.eq.false");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const dueByVendor = new Map<string, number>();
+  for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
+    if (!isCashPaymentMethod(row.payment_method)) continue;
+    const current = dueByVendor.get(row.vendor_id) ?? 0;
+    dueByVendor.set(row.vendor_id, current + platformDueFromOrder(row));
+  }
+
+  for (const vendorId of vendorIds) {
+    dueByVendor.set(vendorId, roundMad(dueByVendor.get(vendorId) ?? 0));
+  }
+
+  return dueByVendor;
+}
+
 function zoneFromNeighborhoods(neighborhoods: NeighborhoodRow[], communeMap: Map<string, string>) {
   if (neighborhoods.length === 0) {
     return "Unassigned";
@@ -201,6 +251,7 @@ async function fetchVendorRecord(vendorId: string) {
   }
 
   const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
+  const dueByVendor = await getPendingPlatformDuesByVendorIds([vendorId]);
   const vendorNeighborhoods = (neighborhoods ?? []) as NeighborhoodRow[];
   const row = vendor as VendorRow;
 
@@ -210,7 +261,7 @@ async function fetchVendorRecord(vendorId: string) {
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
     vendorEarningsMad: Number(row.vendor_earnings ?? 0),
-    platformDuesMad: Number(row.platform_dues ?? 0),
+    platformDuesMad: Number(dueByVendor.get(vendorId) ?? 0),
     vendorType: row.vendor_type ?? "general",
     assignedCategories: row.vendor_type === "specialized" ? (row.assigned_categories ?? []) : [],
     neighborhoodIds: vendorNeighborhoods.map((n) => n.id),
@@ -245,6 +296,9 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
 
   const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
   const neighborhoodsByVendor = new Map<string, NeighborhoodRow[]>();
+  const dueByVendor = await getPendingPlatformDuesByVendorIds(
+    ((vendors ?? []) as VendorRow[]).map((vendor) => vendor.id),
+  );
 
   for (const neighborhood of (neighborhoods ?? []) as NeighborhoodRow[]) {
     if (!neighborhood.vendor_id) continue;
@@ -262,7 +316,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
       vendorEarningsMad: Number(vendor.vendor_earnings ?? 0),
-      platformDuesMad: Number(vendor.platform_dues ?? 0),
+      platformDuesMad: Number(dueByVendor.get(vendor.id) ?? 0),
       vendorType: vendor.vendor_type ?? "general",
       assignedCategories: vendor.vendor_type === "specialized" ? (vendor.assigned_categories ?? []) : [],
       neighborhoodIds: vendorNeighborhoods.map((neighborhood) => neighborhood.id),
@@ -459,9 +513,41 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, payment_method, platform_profit, delivery_fee")
+        .eq("vendor_id", data.vendorId)
+        .eq("status", "cash_transferred_to_vendor")
+        .or("admin_settled.is.null,admin_settled.eq.false");
+
+      if (pendingError) {
+        throw new Error(pendingError.message);
+      }
+
+      const pendingDuesMad = roundMad(
+        ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
+          (sum, row) => {
+            if (!isCashPaymentMethod(row.payment_method)) return sum;
+            return sum + platformDueFromOrder(row);
+          },
+          0,
+        ),
+      );
+
+      if (pendingDuesMad <= 0) {
+        throw new Error("No platform dues pending for this vendor.");
+      }
+
+      const targetAmountMad = roundMad(Number(data.amount ?? 0));
+      if (Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
+        throw new Error(
+          `Collection amount mismatch. Expected ${pendingDuesMad.toFixed(2)} MAD, received ${targetAmountMad.toFixed(2)} MAD.`,
+        );
+      }
+
       const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("collect_platform_dues", {
         p_vendor_id: data.vendorId,
-        p_amount: Number(data.amount.toFixed(2)),
+        p_amount: targetAmountMad,
         p_qr_payload: data.qrPayload ?? null,
         p_collected_by_user_id: null,
       });
@@ -473,6 +559,18 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       const row = Array.isArray(rpcResult) ? rpcResult[0] : null;
       if (!row?.transaction_id) {
         throw new Error("Collection failed. Please try again.");
+      }
+
+      const pendingOrderIds = ((pendingRows ?? []) as Array<{ id: string }>).map((row) => row.id);
+      if (pendingOrderIds.length > 0) {
+        const { error: settleError } = await (supabaseAdmin as any)
+          .from("orders")
+          .update({ admin_settled: true, updated_at: new Date().toISOString() })
+          .in("id", pendingOrderIds);
+
+        if (settleError) {
+          throw new Error(settleError.message);
+        }
       }
 
       return {

@@ -135,6 +135,7 @@ type OrderRow = {
     avatarUrl?: string | null;
   } | null;
   vendor_settlement_status?: "pending" | "settled";
+  admin_settled?: boolean;
   created_at: string;
 };
 
@@ -581,7 +582,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
+        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -858,6 +859,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
                   typeof cyclist.user_id === "string" ? cyclistAvatarByUserId.get(cyclist.user_id) ?? null : null,
               }
             : null,
+        admin_settled: Boolean(order?.admin_settled ?? false),
       };
     });
 
