@@ -160,7 +160,8 @@ function ProductDetailPage() {
       selectedVariant: normalizedVariant,
       brandName: product.brand || null,
       measurementValue: product.measurementValue ?? null,
-      price: Number(product.vendorPrice ?? 0),
+      price: Number(product.finalVendorPrice ?? product.vendorPrice ?? 0),
+      basePrice: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.imageUrl || fallbackProductImage,
       alt: composedProductLabel,
@@ -180,12 +181,14 @@ function ProductDetailPage() {
     measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
     imageUrl?: string | null;
     vendorPrice: number;
+    finalVendorPrice?: number;
   }) => {
     const name = formatSuggestedName(item);
     addCartItem({
       id: item.id,
       name,
-      price: Number(item.vendorPrice ?? 0),
+      price: Number(item.finalVendorPrice ?? item.vendorPrice ?? 0),
+      basePrice: Number(item.vendorPrice ?? 0),
       measurementUnit: item.measurementUnit,
       image: item.imageUrl || fallbackProductImage,
       alt: name,
@@ -331,7 +334,7 @@ function ProductDetailPage() {
             <h1 className="text-pretty break-words text-2xl font-black leading-tight text-slate-900">{localizedName}</h1>
 
             <div className="flex items-end gap-3">
-              <p className="text-3xl font-black text-emerald-600">{Number(product.vendorPrice ?? 0)} MAD</p>
+              <p className="text-3xl font-black text-emerald-600">{Number(product.finalVendorPrice ?? product.vendorPrice ?? 0)} MAD</p>
               <p className="inline-flex items-center gap-1.5 pb-1 text-sm font-medium text-slate-500">
                 <Package className="size-4" />
                 {measurementText}
@@ -394,7 +397,7 @@ function ProductDetailPage() {
 
                       <div className="flex flex-col gap-1 p-3">
                         <p className="line-clamp-1 text-xs font-medium text-foreground">{suggestionLabel}</p>
-                        <span className="text-sm font-bold text-emerald-600">{Number(item.vendorPrice ?? 0)} MAD</span>
+                        <span className="text-sm font-bold text-emerald-600">{Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD</span>
                         <button
                           type="button"
                           className="mt-2 w-full rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-emerald-700"
