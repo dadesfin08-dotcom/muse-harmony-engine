@@ -17,6 +17,7 @@ import {
   acceptDeliveryRun,
   confirmCashHandoverToVendor,
   getCyclistDashboardData,
+  markDeliveryAsDelivered,
   setCyclistActiveState,
   type CyclistOrderCard,
   verifyDeliveryCodeAndComplete,
@@ -94,6 +95,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
+  const markDelivered = useServerFn(markDeliveryAsDelivered);
   const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
 
   const dashboardQuery = useQuery({
@@ -141,6 +143,34 @@ function CyclistDashboardPage() {
     },
     onSettled: () => {
       setSettlingVendorId(null);
+    },
+  });
+
+  const markDeliveryByQrMutation = useMutation({
+    mutationFn: async ({ orderId }: { orderId: string }) => {
+      if (!session?.cyclistId) {
+        throw new Error("Session expired.");
+      }
+      return markDelivered({
+        data: {
+          cyclistId: session.cyclistId,
+          orderId,
+        },
+      });
+    },
+    onSuccess: async () => {
+      setIsScannerSuccess(true);
+      setScannerStatus(t("cyclist.scannerVerified"));
+      toast.success(t("cyclist.deliveryCompleted"));
+      await dashboardQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+      window.setTimeout(() => closeScanner(), 900);
+    },
+    onError: async (error) => {
+      await dashboardQuery.refetch();
+      setScannerStatus(t("cyclist.scannerFailed"));
+      toast.error(error instanceof Error ? error.message : t("cyclist.failedVerify"));
     },
   });
 
@@ -336,6 +366,64 @@ function CyclistDashboardPage() {
     }
   };
 
+  const handleSettlementScannerPayload = async (decodedText: string) => {
+    if (!session?.cyclistId || !scannerOrder || isVerifyingCodeRef.current) {
+      return;
+    }
+
+    isVerifyingCodeRef.current = true;
+    setIsUpdatingOrderId(scannerOrder.id);
+    setScannerStatus(t("cyclist.scannerVerifying"));
+
+    try {
+      const payload = JSON.parse(decodedText) as {
+        action?: string;
+        order_id?: string;
+        vendor_id?: string;
+        orderId?: string;
+        vendorId?: string;
+      };
+
+      const action = String(payload.action ?? "").trim();
+
+      if (action === "customer_delivery_confirmation") {
+        const payloadOrderId = payload.order_id ?? payload.orderId;
+        if (!payloadOrderId || payloadOrderId !== scannerOrder.id) {
+          throw new Error("Invalid QR Code. Please scan the correct code.");
+        }
+
+        await markDeliveryByQrMutation.mutateAsync({ orderId: scannerOrder.id });
+        return;
+      }
+
+      if (action === "vendor_cash_receipt") {
+        const payloadVendorId = payload.vendor_id ?? payload.vendorId;
+        if (!payloadVendorId) {
+          throw new Error("Invalid QR Code. Please scan the correct code.");
+        }
+
+        await confirmCashHandoverMutation.mutateAsync({ vendorId: payloadVendorId });
+        setIsScannerSuccess(true);
+        setScannerStatus(t("cyclist.scannerVerified"));
+        await dashboardQuery.refetch();
+        await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+        await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+        window.setTimeout(() => closeScanner(), 900);
+        return;
+      }
+
+      throw new Error("Invalid QR Code. Please scan the correct code.");
+    } catch (error) {
+      console.error("Settlement QR parse/execute failed:", error);
+      setScannerStatus(t("cyclist.scannerFailed"));
+      toast.error(error instanceof Error ? error.message : "Invalid QR Code. Please scan the correct code.");
+      await dashboardQuery.refetch();
+      isVerifyingCodeRef.current = false;
+    } finally {
+      setIsUpdatingOrderId(null);
+    }
+  };
+
   const openScannerForOrder = (order: CyclistOrderCard) => {
     setScannerOrder(order);
     setManualCode("");
@@ -367,6 +455,11 @@ function CyclistDashboardPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decodedText: string) => {
+            const trimmed = decodedText.trim();
+            if (trimmed.startsWith("{")) {
+              void handleSettlementScannerPayload(trimmed);
+              return;
+            }
             void handleVerifyDeliveryCode(scannerOrder, decodedText);
           },
           () => undefined,
