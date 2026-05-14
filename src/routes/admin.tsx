@@ -43,6 +43,7 @@ import {
   QrCode,
   ScanLine,
   BadgeCheck,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -163,6 +164,12 @@ import {
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
+import {
+  createMarkupRule,
+  deleteMarkupRule,
+  listMarkupRules,
+  updateMarkupRule,
+} from "@/lib/markup-rules.functions";
 import { uploadReceiptLogo } from "@/lib/invoice-settings.functions";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -242,6 +249,16 @@ type BrandAdminRow = {
   name_ar: string | null;
   logo_url: string | null;
   created_at: string;
+};
+type MarkupRuleAdminRow = {
+  id: string;
+  minPrice: number;
+  maxPrice: number;
+  markupType: "fixed" | "percentage";
+  markupValue: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 const initialCategories: CategoryAdminRow[] = [];
 const initialBrands: BrandAdminRow[] = [];
