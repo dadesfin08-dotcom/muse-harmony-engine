@@ -1269,6 +1269,28 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
         }>;
       }
 
+      const categoryMatches = [
+        "Groceries",
+        "Vegetables & Fruits",
+        "Meat & Poultry",
+        "Bakery & Pastry",
+        "Dairy & Eggs",
+        "Drinks & Water",
+        "Cleaning Supplies",
+      ].filter((category) => category.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase()));
+
+      const orParts = [
+        `product_name.ilike.${ilikePattern}`,
+        `name_fr.ilike.${ilikePattern}`,
+        `name_ar.ilike.${ilikePattern}`,
+      ];
+
+      if (categoryMatches.length > 0) {
+        for (const category of categoryMatches) {
+          orParts.push(`category.eq.${category}`);
+        }
+      }
+
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
@@ -1348,10 +1370,7 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
         .eq("master_products.is_active", true)
-        .or(
-          `product_name.ilike.${ilikePattern},name_fr.ilike.${ilikePattern},name_ar.ilike.${ilikePattern},category.ilike.${ilikePattern}`,
-          { foreignTable: "master_products" },
-        )
+        .or(orParts.join(","), { foreignTable: "master_products" })
         .order("popularity_score", { foreignTable: "master_products", ascending: false })
         .limit(Math.max(data.limit * 4, 20));
 
