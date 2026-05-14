@@ -5096,7 +5096,6 @@ function SettingsSection({
   receiptLogoPreviewUrl,
   onReceiptLogoFileChange,
   onReceiptLogoPreviewChange,
-  onOpenReceiptLogoPicker,
   onReceiptFormChange,
   onSaveReceiptSettings,
   isReceiptSettingsLoading,
@@ -5134,7 +5133,6 @@ function SettingsSection({
   receiptLogoPreviewUrl: string | null;
   onReceiptLogoFileChange: (file: File | null) => void;
   onReceiptLogoPreviewChange: (url: string | null) => void;
-  onOpenReceiptLogoPicker: () => void;
   onReceiptFormChange: Dispatch<
     SetStateAction<{
       id: string;
@@ -5247,6 +5245,7 @@ function SettingsSection({
             )}
             <div className="flex flex-wrap items-center gap-2">
               <input
+                id="receipt-logo-upload"
                 type="file"
                 accept="image/*"
                 className="hidden"
@@ -5263,7 +5262,12 @@ function SettingsSection({
                   reader.readAsDataURL(file);
                 }}
               />
-              <Button type="button" variant="outline" className="rounded-md" onClick={onOpenReceiptLogoPicker}>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-md"
+                onClick={() => document.getElementById("receipt-logo-upload")?.click()}
+              >
                 Upload logo
               </Button>
             </div>
