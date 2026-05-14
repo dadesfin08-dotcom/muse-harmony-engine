@@ -1425,12 +1425,25 @@ function VendorDashboardPage() {
                         checked && "opacity-60",
                       )}
                     >
-                      <img
-                        src={item.imageUrl ?? fallbackProductImage}
-                        alt={item.name}
-                        className="h-12 w-12 rounded-md border border-border object-cover"
-                        loading="lazy"
-                      />
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-muted/40">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.onerror = null;
+                              event.currentTarget.src = fallbackProductImage;
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                            <Package className="size-4" aria-hidden="true" />
+                            <span className="sr-only">No product image</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
