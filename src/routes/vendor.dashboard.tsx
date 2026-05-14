@@ -2579,24 +2579,6 @@ function OrderCard({
 }) {
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
-  const [checkedItemKeys, setCheckedItemKeys] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setCheckedItemKeys((current) => {
-      const next: Record<string, boolean> = {};
-      order.items.forEach((item, index) => {
-        const key = getOrderItemKey(order.id, item, index);
-        next[key] = current[key] ?? false;
-      });
-      return next;
-    });
-  }, [order.id, order.items]);
-
-  const packedCount =
-    tab === "preparing"
-      ? order.items.filter((item, index) => checkedItemKeys[getOrderItemKey(order.id, item, index)]).length
-      : 0;
-  const allPacked = tab === "preparing" ? order.items.length > 0 && packedCount === order.items.length : false;
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
 
   if (compact) {
@@ -2667,10 +2649,10 @@ function OrderCard({
           variant="hero"
           className="mt-2 h-10 w-full rounded-xl"
           onClick={onMarkReady}
-          disabled={isUpdating || !allPacked}
+          disabled={isUpdating}
         >
           <Truck className="size-4" />
-          {isUpdating ? "Updating..." : "Ready for Pickup"}
+          {isUpdating ? "Opening..." : "Ready for Pickup"}
         </Button>
       ) : null}
     </article>
