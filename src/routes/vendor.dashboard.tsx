@@ -297,6 +297,7 @@ function VendorDashboardPage() {
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const shownIncomingToastIdsRef = useRef<Map<string, number>>(new Map());
+  const shownSettlementToastIdsRef = useRef<Map<string, number>>(new Map());
   const incomingAlertCachePhoneRef = useRef<string>("");
   const [printOrder, setPrintOrder] = useState<DashboardOrder | null>(null);
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
@@ -476,6 +477,19 @@ function VendorDashboardPage() {
               }
               if (!updated?.id) {
                 return current;
+              }
+
+               if (updated?.status === "cash_transferred_to_vendor") {
+                const settledOrderId = String(updated.id);
+                const alreadyShown = shownSettlementToastIdsRef.current.get(settledOrderId);
+                if (!alreadyShown) {
+                  shownSettlementToastIdsRef.current.set(settledOrderId, Date.now());
+                  const vendorProfit = roundMoney(Number(updated.vendor_revenue ?? Math.max(Number(updated.total_price ?? 0) - Number(updated.delivery_fee ?? 0), 0)));
+                  const platformDues = roundMoney(Number(updated.platform_profit ?? 0));
+                  toast.success(
+                    `تم استلام مبلغ الطلب #${settledOrderId.slice(0, 8)} من رجل التوصيل. أرباحك: ${vendorProfit.toFixed(2)} درهم، ومستحقات التطبيق: ${platformDues.toFixed(2)} درهم.`,
+                  );
+                }
               }
 
               const index = nextOrders.findIndex((order) => order?.id === updated.id);
