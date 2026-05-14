@@ -393,17 +393,25 @@ export const getCyclistByPhone = createServerFn({ method: "POST" })
     try {
       const requestedLocalPhone = normalizePhoneForLookup(data.phoneNumber);
 
-      const { data: cyclist, error } = await (supabaseAdmin as any)
+      const { data: exactMatches, error } = await (supabaseAdmin as any)
         .from("cyclists")
-        .select("id, full_name, phone_number, is_active")
+        .select("id, full_name, phone_number, is_active, created_at")
         .eq("phone_number", data.phoneNumber)
-        .maybeSingle();
+        .order("created_at", { ascending: false })
+        .limit(1);
 
       if (error) {
         throw new Error(error.message);
       }
 
-      let matchedCyclist = cyclist;
+      let matchedCyclist = (exactMatches?.[0] as
+        | {
+            id: string;
+            full_name: string;
+            phone_number: string;
+            is_active: boolean;
+          }
+        | undefined) ?? null;
 
       if (!matchedCyclist?.id) {
         const { data: cyclists, error: cyclistsError } = await (supabaseAdmin as any)
