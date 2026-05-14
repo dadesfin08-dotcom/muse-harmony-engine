@@ -88,24 +88,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
       },
-      { title: "Lovable App" },
+      { title: "ASUG" },
       { name: "description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "ASUG" },
       { property: "og:description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "ASUG" },
       { name: "twitter:description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0aa679a-5a7d-45be-96be-4133106ca193/id-preview-a42e8497--d3fabfd6-6e10-4019-b625-dad909d25879.lovable.app-1778348262460.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0aa679a-5a7d-45be-96be-4133106ca193/id-preview-a42e8497--d3fabfd6-6e10-4019-b625-dad909d25879.lovable.app-1778348262460.png" },
     ],
     links: [
-      {
-        rel: "manifest",
-        href: "/manifest.webmanifest",
-      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -134,32 +130,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-
-    const isInIframe = (() => {
-      try {
-        return window.self !== window.top;
-      } catch {
-        return true;
-      }
-    })();
-
-    const host = window.location.hostname;
-    const isPreviewHost = host.includes("id-preview--") || host.includes("lovableproject.com");
-
-    if (isInIframe || isPreviewHost) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          void registration.unregister();
-        });
-      });
-      return;
-    }
-
-    void navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
-  }, []);
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {
