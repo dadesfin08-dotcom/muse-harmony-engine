@@ -630,7 +630,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
 
       const { data: customer, error: customerError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("id, customer_phone, customer_name, customer_cin, current_debt, max_limit")
+        .select("id, customer_phone, customer_name, customer_cin, max_limit")
         .eq("vendor_id", vendor.id)
         .eq("customer_phone", data.customerPhone)
         .maybeSingle();
@@ -642,6 +642,8 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
       if (!customer?.id) {
         throw new Error("Carnet customer not found.");
       }
+
+      const dynamicDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
 
       const { data: ledgerRows, error: ledgerError } = await (supabaseAdmin as any)
         .from("carnet_transactions")
@@ -691,7 +693,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
           phone: customer.customer_phone as string,
           name: (customer.customer_name as string | null) ?? "Unnamed Customer",
           cin: (customer.customer_cin as string | null) ?? "—",
-          currentDebt: Number(customer.current_debt ?? 0),
+          currentDebt: dynamicDebt,
           maxLimit: Number(customer.max_limit ?? 0),
         },
         transactions,
