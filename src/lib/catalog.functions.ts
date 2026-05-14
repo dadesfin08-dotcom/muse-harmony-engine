@@ -1287,7 +1287,8 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
-      return ((rows ?? []) as Array<{
+      const flashDeals = await Promise.all(
+        ((rows ?? []) as Array<{
         vendor_id: string;
         vendor_price: number;
         is_available: boolean;
@@ -1304,28 +1305,36 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           is_active: boolean;
         } | null;
       }>)
-        .filter(
-          (row) =>
-            row.is_available === true &&
-            row.is_flash_sale === true &&
-            !!row.master_products &&
-            row.flash_sale_price != null &&
-            !!row.flash_sale_end_time,
-        )
-        .map((row) => ({
-          id: row.master_products!.id,
-          vendorId: row.vendor_id,
-          name: row.master_products!.product_name,
-          nameFr: row.master_products!.name_fr,
-          nameAr: row.master_products!.name_ar,
-          measurementUnit: row.master_products!.measurement_unit,
-          imageUrl: row.master_products!.image_url,
-          vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-          flashSalePrice: Number(row.flash_sale_price!),
-          finalFlashSalePrice: calculateFinalPrice(Number(row.flash_sale_price!), true).finalPrice,
-          flashSaleEndTime: row.flash_sale_end_time!,
-        }));
+          .filter(
+            (row) =>
+              row.is_available === true &&
+              row.is_flash_sale === true &&
+              !!row.master_products &&
+              row.flash_sale_price != null &&
+              !!row.flash_sale_end_time,
+          )
+          .map(async (row) => {
+            const finalVendorPricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+            const finalFlashPricing = await calculateFinalPrice(Number(row.flash_sale_price!), true);
+
+            return {
+              id: row.master_products!.id,
+              vendorId: row.vendor_id,
+              name: row.master_products!.product_name,
+              nameFr: row.master_products!.name_fr,
+              nameAr: row.master_products!.name_ar,
+              measurementUnit: row.master_products!.measurement_unit,
+              imageUrl: row.master_products!.image_url,
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: finalVendorPricing.finalPrice,
+              flashSalePrice: Number(row.flash_sale_price!),
+              finalFlashSalePrice: finalFlashPricing.finalPrice,
+              flashSaleEndTime: row.flash_sale_end_time!,
+            };
+          }),
+      );
+
+      return flashDeals;
     } catch (error) {
       console.error("listActiveFlashDeals failed:", error);
       throw new Error("Failed to load flash deals.");
@@ -1396,21 +1405,29 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
 
       const normalizedNeedle = normalizedQuery.toLocaleLowerCase();
 
-      const result = ((rows ?? []) as Array<any>)
-        .filter((row) => row?.master_products)
-        .map((row) => ({
-          id: row.master_products.id as string,
-          name: row.master_products.product_name as string,
-          nameFr: (row.master_products.name_fr as string | null) ?? null,
-          nameAr: (row.master_products.name_ar as string | null) ?? null,
-          category: row.master_products.category as ProductCategory,
-          imageUrl: (row.master_products.image_url as string | null) ?? null,
-          vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-          brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
-          brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
-          brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
-        }))
+      const pricedResult = await Promise.all(
+        ((rows ?? []) as Array<any>)
+          .filter((row) => row?.master_products)
+          .map(async (row) => {
+            const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
+            return {
+              id: row.master_products.id as string,
+              name: row.master_products.product_name as string,
+              nameFr: (row.master_products.name_fr as string | null) ?? null,
+              nameAr: (row.master_products.name_ar as string | null) ?? null,
+              category: row.master_products.category as ProductCategory,
+              imageUrl: (row.master_products.image_url as string | null) ?? null,
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: pricing.finalPrice,
+              brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
+              brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
+              brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
+            };
+          }),
+      );
+
+      const result = pricedResult
         .filter((item) => {
           const searchable = [
             item.name,
