@@ -329,7 +329,15 @@ const initialAdminOrders: Array<{
   vendorName: string;
   customerPhone: string;
   totalPrice: number;
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status:
+    | "new"
+    | "preparing"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor"
+    | "cancelled";
 }> = [];
 const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"];
 const specializationOptions = [
@@ -754,7 +762,7 @@ function AdminPage() {
     textColor: "#000000",
   });
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
-    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered"
+    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
   >("all");
   const [settingsForm, setSettingsForm] = useState({
     id: "",
