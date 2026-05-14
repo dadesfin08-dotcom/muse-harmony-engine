@@ -1375,7 +1375,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -1400,6 +1400,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
+            product_variants: string[] | null;
             brand_id: string | null;
             brands: {
               id: string;
@@ -1425,6 +1426,11 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
+            productVariants: Array.isArray(row.master_products!.product_variants)
+              ? row.master_products!.product_variants
+                  .map((value) => (typeof value === "string" ? value.trim() : ""))
+                  .filter((value) => value.length > 0)
+              : [],
             brandId: row.master_products!.brand_id,
             brand: row.master_products!.brands?.name_en ?? null,
             brandNameEn: row.master_products!.brands?.name_en ?? null,
