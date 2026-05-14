@@ -217,6 +217,7 @@ type CartItem = Product & {
 type CheckoutStep = "details" | "success";
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 const CUSTOMER_SESSION_STORAGE_KEY = "bzaf.customerSession";
+const CHECKOUT_PREFS_STORAGE_KEY = "bzaf.checkout_prefs";
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
 type PersistedLocation = {
@@ -229,6 +230,17 @@ type CustomerAuthStep = "phone" | "otp";
 
 type CustomerSession = {
   phoneNumber: string;
+};
+
+type CheckoutPrefs = {
+  phoneNumber: string;
+  fullName: string;
+  address: string;
+  deliveryNotes: string;
+  communeId: string;
+  neighborhoodId: string;
+  communeLabel: string | null;
+  neighborhoodLabel: string | null;
 };
 
 type AppLanguage = "en" | "fr" | "ar";
@@ -298,6 +310,7 @@ function Index() {
   const [isVerifyingAuthOtp, setIsVerifyingAuthOtp] = useState(false);
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const locationSyncRef = useRef<string | null>(null);
+  const checkoutPrefsHydrationRef = useRef<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
@@ -635,6 +648,38 @@ function Index() {
     }
   };
 
+  const persistCheckoutPrefs = (prefs: CheckoutPrefs) => {
+    localStorage.setItem(CHECKOUT_PREFS_STORAGE_KEY, JSON.stringify(prefs));
+  };
+
+  const readPersistedCheckoutPrefs = (phoneNumber: string) => {
+    const raw = localStorage.getItem(CHECKOUT_PREFS_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<CheckoutPrefs>;
+      if (parsed.phoneNumber !== phoneNumber) {
+        return null;
+      }
+
+      return {
+        phoneNumber,
+        fullName: typeof parsed.fullName === "string" ? parsed.fullName : "",
+        address: typeof parsed.address === "string" ? parsed.address : "",
+        deliveryNotes: typeof parsed.deliveryNotes === "string" ? parsed.deliveryNotes : "",
+        communeId: typeof parsed.communeId === "string" ? parsed.communeId : "",
+        neighborhoodId: typeof parsed.neighborhoodId === "string" ? parsed.neighborhoodId : "",
+        communeLabel: typeof parsed.communeLabel === "string" ? parsed.communeLabel : null,
+        neighborhoodLabel: typeof parsed.neighborhoodLabel === "string" ? parsed.neighborhoodLabel : null,
+      } satisfies CheckoutPrefs;
+    } catch {
+      localStorage.removeItem(CHECKOUT_PREFS_STORAGE_KEY);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (!isLocationModalOpen) {
       return;
@@ -814,8 +859,28 @@ function Index() {
   }, [customerSession]);
 
   useEffect(() => {
+    if (!customerSession?.phoneNumber) {
+      return;
+    }
+
+    const localPrefs = readPersistedCheckoutPrefs(customerSession.phoneNumber);
+    if (!localPrefs) {
+      return;
+    }
+
+    setFullName(localPrefs.fullName || "");
+    setAddress(localPrefs.address || "");
+    setDeliveryNotes(localPrefs.deliveryNotes || "");
+
+    if (!selectedNeighborhoodId && localPrefs.neighborhoodId) {
+      void resolveLocationAndApply(localPrefs.neighborhoodId);
+    }
+  }, [customerSession?.phoneNumber]);
+
+  useEffect(() => {
     const profile = customerProfileQuery.data;
     if (!customerSession?.phoneNumber) {
+      checkoutPrefsHydrationRef.current = null;
       return;
     }
 
@@ -823,9 +888,23 @@ function Index() {
       return;
     }
 
+    if (checkoutPrefsHydrationRef.current === customerSession.phoneNumber) {
+      return;
+    }
+
+    const localPrefs = readPersistedCheckoutPrefs(customerSession.phoneNumber);
+    const profileFullName = typeof profile?.fullName === "string" ? profile.fullName : "";
+    const profileAddress = typeof profile?.address === "string" ? profile.address : "";
+    const profileInstructions = typeof profile?.savedInstructions === "string" ? profile.savedInstructions : "";
+
+    setFullName(profileFullName || localPrefs?.fullName || "");
+    setAddress(profileAddress || localPrefs?.address || "");
+    setDeliveryNotes(profileInstructions || localPrefs?.deliveryNotes || "");
+
     const persistedLocation = readPersistedLocation();
     if (persistedLocation?.neighborhoodId) {
       void resolveLocationAndApply(persistedLocation.neighborhoodId);
+      checkoutPrefsHydrationRef.current = customerSession.phoneNumber;
 
       if (
         customerSession?.phoneNumber &&
@@ -847,17 +926,14 @@ function Index() {
       return;
     }
 
-    if (profile) {
-      setFullName(profile.fullName ?? "");
-      setAddress(profile.address ?? "");
-      setDeliveryNotes(profile.savedInstructions ?? "");
-
-      if (profile.neighborhoodId) {
-        void resolveLocationAndApply(profile.neighborhoodId);
-        return;
-      }
+    const fallbackNeighborhoodId = profile?.neighborhoodId ?? localPrefs?.neighborhoodId ?? "";
+    if (fallbackNeighborhoodId) {
+      void resolveLocationAndApply(fallbackNeighborhoodId);
+      checkoutPrefsHydrationRef.current = customerSession.phoneNumber;
+      return;
     }
 
+    checkoutPrefsHydrationRef.current = customerSession.phoneNumber;
     setIsLocationModalOpen(true);
   }, [
     customerProfileQuery.data,
@@ -1087,15 +1163,19 @@ function Index() {
     try {
       setIsSubmittingOrder(true);
 
-      await saveCustomerProfile({
-        data: {
-          phoneNumber: customerSession.phoneNumber,
-          fullName: fullName.trim(),
-          address: address.trim(),
-          savedInstructions: deliveryNotes.trim(),
-          neighborhoodId: selectedNeighborhoodId || null,
-        },
-      });
+      try {
+        await saveCustomerProfile({
+          data: {
+            phoneNumber: customerSession.phoneNumber,
+            fullName: fullName.trim(),
+            address: address.trim(),
+            savedInstructions: deliveryNotes.trim(),
+            neighborhoodId: selectedNeighborhoodId || null,
+          },
+        });
+      } catch (profileSaveError) {
+        console.error("Failed to persist profile before order placement:", profileSaveError);
+      }
 
       await submitOrder({
         data: {
@@ -1113,6 +1193,17 @@ function Index() {
             unitPriceMad: item.price,
           })),
         },
+      });
+
+      persistCheckoutPrefs({
+        phoneNumber: customerSession.phoneNumber,
+        fullName: fullName.trim(),
+        address: address.trim(),
+        deliveryNotes: deliveryNotes.trim(),
+        communeId: selectedCommuneId,
+        neighborhoodId: selectedNeighborhoodId,
+        communeLabel: selectedCommuneOption ? getLocalizedCommuneName(selectedCommuneOption) : null,
+        neighborhoodLabel: selectedNeighborhoodOption ? getLocalizedNeighborhoodName(selectedNeighborhoodOption) : null,
       });
 
       setCheckoutStep("success");
