@@ -131,6 +131,7 @@ export type Database = {
       categories: {
         Row: {
           accent_color: string | null
+          apply_platform_markup: boolean
           created_at: string
           icon_name: string | null
           id: string
@@ -144,6 +145,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
+          apply_platform_markup?: boolean
           created_at?: string
           icon_name?: string | null
           id?: string
@@ -157,6 +159,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
+          apply_platform_markup?: boolean
           created_at?: string
           icon_name?: string | null
           id?: string
@@ -414,6 +417,7 @@ export type Database = {
       }
       master_products: {
         Row: {
+          apply_platform_markup: boolean
           barcode: string | null
           brand_id: string | null
           category: Database["public"]["Enums"]["product_category"]
@@ -432,6 +436,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          apply_platform_markup?: boolean
           barcode?: string | null
           brand_id?: string | null
           category: Database["public"]["Enums"]["product_category"]
@@ -450,6 +455,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          apply_platform_markup?: boolean
           barcode?: string | null
           brand_id?: string | null
           category?: Database["public"]["Enums"]["product_category"]
@@ -554,10 +560,13 @@ export type Database = {
           neighborhood_id: string | null
           order_items: Json
           payment_method: Database["public"]["Enums"]["payment_method"]
+          platform_profit: number
           status: Database["public"]["Enums"]["order_status"]
+          subtotal_base_price: number
           total_price: number
           updated_at: string
           vendor_id: string
+          vendor_revenue: number
           vendor_settlement_status: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Insert: {
@@ -575,10 +584,13 @@ export type Database = {
           neighborhood_id?: string | null
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal_base_price?: number
           total_price?: number
           updated_at?: string
           vendor_id: string
+          vendor_revenue?: number
           vendor_settlement_status?: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Update: {
@@ -596,10 +608,13 @@ export type Database = {
           neighborhood_id?: string | null
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subtotal_base_price?: number
           total_price?: number
           updated_at?: string
           vendor_id?: string
+          vendor_revenue?: number
           vendor_settlement_status?: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Relationships: [
@@ -653,6 +668,48 @@ export type Database = {
           phone_number?: string
         }
         Relationships: []
+      }
+      platform_collections: {
+        Row: {
+          amount: number
+          collected_by_user_id: string | null
+          created_at: string
+          id: string
+          qr_payload: Json | null
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          collected_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          qr_payload?: Json | null
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          collected_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          qr_payload?: Json | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_collections_collected_by_user_id_fkey"
+            columns: ["collected_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_collections_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -947,9 +1004,11 @@ export type Database = {
           neighborhood_id: string | null
           owner_name: string | null
           phone_number: string
+          platform_dues: number
           store_name: string
           updated_at: string
           user_id: string | null
+          vendor_earnings: number
           vendor_type: string
         }
         Insert: {
@@ -960,9 +1019,11 @@ export type Database = {
           neighborhood_id?: string | null
           owner_name?: string | null
           phone_number: string
+          platform_dues?: number
           store_name: string
           updated_at?: string
           user_id?: string | null
+          vendor_earnings?: number
           vendor_type?: string
         }
         Update: {
@@ -973,9 +1034,11 @@ export type Database = {
           neighborhood_id?: string | null
           owner_name?: string | null
           phone_number?: string
+          platform_dues?: number
           store_name?: string
           updated_at?: string
           user_id?: string | null
+          vendor_earnings?: number
           vendor_type?: string
         }
         Relationships: [
@@ -1000,6 +1063,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      collect_platform_dues: {
+        Args: {
+          p_amount: number
+          p_collected_by_user_id?: string
+          p_qr_payload?: Json
+          p_vendor_id: string
+        }
+        Returns: {
+          collected_amount: number
+          remaining_dues: number
+          transaction_id: string
+        }[]
+      }
       complete_delivery_and_apply_payment: {
         Args: { p_cyclist_id: string; p_order_id: string }
         Returns: {
@@ -1007,6 +1083,7 @@ export type Database = {
           order_id: string
         }[]
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       record_vendor_carnet_payment: {
         Args: {
           p_amount: number
