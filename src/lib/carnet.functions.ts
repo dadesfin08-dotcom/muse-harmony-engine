@@ -208,10 +208,9 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
     const [issuedRowsResult, repaidRowsResult] = await Promise.all([
       (supabaseAdmin as any)
         .from("carnet_transactions")
-        .select("amount")
+        .select("amount, created_at")
         .eq("vendor_id", vendor.id)
-        .eq("transaction_type", "CREDIT_ISSUED")
-        .gte("created_at", startOfToday.toISOString()),
+        .eq("transaction_type", "CREDIT_ISSUED"),
       (supabaseAdmin as any)
         .from("carnet_transactions")
         .select("amount")
@@ -227,18 +226,24 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
       throw new Error(repaidRowsResult.error.message);
     }
 
-    const totalOutstandingCreditMad = carnetCustomers.reduce(
-      (sum, customer) => sum + Number(customer.currentDebt ?? 0),
-      0,
-    );
-
-    const creditIssuedTodayMad = (issuedRowsResult.data ?? []).reduce(
+    const totalIssuedCreditMad = (issuedRowsResult.data ?? []).reduce(
       (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
       0,
     );
 
     const settledCreditMad = (repaidRowsResult.data ?? []).reduce(
       (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
+      0,
+    );
+
+    const totalOutstandingCreditMad = Math.max(totalIssuedCreditMad - settledCreditMad, 0);
+
+    const creditIssuedTodayMad = (issuedRowsResult.data ?? []).reduce(
+      (sum: number, row: { amount?: number | null; created_at?: string | null }) => {
+        const createdAt = row.created_at ? new Date(row.created_at) : null;
+        if (!createdAt || Number.isNaN(createdAt.getTime())) return sum;
+        return createdAt >= startOfToday ? sum + Number(row.amount ?? 0) : sum;
+      },
       0,
     );
 

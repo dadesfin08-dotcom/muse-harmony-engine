@@ -117,6 +117,8 @@ type OrderRow = {
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
+  vendor_revenue?: number;
+  platform_profit?: number;
   item_count: number;
   order_items: Array<{
     name: string;
@@ -582,7 +584,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
+        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, vendor_revenue, platform_profit, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
