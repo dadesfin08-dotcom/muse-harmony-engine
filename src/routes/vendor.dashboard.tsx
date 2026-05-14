@@ -442,17 +442,26 @@ function VendorDashboardPage() {
   const isCarnetInitialLoading = carnetQuery.isLoading && !carnetQuery.data;
   const isLedgerInitialLoading = ledgerQuery.isLoading && !ledgerQuery.data;
 
+  const dashboardVendorId = dashboardQuery.data?.vendor?.id;
+
   useEffect(() => {
+    if (!dashboardVendorId) {
+      return;
+    }
+
     const channel = supabase
-      .channel("vendor-dashboard-orders-realtime")
+      .channel(`vendor-dashboard-orders-realtime-${dashboardVendorId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
+          filter: `vendor_id=eq.${dashboardVendorId}`,
         },
         (payload) => {
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+
           queryClient.setQueryData(["vendor", "dashboard"], (current: any) => {
             if (!current || !Array.isArray(current.orders)) {
               return current;
@@ -544,7 +553,7 @@ function VendorDashboardPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [dashboardVendorId, queryClient]);
 
   useEffect(() => {
     if (!hasValidVendorPhoneSession) {
