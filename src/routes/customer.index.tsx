@@ -121,6 +121,7 @@ type Product = {
   category: ProductCategory;
   categoryId?: string | null;
   price: number;
+  basePrice?: number;
   measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
@@ -135,6 +136,7 @@ type SearchResultProduct = {
   category: ProductCategory;
   imageUrl: string | null;
   vendorPrice: number;
+  finalVendorPrice?: number;
   brandNameEn?: string | null;
   brandNameFr?: string | null;
   brandNameAr?: string | null;
@@ -785,7 +787,8 @@ function Index() {
         brandNameAr: (item as { brandNameAr?: string | null }).brandNameAr ?? null,
         category: item.category,
         categoryId: (item as { categoryId?: string | null }).categoryId ?? null,
-        price: item.vendorPrice,
+        price: Number((item as { finalVendorPrice?: number }).finalVendorPrice ?? item.vendorPrice),
+        basePrice: Number(item.vendorPrice ?? 0),
         measurementValue: (item as { measurementValue?: number | null }).measurementValue ?? null,
         measurementUnit: item.measurementUnit,
         image: item.imageUrl || productFallbackImage,
@@ -806,7 +809,9 @@ function Index() {
       measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
       imageUrl?: string | null;
       vendorPrice: number;
+      finalVendorPrice?: number;
       flashSalePrice: number;
+      finalFlashSalePrice?: number;
       flashSaleEndTime: string;
     }>;
 
@@ -829,8 +834,9 @@ function Index() {
         nameAr: row.nameAr,
         category: "Groceries" as ProductCategory,
         categoryId: null,
-        price: Number(row.vendorPrice),
-        dealPrice: Number(row.flashSalePrice),
+        price: Number(row.finalVendorPrice ?? row.vendorPrice),
+        dealPrice: Number(row.finalFlashSalePrice ?? row.flashSalePrice),
+        baseDealPrice: Number(row.flashSalePrice),
         measurementUnit: row.measurementUnit,
         image: row.imageUrl || productFallbackImage,
         alt: `${localizedName} product image`,
