@@ -50,7 +50,7 @@ export function LanguageSwitcher({ className, trigger }: LanguageSwitcherProps) 
       </DialogTrigger>
 
       <DialogContent
-        className="w-[92vw] max-w-sm border-border bg-card p-4 shadow-2xl sm:p-5"
+        className="w-[94vw] max-w-sm border-border bg-card p-3.5 shadow-2xl sm:w-[92vw] sm:p-5"
         overlayClassName="bg-black/20 backdrop-blur-sm"
       >
         <DialogTitle className="mb-2 text-center text-base font-semibold sm:text-lg">{t("language.label")}</DialogTitle>
@@ -62,7 +62,7 @@ export function LanguageSwitcher({ className, trigger }: LanguageSwitcherProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 6 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="space-y-2"
+            className="space-y-1.5 sm:space-y-2"
           >
             {languageOptions.map((option) => {
               const isActive = option.code === activeLanguage;
@@ -73,17 +73,17 @@ export function LanguageSwitcher({ className, trigger }: LanguageSwitcherProps) 
                   type="button"
                   onClick={() => handleLanguageSelect(option.code)}
                   className={cn(
-                    "flex w-full cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors",
+                    "flex w-full cursor-pointer items-center justify-between rounded-xl border px-3 py-3.5 transition-colors sm:p-4",
                     isActive
                       ? "border-primary/30 bg-primary/10 text-foreground"
                       : "border-border/70 hover:bg-accent/40",
                   )}
                 >
-                  <span className="inline-flex items-center gap-3 text-base">
-                    <span className="text-lg leading-none">{option.flag}</span>
+                  <span className="inline-flex items-center gap-2.5 text-sm sm:gap-3 sm:text-base">
+                    <span className="text-base leading-none sm:text-lg">{option.flag}</span>
                     <span className="font-medium">{option.label}</span>
                   </span>
-                  {isActive ? <Check className="size-5 text-primary" /> : null}
+                  {isActive ? <Check className="size-4 text-primary sm:size-5" /> : null}
                 </button>
               );
             })}
