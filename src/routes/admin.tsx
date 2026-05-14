@@ -599,6 +599,7 @@ function AdminPage() {
       | undefined) ?? [];
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
+  const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
   const activeCategories = categories.filter((category) => category.is_active);
   const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
@@ -2986,6 +2987,18 @@ function AdminPage() {
                   isReceiptSettingsLoading={
                     isSavingReceiptSettings || dbHealthQuery.isLoading || adminInvoiceSettingsQuery.isLoading
                   }
+                  markupRules={markupRules}
+                  isMarkupRulesLoading={dbHealthQuery.isLoading || markupRulesQuery.isLoading}
+                  onAddMarkupRule={openCreateMarkupRuleDialog}
+                  onEditMarkupRule={openEditMarkupRuleDialog}
+                  onDeleteMarkupRule={removeMarkupRule}
+                  markupRuleForm={markupRuleForm}
+                  onMarkupRuleFormChange={setMarkupRuleForm}
+                  isMarkupRuleDialogOpen={isMarkupRuleDialogOpen}
+                  onMarkupRuleDialogOpenChange={setIsMarkupRuleDialogOpen}
+                  onSaveMarkupRule={saveMarkupRule}
+                  isSavingMarkupRule={isSavingMarkupRule}
+                  editingMarkupRuleId={editingMarkupRuleId}
                 />
               ) : null}
             </div>
