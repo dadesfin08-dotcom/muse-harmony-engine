@@ -846,6 +846,19 @@ function AdminPage() {
         (neighborhood) => neighborhood.vendorId == null || neighborhood.vendorId === selectedVendorId,
       ) ?? [];
 
+  const platformCollectionQrPayload = useMemo(() => {
+    if (!platformCollectionVendor) return "";
+    return JSON.stringify({
+      type: "platform_collection_request",
+      v: 1,
+      vendor_id: platformCollectionVendor.id,
+      vendor_name: platformCollectionVendor.storeName,
+      amount: Number(platformCollectionVendor.platformDuesMad ?? 0).toFixed(2),
+      currency: "MAD",
+      requested_at: new Date().toISOString(),
+    });
+  }, [platformCollectionVendor]);
+
   const toggleVendorNeighborhood = (neighborhoodId: string, checked: boolean) => {
     setVendorForm((current) => {
       const currentSet = new Set(current.neighborhoodIds);
@@ -906,6 +919,106 @@ function AdminPage() {
     });
     setIsManageVendorPanelOpen(true);
   };
+
+  const openPlatformCollectionQr = (vendor: AdminVendorRecord) => {
+    if (Number(vendor.platformDuesMad ?? 0) <= 0) {
+      toast.info("No platform dues pending for this vendor.");
+      return;
+    }
+    setPlatformCollectionVendor(vendor);
+    setIsPlatformCollectionQrOpen(true);
+  };
+
+  const handlePlatformCollectionConfirm = async () => {
+    if (!platformCollectionConfirmation) return;
+
+    setIsCollectingPlatformDues(true);
+    try {
+      const result = await collectPlatformDues({
+        data: {
+          vendorId: platformCollectionConfirmation.vendorId,
+          amount: Number(platformCollectionConfirmation.amountMad.toFixed(2)),
+          qrPayload: platformCollectionConfirmation.payload,
+          adminPhoneNumber: ADMIN_PHONE,
+        },
+      });
+
+      await vendorsQuery.refetch();
+
+      setPlatformCollectionReceipt({
+        vendorName: platformCollectionConfirmation.vendorName,
+        amountMad: result.collectedAmountMad,
+        transactionId: result.transactionId,
+        remainingDuesMad: result.remainingDuesMad,
+        collectedAt: new Date().toISOString(),
+      });
+      setPlatformCollectionConfirmation(null);
+      setIsPlatformQrScannerOpen(false);
+      toast.success("Cash Collected Successfully");
+    } catch (error) {
+      console.error("Platform dues collection failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to collect platform dues.");
+    } finally {
+      setIsCollectingPlatformDues(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isPlatformQrScannerOpen) return;
+
+    let mounted = true;
+    let scanner: any = null;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        scanner = new Html5Qrcode("admin-platform-dues-qr-reader");
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            try {
+              const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
+              const amountMad = Number(payload.amount);
+              if (!Number.isFinite(amountMad) || amountMad <= 0) {
+                throw new Error("Invalid collection amount");
+              }
+
+              setPlatformCollectionConfirmation({
+                vendorId: payload.vendor_id,
+                vendorName: payload.vendor_name,
+                amountMad,
+                payload,
+              });
+              setIsPlatformQrScannerOpen(false);
+            } catch {
+              toast.error("Invalid platform collection QR payload.");
+            }
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        console.error("Admin platform QR scanner failed:", error);
+        toast.error("Unable to open QR scanner.");
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isPlatformQrScannerOpen]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
