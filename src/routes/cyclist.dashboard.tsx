@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
-  confirmCashHandoverToVendor,
+  executeVendorQrCashHandover,
   getCyclistDashboardData,
   setCyclistActiveState,
   type CyclistOrderCard,
@@ -56,7 +56,13 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
-  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
+  const [vendorSettlementTarget, setVendorSettlementTarget] = useState<{
+    vendorId: string;
+    vendorName: string;
+  } | null>(null);
+  const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
+  const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
+  const [isVendorQrScannerSuccess, setIsVendorQrScannerSuccess] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -69,7 +75,9 @@ function CyclistDashboardPage() {
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
+  const vendorQrScannerRef = useRef<any>(null);
   const isVerifyingCodeRef = useRef(false);
+  const isVerifyingVendorQrRef = useRef(false);
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -94,7 +102,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
-  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
+  const executeQrCashHandover = useServerFn(executeVendorQrCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -109,34 +117,47 @@ function CyclistDashboardPage() {
   const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
 
-  const confirmCashHandoverMutation = useMutation({
-    mutationFn: async ({ vendorId }: { vendorId: string }) => {
+  const executeVendorQrCashHandoverMutation = useMutation({
+    mutationFn: async ({
+      vendorId,
+      timestamp,
+    }: {
+      vendorId: string;
+      timestamp: string;
+    }) => {
       if (!session?.cyclistId) {
         throw new Error("Session expired.");
       }
-      return confirmCashHandover({
+      return executeQrCashHandover({
         data: {
           cyclistId: session.cyclistId,
-          vendorId,
+          qr: {
+            action: "vendor_cash_receipt",
+            vendor_id: vendorId,
+            timestamp,
+          },
         },
       });
     },
-    onMutate: ({ vendorId }) => {
-      setSettlingVendorId(vendorId);
-    },
-    onSuccess: async (result) => {
-      toast.success(
-        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
-      );
+    onSuccess: async () => {
+      setIsVendorQrScannerSuccess(true);
+      setVendorQrScannerStatus("تم تسليم العهدة بنجاح");
+      toast.success("تم تسليم العهدة بنجاح");
       await dashboardQuery.refetch();
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+      window.setTimeout(() => {
+        setIsVendorQrScannerOpen(false);
+        setVendorSettlementTarget(null);
+        setIsVendorQrScannerSuccess(false);
+        setVendorQrScannerStatus("");
+        isVerifyingVendorQrRef.current = false;
+      }, 900);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
-    },
-    onSettled: () => {
-      setSettlingVendorId(null);
+      setVendorQrScannerStatus("فشل التحقق من رمز التاجر");
+      isVerifyingVendorQrRef.current = false;
     },
   });
 
