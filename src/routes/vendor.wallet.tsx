@@ -1,11 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,19 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getVendorDashboardData,
   getVendorSettlementSummary,
-  settleCyclistCashHandover,
 } from "@/lib/orders.functions";
-
-const qrPayloadSchema = z.object({
-  type: z.literal("cash_handover"),
-  v: z.literal(1),
-  cyclist_id: z.string().uuid(),
-  cash_to_remit: z.union([z.number(), z.string()]).optional(),
-  owed_by_vendor: z.union([z.number(), z.string()]).optional(),
-  net_amount: z.union([z.number(), z.string()]).optional(),
-  amount: z.union([z.number(), z.string()]),
-  issued_at: z.string().optional(),
-});
 
 export const Route = createFileRoute("/vendor/wallet")({
   component: VendorWalletPage,
@@ -35,9 +22,8 @@ export const Route = createFileRoute("/vendor/wallet")({
 function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isVendorReceiptQrOpen, setIsVendorReceiptQrOpen] = useState(false);
   const [isPlatformDuesQrOpen, setIsPlatformDuesQrOpen] = useState(false);
-  const [confirmPayload, setConfirmPayload] = useState<{ cyclistId: string; amount: number } | null>(null);
   const vendorPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
     try {
@@ -50,7 +36,6 @@ function VendorWalletPage() {
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
-  const settleHandover = useServerFn(settleCyclistCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
