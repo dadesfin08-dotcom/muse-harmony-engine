@@ -1,15 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, MapPin, MessageSquareText, Phone, User } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getVendorOrderDetails, updateVendorOrderStatus } from "@/lib/orders.functions";
-import { cn } from "@/lib/utils";
+import { getVendorOrderDetails } from "@/lib/orders.functions";
 
 export const Route = createFileRoute("/vendor/order/$orderId")({
   component: VendorOrderDetailsPage,
@@ -19,9 +16,6 @@ function VendorOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate({ from: "/vendor/order/$orderId" });
   const getDetails = useServerFn(getVendorOrderDetails);
-  const updateStatus = useServerFn(updateVendorOrderStatus);
-  const [packedItems, setPackedItems] = useState<string[]>([]);
-  const [isMarkingReady, setIsMarkingReady] = useState(false);
 
   const vendorPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -40,39 +34,6 @@ function VendorOrderDetailsPage() {
   });
 
   const order = detailsQuery.data;
-  const isPreparing = order?.status === "preparing";
-  const totalItems = order?.items.length ?? 0;
-  const allItemsPacked = totalItems > 0 && packedItems.length === totalItems;
-
-  useEffect(() => {
-    setPackedItems([]);
-  }, [order?.id]);
-
-  const togglePackedItem = (itemKey: string, checked: boolean) => {
-    setPackedItems((current) => {
-      if (checked) {
-        return current.includes(itemKey) ? current : [...current, itemKey];
-      }
-      return current.filter((key) => key !== itemKey);
-    });
-  };
-
-  const handleMarkReady = async () => {
-    if (!order || !isPreparing || !allItemsPacked) return;
-
-    try {
-      setIsMarkingReady(true);
-      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId: order.id, nextStatus: "ready" } });
-      toast.success("Order marked as ready for pickup.");
-      await detailsQuery.refetch();
-      navigate({ to: "/vendor/dashboard", search: { tab: "live", sub: "ready" } });
-    } catch (error) {
-      console.error("Failed to mark order ready:", error);
-      toast.error("Failed to update order status.");
-    } finally {
-      setIsMarkingReady(false);
-    }
-  };
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
@@ -156,9 +117,6 @@ function VendorOrderDetailsPage() {
                 <Table className="border-collapse">
                   <TableHeader>
                     <TableRow className="border-b border-border bg-muted/30 hover:bg-muted/30">
-                      {isPreparing ? (
-                        <TableHead className="border-r border-border text-center font-semibold">Packed</TableHead>
-                      ) : null}
                       <TableHead className="border-r border-border font-semibold">Product Name (اسم المنتوج)</TableHead>
                       <TableHead className="border-r border-border font-semibold text-center">
                         Quantity (الكمية / شحال من قطعة)
@@ -168,61 +126,17 @@ function VendorOrderDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {order.items.map((item, index) => {
-                      const itemKey = `${order.id}-${item.productName}-${index}`;
-                      const isPacked = packedItems.includes(itemKey);
-
-                      return (
-                        <TableRow
-                          key={`${order.id}-${index}`}
-                          className={cn(
-                            "border-b border-border last:border-b-0 hover:bg-transparent",
-                            isPreparing && isPacked && "rounded-lg bg-success/10 transition-all",
-                          )}
-                        >
-                          {isPreparing ? (
-                            <TableCell className="border-r border-border text-center">
-                              <Checkbox
-                                className="h-6 w-6"
-                                checked={isPacked}
-                                onCheckedChange={(checked) => togglePackedItem(itemKey, Boolean(checked))}
-                                aria-label={`Mark ${item.productName} as packed`}
-                              />
-                            </TableCell>
-                          ) : null}
-                          <TableCell className={cn("border-r border-border text-foreground", isPacked && "line-through text-muted-foreground")}>
-                            {item.productName}
-                          </TableCell>
+                    {order.items.map((item, index) => (
+                      <TableRow key={`${order.id}-${index}`} className="border-b border-border last:border-b-0 hover:bg-transparent">
+                        <TableCell className="border-r border-border text-foreground">{item.productName}</TableCell>
                         <TableCell className="border-r border-border text-center">{item.quantity}</TableCell>
                         <TableCell className="border-r border-border text-right">{item.unitPriceMad.toFixed(2)} MAD</TableCell>
                         <TableCell className="text-right font-medium">{item.lineTotalMad.toFixed(2)} MAD</TableCell>
-                        </TableRow>
-                      );
-                    })}
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
-
-              {isPreparing ? (
-                <div className="mt-4 rounded-lg border border-border bg-muted/10 p-4">
-                  <p className={cn("text-sm", allItemsPacked ? "text-success" : "text-destructive")}>
-                    {allItemsPacked
-                      ? `All items packed (${packedItems.length}/${totalItems})`
-                      : `Please pack all items (${packedItems.length}/${totalItems})`}
-                  </p>
-                  <Button
-                    variant="hero"
-                    className={cn(
-                      "mt-3 h-11 w-full rounded-xl",
-                      allItemsPacked && "bg-success text-success-foreground hover:bg-success/90",
-                    )}
-                    disabled={isMarkingReady || packedItems.length !== totalItems}
-                    onClick={handleMarkReady}
-                  >
-                    {isMarkingReady ? "Updating..." : "Ready for Pickup"}
-                  </Button>
-                </div>
-              ) : null}
 
               <div className="mt-4 ml-auto w-full max-w-sm space-y-2 border-t border-border pt-3 text-sm">
                 <div className="flex items-center justify-between">

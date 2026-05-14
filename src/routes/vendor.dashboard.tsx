@@ -30,6 +30,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -194,6 +195,8 @@ function VendorDashboardPage() {
   const [isRecordingPayment, setIsRecordingPayment] = useState(false);
   const [expandedLedgerOrderIds, setExpandedLedgerOrderIds] = useState<Record<string, boolean>>({});
   const [rejectedOrderIds, setRejectedOrderIds] = useState<Record<string, boolean>>({});
+  const [packingOrderId, setPackingOrderId] = useState<string | null>(null);
+  const [packingCheckedItemKeys, setPackingCheckedItemKeys] = useState<Record<string, boolean>>({});
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
@@ -826,12 +829,60 @@ function VendorDashboardPage() {
           status: "ready",
         });
       }
+      return true;
     } catch (error) {
       console.error("Failed to mark order as ready:", error);
       await dashboardQuery.refetch();
       toast.error("Failed to update order status.");
+      return false;
     } finally {
       setIsUpdating(null);
+    }
+  };
+
+  const handleOpenPackingModal = (orderId: string) => {
+    const targetOrder = orders.find((order) => order.id === orderId);
+    if (!targetOrder || targetOrder.items.length === 0) {
+      toast.error("This order has no items to pack.");
+      return;
+    }
+
+    const initialChecks = targetOrder.items.reduce<Record<string, boolean>>((acc, item, index) => {
+      acc[getOrderItemKey(targetOrder.id, item, index)] = false;
+      return acc;
+    }, {});
+
+    setPackingCheckedItemKeys(initialChecks);
+    setPackingOrderId(orderId);
+  };
+
+  const packingOrder = useMemo(
+    () => (packingOrderId ? orders.find((order) => order.id === packingOrderId) ?? null : null),
+    [orders, packingOrderId],
+  );
+
+  const packedItemsCount = useMemo(() => {
+    if (!packingOrder) return 0;
+    return packingOrder.items.filter((item, index) => packingCheckedItemKeys[getOrderItemKey(packingOrder.id, item, index)]).length;
+  }, [packingCheckedItemKeys, packingOrder]);
+
+  const totalPackingItems = packingOrder?.items.length ?? 0;
+  const fillPercentage = totalPackingItems > 0 ? Math.round((packedItemsCount / totalPackingItems) * 100) : 0;
+  const isPackingComplete = totalPackingItems > 0 && fillPercentage === 100;
+
+  const togglePackingItem = (itemKey: string, checked: boolean) => {
+    setPackingCheckedItemKeys((current) => ({
+      ...current,
+      [itemKey]: checked,
+    }));
+  };
+
+  const handleConfirmPackedOrder = async () => {
+    if (!packingOrder || !isPackingComplete) return;
+    const wasUpdated = await handleMarkReady(packingOrder.id);
+    if (wasUpdated) {
+      setPackingOrderId(null);
+      setPackingCheckedItemKeys({});
     }
   };
 
@@ -1113,7 +1164,7 @@ function VendorDashboardPage() {
                 isUpdating={isUpdating}
                 onOpenOrder={(orderId) => navigate({ to: "/vendor/order/$orderId", params: { orderId } })}
                 onAcceptOrder={handleAcceptOrder}
-                onMarkReady={handleMarkReady}
+                onMarkReady={handleOpenPackingModal}
                 onRejectOrder={handleRejectOrder}
                 timeTick={timeTick}
               />
@@ -1320,6 +1371,112 @@ function VendorDashboardPage() {
               }}
             >
               {isSavingCarnet ? "Verifying..." : "Verify & Add to Carnet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={packingOrder !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            setPackingOrderId(null);
+            setPackingCheckedItemKeys({});
+          }
+        }}
+      >
+        <DialogContent className="w-[96vw] max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
+            <DialogDescription>
+              Check every item to fill the bag and unlock the final confirmation.
+            </DialogDescription>
+          </DialogHeader>
+
+          {packingOrder ? (
+            <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
+              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
+                {packingOrder.items.map((item, index) => {
+                  const itemKey = getOrderItemKey(packingOrder.id, item, index);
+                  const checked = !!packingCheckedItemKeys[itemKey];
+
+                  return (
+                    <label
+                      key={itemKey}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all",
+                        checked && "opacity-60",
+                      )}
+                    >
+                      <img
+                        src={item.imageUrl ?? fallbackProductImage}
+                        alt={item.name}
+                        className="h-12 w-12 rounded-md border border-border object-cover"
+                        loading="lazy"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                      </div>
+                      <Checkbox
+                        className="h-6 w-6"
+                        checked={checked}
+                        onCheckedChange={(value: boolean | "indeterminate") =>
+                          togglePackingItem(itemKey, value === true)
+                        }
+                        aria-label={`Mark ${item.name} packed`}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/10 p-4">
+                <div
+                  className={cn(
+                    "relative mx-auto h-72 w-48 overflow-hidden rounded-[1.5rem_1.5rem_1rem_1rem] border-2 border-dashed border-border bg-background",
+                    isPackingComplete && "border-success shadow-[0_0_24px_hsl(var(--success)/0.45)]",
+                  )}
+                >
+                  <div className="absolute inset-x-0 bottom-0 transition-all duration-700 ease-in-out" style={{ height: `${fillPercentage}%` }}>
+                    <div className="absolute inset-0 bg-success/80" />
+                    <div className="absolute -top-2 left-0 h-4 w-full rounded-full bg-success/90" />
+                  </div>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <ShoppingBag className="size-14 text-muted-foreground/40" />
+                    <p className="mt-2 text-center text-xl font-black text-foreground">{fillPercentage}%</p>
+                    <p className="text-xs text-muted-foreground">Bag fill progress</p>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-center text-sm text-muted-foreground">
+                  {packedItemsCount}/{totalPackingItems} items packed
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setPackingOrderId(null);
+                setPackingCheckedItemKeys({});
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              className={cn(
+                "rounded-xl",
+                isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
+              )}
+              disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
+              onClick={handleConfirmPackedOrder}
+            >
+              {packingOrderId && isUpdating === packingOrderId ? "Updating..." : "Confirm & Mark Ready"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2422,24 +2579,6 @@ function OrderCard({
 }) {
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
-  const [checkedItemKeys, setCheckedItemKeys] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setCheckedItemKeys((current) => {
-      const next: Record<string, boolean> = {};
-      order.items.forEach((item, index) => {
-        const key = getOrderItemKey(order.id, item, index);
-        next[key] = current[key] ?? false;
-      });
-      return next;
-    });
-  }, [order.id, order.items]);
-
-  const packedCount =
-    tab === "preparing"
-      ? order.items.filter((item, index) => checkedItemKeys[getOrderItemKey(order.id, item, index)]).length
-      : 0;
-  const allPacked = tab === "preparing" ? order.items.length > 0 && packedCount === order.items.length : false;
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
 
   if (compact) {
@@ -2510,10 +2649,10 @@ function OrderCard({
           variant="hero"
           className="mt-2 h-10 w-full rounded-xl"
           onClick={onMarkReady}
-          disabled={isUpdating || !allPacked}
+          disabled={isUpdating}
         >
           <Truck className="size-4" />
-          {isUpdating ? "Updating..." : "Ready for Pickup"}
+          {isUpdating ? "Opening..." : "Ready for Pickup"}
         </Button>
       ) : null}
     </article>
