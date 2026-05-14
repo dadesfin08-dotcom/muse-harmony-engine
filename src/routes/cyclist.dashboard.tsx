@@ -662,8 +662,12 @@ function CyclistDashboardPage() {
                           ) : null}
                         </div>
 
-                        <div className="ms-auto flex shrink-0 items-center gap-1.5">
-                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-black text-emerald-700">x{item.quantity}</span>
+                        <div className="ms-auto flex shrink-0 items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                            <Package className="h-3 w-3" />
+                            <span>Qty</span>
+                            <span>x{item.quantity}</span>
+                          </span>
                           <span className="ml-auto whitespace-nowrap text-xs font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
                         </div>
                       </div>
