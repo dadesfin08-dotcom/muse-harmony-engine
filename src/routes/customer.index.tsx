@@ -3,10 +3,12 @@ import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Bike,
   Check,
   Search,
+  Loader2,
   ShoppingCart,
   Heart,
   Package,
@@ -38,7 +40,7 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { getCustomerCatalogByNeighborhood, listActiveFlashDeals } from "@/lib/catalog.functions";
+import { getCustomerCatalogByNeighborhood, listActiveFlashDeals, searchCustomerProducts } from "@/lib/catalog.functions";
 import type { ProductCategory } from "@/lib/catalog.functions";
 import { listActiveCategories } from "@/lib/categories.functions";
 import {
@@ -124,6 +126,19 @@ type Product = {
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
   alt: string;
+};
+
+type SearchResultProduct = {
+  id: string;
+  name: string;
+  nameFr?: string | null;
+  nameAr?: string | null;
+  category: ProductCategory;
+  imageUrl: string | null;
+  vendorPrice: number;
+  brandNameEn?: string | null;
+  brandNameFr?: string | null;
+  brandNameAr?: string | null;
 };
 
 const productFallbackImage = heroImage;
@@ -318,6 +333,12 @@ function Index() {
   const isArabic = language === "ar";
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
   const [isBottomPromoDismissed, setIsBottomPromoDismissed] = useState(false);
+  const [desktopSearchInput, setDesktopSearchInput] = useState("");
+  const [mobileSearchInput, setMobileSearchInput] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
+  const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const flashDealsAutoplayRef = useRef(
     Autoplay({ delay: 3200, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
@@ -373,6 +394,7 @@ function Index() {
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
+  const searchProductsFn = useServerFn(searchCustomerProducts);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -451,7 +473,31 @@ function Index() {
     enabled: !!selectedNeighborhoodId,
     refetchInterval: selectedNeighborhoodId ? 10_000 : false,
   });
+  const predictiveSearchQuery = useQuery({
+    queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
+    queryFn: () =>
+      searchProductsFn({
+        data: {
+          neighborhoodId: selectedNeighborhoodId,
+          query: debouncedSearchTerm.trim(),
+          limit: 8,
+        },
+      }),
+    enabled: !!selectedNeighborhoodId && debouncedSearchTerm.trim().length > 0,
+    staleTime: 8_000,
+  });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!searchContainerRef.current?.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handleOutsideClick);
+    return () => window.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     setFlashNowMs(Date.now());
@@ -1422,6 +1468,41 @@ function Index() {
     setNeighborhoodSearchInput("");
   };
 
+  const predictiveSearchResults = useMemo(() => {
+    const rows = (predictiveSearchQuery.data ?? []) as SearchResultProduct[];
+    return rows.map((row) => ({
+      ...row,
+      localizedName: getLocalizedText({ en: row.name, fr: row.nameFr, ar: row.nameAr }),
+      localizedBrand: getLocalizedText({
+        en: row.brandNameEn || "",
+        fr: row.brandNameFr || row.brandNameEn || "",
+        ar: row.brandNameAr || row.brandNameEn || "",
+      }),
+    }));
+  }, [getLocalizedText, predictiveSearchQuery.data]);
+
+  const hasSearchTerm = debouncedSearchTerm.trim().length > 0;
+
+  const highlightSearchMatch = (text: string, query: string) => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return text;
+
+    const escaped = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escaped})`, "ig");
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      part.toLocaleLowerCase() === normalizedQuery.toLocaleLowerCase() ? <strong key={`${part}-${index}`}>{part}</strong> : part,
+    );
+  };
+
+  const handleSearchResultClick = (productId: string) => {
+    setDesktopSearchInput("");
+    setMobileSearchInput("");
+    setIsSearchOpen(false);
+    void navigate({ to: "/customer/product/$id", params: { id: productId } });
+  };
+
   return (
     <>
       <main className="app-shell min-h-screen bg-muted/20 pb-24 text-foreground md:pb-0">
@@ -1445,13 +1526,61 @@ function Index() {
               {selectedLocationLabel}
             </button>
 
-            <div className="relative ml-auto hidden min-w-0 max-w-md flex-1 sm:block">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div ref={searchContainerRef} className="relative ml-auto hidden min-w-0 max-w-md flex-1 sm:block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+              {predictiveSearchQuery.isFetching && hasSearchTerm ? (
+                <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              ) : null}
               <input
                 aria-label="Search products"
+                value={desktopSearchInput}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(event) => {
+                  setDesktopSearchInput(event.target.value);
+                  setIsSearchOpen(true);
+                }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-10 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+
+              <AnimatePresence>
+                {isSearchOpen && hasSearchTerm ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="absolute left-0 right-0 top-12 z-[100] max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                  >
+                    {predictiveSearchResults.length > 0 ? (
+                      predictiveSearchResults.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSearchResultClick(item.id)}
+                          className="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
+                        >
+                          <img
+                            src={item.imageUrl || productFallbackImage}
+                            alt={item.localizedName}
+                            className="h-11 w-11 rounded-md border border-border object-cover"
+                            loading="lazy"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="line-clamp-1 block text-sm text-foreground">
+                              {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
+                            </span>
+                            <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
+                          </span>
+                          <span className="shrink-0 text-sm font-semibold text-primary">{item.vendorPrice} MAD</span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                    )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
 
             <LanguageSwitcher />
@@ -1498,14 +1627,62 @@ function Index() {
               <MapPin className="size-3.5 text-primary" />
               {selectedLocationLabel}
             </button>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div ref={searchContainerRef} className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+              {predictiveSearchQuery.isFetching && hasSearchTerm ? (
+                <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              ) : null}
               <input
                 ref={mobileSearchInputRef}
                 aria-label="Search products"
+                value={mobileSearchInput}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(event) => {
+                  setMobileSearchInput(event.target.value);
+                  setIsSearchOpen(true);
+                }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-10 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+
+              <AnimatePresence>
+                {isSearchOpen && hasSearchTerm ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    className="absolute left-0 right-0 top-12 z-[100] max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                  >
+                    {predictiveSearchResults.length > 0 ? (
+                      predictiveSearchResults.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleSearchResultClick(item.id)}
+                          className="mb-1 flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
+                        >
+                          <img
+                            src={item.imageUrl || productFallbackImage}
+                            alt={item.localizedName}
+                            className="h-11 w-11 rounded-md border border-border object-cover"
+                            loading="lazy"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="line-clamp-1 block text-sm text-foreground">
+                              {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
+                            </span>
+                            <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
+                          </span>
+                          <span className="shrink-0 text-sm font-semibold text-primary">{item.vendorPrice} MAD</span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                    )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
         </header>
