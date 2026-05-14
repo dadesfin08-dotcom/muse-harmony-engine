@@ -86,6 +86,8 @@ type VendorRow = {
   id: string;
   store_name: string;
   phone_number?: string;
+  total_cash_received?: number | null;
+  vendor_earnings?: number | null;
   platform_dues?: number | null;
 };
 
@@ -139,6 +141,9 @@ type OrderRow = {
 export type CustomerOrderRow = OrderRow;
 
 export type VendorSettlementSummary = {
+  totalCashInHandMad: number;
+  myNetProfitMad: number;
+  platformDuesMad: number;
   unsettledCashWithCyclistsMad: number;
   owedToCyclistMad: number;
   totalReceivedTodayMad: number;
@@ -218,7 +223,7 @@ async function resolveVendorByPhone(phoneNumber: string) {
 
   const { data: vendor, error } = await (supabaseAdmin as any)
     .from("vendors")
-    .select("id, store_name, phone_number, platform_dues")
+    .select("id, store_name, phone_number, total_cash_received, vendor_earnings, platform_dues")
     .in("phone_number", candidatePhones)
     .eq("is_active", true)
     .limit(1)
@@ -234,7 +239,7 @@ async function resolveVendorByPhone(phoneNumber: string) {
 
   const { data: activeVendors, error: fallbackError } = await (supabaseAdmin as any)
     .from("vendors")
-    .select("id, store_name, phone_number, platform_dues")
+    .select("id, store_name, phone_number, total_cash_received, vendor_earnings, platform_dues")
     .eq("is_active", true);
 
   if (fallbackError) {
