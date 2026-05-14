@@ -32,7 +32,7 @@ export const Route = createFileRoute("/admin/service-zones/$communeId")({
 });
 
 function CommuneProfilePage() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { communeId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -108,7 +108,7 @@ function CommuneProfilePage() {
     const nextNameAr = communeNameArDraft.trim() || null;
 
     if (!nextNameEn) {
-      toast.error("Commune name (EN) is required.");
+      toast.error(t("admin.toast.communeNameRequired"));
       return;
     }
     if (
@@ -137,11 +137,11 @@ function CommuneProfilePage() {
       );
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      toast.success("Commune name updated.");
+      toast.success(t("admin.toast.communeNameUpdated"));
       setIsEditingCommuneName(false);
     } catch (error) {
       console.error("Failed to update commune name:", error);
-      toast.error("Failed to update commune name.");
+      toast.error(t("admin.toast.communeNameUpdateFailed"));
     } finally {
       setIsSavingCommuneName(false);
     }
@@ -168,11 +168,11 @@ function CommuneProfilePage() {
     const nextFee = Number(editingNeighborhoodFee);
 
     if (!nextNameEn) {
-      toast.error("Douar name (EN) is required.");
+      toast.error(t("admin.toast.douarNameRequired"));
       return;
     }
     if (Number.isNaN(nextFee) || nextFee < 0) {
-      toast.error("Delivery fee must be a valid non-negative number.");
+      toast.error(t("admin.toast.deliveryFeeInvalid"));
       return;
     }
 
@@ -208,7 +208,7 @@ function CommuneProfilePage() {
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      toast.success("Douar updated.");
+      toast.success(t("admin.toast.douarUpdated"));
       setEditingNeighborhoodId(null);
       setEditingNeighborhoodNameEn("");
       setEditingNeighborhoodNameFr("");
@@ -216,7 +216,7 @@ function CommuneProfilePage() {
       setEditingNeighborhoodFee("");
     } catch (error) {
       console.error("Failed to update douar:", error);
-      toast.error("Failed to update douar.");
+      toast.error(t("admin.toast.douarUpdateFailed"));
     } finally {
       setIsSavingNeighborhood(false);
     }
@@ -236,10 +236,10 @@ function CommuneProfilePage() {
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
 
-      toast.success("Douar deleted.");
+      toast.success(t("admin.toast.douarDeleted"));
     } catch (error) {
       console.error("Failed to delete douar:", error);
-      toast.error("Failed to delete douar.");
+      toast.error(t("admin.toast.douarDeleteFailed"));
     } finally {
       setDeletingNeighborhoodId(null);
     }
@@ -250,11 +250,11 @@ function CommuneProfilePage() {
     const nextFee = Number(newDouarFee);
 
     if (!nextNameEn) {
-      toast.error("Douar name (EN) is required.");
+      toast.error(t("admin.toast.douarNameRequired"));
       return;
     }
     if (Number.isNaN(nextFee) || nextFee < 0) {
-      toast.error("Delivery fee must be a valid non-negative number.");
+      toast.error(t("admin.toast.deliveryFeeInvalid"));
       return;
     }
 
@@ -283,10 +283,10 @@ function CommuneProfilePage() {
       setNewDouarNameFr("");
       setNewDouarNameAr("");
       setNewDouarFee("0");
-      toast.success("Douar added.");
+      toast.success(t("admin.toast.douarAdded"));
     } catch (error) {
       console.error("Failed to add douar:", error);
-      toast.error("Failed to add douar.");
+      toast.error(t("admin.toast.douarAddFailed"));
     } finally {
       setIsAddingDouar(false);
     }
@@ -299,11 +299,11 @@ function CommuneProfilePage() {
       setIsDeletingCommune(true);
       await removeCommune({ data: { id: commune.id } });
       queryClient.invalidateQueries({ queryKey: ["admin", "service-zones"] });
-      toast.success("Commune and all associated douars deleted.");
+      toast.success(t("admin.toast.communeDeletedWithDouars"));
       await navigate({ to: "/admin", search: { tab: "service-zones" } });
     } catch (error) {
       console.error("Failed to delete commune:", error);
-      toast.error("Failed to delete commune.");
+      toast.error(t("admin.toast.communeDeleteFailed"));
     } finally {
       setIsDeletingCommune(false);
       setIsDeleteCommuneDialogOpen(false);
