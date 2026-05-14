@@ -5775,6 +5775,7 @@ function SettingsSection({
   onSaveMarkupRule,
   isSavingMarkupRule,
   editingMarkupRuleId,
+  onOpenFactoryResetDialog,
 }: {
   form: {
     id: string;
@@ -5858,6 +5859,7 @@ function SettingsSection({
   onSaveMarkupRule: () => Promise<void>;
   isSavingMarkupRule: boolean;
   editingMarkupRuleId: string | null;
+  onOpenFactoryResetDialog: () => void;
 }) {
   const { i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
@@ -6002,6 +6004,21 @@ function SettingsSection({
       >
         {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
+
+      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
+        <h3 className="text-sm font-semibold text-destructive">Factory Reset (إعادة ضبط المصنع)</h3>
+        <p className="mt-1 text-xs text-destructive/90">
+          سيمسح هذا الإجراء كل الأرقام والبيانات من النظام بالكامل ولا يمكن التراجع عنه.
+        </p>
+        <Button
+          type="button"
+          variant="destructive"
+          className="mt-3 rounded-md"
+          onClick={onOpenFactoryResetDialog}
+        >
+          Reset All Data
+        </Button>
+      </div>
 
       <div className="rounded-xl border border-border bg-card p-4 md:p-5" dir={isArabic ? "rtl" : "ltr"}>
         <div className="flex items-center justify-between gap-3">
