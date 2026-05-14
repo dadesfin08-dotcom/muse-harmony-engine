@@ -513,9 +513,41 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, payment_method, platform_profit, delivery_fee")
+        .eq("vendor_id", data.vendorId)
+        .eq("status", "cash_transferred_to_vendor")
+        .or("admin_settled.is.null,admin_settled.eq.false");
+
+      if (pendingError) {
+        throw new Error(pendingError.message);
+      }
+
+      const pendingDuesMad = roundMad(
+        ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
+          (sum, row) => {
+            if (!isCashPaymentMethod(row.payment_method)) return sum;
+            return sum + platformDueFromOrder(row);
+          },
+          0,
+        ),
+      );
+
+      if (pendingDuesMad <= 0) {
+        throw new Error("No platform dues pending for this vendor.");
+      }
+
+      const targetAmountMad = roundMad(Number(data.amount ?? 0));
+      if (Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
+        throw new Error(
+          `Collection amount mismatch. Expected ${pendingDuesMad.toFixed(2)} MAD, received ${targetAmountMad.toFixed(2)} MAD.`,
+        );
+      }
+
       const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("collect_platform_dues", {
         p_vendor_id: data.vendorId,
-        p_amount: Number(data.amount.toFixed(2)),
+        p_amount: targetAmountMad,
         p_qr_payload: data.qrPayload ?? null,
         p_collected_by_user_id: null,
       });
@@ -527,6 +559,18 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       const row = Array.isArray(rpcResult) ? rpcResult[0] : null;
       if (!row?.transaction_id) {
         throw new Error("Collection failed. Please try again.");
+      }
+
+      const pendingOrderIds = ((pendingRows ?? []) as Array<{ id: string }>).map((row) => row.id);
+      if (pendingOrderIds.length > 0) {
+        const { error: settleError } = await (supabaseAdmin as any)
+          .from("orders")
+          .update({ admin_settled: true, updated_at: new Date().toISOString() })
+          .in("id", pendingOrderIds);
+
+        if (settleError) {
+          throw new Error(settleError.message);
+        }
       }
 
       return {
