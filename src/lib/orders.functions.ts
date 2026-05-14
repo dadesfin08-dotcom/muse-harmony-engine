@@ -86,6 +86,7 @@ type VendorRow = {
   id: string;
   store_name: string;
   phone_number?: string;
+  platform_dues?: number | null;
 };
 
 type OrderRow = {
@@ -193,7 +194,7 @@ async function resolveVendorByPhone(phoneNumber: string) {
 
   const { data: vendor, error } = await (supabaseAdmin as any)
     .from("vendors")
-    .select("id, store_name, phone_number")
+    .select("id, store_name, phone_number, platform_dues")
     .in("phone_number", candidatePhones)
     .eq("is_active", true)
     .limit(1)
@@ -209,7 +210,7 @@ async function resolveVendorByPhone(phoneNumber: string) {
 
   const { data: activeVendors, error: fallbackError } = await (supabaseAdmin as any)
     .from("vendors")
-    .select("id, store_name, phone_number")
+    .select("id, store_name, phone_number, platform_dues")
     .eq("is_active", true);
 
   if (fallbackError) {
@@ -747,6 +748,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       vendor: {
         id: (vendor as VendorRow).id,
         storeName: (vendor as VendorRow).store_name,
+        platformDuesMad: Number((vendor as VendorRow).platform_dues ?? 0),
       },
       orders: hydratedOrders as Array<OrderRow>,
     };
