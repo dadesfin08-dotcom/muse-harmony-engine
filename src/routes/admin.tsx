@@ -3685,15 +3685,16 @@ function VendorsSection({
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Vendors Management</h2>
-          <p className="text-sm text-muted-foreground">Manage onboarding and zone availability</p>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.vendors.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("admin.vendors.subtitle")}</p>
         </div>
         <Button variant="hero" className="rounded-md" onClick={onAddVendor}>
-          + Add New Vendor
+          {t("admin.vendors.addNew")}
         </Button>
       </div>
 
@@ -3701,25 +3702,25 @@ function VendorsSection({
         <table className="w-full min-w-[680px] text-left text-sm">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Vendor Name</th>
-              <th className="px-4 py-3">Zone / Location</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Action</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.vendorName")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.zone")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.status")}</th>
+              <th className="px-4 py-3">{t("admin.vendors.table.action")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  <AppEmptyState title="Loading vendors..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
+                  <AppEmptyState title={t("admin.vendors.loadingTitle")} subtitle={t("admin.vendors.loadingSubtitle")} className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : vendors.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   <AppEmptyState
-                    title="No vendors yet."
-                    subtitle="Add your first vendor to begin onboarding."
+                      title={t("admin.vendors.emptyTitle")}
+                      subtitle={t("admin.vendors.emptySubtitle")}
                     className="border-0 bg-transparent py-2"
                   />
                 </td>
@@ -3756,7 +3757,7 @@ function VendorsSection({
                 <td className="px-4 py-3">
                   <div className="space-y-2">
                     <Button variant="soft" size="sm" className="rounded-md" onClick={() => onManageVendor(vendor)}>
-                      Manage
+                      {t("admin.common.manage")}
                     </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
