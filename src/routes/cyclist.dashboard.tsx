@@ -567,14 +567,14 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Available Runs
+            {t("cyclist.availableRunsTab")}
           </button>
 
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
-            aria-label="Open wallet"
+            aria-label={t("cyclist.walletAria")}
           >
             <Wallet className="size-5" />
           </button>
@@ -588,7 +588,7 @@ function CyclistDashboardPage() {
                 : "border border-border bg-card text-muted-foreground"
             }`}
           >
-            Active Deliveries
+            {t("cyclist.activeDeliveriesTab")}
           </button>
         </div>
       </nav>
@@ -605,9 +605,9 @@ function CyclistDashboardPage() {
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
                 <ChevronRight className="size-4" />
-                Back (رجوع)
+                {t("cyclist.back")}
               </Button>
-              <p className="text-sm font-semibold text-foreground">Order Details</p>
+              <p className="text-sm font-semibold text-foreground">{t("cyclist.orderDetails")}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
