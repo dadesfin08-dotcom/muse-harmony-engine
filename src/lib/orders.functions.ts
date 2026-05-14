@@ -142,6 +142,9 @@ export type CustomerOrderDetails = {
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
   deliveryAuthCode: string | null;
+  communeName: string;
+  neighborhoodName: string;
+  specialInstructions: string;
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
@@ -792,7 +795,9 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, customer_user_id, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items")
+        .select(
+          "id, customer_user_id, neighborhood_id, delivery_notes, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items",
+        )
         .eq("id", data.orderId)
         .eq("customer_user_id", customerUserId)
         .maybeSingle();
@@ -876,6 +881,48 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
       const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
       const deliveryFeeMad = roundMoney(Number(orderRow.delivery_fee ?? 0));
       const normalizedStatus = String(orderRow.status ?? "new").toLowerCase();
+      const neighborhoodQuery =
+        typeof (orderRow as { neighborhood_id?: unknown }).neighborhood_id === "string"
+          ? await (supabaseAdmin as any)
+              .from("neighborhoods")
+              .select("name_en, name_fr, name_ar, commune_id")
+              .eq("id", (orderRow as { neighborhood_id: string }).neighborhood_id)
+              .maybeSingle()
+          : { data: null, error: null };
+
+      if (neighborhoodQuery.error) {
+        throw new Error(neighborhoodQuery.error.message);
+      }
+
+      const communeQuery = neighborhoodQuery.data?.commune_id
+        ? await (supabaseAdmin as any)
+            .from("communes")
+            .select("name_en, name_fr, name_ar")
+            .eq("id", neighborhoodQuery.data.commune_id)
+            .maybeSingle()
+        : { data: null, error: null };
+
+      if (communeQuery.error) {
+        throw new Error(communeQuery.error.message);
+      }
+
+      const neighborhoodName =
+        typeof neighborhoodQuery.data?.name_ar === "string"
+          ? neighborhoodQuery.data.name_ar.trim()
+          : typeof neighborhoodQuery.data?.name_fr === "string"
+            ? neighborhoodQuery.data.name_fr.trim()
+            : typeof neighborhoodQuery.data?.name_en === "string"
+              ? neighborhoodQuery.data.name_en.trim()
+              : "-";
+
+      const communeName =
+        typeof communeQuery.data?.name_ar === "string"
+          ? communeQuery.data.name_ar.trim()
+          : typeof communeQuery.data?.name_fr === "string"
+            ? communeQuery.data.name_fr.trim()
+            : typeof communeQuery.data?.name_en === "string"
+              ? communeQuery.data.name_en.trim()
+              : "-";
 
       return {
         id: String(orderRow.id),
@@ -885,6 +932,13 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
           typeof (orderRow as { delivery_auth_code?: unknown }).delivery_auth_code === "string"
             ? ((orderRow as { delivery_auth_code: string }).delivery_auth_code ?? null)
             : null,
+        communeName,
+        neighborhoodName,
+        specialInstructions:
+          typeof (orderRow as { delivery_notes?: unknown }).delivery_notes === "string" &&
+          (orderRow as { delivery_notes: string }).delivery_notes.trim().length > 0
+            ? (orderRow as { delivery_notes: string }).delivery_notes.trim()
+            : "None / لا توجد",
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,
