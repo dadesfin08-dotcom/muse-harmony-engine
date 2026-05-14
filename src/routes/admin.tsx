@@ -158,6 +158,7 @@ import {
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
+import { uploadReceiptLogo } from "@/lib/invoice-settings.functions";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -169,9 +170,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
-  DEFAULT_RECEIPT_FOOTER_CONTENT,
-  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_FOOTER_MESSAGE,
   DEFAULT_RECEIPT_PHONE,
+  DEFAULT_RECEIPT_SLOGAN,
+  DEFAULT_RECEIPT_SOCIAL_SUPPORT,
+  DEFAULT_RECEIPT_STORE_NAME,
+  DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 
 type AdminTab =
@@ -392,6 +396,7 @@ function AdminPage() {
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
+  const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
