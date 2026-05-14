@@ -191,6 +191,8 @@ type DashboardOrder = {
   deliveryFeeMad: number;
   totalMad: number;
   vendorShareMad: number;
+  platformProfitMad: number;
+  adminSettled: boolean;
   itemCount: number;
   items: Array<{
     name: string;
@@ -777,7 +779,15 @@ function VendorDashboardPage() {
         status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
         totalMad: roundMoney(Number(row.total_price ?? 0)),
-        vendorShareMad: roundMoney(Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0)),
+        vendorShareMad: roundMoney(
+          Number.isFinite(Number(row.vendor_revenue))
+            ? Number(row.vendor_revenue)
+            : Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
+        ),
+        platformProfitMad: roundMoney(
+          Number.isFinite(Number(row.platform_profit)) ? Number(row.platform_profit) : Number(row.delivery_fee ?? 0),
+        ),
+        adminSettled: Boolean(row.admin_settled ?? false),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
         cyclist:
@@ -885,27 +895,52 @@ function VendorDashboardPage() {
     const transferredCashOrders = deliveredInFilter.filter(
       (order) => order.status === "cash_transferred_to_vendor" && order.paymentMethod === "COD",
     );
-    const outstandingCreditMad = (carnetQuery.data?.carnetCustomers ?? []).reduce(
-      (sum, customer) => sum + Number(customer.currentDebt ?? 0),
-      0,
+    const settledCarnetOrders = deliveredInFilter.filter(
+      (order) =>
+        order.paymentMethod === "Carnet" &&
+        (order.status === "cash_transferred_to_vendor" || order.status === "delivered"),
     );
+
+    const settledCreditMad = Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0);
+    const settledCarnetGrossMad = roundMoney(
+      settledCarnetOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
+    );
+    const settledCarnetProfitRatio =
+      settledCarnetGrossMad > 0
+        ? roundMoney(
+            settledCarnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0) /
+              settledCarnetGrossMad,
+          )
+        : 0;
+    const settledCarnetPlatformRatio =
+      settledCarnetGrossMad > 0
+        ? roundMoney(
+            settledCarnetOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) /
+              settledCarnetGrossMad,
+          )
+        : 0;
+    const settledCarnetNetProfitMad = roundMoney(settledCreditMad * settledCarnetProfitRatio);
+    const settledCarnetPlatformDuesMad = roundMoney(settledCreditMad * settledCarnetPlatformRatio);
 
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      totalCashInHandMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
-      myNetProfitMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
+      totalCashInHandMad: roundMoney(
+        transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0) + settledCreditMad,
+      ),
+      myNetProfitMad: roundMoney(
+        transferredCashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0) +
+          settledCarnetNetProfitMad,
+      ),
       platformDuesMad: roundMoney(
-        transferredCashOrders.reduce(
-          (sum, order) => sum + Math.max(Number(order.totalMad ?? 0) - Number(order.vendorShareMad ?? 0), 0),
-          0,
-        ),
+        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) +
+          settledCarnetPlatformDuesMad,
       ),
       cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
       creditIssuedMad: roundMoney(0),
-      outstandingCreditMad: roundMoney(outstandingCreditMad),
+      outstandingCreditMad: roundMoney(Number(carnetQuery.data?.kpis?.totalOutstandingCreditMad ?? 0)),
     };
-  }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers, dashboardQuery.data?.vendor]);
+  }, [orders, queue, kpiFilter, carnetQuery.data?.kpis]);
 
   const printableOrder = useMemo<ThermalReceiptOrder>(
     () =>
