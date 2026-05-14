@@ -2288,10 +2288,13 @@ function AdminPage() {
   const saveReceiptSettings = async () => {
     if (
       !receiptForm.id ||
-      !receiptForm.storeName.trim() ||
-      !receiptForm.address.trim() ||
-      !receiptForm.phone.trim() ||
-      !receiptForm.footerMessage.trim()
+      !receiptForm.receiptStoreName.trim() ||
+      !receiptForm.receiptSlogan.trim() ||
+      !receiptForm.receiptPhone.trim() ||
+      !receiptForm.receiptAddress.trim() ||
+      !receiptForm.receiptWebsite.trim() ||
+      !receiptForm.receiptFooterMessage.trim() ||
+      !receiptForm.receiptSocialSupport.trim()
     ) {
       toast.error("Please complete all required receipt settings.");
       return;
@@ -2299,18 +2302,46 @@ function AdminPage() {
 
     try {
       setIsSavingReceiptSettings(true);
+
+      let receiptLogoUrl = receiptForm.receiptLogoUrl.trim() || null;
+      if (receiptLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(receiptLogoFile);
+        });
+
+        const uploaded = await uploadReceiptLogoToStorage({
+          data: {
+            fileName: receiptLogoFile.name,
+            contentType: receiptLogoFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+        receiptLogoUrl = uploaded.publicUrl;
+      }
+
       await saveAdminInvoiceSettings({
         data: {
           id: receiptForm.id,
-          storeName: receiptForm.storeName.trim(),
-          address: receiptForm.address.trim(),
-          phone: receiptForm.phone.trim(),
+          receiptLogoUrl,
+          receiptStoreName: receiptForm.receiptStoreName.trim(),
+          receiptSlogan: receiptForm.receiptSlogan.trim(),
+          receiptPhone: receiptForm.receiptPhone.trim(),
+          receiptAddress: receiptForm.receiptAddress.trim(),
+          receiptWebsite: receiptForm.receiptWebsite.trim(),
           taxId: receiptForm.taxId.trim() || null,
-          footerMessage: receiptForm.footerMessage.trim(),
+          receiptFooterMessage: receiptForm.receiptFooterMessage.trim(),
+          receiptSocialSupport: receiptForm.receiptSocialSupport.trim(),
         },
       });
 
       await adminInvoiceSettingsQuery.refetch();
+      setReceiptLogoFile(null);
       toast.success("Configuration saved successfully");
     } catch (error) {
       console.error("Failed to save receipt settings:", error);
