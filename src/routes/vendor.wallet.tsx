@@ -100,7 +100,6 @@ function VendorWalletPage() {
         data: {
           phoneNumber: vendorPhoneNumber,
           cyclistId,
-          expectedAmount: amount,
         },
       });
     },
