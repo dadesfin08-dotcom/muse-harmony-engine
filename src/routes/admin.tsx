@@ -160,6 +160,7 @@ import {
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  resetFactoryData,
   uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
@@ -434,6 +435,7 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
   const fetchAdminOrders = useServerFn(listAdminOrders);
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
@@ -776,6 +778,9 @@ function AdminPage() {
   const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
   const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
+  const [isFactoryResetDialogOpen, setIsFactoryResetDialogOpen] = useState(false);
+  const [factoryResetConfirmationText, setFactoryResetConfirmationText] = useState("");
+  const [isResettingFactoryData, setIsResettingFactoryData] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
     receiptLogoUrl: "",
@@ -2685,6 +2690,48 @@ function AdminPage() {
     }
   };
 
+  const handleFactoryReset = async () => {
+    if (factoryResetConfirmationText.trim() !== "RESET_ALL") {
+      toast.error("Type RESET_ALL exactly to confirm factory reset.");
+      return;
+    }
+
+    try {
+      setIsResettingFactoryData(true);
+      await resetFactoryDataInDatabase({
+        data: {
+          confirmationText: "RESET_ALL",
+        },
+      });
+
+      await Promise.all([
+        vendorsQuery.refetch(),
+        cyclistsQuery.refetch(),
+        serviceZonesQuery.refetch(),
+        masterProductsQuery.refetch(),
+        brandsQuery.refetch(),
+        categoriesQuery.refetch(),
+        siteAdsQuery.refetch(),
+        announcementsQuery.refetch(),
+        adminOrdersQuery.refetch(),
+        adminCustomersQuery.refetch(),
+        globalSettingsQuery.refetch(),
+        adminInvoiceSettingsQuery.refetch(),
+        markupRulesQuery.refetch(),
+        overviewAnalyticsQuery.refetch(),
+      ]);
+
+      setFactoryResetConfirmationText("");
+      setIsFactoryResetDialogOpen(false);
+      toast.success("Factory reset completed successfully.");
+    } catch (error) {
+      console.error("Factory reset failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to run factory reset.");
+    } finally {
+      setIsResettingFactoryData(false);
+    }
+  };
+
   const resetMarkupRuleForm = () => {
     setEditingMarkupRuleId(null);
     setMarkupRuleForm({
@@ -2999,6 +3046,7 @@ function AdminPage() {
                   onSaveMarkupRule={saveMarkupRule}
                   isSavingMarkupRule={isSavingMarkupRule}
                   editingMarkupRuleId={editingMarkupRuleId}
+                  onOpenFactoryResetDialog={() => setIsFactoryResetDialogOpen(true)}
                 />
               ) : null}
             </div>
@@ -3962,6 +4010,53 @@ function AdminPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmArchiveProduct}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isFactoryResetDialogOpen}
+        onOpenChange={(open) => {
+          setIsFactoryResetDialogOpen(open);
+          if (!open) {
+            setFactoryResetConfirmationText("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Factory Reset (مسح شامل للبيانات)</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف كل البيانات نهائيًا: Orders, Customers, Vendors, Cyclists, Service Zones, Global Catalog, Master Product List,
+              Brands, Categories, Ads & Content, Settings. اكتب RESET_ALL للتأكيد.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="factory-reset-confirmation" className="text-sm font-medium text-foreground">
+              Confirmation text
+            </label>
+            <Input
+              id="factory-reset-confirmation"
+              value={factoryResetConfirmationText}
+              onChange={(event) => setFactoryResetConfirmationText(event.target.value)}
+              placeholder="RESET_ALL"
+              autoComplete="off"
+              className="rounded-md"
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResettingFactoryData}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleFactoryReset();
+              }}
+              disabled={isResettingFactoryData || factoryResetConfirmationText.trim() !== "RESET_ALL"}
+            >
+              {isResettingFactoryData ? "Resetting..." : "Reset Everything"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -5680,6 +5775,7 @@ function SettingsSection({
   onSaveMarkupRule,
   isSavingMarkupRule,
   editingMarkupRuleId,
+  onOpenFactoryResetDialog,
 }: {
   form: {
     id: string;
@@ -5763,6 +5859,7 @@ function SettingsSection({
   onSaveMarkupRule: () => Promise<void>;
   isSavingMarkupRule: boolean;
   editingMarkupRuleId: string | null;
+  onOpenFactoryResetDialog: () => void;
 }) {
   const { i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
@@ -5907,6 +6004,21 @@ function SettingsSection({
       >
         {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
+
+      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
+        <h3 className="text-sm font-semibold text-destructive">Factory Reset (إعادة ضبط المصنع)</h3>
+        <p className="mt-1 text-xs text-destructive/90">
+          سيمسح هذا الإجراء كل الأرقام والبيانات من النظام بالكامل ولا يمكن التراجع عنه.
+        </p>
+        <Button
+          type="button"
+          variant="destructive"
+          className="mt-3 rounded-md"
+          onClick={onOpenFactoryResetDialog}
+        >
+          Reset All Data
+        </Button>
+      </div>
 
       <div className="rounded-xl border border-border bg-card p-4 md:p-5" dir={isArabic ? "rtl" : "ltr"}>
         <div className="flex items-center justify-between gap-3">
