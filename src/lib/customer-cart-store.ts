@@ -3,11 +3,15 @@ import { persist } from "zustand/middleware";
 
 export type CustomerCartItem = {
   id: string;
+  cartItemId?: string;
   productId?: string;
   vendorId?: string;
   name: string;
+  brandName?: string | null;
+  measurementValue?: number | null;
   price: number;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
+  selectedVariant?: string | null;
   image: string;
   alt: string;
   quantity: number;
@@ -34,12 +38,13 @@ export const useCustomerCartStore = create<CustomerCartState>()(
       isCartOpen: false,
       addItem: (item) =>
         set((state) => {
-          const existingItem = state.items.find((cartItem) => cartItem.id === item.id);
+          const itemKey = item.cartItemId || item.id;
+          const existingItem = state.items.find((cartItem) => (cartItem.cartItemId || cartItem.id) === itemKey);
 
           if (existingItem) {
             return {
               items: state.items.map((cartItem) =>
-                cartItem.id === item.id
+                (cartItem.cartItemId || cartItem.id) === itemKey
                   ? {
                       ...cartItem,
                       quantity: cartItem.quantity + 1,
