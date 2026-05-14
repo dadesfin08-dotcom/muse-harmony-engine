@@ -21,11 +21,15 @@ export type ThermalReceiptOrder = {
 };
 
 export type ThermalInvoiceSettings = {
-  storeName: string;
-  address: string;
-  phone: string;
+  receiptLogoUrl?: string | null;
+  receiptStoreName: string;
+  receiptSlogan: string;
+  receiptPhone: string;
+  receiptAddress: string;
+  receiptWebsite: string;
   taxId?: string | null;
-  footerMessage: string;
+  receiptFooterMessage: string;
+  receiptSocialSupport: string;
 };
 
 type ThermalReceiptProps = {
@@ -85,9 +89,21 @@ export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>(fu
       }}
     >
       <div style={{ textAlign: "center", marginBottom: "2mm" }}>
-        <div style={{ fontWeight: 700, fontSize: "13px" }}>{settings.storeName}</div>
-        <div>{settings.address}</div>
-        <div>{settings.phone}</div>
+        {settings.receiptLogoUrl ? (
+          <div style={{ marginBottom: "1.5mm", display: "flex", justifyContent: "center" }}>
+            <img
+              src={settings.receiptLogoUrl}
+              alt="Store logo"
+              style={{ maxWidth: "80px", maxHeight: "80px", objectFit: "contain" }}
+            />
+          </div>
+        ) : null}
+        <div style={{ fontWeight: 700, fontSize: "13px" }}>{settings.receiptStoreName}</div>
+        <div style={{ fontStyle: "italic", marginTop: "0.5mm" }}>{settings.receiptSlogan}</div>
+        <div style={{ borderTop: "1px dashed #000", margin: "1.5mm 0" }} />
+        <div>{settings.receiptPhone}</div>
+        <div>{settings.receiptAddress}</div>
+        <div>{settings.receiptWebsite}</div>
         {settings.taxId ? <div>Tax/ICE: {settings.taxId}</div> : null}
       </div>
 
@@ -135,7 +151,10 @@ export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>(fu
         <div style={{ fontSize: "14px", fontWeight: 700 }}>Grand Total / المجموع الإجمالي: {finalTotalMad.toFixed(2)} MAD</div>
       </div>
 
-      <div style={{ textAlign: "center" }}>{settings.footerMessage}</div>
+      <div style={{ borderTop: "1px dashed #000", paddingTop: "1.5mm", textAlign: "center" }}>
+        <div style={{ fontWeight: 700 }}>{settings.receiptFooterMessage}</div>
+        <div style={{ marginTop: "0.8mm" }}>{settings.receiptSocialSupport}</div>
+      </div>
     </div>
   );
 });
