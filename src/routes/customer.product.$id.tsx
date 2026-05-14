@@ -205,7 +205,24 @@ function ProductDetailPage() {
         </section>
       ) : (
         <section className="space-y-6">
-          <div className="relative z-10 w-full rounded-b-[40px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.03)]">
+          <div className="relative z-10 w-full overflow-hidden rounded-b-[40px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.03)]">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-b-[40px]"
+              style={{
+                boxShadow:
+                  "inset 0 0 0 1px rgba(255,215,0,0.24), inset 0 0 46px rgba(255,215,0,0.18), 0 0 28px rgba(0,206,209,0.2), 0 0 42px rgba(255,215,0,0.18)",
+              }}
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-1 rounded-b-[44px]"
+              style={{
+                background:
+                  "linear-gradient(130deg, rgba(255,215,0,0.22) 0%, rgba(255,255,255,0.18) 22%, rgba(0,206,209,0.2) 52%, rgba(255,215,0,0.24) 100%)",
+                filter: "blur(16px)",
+              }}
+            />
             <button
               type="button"
               onClick={() => {
@@ -222,11 +239,28 @@ function ProductDetailPage() {
               <ArrowLeft className="size-5" />
             </button>
 
-            <div className="mx-auto flex aspect-square w-full items-center justify-center">
+            <div className="relative mx-auto flex aspect-square w-full items-center justify-center">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[78%] w-[56%] -translate-x-1/2 -translate-y-1/2 rounded-[40%]"
+                style={{
+                  background:
+                    "radial-gradient(circle at 48% 50%, rgba(255,255,255,0.58) 0%, rgba(255,215,0,0.34) 34%, rgba(0,206,209,0.2) 62%, rgba(255,215,0,0.06) 100%)",
+                  filter: "blur(20px)",
+                }}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-[13%] h-5 w-5 -translate-x-1/2 rounded-full"
+                style={{
+                  background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,215,0,0.65) 45%, rgba(255,255,255,0) 100%)",
+                  filter: "blur(1px)",
+                }}
+              />
               <img
                 src={product.imageUrl || fallbackProductImage}
                 alt={composedProductLabel}
-                className="max-h-full w-full object-contain object-center"
+                className="relative z-10 max-h-full w-full object-contain object-center [filter:drop-shadow(0_10px_12px_rgba(0,0,0,0.18))_drop-shadow(0_0_10px_rgba(255,255,255,0.45))_drop-shadow(0_0_20px_rgba(255,215,0,0.22))_drop-shadow(0_0_28px_rgba(0,206,209,0.18))]"
                 loading="lazy"
               />
             </div>
