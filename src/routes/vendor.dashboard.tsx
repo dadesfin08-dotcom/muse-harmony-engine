@@ -2758,6 +2758,7 @@ function OrderCard({
         .join("")
     : "DR";
   const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
+  const driver = order.cyclist;
 
   if (compact) {
     return (
@@ -2793,12 +2794,12 @@ function OrderCard({
           ⏱ {elapsed}
         </p>
 
-        {shouldShowDriverBlock && order.cyclist ? (
+        {shouldShowDriverBlock && driver ? (
           <div className="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Avatar className="h-8 w-8 border border-primary/25">
-                  <AvatarImage src={order.cyclist.avatarUrl ?? undefined} alt={order.cyclist.name} />
+                  <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
                   <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
                     {cyclistNameInitials}
                   </AvatarFallback>
@@ -2810,7 +2811,7 @@ function OrderCard({
                   </p>
                   <p className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
                     <Bike className="size-3.5 text-primary" />
-                    <span>الليفرور: {order.cyclist.name}</span>
+                    <span>الليفرور: {driver.name}</span>
                   </p>
                 </div>
               </div>
@@ -2820,17 +2821,17 @@ function OrderCard({
                   <button
                     type="button"
                     className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5"
-                    aria-label={`Call driver ${order.cyclist.name}`}
+                    aria-label={`Call driver ${driver.name}`}
                   >
                     <PhoneCall className="size-3" />
-                    {order.cyclist.phoneNumber}
+                    {driver.phoneNumber}
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="sm:max-w-sm">
                   <AlertDialogHeader>
                     <AlertDialogTitle>تأكيد الاتصال بالسائق</AlertDialogTitle>
                     <AlertDialogDescription>
-                      واش بغيتي تتاصل دابا مع {order.cyclist.name} على الرقم {order.cyclist.phoneNumber}؟
+                      واش بغيتي تتاصل دابا مع {driver.name} على الرقم {driver.phoneNumber}؟
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -2838,7 +2839,7 @@ function OrderCard({
                     <AlertDialogAction
                       onClick={() => {
                         if (typeof window !== "undefined") {
-                          window.location.href = `tel:${order.cyclist.phoneNumber}`;
+                          window.location.href = `tel:${driver.phoneNumber}`;
                         }
                       }}
                     >
