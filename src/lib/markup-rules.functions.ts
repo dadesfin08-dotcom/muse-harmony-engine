@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { clearMarkupRulesCache, getActiveMarkupRulesCached } from "@/lib/markup-rules.server";
 
 const markupRuleInputSchema = z.object({
@@ -64,17 +64,6 @@ function normalizeMarkupRule(row: MarkupRuleRow) {
   };
 }
 
-async function assertAdmin(context: any) {
-  const { supabase, userId } = context;
-  const { data, error } = await (supabase as any).rpc("is_admin", { _user_id: userId });
-  if (error) {
-    throw new Error(error.message || "Failed to verify admin access.");
-  }
-  if (!data) {
-    throw new Error("Unauthorized");
-  }
-}
-
 function rangesOverlap(aMin: number, aMax: number, bMin: number, bMax: number) {
   return aMin < bMax && bMin < aMax;
 }
@@ -103,13 +92,8 @@ async function ensureNoActiveRangeOverlap(
   }
 }
 
-export const listMarkupRules = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertAdmin(context);
-
-    const { supabase } = context;
-    const { data, error } = await (supabase as any)
+export const listMarkupRules = createServerFn({ method: "GET" }).handler(async () => {
+    const { data, error } = await (supabaseAdmin as any)
       .from("markup_rules")
       .select("id, min_price, max_price, markup_type, markup_value, is_active, created_at, updated_at")
       .order("min_price", { ascending: true });
@@ -117,7 +101,6 @@ export const listMarkupRules = createServerFn({ method: "GET" })
     if (error) {
       throw new Error(error.message || "Failed to load pricing rules.");
     }
-
     return ((data ?? []) as MarkupRuleRow[]).map(normalizeMarkupRule);
   });
 
@@ -126,15 +109,11 @@ export const listPublicActiveMarkupRules = createServerFn({ method: "GET" }).han
 });
 
 export const createMarkupRule = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => createMarkupRuleInputSchema.parse(input))
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+  .handler(async ({ data }) => {
+    await ensureNoActiveRangeOverlap(supabaseAdmin as any, data);
 
-    const { supabase } = context;
-    await ensureNoActiveRangeOverlap(supabase, data);
-
-    const { data: inserted, error } = await (supabase as any)
+    const { data: inserted, error } = await (supabaseAdmin as any)
       .from("markup_rules")
       .insert({
         min_price: Number(data.minPrice),
@@ -155,15 +134,11 @@ export const createMarkupRule = createServerFn({ method: "POST" })
   });
 
 export const updateMarkupRule = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => updateMarkupRuleInputSchema.parse(input))
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+  .handler(async ({ data }) => {
+    await ensureNoActiveRangeOverlap(supabaseAdmin as any, data);
 
-    const { supabase } = context;
-    await ensureNoActiveRangeOverlap(supabase, data);
-
-    const { data: updated, error } = await (supabase as any)
+    const { data: updated, error } = await (supabaseAdmin as any)
       .from("markup_rules")
       .update({
         min_price: Number(data.minPrice),
@@ -185,13 +160,9 @@ export const updateMarkupRule = createServerFn({ method: "POST" })
   });
 
 export const deleteMarkupRule = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => deleteMarkupRuleInputSchema.parse(input))
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context);
-
-    const { supabase } = context;
-    const { error } = await (supabase as any).from("markup_rules").delete().eq("id", data.id);
+  .handler(async ({ data }) => {
+    const { error } = await (supabaseAdmin as any).from("markup_rules").delete().eq("id", data.id);
 
     if (error) {
       throw new Error(error.message || "Failed to delete pricing rule.");
