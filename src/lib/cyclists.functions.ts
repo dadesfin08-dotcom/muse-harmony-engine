@@ -897,6 +897,56 @@ export const markDeliveryAsDelivered = createServerFn({ method: "POST" })
         throw new Error("Delivery not found or already completed.");
       }
 
+      const completedOrderId = String(rpcResult[0].order_id);
+      const { data: completedOrder, error: completedOrderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, vendor_id, customer_phone, payment_method, total_price, delivery_fee")
+        .eq("id", completedOrderId)
+        .maybeSingle();
+
+      if (completedOrderError) {
+        throw new Error(completedOrderError.message);
+      }
+
+      if (completedOrder?.id && completedOrder.payment_method === "Carnet") {
+        const { data: existingIssued, error: existingIssuedError } = await (supabaseAdmin as any)
+          .from("carnet_transactions")
+          .select("id")
+          .eq("order_id", completedOrderId)
+          .eq("transaction_type", "CREDIT_ISSUED")
+          .maybeSingle();
+
+        if (existingIssuedError) {
+          throw new Error(existingIssuedError.message);
+        }
+
+        if (!existingIssued?.id) {
+          const { data: carnetRow } = await (supabaseAdmin as any)
+            .from("vendor_carnet")
+            .select("id")
+            .eq("vendor_id", completedOrder.vendor_id)
+            .eq("customer_phone", completedOrder.customer_phone)
+            .maybeSingle();
+
+          const { error: insertIssuedError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
+            vendor_id: completedOrder.vendor_id,
+            vendor_carnet_id: carnetRow?.id ? String(carnetRow.id) : null,
+            customer_phone: completedOrder.customer_phone,
+            order_id: completedOrderId,
+            transaction_type: "CREDIT_ISSUED",
+            amount: Number(completedOrder.total_price ?? 0) + Number(completedOrder.delivery_fee ?? 0),
+            metadata: {
+              source: "delivery_completion",
+              status: "delivered",
+            },
+          });
+
+          if (insertIssuedError) {
+            throw new Error(insertIssuedError.message);
+          }
+        }
+      }
+
       return { ok: true };
     } catch (error) {
       console.error("markDeliveryAsDelivered failed:", error);
@@ -939,6 +989,56 @@ export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
 
       if (!Array.isArray(rpcResult) || !rpcResult[0]?.order_id) {
         throw new Error("Delivery not found or already completed.");
+      }
+
+      const completedOrderId = String(rpcResult[0].order_id);
+      const { data: completedOrder, error: completedOrderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, vendor_id, customer_phone, payment_method, total_price, delivery_fee")
+        .eq("id", completedOrderId)
+        .maybeSingle();
+
+      if (completedOrderError) {
+        throw new Error(completedOrderError.message);
+      }
+
+      if (completedOrder?.id && completedOrder.payment_method === "Carnet") {
+        const { data: existingIssued, error: existingIssuedError } = await (supabaseAdmin as any)
+          .from("carnet_transactions")
+          .select("id")
+          .eq("order_id", completedOrderId)
+          .eq("transaction_type", "CREDIT_ISSUED")
+          .maybeSingle();
+
+        if (existingIssuedError) {
+          throw new Error(existingIssuedError.message);
+        }
+
+        if (!existingIssued?.id) {
+          const { data: carnetRow } = await (supabaseAdmin as any)
+            .from("vendor_carnet")
+            .select("id")
+            .eq("vendor_id", completedOrder.vendor_id)
+            .eq("customer_phone", completedOrder.customer_phone)
+            .maybeSingle();
+
+          const { error: insertIssuedError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
+            vendor_id: completedOrder.vendor_id,
+            vendor_carnet_id: carnetRow?.id ? String(carnetRow.id) : null,
+            customer_phone: completedOrder.customer_phone,
+            order_id: completedOrderId,
+            transaction_type: "CREDIT_ISSUED",
+            amount: Number(completedOrder.total_price ?? 0) + Number(completedOrder.delivery_fee ?? 0),
+            metadata: {
+              source: "delivery_completion",
+              status: "delivered",
+            },
+          });
+
+          if (insertIssuedError) {
+            throw new Error(insertIssuedError.message);
+          }
+        }
       }
 
       return { ok: true };
