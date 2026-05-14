@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   acceptDeliveryRun,
   getCyclistDashboardData,
@@ -663,11 +664,20 @@ function CyclistDashboardPage() {
                         </div>
 
                         <div className="ms-auto flex shrink-0 items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
-                            <Package className="h-3 w-3" />
-                            <span>Qty</span>
-                            <span>x{item.quantity}</span>
-                          </span>
+                          <TooltipProvider delayDuration={120}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                                  <Package className="h-3 w-3" />
+                                  <span>Qty</span>
+                                  <span>x{item.quantity}</span>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                الكمية الحالية هي x{item.quantity}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <span className="ml-auto whitespace-nowrap text-xs font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
                         </div>
                       </div>
