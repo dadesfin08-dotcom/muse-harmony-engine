@@ -2434,6 +2434,7 @@ function AdminPage() {
     const globalDeliveryFee = Number(settingsForm.deliveryFeeMad);
     const minimumOrderAmount = Number(settingsForm.minimumOrderMad);
     const freeDeliveryThreshold = Number(settingsForm.freeDeliveryThresholdMad);
+    const normalizedSiteName = settingsForm.siteName.trim();
 
     if (
       Number.isNaN(globalDeliveryFee) ||
@@ -2447,8 +2448,37 @@ function AdminPage() {
       return;
     }
 
+    if (!normalizedSiteName) {
+      toast.error("Please provide a site name.");
+      return;
+    }
+
     try {
       setIsSavingGlobalSettings(true);
+
+      let siteLogoUrl = settingsForm.siteLogoUrl.trim() || null;
+      if (siteLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(siteLogoFile);
+        });
+
+        const uploaded = await uploadSiteLogoToStorage({
+          data: {
+            fileName: siteLogoFile.name,
+            contentType: siteLogoFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+
+        siteLogoUrl = uploaded.publicUrl;
+      }
+
       await saveGlobalSettingsToDatabase({
         data: {
           id: settingsForm.id,
@@ -2456,11 +2486,14 @@ function AdminPage() {
           minimumOrderAmount,
           freeDeliveryThreshold,
           marketplaceActive: settingsForm.marketplaceActive,
+          siteName: normalizedSiteName,
+          siteLogoUrl,
         },
       });
 
       await globalSettingsQuery.refetch();
-      toast.success("Configuration saved successfully");
+      setSiteLogoFile(null);
+      toast.success("Settings updated successfully");
     } catch (error) {
       console.error("Failed to save global settings:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save global settings.");
@@ -2673,6 +2706,9 @@ function AdminPage() {
                 <SettingsSection
                   form={settingsForm}
                   onFormChange={setSettingsForm}
+                  siteLogoPreviewUrl={siteLogoPreviewUrl}
+                  onSiteLogoFileChange={(file: File | null) => setSiteLogoFile(file)}
+                  onSiteLogoPreviewChange={(url: string | null) => setSiteLogoPreviewUrl(url)}
                   onSaveGlobalSettings={saveGlobalSettings}
                   isGlobalSettingsLoading={isSavingGlobalSettings || dbHealthQuery.isLoading || globalSettingsQuery.isLoading}
                   receiptForm={receiptForm}
