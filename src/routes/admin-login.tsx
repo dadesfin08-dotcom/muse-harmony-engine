@@ -154,8 +154,8 @@ function AdminLoginPage() {
               <ShieldCheck className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Super-Admin Login</CardTitle>
-              <p className="text-sm text-muted-foreground">تسجيل دخول المشرف</p>
+              <CardTitle className="text-2xl font-semibold">{t("adminLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("adminLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -165,7 +165,7 @@ function AdminLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="admin-phone" className="text-sm">
-                  رقم الهاتف
+                  {t("adminLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -189,7 +189,7 @@ function AdminLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "جاري الإرسال..." : "إرسال الرمز عبر واتساب"}
+                {isSendingCode ? t("adminLogin.sending") : t("adminLogin.sendCode")}
               </Button>
             </div>
 
@@ -197,8 +197,8 @@ function AdminLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">أدخل رمز التحقق</h2>
-                <p className="text-sm text-muted-foreground">أدخل الرمز الذي وصلك عبر واتساب</p>
+                <h2 className="text-base font-semibold text-foreground">{t("adminLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("adminLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -237,10 +237,10 @@ function AdminLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `إعادة الإرسال خلال ${otpResendCountdown} ث`
+                  ? t("adminLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "جاري الإرسال..."
-                    : "إرسال من جديد"}
+                    ? t("adminLogin.sending")
+                    : t("adminLogin.resend")}
               </Button>
 
               <Button
@@ -251,7 +251,7 @@ function AdminLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "جاري التحقق..." : "Verify & Login"}
+                {isVerifying ? t("adminLogin.verifying") : t("adminLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -263,7 +263,7 @@ function AdminLoginPage() {
                   setOtpCode("");
                 }}
               >
-                تغيير رقم الهاتف
+                {t("adminLogin.changePhone")}
               </Button>
             </div>
           </CardContent>
