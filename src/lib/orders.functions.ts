@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { isToday } from "date-fns";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -1335,24 +1336,19 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
       ] = await Promise.all([
         (supabaseAdmin as any)
           .from("orders")
-          .select("cyclist_id, total_price, delivery_fee, payment_method")
+          .select("cyclist_id, total_price, delivery_fee, payment_method, status")
           .eq("vendor_id", vendor.id)
-          .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending")
           .not("cyclist_id", "is", null),
         (supabaseAdmin as any)
           .from("orders")
-          .select("total_price, payment_method")
+          .select("total_price, payment_method, updated_at, status")
           .eq("vendor_id", vendor.id)
-          .eq("status", "cash_transferred_to_vendor")
-          .eq("vendor_settlement_status", "settled")
-          .gte("updated_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
-          .lt("updated_at", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
+          .eq("vendor_settlement_status", "settled"),
         (supabaseAdmin as any)
           .from("orders")
-          .select("total_price, payment_method")
+          .select("total_price, payment_method, status")
           .eq("vendor_id", vendor.id)
-          .eq("status", "cash_transferred_to_vendor")
           .eq("vendor_settlement_status", "settled"),
       ]);
 
@@ -1373,28 +1369,54 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         total_price: number;
         delivery_fee: number;
         payment_method: string;
+        status: string | null;
       }>;
-      const received = (receivedRows ?? []) as Array<{ total_price: number; payment_method: string }>;
-      const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; payment_method: string }>;
+      const received = (receivedRows ?? []) as Array<{
+        total_price: number;
+        payment_method: string;
+        updated_at: string | null;
+        status: string | null;
+      }>;
+      const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; payment_method: string; status: string | null }>;
 
-      const pendingCashRows = pending.filter((row) => isCashPayment(row.payment_method));
-      const pendingCreditRows = pending.filter((row) => isCreditPayment(row.payment_method));
+      const isDeliveryCompleteStatus = (status: string | null | undefined) => {
+        const normalized = String(status ?? "").trim().toLowerCase();
+        return (
+          normalized === "delivered" ||
+          normalized === "completed" ||
+          normalized === "delivered_cash_with_cyclist" ||
+          normalized === "cash_transferred_to_vendor"
+        );
+      };
+
+      const pendingRowsInScope = pending.filter((row) => isDeliveryCompleteStatus(row.status));
+      const pendingCashRows = pendingRowsInScope.filter((row) => isCashPayment(row.payment_method));
+      const pendingCreditRows = pendingRowsInScope.filter((row) => isCreditPayment(row.payment_method));
+
+      const receivedTodayRows = received.filter((row) => {
+        if (!isDeliveryCompleteStatus(row.status)) return false;
+        if (!row.updated_at) return false;
+        const date = new Date(row.updated_at);
+        return !Number.isNaN(date.getTime()) && isToday(date);
+      });
+
+      const lifetimeRowsInScope = lifetime.filter((row) => isDeliveryCompleteStatus(row.status));
 
       const unsettledCashWithCyclistsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
 
       const owedToCyclistMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
 
-      const totalReceivedTodayMad = received.reduce(
+      const totalReceivedTodayMad = receivedTodayRows.reduce(
         (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
-      const lifetimeEarningsMad = lifetime.reduce(
+      const lifetimeEarningsMad = lifetimeRowsInScope.reduce(
         (sum, row) => (isCashPayment(row.payment_method) ? sum + Number(row.total_price ?? 0) : sum),
         0,
       );
 
-      const pendingCyclistCount = new Set(pending.map((row) => row.cyclist_id).filter(Boolean)).size;
+      const pendingCyclistCount = new Set(pendingRowsInScope.map((row) => row.cyclist_id).filter(Boolean)).size;
 
       return {
         totalCashInHandMad: roundMoney(Number((vendor as VendorRow).total_cash_received ?? 0)),
