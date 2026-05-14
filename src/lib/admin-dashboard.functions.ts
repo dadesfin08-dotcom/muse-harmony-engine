@@ -5,8 +5,13 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_FOOTER_MESSAGE,
   DEFAULT_RECEIPT_HEADER_CONTENT,
   DEFAULT_RECEIPT_PHONE,
+  DEFAULT_RECEIPT_SLOGAN,
+  DEFAULT_RECEIPT_SOCIAL_SUPPORT,
+  DEFAULT_RECEIPT_STORE_NAME,
+  DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 
 type AdminOrderStatus = "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
@@ -32,6 +37,14 @@ type InvoiceSettingsRow = {
   phone: string;
   tax_id: string | null;
   footer_message: string;
+  receipt_logo_url: string | null;
+  receipt_store_name: string;
+  receipt_slogan: string;
+  receipt_phone: string;
+  receipt_address: string;
+  receipt_website: string;
+  receipt_footer_message: string;
+  receipt_social_support: string;
   created_at: string;
   updated_at: string;
 };
@@ -70,6 +83,14 @@ function normalizeInvoiceSettingsRow(row: any): InvoiceSettingsRow {
     phone: row.phone ?? DEFAULT_RECEIPT_PHONE,
     tax_id: row.tax_id ?? null,
     footer_message: row.footer_message ?? DEFAULT_RECEIPT_FOOTER_CONTENT,
+    receipt_logo_url: row.receipt_logo_url ?? null,
+    receipt_store_name: row.receipt_store_name ?? DEFAULT_RECEIPT_STORE_NAME,
+    receipt_slogan: row.receipt_slogan ?? DEFAULT_RECEIPT_SLOGAN,
+    receipt_phone: row.receipt_phone ?? DEFAULT_RECEIPT_PHONE,
+    receipt_address: row.receipt_address ?? DEFAULT_RECEIPT_ADDRESS,
+    receipt_website: row.receipt_website ?? DEFAULT_RECEIPT_WEBSITE,
+    receipt_footer_message: row.receipt_footer_message ?? DEFAULT_RECEIPT_FOOTER_MESSAGE,
+    receipt_social_support: row.receipt_social_support ?? DEFAULT_RECEIPT_SOCIAL_SUPPORT,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
