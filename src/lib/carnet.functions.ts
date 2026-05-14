@@ -87,26 +87,77 @@ type VendorCarnetRow = {
 };
 
 const getActiveVendor = async (phoneNumber?: string) => {
-  const query = (supabaseAdmin as any)
-    .from("vendors")
-    .select("id, store_name")
-    .eq("is_active", true);
+  if (!phoneNumber) {
+    const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
+      .from("vendors")
+      .select("id, store_name")
+      .eq("is_active", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-  if (phoneNumber) {
-    query.eq("phone_number", phoneNumber);
-  } else {
-    query.order("created_at", { ascending: true }).limit(1);
+    if (vendorError || !vendor?.id) {
+      return null;
+    }
+
+    return {
+      id: vendor.id as string,
+      storeName: vendor.store_name as string,
+    };
   }
 
-  const { data: vendor, error: vendorError } = await query.single();
+  const normalizedInput = normalizeMoroccoPhoneInput(phoneNumber);
+  const candidatePhones = Array.from(
+    new Set([
+      phoneNumber.trim(),
+      formatMoroccoPhoneForPayload(normalizedInput),
+      `0${normalizedInput}`,
+      normalizedInput,
+    ]).values(),
+  ).filter((value) => value.length > 0);
 
-  if (vendorError || !vendor?.id) {
+  const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id, store_name, phone_number")
+    .eq("is_active", true)
+    .in("phone_number", candidatePhones)
+    .limit(1)
+    .maybeSingle();
+
+  if (vendorError) {
+    return null;
+  }
+
+  if (vendor?.id) {
+    return {
+      id: vendor.id as string,
+      storeName: vendor.store_name as string,
+    };
+  }
+
+  const { data: activeVendors, error: fallbackError } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id, store_name, phone_number")
+    .eq("is_active", true);
+
+  if (fallbackError) {
+    return null;
+  }
+
+  const matchedVendor = ((activeVendors ?? []) as Array<{ id: string; store_name: string; phone_number?: string | null }>).find(
+    (row) => {
+      const normalizedVendorPhone = normalizeMoroccoPhoneInput(String(row.phone_number ?? ""));
+      return normalizedVendorPhone.length > 0 && normalizedVendorPhone === normalizedInput;
+    },
+  );
+
+  if (!matchedVendor?.id) {
     return null;
   }
 
   return {
-    id: vendor.id as string,
-    storeName: vendor.store_name as string,
+    id: matchedVendor.id,
+    storeName: matchedVendor.store_name,
   };
 };
 
