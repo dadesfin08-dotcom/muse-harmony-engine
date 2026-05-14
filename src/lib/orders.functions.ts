@@ -24,6 +24,7 @@ const orderItemSchema = z.object({
   measurementValue: z.number().positive().max(10_000).nullable().optional(),
   measurementUnit: z.string().trim().min(1).max(30).nullable().optional(),
   quantity: z.number().int().min(1).max(99),
+  basePriceMad: z.number().min(0).max(100000).optional(),
   unitPriceMad: z.number().min(0).max(100000),
 });
 
@@ -371,6 +372,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
           measurementValue?: number | null;
           measurementUnit?: string | null;
           quantity: number;
+          basePriceMad?: number;
           unitPriceMad: number;
         }>
       >();
@@ -392,6 +394,12 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
 
       for (const [vendorId, vendorItems] of vendorEntries) {
         const totalPrice = vendorItems.reduce((sum, item) => sum + Number(item.unitPriceMad ?? 0) * Number(item.quantity ?? 0), 0);
+        const subtotalBasePrice = vendorItems.reduce(
+          (sum, item) => sum + Number(item.basePriceMad ?? item.unitPriceMad ?? 0) * Number(item.quantity ?? 0),
+          0,
+        );
+        const platformProfit = roundMoney(totalPrice - subtotalBasePrice);
+        const vendorRevenue = roundMoney(subtotalBasePrice);
         const itemCount = vendorItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0);
         const deliveryFee = vendorEntries.length > 1 ? 0 : data.deliveryFee;
 
@@ -407,6 +415,9 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             payment_method: data.paymentMethod,
             status: "new",
             delivery_fee: deliveryFee,
+            subtotal_base_price: roundMoney(subtotalBasePrice),
+            platform_profit: platformProfit,
+            vendor_revenue: vendorRevenue,
             total_price: totalPrice,
             item_count: itemCount,
             order_items: vendorItems,
