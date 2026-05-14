@@ -716,7 +716,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
 
       const { data: carnetRow, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("id, current_debt")
+        .select("id")
         .eq("vendor_id", vendor.id)
         .eq("customer_phone", data.customerPhone)
         .order("updated_at", { ascending: false })
@@ -727,7 +727,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
         throw new Error(carnetError.message);
       }
 
-      const latestDebt = Number(carnetRow?.current_debt ?? 0);
+      const latestDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
       if (!carnetRow?.id || latestDebt <= 0.01) {
         throw new Error("No outstanding debt for this customer.");
       }
@@ -744,16 +744,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
 
       if (error) {
         if (error.message.includes("Payment amount exceeds current debt")) {
-          const { data: freshestRow } = await (supabaseAdmin as any)
-            .from("vendor_carnet")
-            .select("current_debt")
-            .eq("vendor_id", vendor.id)
-            .eq("customer_phone", data.customerPhone)
-            .order("updated_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          const freshestDebt = Number(freshestRow?.current_debt ?? 0);
+          const freshestDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
           throw new Error(`Payment amount exceeds current debt (${freshestDebt.toFixed(2)} MAD).`);
         }
 
