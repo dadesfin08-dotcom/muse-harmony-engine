@@ -28,6 +28,7 @@ import {
   Tag,
   Scale,
   Sparkles,
+  QrCode,
   Volume2,
   VolumeX,
   Wallet,
@@ -1310,6 +1311,10 @@ function VendorDashboardPage() {
                 <Button variant="soft" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
                   <Wallet className="size-4" />
                   Wallet
+                </Button>
+                <Button variant="default" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
+                  <QrCode className="size-4" />
+                  Pay Admin via QR · أداء مستحقات التطبيق
                 </Button>
               </div>
             </div>
