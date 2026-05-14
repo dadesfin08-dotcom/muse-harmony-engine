@@ -19,6 +19,7 @@ import {
   evaluateOperationalAccess,
   subscribeToAuthChanges,
 } from "@/lib/operational-auth";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -152,6 +153,7 @@ function RootComponent() {
         <OperationalRouteGuard>
           <Outlet />
         </OperationalRouteGuard>
+        <Toaster position="top-right" richColors closeButton />
       </QueryClientProvider>
     </I18nextProvider>
   );
