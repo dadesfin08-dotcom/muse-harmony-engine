@@ -115,6 +115,7 @@ export const Route = createFileRoute("/customer/")({
 
 type Product = {
   id: string;
+  productVariants?: string[];
   name: string;
   nameFr?: string | null;
   nameAr?: string | null;
@@ -727,6 +728,9 @@ function Index() {
 
       return {
         id: item.id,
+        productVariants: Array.isArray((item as { productVariants?: string[] }).productVariants)
+          ? ((item as { productVariants?: string[] }).productVariants ?? [])
+          : [],
         name: localizedName,
         nameFr,
         nameAr,
@@ -1055,14 +1059,29 @@ function Index() {
   const activeCustomerOrders = allCustomerOrders.filter((order) => order.status !== "delivered");
   const deliveredCustomerOrders = allCustomerOrders.filter((order) => order.status === "delivered");
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, selectedVariant?: string | null) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
       toast.error("Select your delivery location first.");
       return;
     }
 
-    addCartItem(product);
+    const normalizedVariant = selectedVariant?.trim() || null;
+    const cartItemId = normalizedVariant ? `${product.id}::${normalizedVariant}` : product.id;
+
+    addCartItem({
+      id: product.id,
+      cartItemId,
+      productId: product.id,
+      name: product.name,
+      selectedVariant: normalizedVariant,
+      brandName: product.brandNameEn || product.brand || null,
+      measurementValue: product.measurementValue ?? null,
+      price: product.price,
+      measurementUnit: product.measurementUnit,
+      image: product.image,
+      alt: product.alt,
+    });
 
     toast.success("Added to cart", {
       description: product.name,
@@ -1070,8 +1089,11 @@ function Index() {
     });
   };
 
-  const getCartQuantity = (productId: string) =>
-    cartItems.find((item) => item.id === productId)?.quantity ?? 0;
+  const getCartQuantity = (productId: string, selectedVariant?: string | null) => {
+    const normalizedVariant = selectedVariant?.trim() || null;
+    const cartItemId = normalizedVariant ? `${productId}::${normalizedVariant}` : productId;
+    return cartItems.find((item) => (item.cartItemId || item.id) === cartItemId)?.quantity ?? 0;
+  };
 
   const addFlashDealToCart = (deal: {
     id: string;
@@ -1188,7 +1210,12 @@ function Index() {
           totalPrice: finalTotalMad,
           itemCount: cartCount,
           items: cartItems.map((item) => ({
+            productId: item.productId || item.id,
             name: item.name,
+            selectedVariant: item.selectedVariant ?? null,
+            brandName: item.brandName ?? null,
+            measurementValue: item.measurementValue ?? null,
+            measurementUnit: item.measurementUnit ?? null,
             quantity: item.quantity,
             unitPriceMad: item.price,
           })),
@@ -1730,21 +1757,31 @@ function Index() {
                       {product.price} <span className="text-sm font-medium">MAD</span>
                     </p>
 
-                    {getCartQuantity(product.id) > 0 ? (
+                    {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
                       <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
                         <button
                           type="button"
                           className="inline-flex size-6 items-center justify-center text-[#2A7543]"
-                          onClick={() => decreaseItem(product.id)}
+                          onClick={() =>
+                            decreaseItem(
+                              product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
+                            )
+                          }
                           aria-label="Decrease quantity"
                         >
                           <Minus className="size-4" />
                         </button>
-                        <span className="min-w-7 text-center text-base font-medium text-gray-900">{getCartQuantity(product.id)}</span>
+                        <span className="min-w-7 text-center text-base font-medium text-gray-900">
+                          {getCartQuantity(product.id, product.productVariants?.[0] ?? null)}
+                        </span>
                         <button
                           type="button"
                           className="inline-flex size-6 items-center justify-center text-[#2A7543]"
-                          onClick={() => increaseItem(product.id)}
+                          onClick={() =>
+                            increaseItem(
+                              product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
+                            )
+                          }
                           aria-label="Increase quantity"
                         >
                           +
@@ -1754,7 +1791,7 @@ function Index() {
                       <button
                         type="button"
                         className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800"
-                        onClick={() => addToCart(product)}
+                         onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
                         {t("products.add")}
@@ -1866,6 +1903,7 @@ function Index() {
                     brand={t("flashDeals.title", { defaultValue: "Flash Deal" })}
                     measurementUnit={product.measurementUnit}
                     imageUrl={product.image}
+                    productVariants={[]}
                     price={Number(product.dealPrice ?? 0)}
                     oldPrice={Number(product.price ?? 0)}
                     discountPercent={product.discountPercent}
@@ -2106,9 +2144,11 @@ function Index() {
                     <h3 className="text-sm font-semibold text-foreground">Order Summary</h3>
                     <div className="space-y-2">
                       {cartItems.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between text-sm">
+                        <div key={item.cartItemId || item.id} className="flex items-center justify-between text-sm">
                           <p className="text-foreground">
-                            {item.name} <span className="text-muted-foreground">x{item.quantity}</span>
+                            {item.name}
+                            {item.selectedVariant ? ` • ${item.selectedVariant}` : ""}{" "}
+                            <span className="text-muted-foreground">x{item.quantity}</span>
                           </p>
                           <p className="font-medium text-foreground">{item.price * item.quantity} MAD</p>
                         </div>
