@@ -3608,19 +3608,20 @@ function OverviewSection({
   isLoading: boolean;
   error: Error | null;
 }) {
+  const { t } = useTranslation();
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load overview analytics.
+        {t("admin.overview.loadFailed")}
       </section>
     );
   }
 
   const metrics = [
-    { label: "Total Orders Today", value: String(analytics?.totalOrdersToday ?? 0), icon: PackageCheck },
-    { label: "Active Vendors", value: String(analytics?.activeVendors ?? 0), icon: Store },
+    { label: t("admin.overview.metrics.totalOrdersToday"), value: String(analytics?.totalOrdersToday ?? 0), icon: PackageCheck },
+    { label: t("admin.overview.metrics.activeVendors"), value: String(analytics?.activeVendors ?? 0), icon: Store },
     {
-      label: "Total Revenue",
+      label: t("admin.overview.metrics.totalRevenue"),
       value: `${Math.round(analytics?.totalRevenueMad ?? 0)} MAD`,
       icon: CircleDollarSign,
     },
@@ -3638,7 +3639,7 @@ function OverviewSection({
               </span>
             </div>
             <p className="mt-3 text-2xl font-semibold text-foreground">
-              {isLoading ? <span className="text-base text-muted-foreground">Loading...</span> : metric.value}
+               {isLoading ? <span className="text-base text-muted-foreground">{t("admin.common.loading")}</span> : metric.value}
             </p>
           </article>
         ))}
@@ -3646,16 +3647,16 @@ function OverviewSection({
 
       <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Weekly Order Trends</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.overview.weeklyOrderTrends")}</h2>
           <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
             <TrendingUp className="size-3.5" />
-            Last 7 days
+            {t("admin.overview.last7Days")}
           </span>
         </div>
 
         {isLoading ? (
           <div className="flex h-64 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
-            Loading trends...
+            {t("admin.overview.loadingTrends")}
           </div>
         ) : (
           <ChartContainer config={weeklyOrdersChartConfig} className="h-64 w-full">
