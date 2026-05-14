@@ -19,6 +19,10 @@ const orderItemSchema = z.object({
   productId: z.string().uuid().optional(),
   vendorId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(160),
+  selectedVariant: z.string().trim().min(1).max(120).nullable().optional(),
+  brandName: z.string().trim().min(1).max(160).nullable().optional(),
+  measurementValue: z.number().positive().max(10_000).nullable().optional(),
+  measurementUnit: z.string().trim().min(1).max(30).nullable().optional(),
   quantity: z.number().int().min(1).max(99),
   unitPriceMad: z.number().min(0).max(100000),
 });
@@ -104,6 +108,7 @@ type OrderRow = {
     name: string;
     quantity: number;
     unitPriceMad: number;
+      selectedVariant?: string | null;
     imageUrl?: string | null;
     brandName?: string | null;
     measurementValue?: number | null;
@@ -348,7 +353,20 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
       }
 
       const vendorIds = new Set(activeVendors.map((vendor) => vendor.id));
-      const itemsByVendor = new Map<string, Array<{ productId?: string; vendorId?: string; name: string; quantity: number; unitPriceMad: number }>>();
+      const itemsByVendor = new Map<
+        string,
+        Array<{
+          productId?: string;
+          vendorId?: string;
+          name: string;
+          selectedVariant?: string | null;
+          brandName?: string | null;
+          measurementValue?: number | null;
+          measurementUnit?: string | null;
+          quantity: number;
+          unitPriceMad: number;
+        }>
+      >();
 
       for (const item of data.items) {
         const preferredVendorId = item.vendorId && vendorIds.has(item.vendorId) ? item.vendorId : null;
