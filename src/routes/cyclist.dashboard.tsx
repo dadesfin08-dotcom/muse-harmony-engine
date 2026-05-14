@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, Info, Keyboard, Lock, LogOut, MapPin, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, Info, Keyboard, Lock, LogOut, MapPin, MessageCircle, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -628,20 +628,37 @@ function OrderCard({
 
         <div>
           <p className="text-lg font-bold text-foreground">{order.customerName}</p>
-          <a
-            href={`tel:${order.customerPhone}`}
-            className="mt-1 inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700"
-          >
-            <PhoneCall className="size-4" />
-            {order.customerPhone}
-          </a>
+          <div className="mt-1 flex flex-row items-center gap-2">
+            <a
+              href={`tel:${order.customerPhone}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700"
+            >
+              <PhoneCall className="size-4" />
+              {order.customerPhone}
+            </a>
+            <a
+              href={`https://wa.me/${order.customerPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center rounded-full bg-emerald-100 p-2 text-emerald-600 transition-colors hover:bg-emerald-200"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Open WhatsApp chat"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </a>
+          </div>
         </div>
 
         <div className="mt-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-          <p className="flex items-start gap-2 text-sm text-gray-700">
-            <MapPin className="mt-0.5 size-4 shrink-0" />
-            <span className="min-w-0">{order.douar}</span>
-          </p>
+          <a
+            href={`https://maps.google.com/?q=${encodeURIComponent(order.douar)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+          >
+            <MapPin className="h-4 w-4" />
+            {order.douar}
+          </a>
           {briefingText ? (
             <p className="mt-2 flex items-start gap-2 border-t border-slate-200 pt-2 text-sm italic text-gray-600">
               <Info className="mt-0.5 size-4 shrink-0" />
