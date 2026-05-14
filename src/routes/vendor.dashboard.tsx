@@ -2903,7 +2903,6 @@ function OrderCard({
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
   const isInDeliveryTab = tab === "inDelivery";
-  const isPreparingTab = tab === "preparing";
   const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
@@ -2945,27 +2944,14 @@ function OrderCard({
   return (
     <article
       className={cn(
-        "transition hover:shadow-md",
+        "flex h-full min-h-[200px] flex-col transition hover:shadow-md",
         isInDeliveryTab
           ? "rounded-[24px] border border-border/80 bg-card p-5 shadow-[0_16px_40px_-26px_rgba(16,24,40,0.2)] sm:rounded-[26px] sm:p-6"
           : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
-      <div className={cn("space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
-        <div className={cn("flex w-full items-start justify-between gap-2", isPreparingTab ? "mb-3 flex-row items-center justify-end" : "") }>
-          {isPreparingTab ? null : (
-            <div className={cn("flex min-w-0 flex-1 items-center gap-2", isInDeliveryTab ? "gap-0" : "") }>
-              <p
-                className={cn(
-                  "font-black tracking-tight",
-                  isInDeliveryTab ? "text-lg font-bold leading-none text-foreground" : "text-2xl text-foreground",
-                )}
-              >
-                {shortId}
-              </p>
-            </div>
-          )}
-
+      <div className={cn("flex-1 space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
+        <div className={cn("flex w-full items-start justify-between gap-2", !isInDeliveryTab ? "mb-3 flex flex-row items-center justify-end gap-2" : "") }>
           {isInDeliveryTab ? (
             <div className="flex shrink-0 flex-col items-end gap-1">
               <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-2.5 text-xs font-semibold text-primary" dir="rtl">
@@ -3005,24 +2991,22 @@ function OrderCard({
           </>
         ) : (
           <>
-            <p className="inline-flex items-center gap-2 text-sm text-foreground">
-              <User className="size-4 text-muted-foreground" />
-              <span className="font-semibold">{order.customerName}</span>
-            </p>
-
-            <p className="inline-flex items-center gap-2 text-sm text-foreground">
-              <MapPin className="size-4 text-muted-foreground" />
-              <span>{destination || "Destination unavailable"}</span>
-            </p>
-
-            {isPreparingTab ? (
+            <div className="flex-1 space-y-2.5">
               <div className="mb-3 flex w-full flex-row items-center justify-between">
                 <p className="text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
                 <p className="text-xl font-extrabold text-gray-900">{shortId}</p>
               </div>
-            ) : (
-              <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
-            )}
+
+              <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
+                <User className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate font-semibold">{order.customerName}</span>
+              </p>
+
+              <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
+                <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{destination || "Destination unavailable"}</span>
+              </p>
+            </div>
           </>
         )}
 
