@@ -692,6 +692,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          admin_settled: boolean
           created_at: string
           customer_name: string
           customer_phone: string | null
@@ -716,6 +717,7 @@ export type Database = {
           vendor_settlement_status: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Insert: {
+          admin_settled?: boolean
           created_at?: string
           customer_name: string
           customer_phone?: string | null
@@ -740,6 +742,7 @@ export type Database = {
           vendor_settlement_status?: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Update: {
+          admin_settled?: boolean
           created_at?: string
           customer_name?: string
           customer_phone?: string | null
