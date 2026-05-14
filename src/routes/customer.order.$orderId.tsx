@@ -143,7 +143,9 @@ function CustomerOrderDetailsPage() {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
             <div>
               <h1 className="text-lg font-semibold text-foreground">{copy.title}</h1>
-              <p className="text-sm text-muted-foreground">{order ? `Order #${order.id.slice(0, 8).toUpperCase()}` : copy.loadingOrder}</p>
+              <p className="text-sm text-muted-foreground">
+                {order ? t("customerOrder.orderCode", { id: order.id.slice(0, 8).toUpperCase() }) : copy.loadingOrder}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={paymentBadge.className}>
@@ -199,18 +201,18 @@ function CustomerOrderDetailsPage() {
               </div>
 
               <div className="mt-4 rounded-md border border-border bg-muted/20 p-3">
-                <p className="text-sm font-semibold text-foreground">Customer & Delivery Information</p>
+                <p className="text-sm font-semibold text-foreground">{t("customerOrder.customerDeliveryInfo")}</p>
                 <div className="mt-2 space-y-1 text-sm text-foreground">
                   <p>
-                    <span className="text-muted-foreground">Commune / Jamaa Tourabiya:</span> {order.communeName || "-"}
+                    <span className="text-muted-foreground">{t("customerOrder.commune")}:</span> {order.communeName || "-"}
                   </p>
                   <p>
-                    <span className="text-muted-foreground">Douar / Neighborhood:</span> {order.neighborhoodName || "-"}
+                    <span className="text-muted-foreground">{t("customerOrder.neighborhood")}:</span> {order.neighborhoodName || "-"}
                   </p>
                 </div>
                 <div className="mt-3 rounded-md border border-dashed border-border bg-background px-3 py-2">
-                  <p className="text-xs font-semibold text-muted-foreground">Special Instructions</p>
-                  <p className="mt-1 text-sm text-foreground">{order.specialInstructions || "None / لا توجد"}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{t("customerOrder.specialInstructions")}</p>
+                  <p className="mt-1 text-sm text-foreground">{order.specialInstructions || t("customerOrder.none")}</p>
                 </div>
               </div>
 
