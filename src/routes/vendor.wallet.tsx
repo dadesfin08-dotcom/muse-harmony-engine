@@ -189,7 +189,7 @@ function VendorWalletPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-2xl font-semibold">{formatMad(summary?.totalReceivedTodayMad)}</p>
-            <Button className="w-full" onClick={() => setIsScannerOpen(true)}>
+            <Button className="w-full" onClick={() => setIsVendorReceiptQrOpen(true)}>
               <QrCode className="size-4" />
               Receive Cash / Scan QR · استلام النقود / مسح الرمز
             </Button>
@@ -232,12 +232,19 @@ function VendorWalletPage() {
         </Card>
       </div>
 
-      <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+      <Dialog open={isVendorReceiptQrOpen} onOpenChange={setIsVendorReceiptQrOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Cyclist Handover QR · مسح رمز السائق</DialogTitle>
+            <DialogTitle>Vendor Cash Receipt QR · رمز استلام التاجر</DialogTitle>
           </DialogHeader>
-          <div id="vendor-cash-qr-reader" className="overflow-hidden rounded-xl border border-border" />
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              Let the cyclist scan this QR to confirm vendor cash receipt.
+            </p>
+            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
+              {vendorReceiptQrPayload ? <QRCodeSVG value={vendorReceiptQrPayload} size={220} includeMargin /> : null}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -255,31 +262,7 @@ function VendorWalletPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(confirmPayload)} onOpenChange={(open) => (!open ? setConfirmPayload(null) : undefined)}>
-        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Confirm Cash Reception · تأكيد استلام النقود</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Full cash handover: {confirmationLabel}. Confirm settlement for all pending delivered cash orders from this
-            cyclist? · المبلغ الكامل للتسليم: {confirmationLabel}. واش كتأكد تسوية جميع الطلبات النقدية المسلمة والمعلقة لهاد السائق؟
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmPayload(null)} disabled={settleMutation.isPending}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!confirmPayload) return;
-                settleMutation.mutate({ cyclistId: confirmPayload.cyclistId });
-              }}
-              disabled={!confirmPayload || settleMutation.isPending}
-            >
-              {settleMutation.isPending ? "Confirming..." : "Confirm · تأكيد"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      
     </main>
   );
 }
