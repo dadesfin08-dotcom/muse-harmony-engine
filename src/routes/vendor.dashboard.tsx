@@ -92,6 +92,11 @@ type LedgerOrderItem = {
   quantity: number;
   unitPriceMad: number;
 };
+
+function roundMoney(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
 const VENDOR_SOUNDS_STORAGE_KEY = "bzaf.vendorSoundsEnabled";
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
@@ -468,7 +473,7 @@ function VendorDashboardPage() {
         status: row.status,
         deliveryFeeMad: Number(row.delivery_fee ?? 0),
         totalMad: Number(row.total_price ?? 0),
-        vendorShareMad: Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
+        vendorShareMad: roundMoney(Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0)),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
         createdAt: row.created_at,
@@ -553,12 +558,18 @@ function VendorDashboardPage() {
         return false;
       }
 
+      const normalizedDate = date.getTime();
+
       if (kpiFilter === "all") {
         return true;
       }
 
       if (kpiFilter === "today") {
-        return date.toDateString() === now.toDateString();
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+        return normalizedDate >= startOfDay.getTime() && normalizedDate < endOfDay.getTime();
       }
 
       if (kpiFilter === "week") {
@@ -566,12 +577,16 @@ function VendorDashboardPage() {
         const dayOffset = (startOfWeek.getDay() + 6) % 7;
         startOfWeek.setDate(startOfWeek.getDate() - dayOffset);
         startOfWeek.setHours(0, 0, 0, 0);
-        return date >= startOfWeek && date <= now;
+        const endOfWeek = new Date(now);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return normalizedDate >= startOfWeek.getTime() && normalizedDate <= endOfWeek.getTime();
       }
 
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       startOfMonth.setHours(0, 0, 0, 0);
-      return date >= startOfMonth && date <= now;
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      endOfMonth.setMilliseconds(-1);
+      return normalizedDate >= startOfMonth.getTime() && normalizedDate <= endOfMonth.getTime();
     };
 
     const pendingOrders = queue.new.length + queue.preparing.length;
@@ -590,9 +605,9 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      cashEarningsMad: cashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
-      creditIssuedMad: carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
-      outstandingCreditMad,
+      cashEarningsMad: roundMoney(cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
+      creditIssuedMad: roundMoney(carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
+      outstandingCreditMad: roundMoney(outstandingCreditMad),
     };
   }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers]);
 
