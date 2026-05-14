@@ -1719,6 +1719,7 @@ function AdminPage() {
           row.name_ar ?? "",
           row.category_name ?? "",
           row.brand_name ?? "",
+          (row.product_variants ?? []).join(", "),
           row.measurement_value != null ? String(row.measurement_value) : "",
           row.measurement_unit,
           row.barcode ?? "",
@@ -1744,7 +1745,7 @@ function AdminPage() {
           error: "Pick a brand from the dropdown list.",
         };
 
-        templateSheet.getCell(`H${rowIndex}`).dataValidation = {
+        templateSheet.getCell(`I${rowIndex}`).dataValidation = {
           type: "list",
           allowBlank: false,
           formulae: [unitFormula],
@@ -1761,6 +1762,7 @@ function AdminPage() {
         { width: 24 },
         { width: 22 },
         { width: 22 },
+        { width: 28 },
         { width: 20 },
         { width: 20 },
         { width: 22 },
