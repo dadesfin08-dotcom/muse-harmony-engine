@@ -1462,28 +1462,35 @@ function VendorDashboardPage() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
                         {(() => {
-                          const metadataParts = [
-                            item.selectedVariant?.trim()
-                              ? `النوع: ${item.selectedVariant.trim()}`
-                              : null,
-                            item.brandName?.trim()
-                              ? `الماركة: ${item.brandName.trim()}`
-                              : null,
-                            item.measurementValue != null &&
-                            Number.isFinite(item.measurementValue) &&
-                            item.measurementUnit?.trim()
-                              ? `الحجم: ${item.measurementValue} ${item.measurementUnit.trim()}`
-                              : null,
-                          ].filter((part): part is string => Boolean(part));
+                          const normalizedBrand = item.brandName?.trim();
+                          const normalizedMeasurement =
+                            item.measurementValue != null && Number.isFinite(item.measurementValue) && item.measurementUnit?.trim()
+                              ? `${item.measurementValue} ${item.measurementUnit.trim()}`
+                              : null;
+                          const normalizedVariant = item.selectedVariant?.trim();
 
-                          if (metadataParts.length === 0) {
+                          if (!normalizedBrand && !normalizedMeasurement && !normalizedVariant) {
                             return null;
                           }
 
                           return (
-                            <p className="mt-1 truncate text-xs font-medium text-muted-foreground">
-                              {metadataParts.join(" • ")}
-                            </p>
+                            <div className="mt-1 flex flex-row items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                              {normalizedBrand ? (
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                                  الماركة: {normalizedBrand}
+                                </span>
+                              ) : null}
+                              {normalizedMeasurement ? (
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-orange-100 bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700">
+                                  الحجم: {normalizedMeasurement}
+                                </span>
+                              ) : null}
+                              {normalizedVariant ? (
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+                                  النوع: {normalizedVariant}
+                                </span>
+                              ) : null}
+                            </div>
                           );
                         })()}
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
