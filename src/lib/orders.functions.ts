@@ -110,6 +110,10 @@ export type VendorSettlementSummary = {
   pendingCyclistCount: number;
 };
 
+function roundMoney(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
 export type VendorOrderDetails = {
   id: string;
   customerName: string;
