@@ -150,10 +150,20 @@ export type CustomerOrderDetails = {
 };
 
 async function resolveVendorByPhone(phoneNumber: string) {
+  const normalizedInput = normalizeMoroccoPhoneInput(phoneNumber);
+  const candidatePhones = Array.from(
+    new Set([
+      phoneNumber.trim(),
+      formatMoroccoPhoneForPayload(normalizedInput),
+      `0${normalizedInput}`,
+      normalizedInput,
+    ]).values(),
+  ).filter((value) => value.length > 0);
+
   const { data: vendor, error } = await (supabaseAdmin as any)
     .from("vendors")
     .select("id, store_name, phone_number")
-    .eq("phone_number", phoneNumber)
+    .in("phone_number", candidatePhones)
     .eq("is_active", true)
     .limit(1)
     .maybeSingle();
