@@ -1506,7 +1506,7 @@ function AdminPage() {
   const applyBrandLogoFile = (file: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+      toast.error(t("admin.toast.uploadValidImage"));
       return;
     }
     const reader = new FileReader();
@@ -1514,7 +1514,7 @@ function AdminPage() {
       setBrandLogoFile(file);
       setBrandLogoPreviewUrl(typeof reader.result === "string" ? reader.result : null);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => toast.error(t("admin.toast.previewImageFailed"));
     reader.readAsDataURL(file);
   };
 
@@ -1524,7 +1524,7 @@ function AdminPage() {
 
   const saveBrandHandler = async () => {
     if (!brandForm.nameEn.trim()) {
-      toast.error("Brand English name is required.");
+      toast.error(t("admin.toast.brandEnglishNameRequired"));
       return;
     }
 
@@ -1575,27 +1575,27 @@ function AdminPage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
-      toast.success(editingBrandId ? "Brand updated." : "Brand created.");
+      toast.success(editingBrandId ? t("admin.toast.brandUpdated") : t("admin.toast.brandCreated"));
       setIsBrandModalOpen(false);
       resetBrandForm();
     } catch (error) {
       console.error("Failed to save brand:", error);
-      toast.error("Failed to save brand.");
+      toast.error(t("admin.toast.brandSaveFailed"));
     } finally {
       setIsSavingBrand(false);
     }
   };
 
   const deleteBrandHandler = async (brand: BrandAdminRow) => {
-    if (!window.confirm(`Delete ${brand.name_en}?`)) return;
+      if (!window.confirm(t("admin.confirm.deleteBrand", { name: brand.name_en }))) return;
     try {
       await deleteBrandInDatabase({ data: { id: brand.id } });
       await queryClient.invalidateQueries({ queryKey: ["admin", "brands"] });
       await queryClient.invalidateQueries({ queryKey: ["admin", "master-products"] });
-      toast.success("Brand deleted.");
+      toast.success(t("admin.toast.brandDeleted"));
     } catch (error) {
       console.error("Failed to delete brand:", error);
-      toast.error("Failed to delete brand.");
+      toast.error(t("admin.toast.brandDeleteFailed"));
     }
   };
 
@@ -1614,7 +1614,7 @@ function AdminPage() {
 
   const importBrandsFromCsv = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Please upload a CSV file.");
+      toast.error(t("admin.toast.uploadCsvOnly"));
       return;
     }
 
@@ -1650,7 +1650,7 @@ function AdminPage() {
         .filter((row) => row.nameEn.length > 0);
 
       if (preparedRows.length === 0) {
-        toast.error("No valid rows found. Fill at least English in one row.");
+        toast.error(t("admin.toast.noValidBrandRows"));
         return;
       }
 
@@ -1815,7 +1815,7 @@ function AdminPage() {
     const isXlsx = lowerCaseName.endsWith(".xlsx");
 
     if (!isCsv && !isXlsx) {
-      toast.error("Please upload an XLSX or CSV file.");
+      toast.error(t("admin.toast.uploadXlsxOrCsv"));
       return;
     }
 
