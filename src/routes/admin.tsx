@@ -245,6 +245,7 @@ const MASTER_PRODUCTS_CSV_HEADERS = [
   "Name_AR",
   "Category",
   "Brand",
+  "Product_Variants",
   "Measurement_Value",
   "Measurement_Unit",
   "Barcode",
@@ -257,6 +258,7 @@ const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
     "زيت الزيتون",
     "Groceries",
     "Lesieur",
+    "Extra Virgin, Light",
     "1",
     "Liter",
     "6111000010012",
@@ -268,6 +270,7 @@ const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
     "موز",
     "Vegetables & Fruits",
     "Dole",
+    "Yellow, Organic",
     "1",
     "Kg",
     "6111000010013",
@@ -279,6 +282,7 @@ const MASTER_PRODUCTS_CSV_EXAMPLE_ROWS = [
     "بيض 12 حبة",
     "Dairy & Eggs",
     "Local Farm",
+    "White, Brown",
     "12",
     "Piece",
     "6111000010014",
@@ -1715,6 +1719,7 @@ function AdminPage() {
           row.name_ar ?? "",
           row.category_name ?? "",
           row.brand_name ?? "",
+          (row.product_variants ?? []).join(", "),
           row.measurement_value != null ? String(row.measurement_value) : "",
           row.measurement_unit,
           row.barcode ?? "",
@@ -1740,7 +1745,7 @@ function AdminPage() {
           error: "Pick a brand from the dropdown list.",
         };
 
-        templateSheet.getCell(`H${rowIndex}`).dataValidation = {
+        templateSheet.getCell(`I${rowIndex}`).dataValidation = {
           type: "list",
           allowBlank: false,
           formulae: [unitFormula],
@@ -1757,6 +1762,7 @@ function AdminPage() {
         { width: 24 },
         { width: 22 },
         { width: 22 },
+        { width: 28 },
         { width: 20 },
         { width: 20 },
         { width: 22 },
@@ -1885,6 +1891,11 @@ function AdminPage() {
           nameAr: row.Name_AR?.trim() || null,
           category: row.Category?.trim() || "",
           brand: row.Brand?.trim() || null,
+          productVariants: row.Product_Variants
+            ? row.Product_Variants.split(",")
+                .map((variant) => variant.trim())
+                .filter((variant) => variant.length > 0)
+            : [],
           measurementValue: row.Measurement_Value?.trim() || null,
           measurementUnit: row.Measurement_Unit?.trim() || "",
           barcode: row.Barcode?.trim() || null,

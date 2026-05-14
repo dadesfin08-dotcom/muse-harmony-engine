@@ -116,6 +116,7 @@ const bulkImportMasterProductsInputSchema = z.object({
         nameAr: z.string().trim().max(140).nullable(),
         category: z.string().trim().min(1).max(140),
         brand: z.string().trim().max(140).nullable(),
+        productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
         measurementValue: z.string().trim().max(40).nullable(),
         measurementUnit: z.string().trim().min(1).max(30),
         barcode: z.string().trim().max(120).nullable(),
@@ -182,6 +183,7 @@ type MasterProductExportRow = {
   name_ar: string | null;
   image_url: string | null;
   barcode: string | null;
+  product_variants: string[];
   measurement_value: number | null;
   measurement_unit: MeasurementUnit;
   category_name: string | null;
@@ -299,7 +301,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
   try {
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
-      .select("id, product_name, name_fr, name_ar, image_url, barcode, measurement_value, measurement_unit, category, category_id, brand_id")
+      .select("id, product_name, name_fr, name_ar, image_url, barcode, product_variants, measurement_value, measurement_unit, category, category_id, brand_id")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -313,6 +315,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
       name_ar: string | null;
       image_url: string | null;
       barcode: string | null;
+      product_variants: string[] | null;
       measurement_value: number | null;
       measurement_unit: MeasurementUnit;
       category: ProductCategory | null;
@@ -357,6 +360,7 @@ export const listMasterProductsForExport = createServerFn({ method: "GET" }).han
       name_ar: row.name_ar,
       image_url: row.image_url,
       barcode: row.barcode,
+      product_variants: Array.isArray(row.product_variants) ? row.product_variants : [],
       measurement_value: row.measurement_value,
       measurement_unit: row.measurement_unit,
       category_name: (row.category_id ? categoriesById.get(row.category_id) : null) ?? row.category ?? null,
@@ -517,6 +521,9 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           nameAr: row.nameAr?.trim() ? row.nameAr.trim() : null,
           categoryLabel: row.category.trim(),
           brandLabel: row.brand?.trim() ? row.brand.trim() : null,
+          productVariants: Array.from(
+            new Set(row.productVariants.map((variant) => variant.trim()).filter((variant) => variant.length > 0)),
+          ),
           measurementValueRaw: row.measurementValue?.trim() ? row.measurementValue.trim() : null,
           measurementUnitRaw: row.measurementUnit.trim(),
           barcode: row.barcode?.trim() ? row.barcode.trim() : null,
@@ -672,6 +679,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           category_id: matchedCategory.id,
           category: parsedCategory.data,
           brand_id: matchedBrandId,
+          product_variants: row.productVariants,
           measurement_value: parsedMeasurementValue,
           measurement_unit: parsedMeasurementUnit.data,
           image_url: row.imageUrl,
