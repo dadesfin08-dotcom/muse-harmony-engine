@@ -33,7 +33,6 @@ export const Route = createFileRoute("/cyclist/wallet")({
 function CyclistWalletPage() {
   const navigate = useNavigate({ from: "/cyclist/wallet" });
   const queryClient = useQueryClient();
-  const [isQrOpen, setIsQrOpen] = useState(false);
   const [isVendorQrScannerOpen, setIsVendorQrScannerOpen] = useState(false);
   const [vendorQrScannerStatus, setVendorQrScannerStatus] = useState("");
   const [isVendorQrScannerSuccess, setIsVendorQrScannerSuccess] = useState(false);
