@@ -2714,6 +2714,7 @@ function AdminPage() {
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
+                  onCollectPlatformDues={openPlatformCollectionQr}
                 />
               ) : null}
               {tab === "cyclists" ? (
@@ -3873,11 +3874,13 @@ function VendorsSection({
   isLoading,
   onAddVendor,
   onManageVendor,
+  onCollectPlatformDues,
 }: {
   vendors: AdminVendorRecord[];
   isLoading: boolean;
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
+  onCollectPlatformDues: (vendor: AdminVendorRecord) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -3952,6 +3955,16 @@ function VendorsSection({
                   <div className="space-y-2">
                     <Button variant="soft" size="sm" className="rounded-md" onClick={() => onManageVendor(vendor)}>
                       {t("admin.common.manage")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={() => onCollectPlatformDues(vendor)}
+                      disabled={Number(vendor.platformDuesMad ?? 0) <= 0}
+                    >
+                      <CircleDollarSign className="size-3.5" />
+                      Collect {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
                     </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
