@@ -297,7 +297,8 @@ function VendorDashboardPage() {
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
-  const shownIncomingToastIdsRef = useRef<Set<string>>(new Set());
+  const shownIncomingToastIdsRef = useRef<Map<string, number>>(new Map());
+  const incomingAlertCachePhoneRef = useRef<string>("");
   const [printOrder, setPrintOrder] = useState<DashboardOrder | null>(null);
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
   const vendorPhoneNumber = useMemo(() => {
@@ -317,6 +318,21 @@ function VendorDashboardPage() {
     () => isValidMoroccoPhone(normalizeMoroccoPhoneInput(vendorPhoneNumber)),
     [vendorPhoneNumber],
   );
+
+  useEffect(() => {
+    if (!normalizedVendorPhoneNumber) {
+      shownIncomingToastIdsRef.current = new Map();
+      incomingAlertCachePhoneRef.current = "";
+      return;
+    }
+
+    if (incomingAlertCachePhoneRef.current === normalizedVendorPhoneNumber) {
+      return;
+    }
+
+    shownIncomingToastIdsRef.current = readIncomingAlertCache(normalizedVendorPhoneNumber);
+    incomingAlertCachePhoneRef.current = normalizedVendorPhoneNumber;
+  }, [normalizedVendorPhoneNumber]);
 
   const fetchDashboardData = useServerFn(getVendorDashboardData);
   const fetchInvoiceSettings = useServerFn(getInvoiceSettings);
