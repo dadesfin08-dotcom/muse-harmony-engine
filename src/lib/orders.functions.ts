@@ -102,7 +102,16 @@ type OrderRow = {
   customer_phone: string;
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "picked_up" | "in_transit" | "delivering" | "delivered";
+  status:
+    | "new"
+    | "preparing"
+    | "ready"
+    | "picked_up"
+    | "in_transit"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
@@ -148,7 +157,14 @@ export type VendorOrderDetails = {
   customerAddress: string;
   specialInstructions: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status:
+    | "new"
+    | "preparing"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor";
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
@@ -164,7 +180,15 @@ export type VendorOrderDetails = {
 export type CustomerOrderDetails = {
   id: string;
   paymentMethod: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+  status:
+    | "new"
+    | "preparing"
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor"
+    | "cancelled";
   deliveryAuthCode: string | null;
   communeName: string;
   neighborhoodName: string;
@@ -1175,14 +1199,14 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .from("orders")
           .select("cyclist_id, total_price, delivery_fee, payment_method")
           .eq("vendor_id", vendor.id)
-          .eq("status", "delivered")
+          .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending")
           .not("cyclist_id", "is", null),
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, payment_method")
           .eq("vendor_id", vendor.id)
-          .eq("status", "delivered")
+          .eq("status", "cash_transferred_to_vendor")
           .eq("vendor_settlement_status", "settled")
           .gte("updated_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
           .lt("updated_at", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
@@ -1190,7 +1214,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .from("orders")
           .select("total_price, payment_method")
           .eq("vendor_id", vendor.id)
-          .eq("status", "delivered")
+          .eq("status", "cash_transferred_to_vendor")
           .eq("vendor_settlement_status", "settled"),
       ]);
 
@@ -1257,7 +1281,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         .select("id, total_price, delivery_fee, payment_method")
         .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
+        .eq("status", "delivered_cash_with_cyclist")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingError) {
@@ -1295,23 +1319,24 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         throw new Error("Settlement amount mismatch. Please refresh and scan again.");
       }
 
-      const { data: updatedRows, error: updateError } = await (supabaseAdmin as any)
-        .from("orders")
-        .update({ vendor_settlement_status: "settled" })
-        .eq("vendor_id", vendor.id)
-        .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
-        .eq("vendor_settlement_status", "pending")
-        .select("id");
+      const { data: settleResult, error: settleError } = await (supabaseAdmin as any).rpc(
+        "confirm_cash_transferred_to_vendor",
+        {
+          p_cyclist_id: data.cyclistId,
+          p_vendor_id: vendor.id,
+        },
+      );
 
-      if (updateError) {
-        throw new Error(updateError.message);
+      if (settleError) {
+        throw new Error(settleError.message);
       }
+
+      const settleRow = Array.isArray(settleResult) ? settleResult[0] : null;
 
       return {
         ok: true,
         settledAmountMad: computedAmount,
-        settledOrdersCount: (updatedRows ?? []).length,
+        settledOrdersCount: Number(settleRow?.settled_orders_count ?? 0),
       };
     } catch (error) {
       console.error("settleCyclistCashHandover failed:", error);
