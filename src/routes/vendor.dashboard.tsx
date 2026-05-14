@@ -111,6 +111,8 @@ type DashboardOrder = {
   id: string;
   customerName: string;
   customerPhone: string;
+  neighborhoodName: string;
+  communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered";
@@ -468,6 +470,8 @@ function VendorDashboardPage() {
         id: row.id,
         customerName: row.customer_name,
         customerPhone: row.customer_phone,
+        neighborhoodName: typeof row.neighborhood_name === "string" ? row.neighborhood_name : "-",
+        communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
         status: row.status,
@@ -618,6 +622,9 @@ function VendorDashboardPage() {
             id: printOrder.id,
             customerName: printOrder.customerName,
             customerPhone: printOrder.customerPhone,
+            neighborhoodName: printOrder.neighborhoodName,
+            communeName: printOrder.communeName,
+            specialInstructions: printOrder.deliveryNotes,
             createdAt: printOrder.createdAt,
             items: printOrder.items,
             deliveryFeeMad: Number(printOrder.deliveryFeeMad ?? 0),
@@ -627,6 +634,9 @@ function VendorDashboardPage() {
             id: "preview",
             customerName: "-",
             customerPhone: "-",
+            neighborhoodName: "-",
+            communeName: "-",
+            specialInstructions: "",
             createdAt: new Date().toISOString(),
             items: [],
             deliveryFeeMad: 0,
