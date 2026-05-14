@@ -627,42 +627,49 @@ function CyclistDashboardPage() {
                   <p className="text-sm font-bold text-slate-800">قائمة المنتجات</p>
                 </div>
 
-                <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" dir="rtl">
                   {detailsOrder.items.length > 0 ? (
                     detailsOrder.items.map((item, index) => (
                       <div
                         key={`${detailsOrder.id}-${item.name}-${index}`}
-                        className="flex items-start gap-3 border-b border-slate-100 p-3.5 last:border-0"
+                        className="flex flex-row items-center gap-4 border-b border-slate-100 px-3.5 py-3 last:border-0"
                       >
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-400">
-                          <ShoppingBasket className="size-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-base font-bold text-slate-900">{item.name}</p>
-                          {item.brandName || item.measurementValue || item.measurementUnit ? (
-                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                              {item.brandName ? (
-                                <span className="inline-flex items-center gap-1 text-sky-600">
-                                  <Tag className="h-3 w-3 text-slate-400" />
-                                  {item.brandName}
-                                </span>
-                              ) : null}
-                              {item.measurementValue || item.measurementUnit ? (
-                                <span className="inline-flex items-center gap-1 text-orange-600">
-                                  <Scale className="ml-2 h-3 w-3 text-slate-400" />
-                                  {[item.measurementValue, item.measurementUnit].filter(Boolean).join(" ")}
-                                </span>
-                              ) : null}
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.name} className="h-12 w-12 object-cover" loading="lazy" />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center text-slate-400">
+                              <ShoppingBasket className="size-4" />
                             </div>
-                          ) : null}
-                          <div className="mt-1 inline-flex items-center gap-1 text-xs text-slate-600" dir="rtl">
-                            <Package className="h-3 w-3 text-slate-400" />
-                            <span>الكمية:</span>
-                            <span className="font-extrabold text-emerald-600">x{item.quantity}</span>
-                          </div>
-                          {item.selectedVariant ? <p className="mt-1 text-xs text-slate-600">{item.selectedVariant}</p> : null}
+                          )}
                         </div>
-                        <p className="text-sm font-bold text-emerald-600">{item.lineTotalMad.toFixed(2)} MAD</p>
+
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <p className="min-w-[100px] truncate text-sm font-bold text-slate-800">{item.name}</p>
+
+                          {item.brandName ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+                              <Tag className="h-3 w-3" />
+                              {item.brandName}
+                            </span>
+                          ) : null}
+
+                          {item.measurementValue || item.measurementUnit ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-600 whitespace-nowrap">
+                              <Scale className="h-3 w-3 text-slate-400" />
+                              {[item.measurementValue, item.measurementUnit].filter(Boolean).join(" ")}
+                            </span>
+                          ) : null}
+
+                          {item.selectedVariant ? (
+                            <span className="truncate text-[11px] text-slate-500">{item.selectedVariant}</span>
+                          ) : null}
+                        </div>
+
+                        <div className="ms-auto flex shrink-0 items-center gap-2">
+                          <span className="rounded bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">x{item.quantity}</span>
+                          <span className="ml-auto text-sm font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
+                        </div>
                       </div>
                     ))
                   ) : (
