@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { isThisMonth, isThisWeek, isToday } from "date-fns";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -445,8 +444,9 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           .eq("cyclist_id", cyclist.id),
         (supabaseAdmin as any)
           .from("orders")
-          .select("vendor_id, payment_method, total_price, status")
+          .select("vendor_id, payment_method, total_price")
           .eq("cyclist_id", cyclist.id)
+          .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending"),
       ]);
 
@@ -476,17 +476,9 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         vendor_id: string;
         payment_method: string;
         total_price: number;
-        status: string | null;
       }>;
 
-      const isPendingDeliveryStatus = (status: string | null | undefined) => {
-        const normalized = String(status ?? "").trim().toLowerCase();
-        return normalized === "delivered_cash_with_cyclist";
-      };
-
-      const pendingRowsInScope = pendingRows.filter((row) => isPendingDeliveryStatus(row.status));
-
-      const pendingCashRows = pendingRowsInScope.filter((row) => String(row.payment_method).toUpperCase() === "COD");
+      const pendingCashRows = pendingRows.filter((row) => String(row.payment_method).toUpperCase() === "COD");
       const pendingVendorIds = Array.from(new Set(pendingCashRows.map((row) => row.vendor_id)));
       const { data: pendingVendors, error: pendingVendorsError } = pendingVendorIds.length
         ? await (supabaseAdmin as any).from("vendors").select("id, store_name").in("id", pendingVendorIds)
@@ -768,8 +760,9 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
 
       const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("delivery_fee, total_price, payment_method, status")
+        .select("delivery_fee, total_price, payment_method")
         .eq("cyclist_id", data.cyclistId)
+        .eq("status", "delivered_cash_with_cyclist")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingSettlementError) {
@@ -784,15 +777,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         total_price: number;
         delivery_fee: number;
         payment_method: string;
-        status: string | null;
       }>;
-
-      const isPendingDeliveryStatus = (status: string | null | undefined) => {
-        const normalized = String(status ?? "").trim().toLowerCase();
-        return normalized === "delivered_cash_with_cyclist";
-      };
-
-      const pendingRowsInScope = pendingRows.filter((row) => isPendingDeliveryStatus(row.status));
 
       const isCashPayment = (paymentMethod: string | null | undefined) => {
         const normalized = String(paymentMethod ?? "").trim().toLowerCase();
@@ -805,8 +790,8 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
       };
 
       const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingCashRows = pendingRowsInScope.filter((row) => isCashPayment(row.payment_method));
-      const pendingCreditRows = pendingRowsInScope.filter((row) => isCreditPayment(row.payment_method));
+      const pendingCashRows = pendingRows.filter((row) => isCashPayment(row.payment_method));
+      const pendingCreditRows = pendingRows.filter((row) => isCreditPayment(row.payment_method));
 
       const pendingEarningsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const cashToRemitMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
@@ -823,7 +808,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         cashToRemitMad,
         owedByVendorMad,
         netCashToHandoverMad,
-        pendingSettlementOrdersCount: pendingRowsInScope.length,
+        pendingSettlementOrdersCount: pendingRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
         pendingCarnetSettlementOrdersCount: pendingCreditRows.length,
       } satisfies CyclistWalletSummary;
@@ -847,47 +832,40 @@ export const getCyclistEarningsHistory = createServerFn({ method: "POST" })
         throw new Error(cyclistError?.message ?? "Cyclist not found.");
       }
 
+      const now = new Date();
+      const start = new Date(now);
+
+      if (data.period === "today") {
+        start.setHours(0, 0, 0, 0);
+      } else if (data.period === "week") {
+        start.setHours(0, 0, 0, 0);
+        const currentDay = start.getDay();
+        const diffToMonday = (currentDay + 6) % 7;
+        start.setDate(start.getDate() - diffToMonday);
+      } else {
+        start.setHours(0, 0, 0, 0);
+        start.setDate(1);
+      }
+
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, delivered_at, created_at, delivery_fee, status")
+        .select("id, delivered_at, delivery_fee")
         .eq("cyclist_id", data.cyclistId)
+        .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
+        .gte("delivered_at", start.toISOString())
         .order("delivered_at", { ascending: false });
 
       if (error) {
         throw new Error(error.message);
       }
 
-      const deliveries = ((rows ?? []) as Array<{
-        id: string;
-        delivered_at: string | null;
-        created_at: string | null;
-        delivery_fee: number;
-        status: string | null;
-      }>)
-        .filter((row) => {
-          const normalizedStatus = String(row.status ?? "").trim().toLowerCase();
-          return (
-            normalizedStatus === "delivered" ||
-            normalizedStatus === "completed" ||
-            normalizedStatus === "delivered_cash_with_cyclist" ||
-            normalizedStatus === "cash_transferred_to_vendor"
-          );
-        })
-        .map((row) => {
-          const timestamp = row.delivered_at ?? row.created_at ?? new Date(0).toISOString();
-          return {
-            orderId: row.id,
-            deliveredAt: timestamp,
-            deliveryFeeMad: Number(row.delivery_fee ?? 0),
-          };
-        })
-        .filter((row) => {
-          const date = new Date(row.deliveredAt);
-          if (Number.isNaN(date.getTime())) return false;
-          if (data.period === "today") return isToday(date);
-          if (data.period === "week") return isThisWeek(date, { weekStartsOn: 1 });
-          return isThisMonth(date);
-        });
+      const deliveries = ((rows ?? []) as Array<{ id: string; delivered_at: string | null; delivery_fee: number }>).map(
+        (row) => ({
+          orderId: row.id,
+          deliveredAt: row.delivered_at ?? new Date(0).toISOString(),
+          deliveryFeeMad: Number(row.delivery_fee ?? 0),
+        }),
+      );
 
       const totalEarningsMad = deliveries.reduce((sum, row) => sum + row.deliveryFeeMad, 0);
 
@@ -917,56 +895,6 @@ export const markDeliveryAsDelivered = createServerFn({ method: "POST" })
 
       if (!Array.isArray(rpcResult) || !rpcResult[0]?.order_id) {
         throw new Error("Delivery not found or already completed.");
-      }
-
-      const completedOrderId = String(rpcResult[0].order_id);
-      const { data: completedOrder, error: completedOrderError } = await (supabaseAdmin as any)
-        .from("orders")
-        .select("id, vendor_id, customer_phone, payment_method, total_price, delivery_fee")
-        .eq("id", completedOrderId)
-        .maybeSingle();
-
-      if (completedOrderError) {
-        throw new Error(completedOrderError.message);
-      }
-
-      if (completedOrder?.id && completedOrder.payment_method === "Carnet") {
-        const { data: existingIssued, error: existingIssuedError } = await (supabaseAdmin as any)
-          .from("carnet_transactions")
-          .select("id")
-          .eq("order_id", completedOrderId)
-          .eq("transaction_type", "CREDIT_ISSUED")
-          .maybeSingle();
-
-        if (existingIssuedError) {
-          throw new Error(existingIssuedError.message);
-        }
-
-        if (!existingIssued?.id) {
-          const { data: carnetRow } = await (supabaseAdmin as any)
-            .from("vendor_carnet")
-            .select("id")
-            .eq("vendor_id", completedOrder.vendor_id)
-            .eq("customer_phone", completedOrder.customer_phone)
-            .maybeSingle();
-
-          const { error: insertIssuedError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
-            vendor_id: completedOrder.vendor_id,
-            vendor_carnet_id: carnetRow?.id ? String(carnetRow.id) : null,
-            customer_phone: completedOrder.customer_phone,
-            order_id: completedOrderId,
-            transaction_type: "CREDIT_ISSUED",
-            amount: Number(completedOrder.total_price ?? 0) + Number(completedOrder.delivery_fee ?? 0),
-            metadata: {
-              source: "delivery_completion",
-              status: "delivered",
-            },
-          });
-
-          if (insertIssuedError) {
-            throw new Error(insertIssuedError.message);
-          }
-        }
       }
 
       return { ok: true };
@@ -1011,56 +939,6 @@ export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
 
       if (!Array.isArray(rpcResult) || !rpcResult[0]?.order_id) {
         throw new Error("Delivery not found or already completed.");
-      }
-
-      const completedOrderId = String(rpcResult[0].order_id);
-      const { data: completedOrder, error: completedOrderError } = await (supabaseAdmin as any)
-        .from("orders")
-        .select("id, vendor_id, customer_phone, payment_method, total_price, delivery_fee")
-        .eq("id", completedOrderId)
-        .maybeSingle();
-
-      if (completedOrderError) {
-        throw new Error(completedOrderError.message);
-      }
-
-      if (completedOrder?.id && completedOrder.payment_method === "Carnet") {
-        const { data: existingIssued, error: existingIssuedError } = await (supabaseAdmin as any)
-          .from("carnet_transactions")
-          .select("id")
-          .eq("order_id", completedOrderId)
-          .eq("transaction_type", "CREDIT_ISSUED")
-          .maybeSingle();
-
-        if (existingIssuedError) {
-          throw new Error(existingIssuedError.message);
-        }
-
-        if (!existingIssued?.id) {
-          const { data: carnetRow } = await (supabaseAdmin as any)
-            .from("vendor_carnet")
-            .select("id")
-            .eq("vendor_id", completedOrder.vendor_id)
-            .eq("customer_phone", completedOrder.customer_phone)
-            .maybeSingle();
-
-          const { error: insertIssuedError } = await (supabaseAdmin as any).from("carnet_transactions").insert({
-            vendor_id: completedOrder.vendor_id,
-            vendor_carnet_id: carnetRow?.id ? String(carnetRow.id) : null,
-            customer_phone: completedOrder.customer_phone,
-            order_id: completedOrderId,
-            transaction_type: "CREDIT_ISSUED",
-            amount: Number(completedOrder.total_price ?? 0) + Number(completedOrder.delivery_fee ?? 0),
-            metadata: {
-              source: "delivery_completion",
-              status: "delivered",
-            },
-          });
-
-          if (insertIssuedError) {
-            throw new Error(insertIssuedError.message);
-          }
-        }
       }
 
       return { ok: true };

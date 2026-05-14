@@ -76,7 +76,7 @@ import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
-import { formatDistanceToNow, isThisMonth, isThisWeek, isToday } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -179,7 +179,6 @@ type DashboardOrder = {
   communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
-  rawStatus: string;
   status:
     | "new"
     | "preparing"
@@ -213,18 +212,16 @@ type DashboardOrder = {
 };
 
 function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
-  const normalized = String(status ?? "").trim().toLowerCase();
-
-  if (normalized === "picked_up" || normalized === "in_transit") {
+  if (status === "picked_up" || status === "in_transit") {
     return "in_transit";
   }
 
-  if (normalized === "delivered_cash_with_cyclist" || normalized === "cash_transferred_to_vendor" || normalized === "completed") {
+  if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
     return "delivered";
   }
 
-  if (normalized === "new" || normalized === "preparing" || normalized === "ready" || normalized === "delivering" || normalized === "delivered") {
-    return normalized;
+  if (status === "new" || status === "preparing" || status === "ready" || status === "delivering" || status === "delivered") {
+    return status;
   }
 
   return "new";
@@ -442,26 +439,17 @@ function VendorDashboardPage() {
   const isCarnetInitialLoading = carnetQuery.isLoading && !carnetQuery.data;
   const isLedgerInitialLoading = ledgerQuery.isLoading && !ledgerQuery.data;
 
-  const dashboardVendorId = dashboardQuery.data?.vendor?.id;
-
   useEffect(() => {
-    if (!dashboardVendorId) {
-      return;
-    }
-
     const channel = supabase
-      .channel(`vendor-dashboard-orders-realtime-${dashboardVendorId}`)
+      .channel("vendor-dashboard-orders-realtime")
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "orders",
-          filter: `vendor_id=eq.${dashboardVendorId}`,
         },
         (payload) => {
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-
           queryClient.setQueryData(["vendor", "dashboard"], (current: any) => {
             if (!current || !Array.isArray(current.orders)) {
               return current;
@@ -553,7 +541,7 @@ function VendorDashboardPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [dashboardVendorId, queryClient]);
+  }, [queryClient]);
 
   useEffect(() => {
     if (!hasValidVendorPhoneSession) {
@@ -691,7 +679,6 @@ function VendorDashboardPage() {
     if (!hasValidVendorPhoneSession) return;
 
     const refreshCarnetQueries = () => {
-      void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet"] });
       if (selectedCarnetPhone) {
         void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone] });
@@ -783,7 +770,6 @@ function VendorDashboardPage() {
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
-        rawStatus: String(row.status ?? "").trim().toLowerCase(),
         status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
         totalMad: roundMoney(Number(row.total_price ?? 0)),
@@ -846,32 +832,50 @@ function VendorDashboardPage() {
   };
 
   const quickStats = useMemo(() => {
+    const now = new Date();
     const inKpiWindow = (createdAt: string) => {
       const date = new Date(createdAt);
       if (Number.isNaN(date.getTime())) {
         return false;
       }
 
+      const normalizedDate = date.getTime();
+
       if (kpiFilter === "all") {
         return true;
       }
 
       if (kpiFilter === "today") {
-        return isToday(date);
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+        return normalizedDate >= startOfDay.getTime() && normalizedDate < endOfDay.getTime();
       }
 
       if (kpiFilter === "week") {
-        return isThisWeek(date, { weekStartsOn: 1 });
+        const startOfWeek = new Date(now);
+        const dayOffset = (startOfWeek.getDay() + 6) % 7;
+        startOfWeek.setDate(startOfWeek.getDate() - dayOffset);
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(now);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return normalizedDate >= startOfWeek.getTime() && normalizedDate <= endOfWeek.getTime();
       }
 
-      return isThisMonth(date);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      endOfMonth.setMilliseconds(-1);
+      return normalizedDate >= startOfMonth.getTime() && normalizedDate <= endOfMonth.getTime();
     };
 
     const pendingOrders = queue.new.length + queue.preparing.length;
-    const deliveredInFilter = orders.filter((order) => {
-      const status = String(order.rawStatus ?? "").trim().toLowerCase();
-      return status === "cash_transferred_to_vendor" && inKpiWindow(order.createdAt);
-    });
+    const deliveredInFilter = orders.filter(
+      (order) =>
+        order.status === "delivered" &&
+        inKpiWindow(order.createdAt),
+    );
     const cashOrders = deliveredInFilter.filter((order) => order.paymentMethod === "COD");
     const carnetOrders = deliveredInFilter.filter((order) => order.paymentMethod === "Carnet");
     const outstandingCreditMad = (carnetQuery.data?.carnetCustomers ?? []).reduce(
@@ -882,21 +886,9 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      totalCashInHandMad: roundMoney(
-        deliveredInFilter.reduce((sum, order) => {
-          const isCash = String(order.paymentMethod ?? "").trim().toUpperCase() === "COD";
-          return isCash ? sum + Number(order.totalMad ?? 0) : sum;
-        }, 0),
-      ),
-      myNetProfitMad: roundMoney(
-        deliveredInFilter.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
-      ),
-      platformDuesMad: roundMoney(
-        deliveredInFilter.reduce(
-          (sum, order) => sum + Math.max(Number(order.totalMad ?? 0) - Number(order.vendorShareMad ?? 0), 0),
-          0,
-        ),
-      ),
+      totalCashInHandMad: roundMoney(Number(dashboardQuery.data?.vendor?.totalCashInHandMad ?? 0)),
+      myNetProfitMad: roundMoney(Number(dashboardQuery.data?.vendor?.myNetProfitMad ?? 0)),
+      platformDuesMad: roundMoney(Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0)),
       cashEarningsMad: roundMoney(cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
       creditIssuedMad: roundMoney(carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
       outstandingCreditMad: roundMoney(outstandingCreditMad),
@@ -1908,37 +1900,8 @@ function VendorDashboardPage() {
                       return;
                     }
 
-                    const freshestLedgerDebt = Number(ledgerQuery.data?.customer?.currentDebt ?? NaN);
-                    const liveDebt = Number.isFinite(freshestLedgerDebt)
-                      ? freshestLedgerDebt
-                      : Number(selectedCarnetCustomer.currentDebt ?? 0);
-                    if (liveDebt <= 0.01) {
-                      toast.error("No outstanding debt for this customer.");
-                      return;
-                    }
-
-                    if (amount > liveDebt + 0.01) {
-                      toast.error(`Payment exceeds current debt (${liveDebt.toFixed(2)} MAD).`);
-                      return;
-                    }
-
                     try {
                       setIsRecordingPayment(true);
-                      const refreshedLedger = await ledgerQuery.refetch();
-                      const recalculatedDebt = Number(
-                        refreshedLedger.data?.customer?.currentDebt ?? selectedCarnetCustomer.currentDebt ?? 0,
-                      );
-
-                      if (recalculatedDebt <= 0.01) {
-                        toast.error("No outstanding debt for this customer.");
-                        return;
-                      }
-
-                      if (amount > recalculatedDebt + 0.01) {
-                        toast.error(`Payment exceeds current debt (${recalculatedDebt.toFixed(2)} MAD).`);
-                        return;
-                      }
-
                       await recordCarnetPayment({
                         data: {
                           customerPhone: selectedCarnetCustomer.customerPhone,
@@ -1946,7 +1909,7 @@ function VendorDashboardPage() {
                         },
                       });
                       setLedgerPaymentAmount("");
-                      await Promise.all([dashboardQuery.refetch(), carnetQuery.refetch(), ledgerQuery.refetch()]);
+                      await Promise.all([carnetQuery.refetch(), ledgerQuery.refetch()]);
                       toast.success("Payment recorded successfully.");
                     } catch (error) {
                       console.error("Failed to record payment:", error);

@@ -645,51 +645,6 @@ export type Database = {
           },
         ]
       }
-      order_audit_logs: {
-        Row: {
-          actor_role: string | null
-          actor_user_id: string | null
-          created_at: string
-          cyclist_id: string | null
-          event_type: string
-          id: string
-          new_status: Database["public"]["Enums"]["order_status"] | null
-          order_id: string | null
-          previous_status: Database["public"]["Enums"]["order_status"] | null
-          settlement_context: Json
-          source: string
-          vendor_id: string | null
-        }
-        Insert: {
-          actor_role?: string | null
-          actor_user_id?: string | null
-          created_at?: string
-          cyclist_id?: string | null
-          event_type: string
-          id?: string
-          new_status?: Database["public"]["Enums"]["order_status"] | null
-          order_id?: string | null
-          previous_status?: Database["public"]["Enums"]["order_status"] | null
-          settlement_context?: Json
-          source?: string
-          vendor_id?: string | null
-        }
-        Update: {
-          actor_role?: string | null
-          actor_user_id?: string | null
-          created_at?: string
-          cyclist_id?: string | null
-          event_type?: string
-          id?: string
-          new_status?: Database["public"]["Enums"]["order_status"] | null
-          order_id?: string | null
-          previous_status?: Database["public"]["Enums"]["order_status"] | null
-          settlement_context?: Json
-          source?: string
-          vendor_id?: string | null
-        }
-        Relationships: []
-      }
       orders: {
         Row: {
           created_at: string
@@ -903,36 +858,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      push_subscriptions: {
-        Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          user_id: string
-          user_type: string
-        }
-        Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          user_id: string
-          user_type: string
-        }
-        Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          user_id?: string
-          user_type?: string
-        }
-        Relationships: []
       }
       site_ads: {
         Row: {
@@ -1272,10 +1197,6 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
-      recompute_vendor_carnet_customer_debt: {
-        Args: { p_customer_phone: string; p_vendor_id: string }
-        Returns: number
-      }
       record_vendor_carnet_payment: {
         Args: {
           p_amount: number
@@ -1290,10 +1211,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      carnet_transaction_type:
-        | "CREDIT_ISSUED"
-        | "CREDIT_REPAID"
-        | "CREDIT_CANCELLED"
+      carnet_transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID"
       markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
@@ -1456,11 +1374,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      carnet_transaction_type: [
-        "CREDIT_ISSUED",
-        "CREDIT_REPAID",
-        "CREDIT_CANCELLED",
-      ],
+      carnet_transaction_type: ["CREDIT_ISSUED", "CREDIT_REPAID"],
       markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",

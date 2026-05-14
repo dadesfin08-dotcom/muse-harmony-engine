@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { format, isToday, subDays } from "date-fns";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -14,7 +13,6 @@ import {
   DEFAULT_RECEIPT_STORE_NAME,
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
-import { isAdminReconciliationAllowedStatus } from "@/lib/settlement-status-rules";
 
 type AdminOrderStatus =
   | "new"
@@ -130,35 +128,45 @@ const uploadSiteLogoInputSchema = z.object({
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
-  const sevenDaysAgo = subDays(now, 6);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).toISOString();
 
-  const [ordersRes, activeVendorsRes] = await Promise.all([
+  const [ordersTodayRes, activeVendorsRes, revenueRes, weeklyOrdersRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
-      .select("id, status, created_at, total_price")
-      .gte("created_at", sevenDaysAgo.toISOString())
-      .order("created_at", { ascending: true }),
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", todayStart)
+      .lt("created_at", tomorrowStart),
     (supabaseAdmin as any)
       .from("vendors")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    (supabaseAdmin as any)
+      .from("orders")
+      .select("total_price")
+      .in("status", ["delivered", "cash_transferred_to_vendor"]),
+    (supabaseAdmin as any)
+      .from("orders")
+      .select("created_at")
+      .gte("created_at", sevenDaysAgo)
+      .order("created_at", { ascending: true }),
   ]);
 
-  if (ordersRes.error) throw new Error(ordersRes.error.message);
+  if (ordersTodayRes.error) throw new Error(ordersTodayRes.error.message);
   if (activeVendorsRes.error) throw new Error(activeVendorsRes.error.message);
+  if (revenueRes.error) throw new Error(revenueRes.error.message);
+  if (weeklyOrdersRes.error) throw new Error(weeklyOrdersRes.error.message);
 
   const weeklyCounts = new Map<string, number>();
   for (let i = 0; i < 7; i += 1) {
-    const day = subDays(now, 6 - i);
-    const dayKey = format(day, "yyyy-MM-dd");
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+    const dayKey = day.toISOString().slice(0, 10);
     weeklyCounts.set(dayKey, 0);
   }
 
-  const recentOrders = (ordersRes.data ?? []) as Array<{ created_at: string; status: string | null; total_price: number | null }>;
-  for (const row of recentOrders) {
-    const createdAt = new Date(row.created_at);
-    if (Number.isNaN(createdAt.getTime())) continue;
-    const dayKey = format(createdAt, "yyyy-MM-dd");
+  for (const row of (weeklyOrdersRes.data ?? []) as Array<{ created_at: string }>) {
+    const dayKey = row.created_at.slice(0, 10);
     if (weeklyCounts.has(dayKey)) {
       weeklyCounts.set(dayKey, (weeklyCounts.get(dayKey) ?? 0) + 1);
     }
@@ -170,18 +178,13 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     orders: count,
   }));
 
-  const totalRevenueMad = recentOrders.reduce((sum, row) => {
-    return isAdminReconciliationAllowedStatus(row.status) ? sum + Number(row.total_price ?? 0) : sum;
-  }, 0);
-
-  const totalOrdersToday = recentOrders.reduce((count, row) => {
-    const createdAt = new Date(row.created_at);
-    if (Number.isNaN(createdAt.getTime())) return count;
-    return isToday(createdAt) ? count + 1 : count;
-  }, 0);
+  const totalRevenueMad = ((revenueRes.data ?? []) as Array<{ total_price: number | null }>).reduce(
+    (sum, row) => sum + Number(row.total_price ?? 0),
+    0,
+  );
 
   return {
-    totalOrdersToday,
+    totalOrdersToday: ordersTodayRes.count ?? 0,
     activeVendors: activeVendorsRes.count ?? 0,
     totalRevenueMad,
     weeklyTrends,

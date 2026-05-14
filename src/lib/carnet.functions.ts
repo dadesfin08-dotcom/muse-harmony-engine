@@ -161,88 +161,6 @@ const getActiveVendor = async (phoneNumber?: string) => {
   };
 };
 
-const getDynamicDebtForVendorCustomer = async (vendorId: string, customerPhone: string) => {
-  const [ordersResult, carnetRowsResult] = await Promise.all([
-    (supabaseAdmin as any)
-      .from("orders")
-      .select("total_price, delivery_fee")
-      .eq("vendor_id", vendorId)
-      .eq("customer_phone", customerPhone)
-      .eq("payment_method", "Carnet")
-      .neq("status", "cancelled"),
-    (supabaseAdmin as any)
-      .from("vendor_carnet")
-      .select("id")
-      .eq("vendor_id", vendorId)
-      .eq("customer_phone", customerPhone)
-      .order("updated_at", { ascending: false }),
-  ]);
-
-  if (ordersResult.error) {
-    throw new Error(ordersResult.error.message);
-  }
-
-  if (carnetRowsResult.error) {
-    throw new Error(carnetRowsResult.error.message);
-  }
-
-  const totalIssued = ((ordersResult.data ?? []) as Array<{ total_price?: number | null; delivery_fee?: number | null }>).reduce(
-    (sum, row) => sum + Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
-    0,
-  );
-
-  const carnetIds = Array.from(
-    new Set(((carnetRowsResult.data ?? []) as Array<{ id?: string | null }>).map((row) => row.id).filter(Boolean) as string[]),
-  );
-
-  let totalRepaid = 0;
-  if (carnetIds.length > 0) {
-    const { data: paymentRows, error: paymentError } = await (supabaseAdmin as any)
-      .from("carnet_payments")
-      .select("amount")
-      .eq("vendor_id", vendorId)
-      .in("vendor_carnet_id", carnetIds);
-
-    if (paymentError) {
-      throw new Error(paymentError.message);
-    }
-
-    totalRepaid = (paymentRows ?? []).reduce(
-      (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
-      0,
-    );
-  }
-
-  return Number((totalIssued - totalRepaid).toFixed(2));
-};
-
-const getDynamicDebtForCustomerAcrossVendors = async (customerPhone: string) => {
-  const { data: vendorRows, error: vendorError } = await (supabaseAdmin as any)
-    .from("vendor_carnet")
-    .select("vendor_id")
-    .eq("customer_phone", customerPhone)
-    .eq("status", "active");
-
-  if (vendorError) {
-    throw new Error(vendorError.message);
-  }
-
-  const vendorIds = Array.from(new Set(((vendorRows ?? []) as Array<{ vendor_id?: string | null }>).map((row) => row.vendor_id).filter(Boolean) as string[]));
-
-  if (vendorIds.length === 0) {
-    return { hasCarnet: false as const, totalDebtMad: 0 };
-  }
-
-  const debtList = await Promise.all(
-    vendorIds.map((vendorId) => getDynamicDebtForVendorCustomer(vendorId, customerPhone)),
-  );
-
-  return {
-    hasCarnet: true as const,
-    totalDebtMad: Number(debtList.reduce((sum, value) => sum + value, 0).toFixed(2)),
-  };
-};
-
 export const getVendorCarnetData = createServerFn({ method: "POST" })
   .inputValidator((input) => vendorSessionInputSchema.parse(input))
   .handler(async ({ data }) => {
@@ -266,7 +184,7 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
 
     const { data: rows, error: carnetError } = await (supabaseAdmin as any)
       .from("vendor_carnet")
-      .select("id, customer_phone, max_limit, customer_name, customer_cin, status")
+      .select("id, customer_phone, current_debt, max_limit, customer_name, customer_cin, status")
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
 
@@ -274,87 +192,53 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
       throw new Error(carnetError.message);
     }
 
-    const rawRows = (rows ?? []) as Array<VendorCarnetRow>;
-    const uniqueCustomers = Array.from(new Set(rawRows.map((row) => row.customer_phone).filter(Boolean)));
-
-    const [orderRowsResult, paymentRowsResult] = await Promise.all([
-      (supabaseAdmin as any)
-        .from("orders")
-        .select("customer_phone, total_price, delivery_fee, created_at")
-        .eq("vendor_id", vendor.id)
-        .eq("payment_method", "Carnet")
-        .neq("status", "cancelled"),
-      (supabaseAdmin as any)
-        .from("carnet_payments")
-        .select("vendor_carnet_id, amount")
-        .eq("vendor_id", vendor.id),
-    ]);
-
-    if (orderRowsResult.error) {
-      throw new Error(orderRowsResult.error.message);
-    }
-
-    if (paymentRowsResult.error) {
-      throw new Error(paymentRowsResult.error.message);
-    }
-
-    const carnetIdToPhone = new Map<string, string>();
-    for (const row of rawRows) {
-      if (row.id && row.customer_phone) {
-        carnetIdToPhone.set(row.id, row.customer_phone);
-      }
-    }
-
-    const issuedByPhone = new Map<string, number>();
-    for (const row of (orderRowsResult.data ?? []) as Array<{ customer_phone?: string | null; total_price?: number | null; delivery_fee?: number | null }>) {
-      const phone = String(row.customer_phone ?? "");
-      if (!phone) continue;
-      const next = Number((issuedByPhone.get(phone) ?? 0) + Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0));
-      issuedByPhone.set(phone, next);
-    }
-
-    const repaidByPhone = new Map<string, number>();
-    for (const row of (paymentRowsResult.data ?? []) as Array<{ vendor_carnet_id?: string | null; amount?: number | null }>) {
-      const phone = row.vendor_carnet_id ? carnetIdToPhone.get(String(row.vendor_carnet_id)) : null;
-      if (!phone) continue;
-      const next = Number((repaidByPhone.get(phone) ?? 0) + Number(row.amount ?? 0));
-      repaidByPhone.set(phone, next);
-    }
-
-    const carnetCustomers = uniqueCustomers.map((customerPhone) => {
-      const latestRow = rawRows.find((row) => row.customer_phone === customerPhone)!;
-      const issued = Number(issuedByPhone.get(customerPhone) ?? 0);
-      const repaid = Number(repaidByPhone.get(customerPhone) ?? 0);
-      const dynamicDebt = Number((issued - repaid).toFixed(2));
-
-      return {
-        id: latestRow.id,
-        customerPhone,
-        currentDebt: dynamicDebt,
-        maxLimit: Number(latestRow.max_limit ?? 0),
-        customerName: latestRow.customer_name,
-        customerCin: latestRow.customer_cin,
-        status: latestRow.status,
-      };
-    });
+    const carnetCustomers = ((rows ?? []) as VendorCarnetRow[]).map((row) => ({
+      id: row.id,
+      customerPhone: row.customer_phone,
+      currentDebt: Number(row.current_debt ?? 0),
+      maxLimit: Number(row.max_limit ?? 0),
+      customerName: row.customer_name,
+      customerCin: row.customer_cin,
+      status: row.status,
+    }));
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
+
+    const [issuedRowsResult, repaidRowsResult] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("amount")
+        .eq("vendor_id", vendor.id)
+        .eq("transaction_type", "CREDIT_ISSUED")
+        .gte("created_at", startOfToday.toISOString()),
+      (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("amount")
+        .eq("vendor_id", vendor.id)
+        .eq("transaction_type", "CREDIT_REPAID"),
+    ]);
+
+    if (issuedRowsResult.error) {
+      throw new Error(issuedRowsResult.error.message);
+    }
+
+    if (repaidRowsResult.error) {
+      throw new Error(repaidRowsResult.error.message);
+    }
 
     const totalOutstandingCreditMad = carnetCustomers.reduce(
       (sum, customer) => sum + Number(customer.currentDebt ?? 0),
       0,
     );
 
-    const creditIssuedTodayMad = ((orderRowsResult.data ?? []) as Array<{ total_price?: number | null; delivery_fee?: number | null; created_at?: string | null }>)
-      .filter((row) => {
-        const createdAt = row.created_at ? new Date(row.created_at) : null;
-        return createdAt ? createdAt.getTime() >= startOfToday.getTime() : false;
-      })
-      .reduce((sum, row) => sum + Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0), 0);
+    const creditIssuedTodayMad = (issuedRowsResult.data ?? []).reduce(
+      (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
+      0,
+    );
 
-    const settledCreditMad = ((paymentRowsResult.data ?? []) as Array<{ amount?: number | null }>).reduce(
-      (sum, row) => sum + Number(row.amount ?? 0),
+    const settledCreditMad = (repaidRowsResult.data ?? []).reduce(
+      (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
       0,
     );
 
@@ -466,7 +350,7 @@ export const getCheckoutPaymentOptions = createServerFn({ method: "POST" })
 
       const { data: carnetRow, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("max_limit")
+        .select("current_debt, max_limit")
         .eq("vendor_id", vendor.id)
         .eq("customer_phone", data.customerPhone)
         .maybeSingle();
@@ -479,7 +363,7 @@ export const getCheckoutPaymentOptions = createServerFn({ method: "POST" })
         return { canUseCarnet: false, reason: "Customer is not on trusted carnet list." };
       }
 
-      const currentDebt = await getDynamicDebtForVendorCustomer(String(vendor.id), data.customerPhone);
+      const currentDebt = Number(carnetRow.current_debt ?? 0);
       const maxLimit = Number(carnetRow.max_limit ?? 0);
       const projectedDebt = currentDebt + Number(data.cartTotal ?? 0);
 
@@ -630,7 +514,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
 
       const { data: customer, error: customerError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("id, customer_phone, customer_name, customer_cin, max_limit")
+        .select("id, customer_phone, customer_name, customer_cin, current_debt, max_limit")
         .eq("vendor_id", vendor.id)
         .eq("customer_phone", data.customerPhone)
         .maybeSingle();
@@ -642,8 +526,6 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
       if (!customer?.id) {
         throw new Error("Carnet customer not found.");
       }
-
-      const dynamicDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
 
       const { data: ledgerRows, error: ledgerError } = await (supabaseAdmin as any)
         .from("carnet_transactions")
@@ -693,7 +575,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
           phone: customer.customer_phone as string,
           name: (customer.customer_name as string | null) ?? "Unnamed Customer",
           cin: (customer.customer_cin as string | null) ?? "—",
-          currentDebt: dynamicDebt,
+          currentDebt: Number(customer.current_debt ?? 0),
           maxLimit: Number(customer.max_limit ?? 0),
         },
         transactions,
@@ -714,28 +596,6 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
         throw new Error("No active vendor found.");
       }
 
-      const { data: carnetRow, error: carnetError } = await (supabaseAdmin as any)
-        .from("vendor_carnet")
-        .select("id")
-        .eq("vendor_id", vendor.id)
-        .eq("customer_phone", data.customerPhone)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (carnetError) {
-        throw new Error(carnetError.message);
-      }
-
-      const latestDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
-      if (!carnetRow?.id || latestDebt <= 0.01) {
-        throw new Error("No outstanding debt for this customer.");
-      }
-
-      if (data.amountPaid > latestDebt + 0.01) {
-        throw new Error(`Payment amount exceeds current debt (${latestDebt.toFixed(2)} MAD).`);
-      }
-
       const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("record_vendor_carnet_payment", {
         p_vendor_id: vendor.id,
         p_customer_phone: data.customerPhone,
@@ -743,11 +603,6 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
       });
 
       if (error) {
-        if (error.message.includes("Payment amount exceeds current debt")) {
-          const freshestDebt = await getDynamicDebtForVendorCustomer(vendor.id, data.customerPhone);
-          throw new Error(`Payment amount exceeds current debt (${freshestDebt.toFixed(2)} MAD).`);
-        }
-
         throw new Error(error.message);
       }
 
@@ -855,7 +710,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
     try {
       const { data: carnetRows, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("id, vendor_id, customer_phone, max_limit, status")
+        .select("id, vendor_id, customer_phone, current_debt, max_limit, status")
         .eq("customer_phone", data.customerPhone)
         .eq("status", "active")
         .order("updated_at", { ascending: false });
@@ -868,6 +723,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         id?: string | null;
         vendor_id?: string | null;
         customer_phone?: string | null;
+        current_debt?: number | null;
         max_limit?: number | null;
       }>;
 
@@ -920,11 +776,10 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         return bTime - aTime;
         });
 
-      const debtByVendor = await Promise.all(
-        vendorIds.map((vendorId) => getDynamicDebtForVendorCustomer(vendorId, data.customerPhone)),
+      const totalCurrentDebtMad = activeRows.reduce(
+        (sum, row) => sum + Number(row.current_debt ?? 0),
+        0,
       );
-
-      const totalCurrentDebtMad = debtByVendor.reduce((sum, value) => sum + Number(value ?? 0), 0);
 
       const totalMaxLimitMad = activeRows.reduce(
         (sum, row) => sum + Number(row.max_limit ?? 0),
@@ -949,7 +804,25 @@ export const getCustomerCarnetBalance = createServerFn({ method: "POST" })
   .inputValidator((input) => getCustomerCarnetBalanceInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      return await getDynamicDebtForCustomerAcrossVendors(data.customerPhone);
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("vendor_carnet")
+        .select("current_debt")
+        .eq("customer_phone", data.customerPhone)
+        .eq("status", "active");
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const totalDebtMad = (rows ?? []).reduce(
+        (sum: number, row: { current_debt?: number | null }) => sum + Number(row.current_debt ?? 0),
+        0,
+      );
+
+      return {
+        hasCarnet: (rows ?? []).length > 0,
+        totalDebtMad,
+      };
     } catch (error) {
       console.error("getCustomerCarnetBalance failed:", error);
       throw new Error("Failed to load carnet balance.");

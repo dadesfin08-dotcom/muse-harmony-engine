@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, PhoneCall } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -109,11 +109,8 @@ function CustomerOrderDetailsPage() {
   const isDelivered = deliveredStatuses.includes(normalizedOrderStatus);
   const handoverQrPayload = useMemo(() => {
     if (!order?.id || !isOutForDelivery) return "";
-    return JSON.stringify({
-      action: "customer_delivery_confirmation",
-      order_id: order.id,
-    });
-  }, [isOutForDelivery, order?.id]);
+    return JSON.stringify({ order_id: order.id, delivery_auth_code: order.deliveryAuthCode ?? null });
+  }, [isOutForDelivery, order?.deliveryAuthCode, order?.id]);
 
   const paymentBadge = useMemo(() => {
     const normalized = String(order?.paymentMethod ?? "").trim().toLowerCase();
@@ -178,27 +175,6 @@ function CustomerOrderDetailsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">{copy.handoverHint}</p>
                   <div className="mt-3 flex justify-center rounded-lg border border-border bg-background p-3">
                     <QRCodeSVG value={handoverQrPayload} size={184} includeMargin />
-                  </div>
-                  <div className="mt-3">
-                    {order.cyclist?.phoneNumber ? (
-                      <a
-                        href={`tel:${order.cyclist.phoneNumber}`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                        aria-label={`Call delivery rider ${order.cyclist.name}`}
-                      >
-                        <PhoneCall className="size-4" />
-                        {`تفعيل الاتصال مع رجل التوصيل (${order.cyclist.name})`}
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground"
-                      >
-                        <PhoneCall className="size-4" />
-                        {"سيظهر زر الاتصال عند تعيين رجل التوصيل"}
-                      </button>
-                    )}
                   </div>
                 </div>
               ) : isDelivered ? (
