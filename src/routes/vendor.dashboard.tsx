@@ -2946,55 +2946,56 @@ function OrderCard({
       className={cn(
         "transition hover:shadow-md",
         isInDeliveryTab
-          ? "rounded-[24px] border border-border/80 bg-card p-4 shadow-[0_16px_40px_-26px_rgba(16,24,40,0.2)] sm:rounded-[26px] sm:p-5"
+          ? "rounded-[24px] border border-border/80 bg-card p-5 shadow-[0_16px_40px_-26px_rgba(16,24,40,0.2)] sm:rounded-[26px] sm:p-6"
           : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
-      <div className={cn("space-y-2.5", isInDeliveryTab ? "space-y-4" : "")}> 
-        <div className="flex items-center justify-between gap-2.5">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className={cn("space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
+        <div className={cn("flex items-center justify-between gap-2.5", isInDeliveryTab ? "w-full items-start" : "")}>
+          <div className={cn("flex min-w-0 flex-1 items-center gap-2", isInDeliveryTab ? "gap-0" : "")}>
             <p
               className={cn(
                 "font-black tracking-tight",
-                isInDeliveryTab ? "text-3xl leading-none text-foreground sm:text-4xl" : "text-2xl text-foreground",
+                isInDeliveryTab ? "text-lg font-bold leading-none text-foreground" : "text-2xl text-foreground",
               )}
             >
               {shortId}
             </p>
-            {isInDeliveryTab ? (
-              <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-3 text-xs font-semibold text-primary sm:h-10 sm:px-3.5 sm:text-sm" dir="rtl">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                <span>في الطريق</span>
-                <Bike className="h-4 w-4" />
-              </span>
-            ) : (
+            {isInDeliveryTab ? null : (
               <OrderStatusBadge tab={tab} status={order.status} />
             )}
           </div>
 
-          <p
-            className={cn(
-              "inline-flex items-start gap-2",
-              isInDeliveryTab
-                ? "max-w-[120px] shrink-0 text-right text-xs font-medium leading-snug text-muted-foreground sm:max-w-[132px] sm:text-sm"
-                : "text-sm font-medium text-muted-foreground",
-            )}
-          >
-            <Clock3 className="mt-0.5 h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-            <span className="line-clamp-2">{elapsed}</span>
-          </p>
+          {isInDeliveryTab ? (
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-2.5 text-xs font-semibold text-primary" dir="rtl">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                <span>في الطريق</span>
+                <Bike className="h-3.5 w-3.5" />
+              </span>
+              <p className="inline-flex items-center gap-1 text-xs text-gray-500">
+                <Clock3 className="h-3.5 w-3.5" />
+                <span className="max-w-[130px] truncate">{elapsed}</span>
+              </p>
+            </div>
+          ) : (
+            <p className="inline-flex items-start gap-2 text-sm font-medium text-muted-foreground">
+              <Clock3 className="mt-0.5 h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+              <span className="line-clamp-2">{elapsed}</span>
+            </p>
+          )}
         </div>
 
         {isInDeliveryTab ? (
           <>
-            <div className="grid grid-cols-2 items-end gap-3">
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground sm:text-sm">Customer</p>
-                <p className="truncate text-2xl font-black leading-none text-foreground sm:text-3xl">{customerOrAreaLabel}</p>
+            <div className="grid w-full grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-gray-500">Customer</p>
+                <p className="truncate text-base font-semibold text-foreground">{customerOrAreaLabel}</p>
               </div>
-              <div className="space-y-1.5 text-right">
-                <p className="text-xs font-medium text-muted-foreground sm:text-sm">Total</p>
-                <p className="text-2xl font-black leading-none text-primary sm:text-3xl">{order.totalMad.toFixed(2)} MAD</p>
+              <div className="space-y-1 text-right">
+                <p className="text-right text-xs text-gray-500">Total</p>
+                <p className="text-right text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
             <div className="my-0.5 border-t-2 border-dashed border-border/70" />
@@ -3017,25 +3018,25 @@ function OrderCard({
 
         {shouldShowDriverBlock && driver ? (
           <div
-            className={cn(
-              "flex items-center justify-between gap-3",
-              isInDeliveryTab
-                ? "rounded-[20px] border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-background p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_14px_34px_-28px_rgba(16,24,40,0.28)] sm:rounded-[22px] sm:p-4"
-                : "mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3",
-            )}
+              className={cn(
+                "flex items-center justify-between gap-3",
+                isInDeliveryTab
+                  ? "w-full rounded-xl bg-emerald-50 p-3"
+                  : "mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3",
+              )}
           >
-            <div className="flex min-w-0 items-center gap-2.5">
+              <div className={cn("flex min-w-0 items-center", isInDeliveryTab ? "flex-row gap-3 overflow-hidden" : "gap-2.5")}>
               <div className="relative">
                 <Avatar
                   className={cn(
                     "rounded-full",
                     isInDeliveryTab
-                      ? "h-14 w-14 border-2 border-primary/20 shadow-[0_12px_20px_-14px_rgba(16,24,40,0.35)] sm:h-16 sm:w-16"
+                        ? "h-10 w-10 shrink-0 rounded-full"
                       : "h-10 w-10 border border-emerald-200",
                   )}
                 >
                   <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
-                  <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary sm:text-xl">
+                    <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
                     {cyclistNameInitials || "9"}
                   </AvatarFallback>
                 </Avatar>
@@ -3046,14 +3047,14 @@ function OrderCard({
                 ) : null}
               </div>
 
-              <div className="min-w-0">
-                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-lg text-foreground sm:text-xl" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
+              <div className={cn("min-w-0", isInDeliveryTab ? "flex flex-col" : "")}>
+                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-sm font-bold text-foreground" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
                   {driver.name}
                 </p>
                 <p
                   className={cn(
                     "font-medium text-muted-foreground",
-                    isInDeliveryTab ? "mt-0.5 text-sm sm:text-base" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
+                    isInDeliveryTab ? "text-xs text-gray-500" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
@@ -3063,15 +3064,20 @@ function OrderCard({
             </div>
 
             {isInDeliveryTab ? (
-              <a
-                href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-r from-primary via-primary to-success px-4 text-sm font-semibold text-primary-foreground shadow-[0_18px_28px_-20px_rgba(14,116,144,0.65)] transition hover:brightness-105 sm:h-11 sm:px-5"
-                aria-label={`Contact driver ${driver.name}`}
+              <Button
+                asChild
+                size="sm"
+                className="shrink-0 bg-emerald-700 px-3 text-xs text-white hover:bg-emerald-700/90"
               >
-                <Users className="mr-1.5 h-4 w-4" />
-                Contact Driver
-              </a>
+                <a
+                  href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Contact driver ${driver.name}`}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Contact
+                </a>
+              </Button>
             ) : (
               <div className="flex items-center gap-2">
                 {driverPhoneForCall ? (
@@ -3106,7 +3112,7 @@ function OrderCard({
       <Button
         variant="hero"
         className={cn(
-          "mt-3.5 w-full rounded-[16px]",
+          "mt-2 w-full rounded-[16px]",
           isInDeliveryTab
             ? "h-12 bg-gradient-to-r from-primary via-primary to-success text-sm font-semibold shadow-[0_20px_34px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_24px_42px_-24px_rgba(14,116,144,0.78)]"
             : "h-10 rounded-xl",
