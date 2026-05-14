@@ -695,12 +695,19 @@ function AdminPage() {
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
-    storeName: DEFAULT_RECEIPT_HEADER_CONTENT,
-    address: DEFAULT_RECEIPT_ADDRESS,
-    phone: DEFAULT_RECEIPT_PHONE,
+    receiptLogoUrl: "",
+    receiptStoreName: DEFAULT_RECEIPT_STORE_NAME,
+    receiptSlogan: DEFAULT_RECEIPT_SLOGAN,
+    receiptPhone: DEFAULT_RECEIPT_PHONE,
+    receiptAddress: DEFAULT_RECEIPT_ADDRESS,
+    receiptWebsite: DEFAULT_RECEIPT_WEBSITE,
     taxId: "",
-    footerMessage: DEFAULT_RECEIPT_FOOTER_CONTENT,
+    receiptFooterMessage: DEFAULT_RECEIPT_FOOTER_MESSAGE,
+    receiptSocialSupport: DEFAULT_RECEIPT_SOCIAL_SUPPORT,
   });
+  const [receiptLogoFile, setReceiptLogoFile] = useState<File | null>(null);
+  const [receiptLogoPreviewUrl, setReceiptLogoPreviewUrl] = useState<string | null>(null);
+  const receiptLogoInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
 
   useEffect(() => {
@@ -737,13 +744,20 @@ function AdminPage() {
 
       return {
         id: row.id,
-        storeName: row.store_name ?? "",
-        address: row.address ?? "",
-        phone: row.phone ?? "",
+        receiptLogoUrl: row.receipt_logo_url ?? "",
+        receiptStoreName: row.receipt_store_name ?? row.store_name ?? DEFAULT_RECEIPT_STORE_NAME,
+        receiptSlogan: row.receipt_slogan ?? DEFAULT_RECEIPT_SLOGAN,
+        receiptPhone: row.receipt_phone ?? row.phone ?? DEFAULT_RECEIPT_PHONE,
+        receiptAddress: row.receipt_address ?? row.address ?? DEFAULT_RECEIPT_ADDRESS,
+        receiptWebsite: row.receipt_website ?? DEFAULT_RECEIPT_WEBSITE,
         taxId: row.tax_id ?? "",
-        footerMessage: row.footer_message ?? "",
+        receiptFooterMessage: row.receipt_footer_message ?? row.footer_message ?? DEFAULT_RECEIPT_FOOTER_MESSAGE,
+        receiptSocialSupport: row.receipt_social_support ?? DEFAULT_RECEIPT_SOCIAL_SUPPORT,
       };
     });
+
+    setReceiptLogoFile(null);
+    setReceiptLogoPreviewUrl(row.receipt_logo_url ?? null);
 
   }, [adminInvoiceSettingsQuery.data]);
 
