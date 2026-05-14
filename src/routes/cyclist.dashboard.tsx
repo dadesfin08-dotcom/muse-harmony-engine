@@ -695,22 +695,6 @@ function OrderCard({
 
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <Info className="h-4 w-4 text-slate-400" />
-              تعليمات التوصيل
-            </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
-              {briefingText ? (
-                <span className="rounded-md border border-amber-200/50 bg-amber-50 px-2.5 py-1 text-[12px] font-semibold text-amber-700">
-                  {briefingText}
-                </span>
-              ) : (
-                "—"
-              )}
-            </div>
-          </div>
-
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <CreditCard className="h-4 w-4 text-slate-400" />
               الدفع
             </div>
@@ -727,6 +711,16 @@ function OrderCard({
             </div>
           </div>
         </div>
+
+        {briefingText ? (
+          <div className="mt-4 rounded-lg border border-amber-100 bg-amber-50 p-3">
+            <p className="inline-flex items-center gap-2 text-sm font-bold text-amber-700">
+              <Info className="h-4 w-4 text-amber-600" />
+              تعليمات إضافية:
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-800">{briefingText}</p>
+          </div>
+        ) : null}
 
         <Button className={`mt-5 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
