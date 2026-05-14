@@ -1756,27 +1756,28 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
 
       return Promise.all(
         uniqueRows.map(async (row) => {
+          const product = row.master_products!;
           const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
 
           return {
-          id: row.master_products.id,
+            id: product.id,
           vendorId: row.vendor_id,
-          name: row.master_products.product_name,
-          nameFr: row.master_products.name_fr,
-          nameAr: row.master_products.name_ar,
-          brandId: row.master_products.brand_id,
-          brand: row.master_products.brands?.name_en ?? null,
-          brandNameEn: row.master_products.brands?.name_en ?? null,
-          brandNameFr: row.master_products.brands?.name_fr ?? null,
-          brandNameAr: row.master_products.brands?.name_ar ?? null,
-          brandLogoUrl: row.master_products.brands?.logo_url ?? null,
+            name: product.product_name,
+            nameFr: product.name_fr,
+            nameAr: product.name_ar,
+            brandId: product.brand_id,
+            brand: product.brands?.name_en ?? null,
+            brandNameEn: product.brands?.name_en ?? null,
+            brandNameFr: product.brands?.name_fr ?? null,
+            brandNameAr: product.brands?.name_ar ?? null,
+            brandLogoUrl: product.brands?.logo_url ?? null,
           measurementValue:
-            row.master_products.measurement_value != null
-              ? Number(row.master_products.measurement_value)
+              product.measurement_value != null
+                ? Number(product.measurement_value)
               : null,
-          measurementUnit: row.master_products.measurement_unit,
-          imageUrl: row.master_products.image_url,
-          vendorPrice: Number(row.vendor_price ?? 0),
+            measurementUnit: product.measurement_unit,
+            imageUrl: product.image_url,
+            vendorPrice: Number(row.vendor_price ?? 0),
             finalVendorPrice: pricing.finalPrice,
           };
         }),
