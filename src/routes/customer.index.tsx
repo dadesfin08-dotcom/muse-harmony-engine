@@ -613,6 +613,14 @@ function Index() {
   const globalDeliveryFeeMad = Number(globalSettingsQuery.data?.global_delivery_fee ?? 10);
   const minimumOrderMad = Number(globalSettingsQuery.data?.minimum_order_amount ?? 50);
   const freeDeliveryThresholdMad = Number(globalSettingsQuery.data?.free_delivery_threshold ?? 500);
+  const dynamicSiteName =
+    typeof globalSettingsQuery.data?.site_name === "string" && globalSettingsQuery.data.site_name.trim().length > 0
+      ? globalSettingsQuery.data.site_name.trim()
+      : t("brand.title");
+  const dynamicSiteLogoUrl =
+    typeof globalSettingsQuery.data?.site_logo_url === "string" && globalSettingsQuery.data.site_logo_url.trim().length > 0
+      ? globalSettingsQuery.data.site_logo_url.trim()
+      : null;
 
   const selectedLocationLabel = useMemo(() => {
     if (!selectedCommuneId || !selectedNeighborhoodId) {
@@ -1516,12 +1524,19 @@ function Index() {
         <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm md:z-50 md:border-border/70 md:glass-panel">
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
             <a href="#" className="inline-flex items-center gap-2">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Bike className="size-5" />
-              </span>
-              <span className="text-base font-semibold tracking-tight text-gradient-brand">
-                {t("brand.title")}
-              </span>
+              {dynamicSiteLogoUrl ? (
+                <img
+                  src={dynamicSiteLogoUrl}
+                  alt={dynamicSiteName}
+                  className="h-8 w-auto max-w-28 object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Bike className="size-5" />
+                </span>
+              )}
+              <span className="text-base font-semibold tracking-tight text-gradient-brand">{dynamicSiteName}</span>
             </a>
 
             <button
