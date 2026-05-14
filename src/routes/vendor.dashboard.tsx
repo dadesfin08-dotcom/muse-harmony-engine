@@ -1449,6 +1449,9 @@ function VendorDashboardPage() {
                 trustedCustomerName={trustedCustomerName}
                 trustedCustomerCin={trustedCustomerCin}
                 existingCustomerLookup={existingCustomerLookup}
+                totalOutstandingCreditMad={Number(carnetQuery.data?.kpis?.totalOutstandingCreditMad ?? 0)}
+                creditIssuedTodayMad={Number(carnetQuery.data?.kpis?.creditIssuedTodayMad ?? 0)}
+                settledCreditMad={Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0)}
                 onPhoneChange={setTrustedCustomerPhone}
                 onMaxLimitChange={setTrustedCustomerMaxLimit}
                 onNameChange={setTrustedCustomerName}
@@ -2384,6 +2387,9 @@ function CarnetView({
   trustedCustomerName,
   trustedCustomerCin,
   existingCustomerLookup,
+  totalOutstandingCreditMad,
+  creditIssuedTodayMad,
+  settledCreditMad,
   onPhoneChange,
   onMaxLimitChange,
   onNameChange,
@@ -2399,6 +2405,9 @@ function CarnetView({
   trustedCustomerName: string;
   trustedCustomerCin: string;
   existingCustomerLookup: { found: boolean; fullName: string | null } | null;
+  totalOutstandingCreditMad: number;
+  creditIssuedTodayMad: number;
+  settledCreditMad: number;
   onPhoneChange: (value: string) => void;
   onMaxLimitChange: (value: string) => void;
   onNameChange: (value: string) => void;
@@ -2424,6 +2433,44 @@ function CarnetView({
       <div className="mb-4">
         <h2 className="text-base font-semibold text-foreground">Carnet (Credit)</h2>
         <p className="text-xs text-muted-foreground">Manage trusted customers and their credit balances.</p>
+      </div>
+
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Outstanding Credit (مجموع الكريدي اللي على برا)</p>
+              <p className="mt-1 text-2xl font-extrabold text-chart-4">{totalOutstandingCreditMad.toFixed(2)} MAD</p>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
+              <Wallet className="size-4" />
+            </span>
+          </div>
+        </article>
+
+        <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Credit Issued Today (كريدي خرج اليوم)</p>
+              <p className="mt-1 text-2xl font-extrabold text-foreground">{creditIssuedTodayMad.toFixed(2)} MAD</p>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
+              <Clock3 className="size-4" />
+            </span>
+          </div>
+        </article>
+
+        <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Settled Credit (الكريدي المستخلص/المسدد)</p>
+              <p className="mt-1 text-2xl font-extrabold text-success">{settledCreditMad.toFixed(2)} MAD</p>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
+              <CheckCircle2 className="size-4" />
+            </span>
+          </div>
+        </article>
       </div>
 
       <div className="mb-4 space-y-3 rounded-xl border border-border bg-background p-3">

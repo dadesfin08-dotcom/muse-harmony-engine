@@ -141,17 +141,64 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
       throw new Error(carnetError.message);
     }
 
+    const carnetCustomers = ((rows ?? []) as VendorCarnetRow[]).map((row) => ({
+      id: row.id,
+      customerPhone: row.customer_phone,
+      currentDebt: Number(row.current_debt ?? 0),
+      maxLimit: Number(row.max_limit ?? 0),
+      customerName: row.customer_name,
+      customerCin: row.customer_cin,
+      status: row.status,
+    }));
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [issuedRowsResult, repaidRowsResult] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("amount")
+        .eq("vendor_id", vendor.id)
+        .eq("transaction_type", "CREDIT_ISSUED")
+        .gte("created_at", startOfToday.toISOString()),
+      (supabaseAdmin as any)
+        .from("carnet_transactions")
+        .select("amount")
+        .eq("vendor_id", vendor.id)
+        .eq("transaction_type", "CREDIT_REPAID"),
+    ]);
+
+    if (issuedRowsResult.error) {
+      throw new Error(issuedRowsResult.error.message);
+    }
+
+    if (repaidRowsResult.error) {
+      throw new Error(repaidRowsResult.error.message);
+    }
+
+    const totalOutstandingCreditMad = carnetCustomers.reduce(
+      (sum, customer) => sum + Number(customer.currentDebt ?? 0),
+      0,
+    );
+
+    const creditIssuedTodayMad = (issuedRowsResult.data ?? []).reduce(
+      (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
+      0,
+    );
+
+    const settledCreditMad = (repaidRowsResult.data ?? []).reduce(
+      (sum: number, row: { amount?: number | null }) => sum + Number(row.amount ?? 0),
+      0,
+    );
+
     return {
       vendor,
-      carnetCustomers: ((rows ?? []) as VendorCarnetRow[]).map((row) => ({
-        id: row.id,
-        customerPhone: row.customer_phone,
-        currentDebt: Number(row.current_debt ?? 0),
-        maxLimit: Number(row.max_limit ?? 0),
-        customerName: row.customer_name,
-        customerCin: row.customer_cin,
-        status: row.status,
-      })),
+      carnetCustomers,
+      kpis: {
+        totalOutstandingCreditMad: Number(totalOutstandingCreditMad.toFixed(2)),
+        creditIssuedTodayMad: Number(creditIssuedTodayMad.toFixed(2)),
+        settledCreditMad: Number(settledCreditMad.toFixed(2)),
+      },
     };
   } catch (error) {
     console.error("getVendorCarnetData failed:", error);

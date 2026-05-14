@@ -128,6 +128,74 @@ export type Database = {
           },
         ]
       }
+      carnet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_phone: string
+          id: string
+          metadata: Json
+          order_id: string | null
+          payment_id: string | null
+          transaction_type: Database["public"]["Enums"]["carnet_transaction_type"]
+          vendor_carnet_id: string | null
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_phone: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          transaction_type: Database["public"]["Enums"]["carnet_transaction_type"]
+          vendor_carnet_id?: string | null
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_phone?: string
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          payment_id?: string | null
+          transaction_type?: Database["public"]["Enums"]["carnet_transaction_type"]
+          vendor_carnet_id?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carnet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carnet_transactions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "carnet_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carnet_transactions_vendor_carnet_id_fkey"
+            columns: ["vendor_carnet_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_carnet"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "carnet_transactions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           accent_color: string | null
@@ -1143,6 +1211,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      carnet_transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID"
       markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
@@ -1305,6 +1374,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      carnet_transaction_type: ["CREDIT_ISSUED", "CREDIT_REPAID"],
       markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",
