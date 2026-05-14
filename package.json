@@ -54,6 +54,7 @@
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "exceljs": "^4.4.0",
+    "framer-motion": "^12.38.0",
     "html5-qrcode": "^2.3.8",
     "i18next": "^26.0.10",
     "input-otp": "^1.4.2",
