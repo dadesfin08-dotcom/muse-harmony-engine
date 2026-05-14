@@ -488,6 +488,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       "vendors",
       "cyclists",
       "profiles",
+      "user_roles",
       "markup_rules",
       "global_settings",
       "invoice_settings",
