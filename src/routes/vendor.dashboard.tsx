@@ -179,6 +179,7 @@ type DashboardOrder = {
   communeName: string;
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
+  rawStatus: string;
   status:
     | "new"
     | "preparing"
@@ -773,6 +774,7 @@ function VendorDashboardPage() {
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
         deliveryNotes: row.delivery_notes,
         paymentMethod: row.payment_method,
+        rawStatus: String(row.status ?? "").trim().toLowerCase(),
         status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
         totalMad: roundMoney(Number(row.total_price ?? 0)),
@@ -857,11 +859,10 @@ function VendorDashboardPage() {
     };
 
     const pendingOrders = queue.new.length + queue.preparing.length;
-    const deliveredInFilter = orders.filter(
-      (order) =>
-        order.status === "delivered" &&
-        inKpiWindow(order.createdAt),
-    );
+    const deliveredInFilter = orders.filter((order) => {
+      const status = String(order.rawStatus ?? "").trim().toLowerCase();
+      return status === "cash_transferred_to_vendor" && inKpiWindow(order.createdAt);
+    });
     const cashOrders = deliveredInFilter.filter((order) => order.paymentMethod === "COD");
     const carnetOrders = deliveredInFilter.filter((order) => order.paymentMethod === "Carnet");
     const outstandingCreditMad = (carnetQuery.data?.carnetCustomers ?? []).reduce(
