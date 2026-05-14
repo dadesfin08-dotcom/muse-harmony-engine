@@ -81,6 +81,7 @@ import { type CustomerPanelView, useCustomerPanelStore } from "@/lib/customer-pa
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -546,12 +547,37 @@ function Index() {
         { event: "*", schema: "public", table: "orders", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession.phoneNumber] });
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
+    const carnetLedgerChannel = supabase
+      .channel(`customer-carnet-ledger-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "carnet_transactions", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
+    const carnetBalanceChannel = supabase
+      .channel(`customer-carnet-balance-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vendor_carnet", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
         },
       )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(ordersChannel);
+      void supabase.removeChannel(carnetLedgerChannel);
+      void supabase.removeChannel(carnetBalanceChannel);
     };
   }, [customerSession?.phoneNumber, queryClient]);
 
@@ -1142,6 +1168,10 @@ function Index() {
   };
 
   const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").toLowerCase());
+  const isCarnetUnpaidOrder = (paymentMethod: string | null | undefined) => {
+    const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+    return normalized === "carnet" || normalized === "credit";
+  };
 
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
@@ -2448,6 +2478,12 @@ function Index() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
                     <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
                   </section>
+                  <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                    </p>
+                    <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
+                  </section>
                   <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
                     View & Edit Profile
                   </Button>
@@ -2572,6 +2608,11 @@ function Index() {
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
+                                      {isCarnetUnpaidOrder(order.payment_method) ? (
+                                        <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
+                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                        </Badge>
+                                      ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
@@ -2622,6 +2663,11 @@ function Index() {
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
+                                      {isCarnetUnpaidOrder(order.payment_method) ? (
+                                        <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
+                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                        </Badge>
+                                      ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
@@ -2842,6 +2888,12 @@ function Index() {
                     <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
                       <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
+                    </section>
+                    <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                      </p>
+                      <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                     </section>
                     <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
                       View & Edit Profile

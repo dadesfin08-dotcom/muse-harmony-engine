@@ -675,6 +675,38 @@ function VendorDashboardPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!hasValidVendorPhoneSession) return;
+
+    const refreshCarnetQueries = () => {
+      void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet"] });
+      if (selectedCarnetPhone) {
+        void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone] });
+      }
+    };
+
+    const ordersChannel = supabase
+      .channel(`vendor-carnet-orders-${normalizedVendorPhoneNumber}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, refreshCarnetQueries)
+      .subscribe();
+
+    const paymentsChannel = supabase
+      .channel(`vendor-carnet-payments-${normalizedVendorPhoneNumber}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "carnet_payments" }, refreshCarnetQueries)
+      .subscribe();
+
+    const ledgerChannel = supabase
+      .channel(`vendor-carnet-ledger-${normalizedVendorPhoneNumber}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "carnet_transactions" }, refreshCarnetQueries)
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ordersChannel);
+      void supabase.removeChannel(paymentsChannel);
+      void supabase.removeChannel(ledgerChannel);
+    };
+  }, [hasValidVendorPhoneSession, normalizedVendorPhoneNumber, queryClient, selectedCarnetPhone]);
+
   const vendorStoreName =
     dashboardQuery.data?.vendor?.storeName ?? inventoryQuery.data?.vendor?.store_name ?? "Vendor Store";
 
