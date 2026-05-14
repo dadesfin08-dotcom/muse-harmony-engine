@@ -2946,26 +2946,26 @@ function OrderCard({
       className={cn(
         "transition hover:shadow-md",
         isInDeliveryTab
-          ? "rounded-[30px] border border-border/80 bg-card p-6 shadow-[0_18px_50px_-26px_rgba(16,24,40,0.22)]"
+          ? "rounded-[24px] border border-border/80 bg-card p-4 shadow-[0_16px_40px_-26px_rgba(16,24,40,0.2)] sm:rounded-[26px] sm:p-5"
           : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
-      <div className={cn("space-y-2.5", isInDeliveryTab ? "space-y-5" : "")}> 
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
+      <div className={cn("space-y-2.5", isInDeliveryTab ? "space-y-4" : "")}> 
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <p
               className={cn(
                 "font-black tracking-tight",
-                isInDeliveryTab ? "text-4xl leading-none text-foreground sm:text-5xl" : "text-2xl text-foreground",
+                isInDeliveryTab ? "text-3xl leading-none text-foreground sm:text-4xl" : "text-2xl text-foreground",
               )}
             >
               {shortId}
             </p>
             {isInDeliveryTab ? (
-              <span className="inline-flex h-10 items-center gap-2 rounded-full border border-primary/10 bg-primary/10 px-4 text-sm font-semibold text-primary sm:text-base" dir="rtl">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+              <span className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-3 text-xs font-semibold text-primary sm:h-10 sm:px-3.5 sm:text-sm" dir="rtl">
+                <span className="h-2 w-2 rounded-full bg-primary" />
                 <span>في الطريق</span>
-                <Bike className="h-5 w-5" />
+                <Bike className="h-4 w-4" />
               </span>
             ) : (
               <OrderStatusBadge tab={tab} status={order.status} />
@@ -2976,28 +2976,28 @@ function OrderCard({
             className={cn(
               "inline-flex items-start gap-2",
               isInDeliveryTab
-                ? "max-w-[140px] text-right text-sm font-medium leading-tight text-muted-foreground"
+                ? "max-w-[120px] shrink-0 text-right text-xs font-medium leading-snug text-muted-foreground sm:max-w-[132px] sm:text-sm"
                 : "text-sm font-medium text-muted-foreground",
             )}
           >
-            <Clock3 className="mt-0.5 size-5 shrink-0" />
-            <span>{elapsed}</span>
+            <Clock3 className="mt-0.5 h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+            <span className="line-clamp-2">{elapsed}</span>
           </p>
         </div>
 
         {isInDeliveryTab ? (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 items-end gap-3">
               <div className="space-y-1.5">
-                <p className="text-sm font-medium text-muted-foreground">Customer</p>
-                <p className="truncate text-3xl font-black leading-none text-foreground sm:text-4xl">{customerOrAreaLabel}</p>
+                <p className="text-xs font-medium text-muted-foreground sm:text-sm">Customer</p>
+                <p className="truncate text-2xl font-black leading-none text-foreground sm:text-3xl">{customerOrAreaLabel}</p>
               </div>
               <div className="space-y-1.5 text-right">
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-3xl font-black leading-none text-primary sm:text-4xl">{order.totalMad.toFixed(2)} MAD</p>
+                <p className="text-xs font-medium text-muted-foreground sm:text-sm">Total</p>
+                <p className="text-2xl font-black leading-none text-primary sm:text-3xl">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
-            <div className="my-1 border-t-2 border-dashed border-border/70" />
+            <div className="my-0.5 border-t-2 border-dashed border-border/70" />
           </>
         ) : (
           <>
@@ -3020,40 +3020,40 @@ function OrderCard({
             className={cn(
               "flex items-center justify-between gap-3",
               isInDeliveryTab
-                ? "rounded-[26px] border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-background p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_44px_-32px_rgba(16,24,40,0.3)]"
+                ? "rounded-[20px] border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-background p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_14px_34px_-28px_rgba(16,24,40,0.28)] sm:rounded-[22px] sm:p-4"
                 : "mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3",
             )}
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               <div className="relative">
                 <Avatar
                   className={cn(
                     "rounded-full",
                     isInDeliveryTab
-                      ? "h-20 w-20 border-2 border-primary/20 shadow-[0_14px_28px_-16px_rgba(16,24,40,0.35)]"
+                      ? "h-14 w-14 border-2 border-primary/20 shadow-[0_12px_20px_-14px_rgba(16,24,40,0.35)] sm:h-16 sm:w-16"
                       : "h-10 w-10 border border-emerald-200",
                   )}
                 >
                   <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
-                  <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary sm:text-3xl">
+                  <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary sm:text-xl">
                     {cyclistNameInitials || "9"}
                   </AvatarFallback>
                 </Avatar>
                 {isInDeliveryTab ? (
-                  <span className="absolute -bottom-1 -right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md">
-                    <Bike className="h-4 w-4" />
+                  <span className="absolute -bottom-1 -right-1 inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md">
+                    <Bike className="h-3.5 w-3.5" />
                   </span>
                 ) : null}
               </div>
 
               <div className="min-w-0">
-                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-2xl text-foreground sm:text-3xl" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
+                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-lg text-foreground sm:text-xl" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
                   {driver.name}
                 </p>
                 <p
                   className={cn(
                     "font-medium text-muted-foreground",
-                    isInDeliveryTab ? "mt-1 text-lg sm:text-xl" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
+                    isInDeliveryTab ? "mt-0.5 text-sm sm:text-base" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
@@ -3066,10 +3066,10 @@ function OrderCard({
               <a
                 href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-12 items-center justify-center rounded-[18px] bg-gradient-to-r from-primary via-primary to-success px-6 text-base font-semibold text-primary-foreground shadow-[0_20px_36px_-22px_rgba(14,116,144,0.65)] transition hover:brightness-105"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-r from-primary via-primary to-success px-4 text-sm font-semibold text-primary-foreground shadow-[0_18px_28px_-20px_rgba(14,116,144,0.65)] transition hover:brightness-105 sm:h-11 sm:px-5"
                 aria-label={`Contact driver ${driver.name}`}
               >
-                <Users className="mr-2 h-6 w-6" />
+                <Users className="mr-1.5 h-4 w-4" />
                 Contact Driver
               </a>
             ) : (
@@ -3106,14 +3106,14 @@ function OrderCard({
       <Button
         variant="hero"
         className={cn(
-          "mt-4 w-full rounded-[20px]",
+          "mt-3.5 w-full rounded-[16px]",
           isInDeliveryTab
-            ? "h-14 bg-gradient-to-r from-primary via-primary to-success text-base font-semibold shadow-[0_22px_40px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_26px_46px_-24px_rgba(14,116,144,0.78)]"
+            ? "h-12 bg-gradient-to-r from-primary via-primary to-success text-sm font-semibold shadow-[0_20px_34px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_24px_42px_-24px_rgba(14,116,144,0.78)]"
             : "h-10 rounded-xl",
         )}
         onClick={onOpenDetails}
       >
-        {isInDeliveryTab ? <Eye className="mr-2 h-5 w-5" /> : null}
+        {isInDeliveryTab ? <Eye className="mr-1.5 h-4 w-4" /> : null}
         {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
