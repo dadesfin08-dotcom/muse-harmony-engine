@@ -415,6 +415,39 @@ export type Database = {
         }
         Relationships: []
       }
+      markup_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          markup_type: Database["public"]["Enums"]["markup_type"]
+          markup_value: number
+          max_price: number
+          min_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          markup_type: Database["public"]["Enums"]["markup_type"]
+          markup_value: number
+          max_price: number
+          min_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          markup_type?: Database["public"]["Enums"]["markup_type"]
+          markup_value?: number
+          max_price?: number
+          min_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       master_products: {
         Row: {
           apply_platform_markup: boolean
@@ -1098,6 +1131,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
         | "Liter"
@@ -1257,6 +1291,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",
         "Liter",

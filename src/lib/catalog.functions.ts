@@ -1287,7 +1287,8 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
-      return ((rows ?? []) as Array<{
+      const flashDeals = await Promise.all(
+        ((rows ?? []) as Array<{
         vendor_id: string;
         vendor_price: number;
         is_available: boolean;
@@ -1304,28 +1305,36 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           is_active: boolean;
         } | null;
       }>)
-        .filter(
-          (row) =>
-            row.is_available === true &&
-            row.is_flash_sale === true &&
-            !!row.master_products &&
-            row.flash_sale_price != null &&
-            !!row.flash_sale_end_time,
-        )
-        .map((row) => ({
-          id: row.master_products!.id,
-          vendorId: row.vendor_id,
-          name: row.master_products!.product_name,
-          nameFr: row.master_products!.name_fr,
-          nameAr: row.master_products!.name_ar,
-          measurementUnit: row.master_products!.measurement_unit,
-          imageUrl: row.master_products!.image_url,
-          vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-          flashSalePrice: Number(row.flash_sale_price!),
-          finalFlashSalePrice: calculateFinalPrice(Number(row.flash_sale_price!), true).finalPrice,
-          flashSaleEndTime: row.flash_sale_end_time!,
-        }));
+          .filter(
+            (row) =>
+              row.is_available === true &&
+              row.is_flash_sale === true &&
+              !!row.master_products &&
+              row.flash_sale_price != null &&
+              !!row.flash_sale_end_time,
+          )
+          .map(async (row) => {
+            const finalVendorPricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+            const finalFlashPricing = await calculateFinalPrice(Number(row.flash_sale_price!), true);
+
+            return {
+              id: row.master_products!.id,
+              vendorId: row.vendor_id,
+              name: row.master_products!.product_name,
+              nameFr: row.master_products!.name_fr,
+              nameAr: row.master_products!.name_ar,
+              measurementUnit: row.master_products!.measurement_unit,
+              imageUrl: row.master_products!.image_url,
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: finalVendorPricing.finalPrice,
+              flashSalePrice: Number(row.flash_sale_price!),
+              finalFlashSalePrice: finalFlashPricing.finalPrice,
+              flashSaleEndTime: row.flash_sale_end_time!,
+            };
+          }),
+      );
+
+      return flashDeals;
     } catch (error) {
       console.error("listActiveFlashDeals failed:", error);
       throw new Error("Failed to load flash deals.");
@@ -1396,21 +1405,29 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
 
       const normalizedNeedle = normalizedQuery.toLocaleLowerCase();
 
-      const result = ((rows ?? []) as Array<any>)
-        .filter((row) => row?.master_products)
-        .map((row) => ({
-          id: row.master_products.id as string,
-          name: row.master_products.product_name as string,
-          nameFr: (row.master_products.name_fr as string | null) ?? null,
-          nameAr: (row.master_products.name_ar as string | null) ?? null,
-          category: row.master_products.category as ProductCategory,
-          imageUrl: (row.master_products.image_url as string | null) ?? null,
-          vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-          brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
-          brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
-          brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
-        }))
+      const pricedResult = await Promise.all(
+        ((rows ?? []) as Array<any>)
+          .filter((row) => row?.master_products)
+          .map(async (row) => {
+            const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
+            return {
+              id: row.master_products.id as string,
+              name: row.master_products.product_name as string,
+              nameFr: (row.master_products.name_fr as string | null) ?? null,
+              nameAr: (row.master_products.name_ar as string | null) ?? null,
+              category: row.master_products.category as ProductCategory,
+              imageUrl: (row.master_products.image_url as string | null) ?? null,
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: pricing.finalPrice,
+              brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
+              brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
+              brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
+            };
+          }),
+      );
+
+      const result = pricedResult
         .filter((item) => {
           const searchable = [
             item.name,
@@ -1509,9 +1526,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
         throw new Error(rowsError.message);
       }
 
-      return {
-        vendor: vendor as VendorRow,
-        items: ((rows ?? []) as Array<{
+      const items = await Promise.all(
+        ((rows ?? []) as Array<{
           vendor_id: string;
           vendor_price: number;
           is_available: boolean;
@@ -1540,36 +1556,44 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
         }>)
           .filter((row) => !!row.master_products)
           .slice(0, data.pageSize)
-          .map((row) => ({
-            id: row.master_products!.id,
-            vendorId: row.vendor_id,
-            name: row.master_products!.product_name,
-            nameFr: row.master_products!.name_fr,
-            nameAr: row.master_products!.name_ar,
-            productVariants: Array.isArray(row.master_products!.product_variants)
-              ? row.master_products!.product_variants
-                  .map((value) => (typeof value === "string" ? value.trim() : ""))
-                  .filter((value) => value.length > 0)
-              : [],
-            brandId: row.master_products!.brand_id,
-            brand: row.master_products!.brands?.name_en ?? null,
-            brandNameEn: row.master_products!.brands?.name_en ?? null,
-            brandNameFr: row.master_products!.brands?.name_fr ?? null,
-            brandNameAr: row.master_products!.brands?.name_ar ?? null,
-            brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
-            categoryId: row.master_products!.category_id,
-            category: row.master_products!.category,
-            measurementValue:
-              row.master_products!.measurement_value != null
-                ? Number(row.master_products!.measurement_value)
-                : null,
-            measurementUnit: row.master_products!.measurement_unit,
-            imageUrl: row.master_products!.image_url,
-            popularityScore: Number(row.master_products!.popularity_score ?? 0),
-            vendorPrice: Number(row.vendor_price ?? 0),
-            finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-            isAvailable: row.is_available,
-          })),
+          .map(async (row) => {
+            const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+            return {
+              id: row.master_products!.id,
+              vendorId: row.vendor_id,
+              name: row.master_products!.product_name,
+              nameFr: row.master_products!.name_fr,
+              nameAr: row.master_products!.name_ar,
+              productVariants: Array.isArray(row.master_products!.product_variants)
+                ? row.master_products!.product_variants
+                    .map((value) => (typeof value === "string" ? value.trim() : ""))
+                    .filter((value) => value.length > 0)
+                : [],
+              brandId: row.master_products!.brand_id,
+              brand: row.master_products!.brands?.name_en ?? null,
+              brandNameEn: row.master_products!.brands?.name_en ?? null,
+              brandNameFr: row.master_products!.brands?.name_fr ?? null,
+              brandNameAr: row.master_products!.brands?.name_ar ?? null,
+              brandLogoUrl: row.master_products!.brands?.logo_url ?? null,
+              categoryId: row.master_products!.category_id,
+              category: row.master_products!.category,
+              measurementValue:
+                row.master_products!.measurement_value != null
+                  ? Number(row.master_products!.measurement_value)
+                  : null,
+              measurementUnit: row.master_products!.measurement_unit,
+              imageUrl: row.master_products!.image_url,
+              popularityScore: Number(row.master_products!.popularity_score ?? 0),
+              vendorPrice: Number(row.vendor_price ?? 0),
+              finalVendorPrice: pricing.finalPrice,
+              isAvailable: row.is_available,
+            };
+          }),
+      );
+
+      return {
+        vendor: vendor as VendorRow,
+        items,
         hasMore: (rows?.length ?? 0) > data.pageSize,
       };
     } catch (error) {
@@ -1616,6 +1640,8 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         return null;
       }
 
+      const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
       return {
         id: row.master_products.id,
         vendorId: row.vendor_id,
@@ -1643,7 +1669,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         imageUrl: row.master_products.image_url,
         popularityScore: Number(row.master_products.popularity_score ?? 0),
         vendorPrice: Number(row.vendor_price ?? 0),
-        finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
+        finalVendorPrice: pricing.finalPrice,
         isAvailable: row.is_available,
       };
     } catch (error) {
@@ -1697,8 +1723,7 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
       }
 
       const seen = new Set<string>();
-
-      return ((rows ?? []) as Array<{
+      const uniqueRows = ((rows ?? []) as Array<{
         vendor_id: string;
         vendor_price: number;
         is_available: boolean;
@@ -1720,54 +1745,43 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           image_url: string | null;
           is_active: boolean;
         } | null;
-      }>).reduce<
-        Array<{
-          id: string;
-          vendorId: string;
-          name: string;
-          nameFr: string | null;
-          nameAr: string | null;
-          brandId: string | null;
-          brand: string | null;
-          brandNameEn: string | null;
-          brandNameFr: string | null;
-          brandNameAr: string | null;
-          brandLogoUrl: string | null;
-          measurementValue: number | null;
-          measurementUnit: MeasurementUnit;
-          imageUrl: string | null;
-          vendorPrice: number;
-           finalVendorPrice: number;
-        }>
-      >((acc, row) => {
+      }>).filter((row) => {
         if (!row.master_products || seen.has(row.master_products.id)) {
-          return acc;
+          return false;
         }
-
         seen.add(row.master_products.id);
-        acc.push({
-          id: row.master_products.id,
+
+        return true;
+      });
+
+      return Promise.all(
+        uniqueRows.map(async (row) => {
+          const product = row.master_products!;
+          const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+
+          return {
+            id: product.id,
           vendorId: row.vendor_id,
-          name: row.master_products.product_name,
-          nameFr: row.master_products.name_fr,
-          nameAr: row.master_products.name_ar,
-          brandId: row.master_products.brand_id,
-          brand: row.master_products.brands?.name_en ?? null,
-          brandNameEn: row.master_products.brands?.name_en ?? null,
-          brandNameFr: row.master_products.brands?.name_fr ?? null,
-          brandNameAr: row.master_products.brands?.name_ar ?? null,
-          brandLogoUrl: row.master_products.brands?.logo_url ?? null,
+            name: product.product_name,
+            nameFr: product.name_fr,
+            nameAr: product.name_ar,
+            brandId: product.brand_id,
+            brand: product.brands?.name_en ?? null,
+            brandNameEn: product.brands?.name_en ?? null,
+            brandNameFr: product.brands?.name_fr ?? null,
+            brandNameAr: product.brands?.name_ar ?? null,
+            brandLogoUrl: product.brands?.logo_url ?? null,
           measurementValue:
-            row.master_products.measurement_value != null
-              ? Number(row.master_products.measurement_value)
+              product.measurement_value != null
+                ? Number(product.measurement_value)
               : null,
-          measurementUnit: row.master_products.measurement_unit,
-          imageUrl: row.master_products.image_url,
-          vendorPrice: Number(row.vendor_price ?? 0),
-          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
-        });
-        return acc;
-      }, []);
+            measurementUnit: product.measurement_unit,
+            imageUrl: product.image_url,
+            vendorPrice: Number(row.vendor_price ?? 0),
+            finalVendorPrice: pricing.finalPrice,
+          };
+        }),
+      );
     } catch (error) {
       console.error("getBrandSuggestionsForNeighborhood failed:", error);
       throw new Error("Failed to load suggested products.");
