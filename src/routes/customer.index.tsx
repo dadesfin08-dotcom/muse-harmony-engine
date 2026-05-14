@@ -1143,15 +1143,19 @@ function Index() {
     try {
       setIsSubmittingOrder(true);
 
-      await saveCustomerProfile({
-        data: {
-          phoneNumber: customerSession.phoneNumber,
-          fullName: fullName.trim(),
-          address: address.trim(),
-          savedInstructions: deliveryNotes.trim(),
-          neighborhoodId: selectedNeighborhoodId || null,
-        },
-      });
+      try {
+        await saveCustomerProfile({
+          data: {
+            phoneNumber: customerSession.phoneNumber,
+            fullName: fullName.trim(),
+            address: address.trim(),
+            savedInstructions: deliveryNotes.trim(),
+            neighborhoodId: selectedNeighborhoodId || null,
+          },
+        });
+      } catch (profileSaveError) {
+        console.error("Failed to persist profile before order placement:", profileSaveError);
+      }
 
       await submitOrder({
         data: {
