@@ -475,9 +475,22 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       await wipeTable(tableName);
     }
 
+    const { error: resetVendorsError } = await (supabaseAdmin as any)
+      .from("vendors")
+      .update({
+        vendor_earnings: 0,
+        platform_dues: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (resetVendorsError) {
+      throw new Error(`Failed while resetting vendor balances: ${resetVendorsError.message}`);
+    }
+
     return {
       ok: true,
-      message: "Orders data reset completed.",
+      message: "Orders data reset completed and vendor balances were reset.",
     };
   });
 
