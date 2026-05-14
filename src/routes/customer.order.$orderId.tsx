@@ -37,6 +37,7 @@ function CustomerOrderDetailsPage() {
     queryKey: ["customer", "order-details", orderId, customerPhoneNumber],
     enabled: Boolean(orderId && customerPhoneNumber),
     queryFn: () => getDetails({ data: { phoneNumber: customerPhoneNumber, orderId } }),
+    refetchInterval: 4000,
   });
 
   const order = detailsQuery.data;
@@ -224,7 +225,7 @@ function CustomerOrderDetailsPage() {
                     <QRCodeSVG value={handoverQrPayload} size={184} includeMargin />
                   </div>
                 </div>
-              ) : order.status === "delivered" ? (
+              ) : normalizedOrderStatus === "delivered" ? (
                 <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3">
                   <p className="inline-flex items-center text-sm font-semibold text-success">{copy.handoverDelivered}</p>
                 </div>
