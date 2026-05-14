@@ -2370,17 +2370,17 @@ function Index() {
                   )}
 
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                   {customerCarnetQuery.isLoading ? (
-                    <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
+                    <AppEmptyState title="جاري تحميل دفترك..." subtitle="نجلب آخر تفاصيل الرصيد." className="p-5" />
                   ) : !customerCarnet ? (
                     <AppEmptyState
-                      title="No active carnet found for your account."
-                      subtitle="Ask your vendor to enable carnet access for your phone number."
+                      title="ما كاينش دفتر فعّال لحسابك حالياً."
+                      subtitle="تواصل مع التاجر باش يفعّل لك الدفتر برقم الهاتف ديالك."
                       className="p-5"
                     />
                   ) : (
@@ -2388,7 +2388,7 @@ function Index() {
                       <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
                         <div className="rounded-xl border border-border bg-muted/30 p-3">
                           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                            الرصيد الحالي
                           </p>
                           <p className="mt-1 text-xl font-semibold text-destructive">
                             {carnetCurrentDebt.toFixed(2)} MAD
