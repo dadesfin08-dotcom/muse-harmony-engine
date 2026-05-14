@@ -1,14 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCustomerOrderDetails } from "@/lib/orders.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/customer/order/$orderId")({
   component: CustomerOrderDetailsPage,
@@ -18,6 +20,7 @@ function CustomerOrderDetailsPage() {
   const { orderId } = Route.useParams();
   const navigate = useNavigate({ from: "/customer/order/$orderId" });
   const getDetails = useServerFn(getCustomerOrderDetails);
+  const queryClient = useQueryClient();
   const { i18n } = useTranslation();
 
   const customerPhoneNumber = useMemo(() => {
@@ -34,12 +37,33 @@ function CustomerOrderDetailsPage() {
     queryKey: ["customer", "order-details", orderId, customerPhoneNumber],
     enabled: Boolean(orderId && customerPhoneNumber),
     queryFn: () => getDetails({ data: { phoneNumber: customerPhoneNumber, orderId } }),
+    refetchInterval: 4000,
   });
 
   const order = detailsQuery.data;
   const orderDate = order ? new Date(order.createdAt) : null;
   const language = (i18n.resolvedLanguage || i18n.language || "en") as "en" | "fr" | "ar";
   const isArabic = language === "ar";
+
+  useEffect(() => {
+    if (!orderId || !customerPhoneNumber) return;
+
+    const channel = supabase
+      .channel(`customer-order-${orderId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "order-details", orderId, customerPhoneNumber] });
+          void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerPhoneNumber] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [customerPhoneNumber, orderId, queryClient]);
 
   const copy = useMemo(() => {
     if (language === "ar") {
@@ -63,6 +87,9 @@ function CustomerOrderDetailsPage() {
         statusOutForDelivery: "خرج للتوصيل",
         statusDelivered: "تم التسليم",
         statusCancelled: "ملغى",
+        handoverTitle: "رمز تأكيد التسليم",
+        handoverHint: "ورّي هاد الرمز للسائق باش يأكد التسليم.",
+        handoverDelivered: "تم تسليم الطلب بنجاح",
       };
     }
 
@@ -87,6 +114,9 @@ function CustomerOrderDetailsPage() {
         statusOutForDelivery: "En livraison",
         statusDelivered: "Livrée",
         statusCancelled: "Annulée",
+        handoverTitle: "Code QR de remise",
+        handoverHint: "Présentez ce QR au livreur pour confirmer la remise.",
+        handoverDelivered: "Commande livrée avec succès",
       };
     }
 
@@ -110,17 +140,27 @@ function CustomerOrderDetailsPage() {
       statusOutForDelivery: "Out for Delivery",
       statusDelivered: "Delivered",
       statusCancelled: "Cancelled",
+      handoverTitle: "Delivery handover QR",
+      handoverHint: "Show this QR code to the driver to complete handover.",
+      handoverDelivered: "Order Delivered Successfully",
     };
   }, [language]);
 
   const statusBadge = useMemo(() => {
-    const status = order?.status ?? "new";
+    const status = String(order?.status ?? "new").toLowerCase();
     if (status === "delivered") return { label: copy.statusDelivered, className: "bg-primary/15 text-primary border-primary/30" };
-    if (status === "delivering") return { label: copy.statusOutForDelivery, className: "bg-accent/30 text-foreground border-border" };
+    if (status === "delivering" || status === "out_for_delivery") return { label: copy.statusOutForDelivery, className: "bg-accent/30 text-foreground border-border" };
     if (status === "preparing" || status === "ready") return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
     if (status === "cancelled") return { label: copy.statusCancelled, className: "bg-destructive/10 text-destructive border-destructive/30" };
     return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
   }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
+
+  const normalizedOrderStatus = String(order?.status ?? "").toLowerCase();
+  const isOutForDelivery = normalizedOrderStatus === "delivering" || normalizedOrderStatus === "out_for_delivery";
+  const handoverQrPayload = useMemo(() => {
+    if (!order?.id || !isOutForDelivery) return "";
+    return JSON.stringify({ order_id: order.id, delivery_auth_code: order.deliveryAuthCode ?? null });
+  }, [isOutForDelivery, order?.deliveryAuthCode, order?.id]);
 
   const paymentBadge = useMemo(() => {
     const normalized = String(order?.paymentMethod ?? "").trim().toLowerCase();
@@ -142,7 +182,7 @@ function CustomerOrderDetailsPage() {
       <div className="mx-auto w-full max-w-5xl space-y-4">
         <Button
           variant="outline"
-          className="sticky top-3 z-10"
+          className="sticky top-3 z-10 self-start"
           onClick={() => {
             if (typeof window !== "undefined" && window.history.length > 1) {
               window.history.back();
@@ -177,6 +217,20 @@ function CustomerOrderDetailsPage() {
             <p className="text-sm text-destructive">{copy.loadError}</p>
           ) : (
             <>
+              {isOutForDelivery ? (
+                <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <p className="text-sm font-semibold text-foreground">{copy.handoverTitle}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{copy.handoverHint}</p>
+                  <div className="mt-3 flex justify-center rounded-lg border border-border bg-background p-3">
+                    <QRCodeSVG value={handoverQrPayload} size={184} includeMargin />
+                  </div>
+                </div>
+              ) : normalizedOrderStatus === "delivered" ? (
+                <div className="mb-4 rounded-xl border border-success/30 bg-success/10 p-3">
+                  <p className="inline-flex items-center text-sm font-semibold text-success">{copy.handoverDelivered}</p>
+                </div>
+              ) : null}
+
               <div className="overflow-hidden rounded-md border border-border">
                 <Table className="border-collapse">
                   <TableHeader>

@@ -132,6 +132,7 @@ export type CustomerOrderDetails = {
   id: string;
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+  deliveryAuthCode: string | null;
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
@@ -598,7 +599,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, customer_user_id, payment_method, status, created_at, delivery_fee, order_items")
+        .select("id, customer_user_id, payment_method, status, delivery_auth_code, created_at, delivery_fee, order_items")
         .eq("id", data.orderId)
         .eq("customer_user_id", customerUserId)
         .maybeSingle();
@@ -686,6 +687,10 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
         id: String(orderRow.id),
         paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
         status: (normalizedStatus === "cancelled" ? "cancelled" : orderRow.status ?? "new") as CustomerOrderDetails["status"],
+        deliveryAuthCode:
+          typeof (orderRow as { delivery_auth_code?: unknown }).delivery_auth_code === "string"
+            ? ((orderRow as { delivery_auth_code: string }).delivery_auth_code ?? null)
+            : null,
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,
