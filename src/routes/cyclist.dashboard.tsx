@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ import {
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import { extractDeliveryCode } from "@/lib/extract-delivery-code";
+import i18n from "@/lib/i18n";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -35,10 +37,10 @@ type CyclistSession = {
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
-      { title: "Cyclist Dashboard | Bzaf Fresh" },
+      { title: i18n.t("cyclist.dashboardMetaTitle") },
       {
         name: "description",
-        content: "Mobile-first cyclist dashboard for accepting runs and completing local deliveries.",
+        content: i18n.t("cyclist.dashboardMetaDescription"),
       },
     ],
   }),
@@ -46,6 +48,8 @@ export const Route = createFileRoute("/cyclist/dashboard")({
 });
 
 function CyclistDashboardPage() {
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
   const navigate = useNavigate({ from: "/cyclist/dashboard" });
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
@@ -54,7 +58,7 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerOrder, setScannerOrder] = useState<CyclistOrderCard | null>(null);
-  const [scannerStatus, setScannerStatus] = useState("Ready to scan.");
+  const [scannerStatus, setScannerStatus] = useState(() => i18n.t("cyclist.readyToScan"));
   const [manualCode, setManualCode] = useState("");
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
