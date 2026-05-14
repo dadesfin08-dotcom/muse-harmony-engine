@@ -633,52 +633,52 @@ function CyclistDashboardPage() {
                     detailsOrder.items.map((item, index) => (
                       <div
                         key={`${detailsOrder.id}-${item.name}-${index}`}
-                        className="flex min-w-0 flex-row items-center gap-2.5 border-b border-slate-100 px-2.5 py-2.5 last:border-0"
+                        className="flex min-w-0 flex-col gap-2 border-b border-slate-100 px-3 py-3 last:border-0"
                       >
-                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-50">
-                          {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="h-10 w-10 object-cover" loading="lazy" />
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center text-slate-400">
-                              <ShoppingBasket className="size-4" />
-                            </div>
-                          )}
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} alt={item.name} className="h-12 w-12 object-cover" loading="lazy" />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center text-slate-400">
+                                <ShoppingBasket className="size-4" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                          </div>
+
+                          <span className="whitespace-nowrap text-sm font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
                         </div>
 
-                        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-                          <p className="min-w-0 shrink truncate text-sm font-bold text-slate-800">{item.name}</p>
-
+                        <div className="flex min-w-0 items-center gap-2 pr-[3.75rem] text-xs text-slate-600">
                           {item.brandName ? (
-                            <span className="inline-flex max-w-[84px] shrink-0 items-center gap-1 truncate rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                               <Tag className="h-3 w-3" />
                               {item.brandName}
                             </span>
                           ) : null}
 
                           {item.measurementValue || item.measurementUnit ? (
-                            <span className="inline-flex max-w-[78px] shrink-0 items-center gap-1 truncate whitespace-nowrap text-[10px] text-slate-600">
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-slate-600">
                               <Scale className="h-3 w-3 text-slate-400" />
                               {[item.measurementValue, item.measurementUnit].filter(Boolean).join(" ")}
                             </span>
                           ) : null}
-                        </div>
 
-                        <div className="ms-auto flex shrink-0 items-center gap-2">
                           <TooltipProvider delayDuration={120}>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                                <span className="inline-flex cursor-help items-center gap-1 rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">
                                   <Package className="h-3 w-3" />
-                                  <span>Qty</span>
-                                  <span>x{item.quantity}</span>
+                                  <span>Qty x{item.quantity}</span>
                                 </span>
                               </TooltipTrigger>
-                              <TooltipContent side="top">
-                                الكمية الحالية هي x{item.quantity}
-                              </TooltipContent>
+                              <TooltipContent side="top">الكمية الحالية هي x{item.quantity}</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          <span className="ml-auto whitespace-nowrap text-xs font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
                         </div>
                       </div>
                     ))
