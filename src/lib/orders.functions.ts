@@ -86,6 +86,9 @@ type VendorRow = {
 type OrderRow = {
   id: string;
   vendor_id: string;
+  neighborhood_id?: string | null;
+  neighborhood_name?: string | null;
+  commune_name?: string | null;
   customer_name: string;
   customer_phone: string;
   delivery_notes: string;
@@ -139,6 +142,9 @@ export type CustomerOrderDetails = {
   paymentMethod: "COD" | "Carnet";
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
   deliveryAuthCode: string | null;
+  communeName: string;
+  neighborhoodName: string;
+  specialInstructions: string;
   createdAt: string;
   deliveryFeeMad: number;
   subtotalMad: number;
@@ -411,7 +417,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
+        "id, vendor_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -450,6 +456,70 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       );
     }
 
+    const neighborhoodIds = Array.from(
+      new Set(
+        (orders ?? [])
+          .map((order: any) => (typeof order?.neighborhood_id === "string" ? order.neighborhood_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const neighborhoodsQuery =
+      neighborhoodIds.length > 0
+        ? await (supabaseAdmin as any)
+            .from("neighborhoods")
+            .select("id, commune_id, name_ar, name_fr, name_en")
+            .in("id", neighborhoodIds)
+        : { data: [], error: null };
+
+    if (neighborhoodsQuery.error) {
+      throw new Error(neighborhoodsQuery.error.message);
+    }
+
+    const communeIds = Array.from(
+      new Set(
+        ((neighborhoodsQuery.data ?? []) as Array<{ commune_id?: string | null }>)
+          .map((row) => (typeof row?.commune_id === "string" ? row.commune_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const communesQuery =
+      communeIds.length > 0
+        ? await (supabaseAdmin as any)
+            .from("communes")
+            .select("id, name_ar, name_fr, name_en")
+            .in("id", communeIds)
+        : { data: [], error: null };
+
+    if (communesQuery.error) {
+      throw new Error(communesQuery.error.message);
+    }
+
+    const localizedName = (row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined) => {
+      if (!row) return "";
+      if (typeof row.name_ar === "string" && row.name_ar.trim().length > 0) return row.name_ar.trim();
+      if (typeof row.name_fr === "string" && row.name_fr.trim().length > 0) return row.name_fr.trim();
+      if (typeof row.name_en === "string" && row.name_en.trim().length > 0) return row.name_en.trim();
+      return "";
+    };
+
+    const neighborhoodsById = new Map(
+      ((neighborhoodsQuery.data ?? []) as Array<{
+        id: string;
+        commune_id?: string | null;
+        name_ar?: string | null;
+        name_fr?: string | null;
+        name_en?: string | null;
+      }>).map((row) => [row.id, row]),
+    );
+
+    const communesById = new Map(
+      ((communesQuery.data ?? []) as Array<{ id: string; name_ar?: string | null; name_fr?: string | null; name_en?: string | null }>).map(
+        (row) => [row.id, row],
+      ),
+    );
+
     const hydratedOrders = (orders ?? []).map((order: any) => {
       const items = Array.isArray(order?.order_items)
         ? order.order_items.map((item: any) => ({
@@ -461,9 +531,18 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
           }))
         : [];
 
+      const neighborhoodRow =
+        typeof order?.neighborhood_id === "string" ? neighborhoodsById.get(order.neighborhood_id) : undefined;
+      const communeRow =
+        neighborhoodRow && typeof neighborhoodRow.commune_id === "string"
+          ? communesById.get(neighborhoodRow.commune_id)
+          : undefined;
+
       return {
         ...order,
         order_items: items,
+        neighborhood_name: localizedName(neighborhoodRow) || null,
+        commune_name: localizedName(communeRow) || null,
       };
     });
 
@@ -716,7 +795,9 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, customer_user_id, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items")
+        .select(
+          "id, customer_user_id, neighborhood_id, delivery_notes, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items",
+        )
         .eq("id", data.orderId)
         .eq("customer_user_id", customerUserId)
         .maybeSingle();
@@ -800,6 +881,48 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
       const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
       const deliveryFeeMad = roundMoney(Number(orderRow.delivery_fee ?? 0));
       const normalizedStatus = String(orderRow.status ?? "new").toLowerCase();
+      const neighborhoodQuery =
+        typeof (orderRow as { neighborhood_id?: unknown }).neighborhood_id === "string"
+          ? await (supabaseAdmin as any)
+              .from("neighborhoods")
+              .select("name_en, name_fr, name_ar, commune_id")
+              .eq("id", (orderRow as { neighborhood_id: string }).neighborhood_id)
+              .maybeSingle()
+          : { data: null, error: null };
+
+      if (neighborhoodQuery.error) {
+        throw new Error(neighborhoodQuery.error.message);
+      }
+
+      const communeQuery = neighborhoodQuery.data?.commune_id
+        ? await (supabaseAdmin as any)
+            .from("communes")
+            .select("name_en, name_fr, name_ar")
+            .eq("id", neighborhoodQuery.data.commune_id)
+            .maybeSingle()
+        : { data: null, error: null };
+
+      if (communeQuery.error) {
+        throw new Error(communeQuery.error.message);
+      }
+
+      const neighborhoodName =
+        typeof neighborhoodQuery.data?.name_ar === "string"
+          ? neighborhoodQuery.data.name_ar.trim()
+          : typeof neighborhoodQuery.data?.name_fr === "string"
+            ? neighborhoodQuery.data.name_fr.trim()
+            : typeof neighborhoodQuery.data?.name_en === "string"
+              ? neighborhoodQuery.data.name_en.trim()
+              : "-";
+
+      const communeName =
+        typeof communeQuery.data?.name_ar === "string"
+          ? communeQuery.data.name_ar.trim()
+          : typeof communeQuery.data?.name_fr === "string"
+            ? communeQuery.data.name_fr.trim()
+            : typeof communeQuery.data?.name_en === "string"
+              ? communeQuery.data.name_en.trim()
+              : "-";
 
       return {
         id: String(orderRow.id),
@@ -809,6 +932,13 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
           typeof (orderRow as { delivery_auth_code?: unknown }).delivery_auth_code === "string"
             ? ((orderRow as { delivery_auth_code: string }).delivery_auth_code ?? null)
             : null,
+        communeName,
+        neighborhoodName,
+        specialInstructions:
+          typeof (orderRow as { delivery_notes?: unknown }).delivery_notes === "string" &&
+          (orderRow as { delivery_notes: string }).delivery_notes.trim().length > 0
+            ? (orderRow as { delivery_notes: string }).delivery_notes.trim()
+            : "None / لا توجد",
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,

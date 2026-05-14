@@ -79,8 +79,8 @@ function CustomerOrderDetailsPage() {
         unitPrice: "ثمن الوحدة",
         lineTotal: "المجموع",
         subtotal: "المجموع الفرعي",
-        deliveryFee: "ثمن التوصيل",
-        grandTotal: "المجموع الإجمالي",
+        deliveryFee: "Delivery Fee (ثمن التوصيل)",
+        grandTotal: "Grand Total (المجموع)",
         paymentCash: "الدفع نقداً",
         paymentCarnet: "كريدي / كارني",
         statusPending: "قيد المعالجة",
@@ -106,8 +106,8 @@ function CustomerOrderDetailsPage() {
         unitPrice: "Prix unitaire",
         lineTotal: "Total ligne",
         subtotal: "Sous-total",
-        deliveryFee: "Frais de livraison",
-        grandTotal: "Total général",
+        deliveryFee: "Delivery Fee (ثمن التوصيل)",
+        grandTotal: "Grand Total (المجموع)",
         paymentCash: "Paiement cash",
         paymentCarnet: "Carnet / Crédit",
         statusPending: "En attente",
@@ -132,8 +132,8 @@ function CustomerOrderDetailsPage() {
       unitPrice: "Unit Price",
       lineTotal: "Total",
       subtotal: "Subtotal",
-      deliveryFee: "Delivery",
-      grandTotal: "Grand Total",
+      deliveryFee: "Delivery Fee (ثمن التوصيل)",
+      grandTotal: "Grand Total (المجموع)",
       paymentCash: "Cash",
       paymentCarnet: "Carnet / Credit",
       statusPending: "Pending",
@@ -254,7 +254,23 @@ function CustomerOrderDetailsPage() {
                 </Table>
               </div>
 
-              <div className="mt-4 border-t border-dashed border-border pt-4">
+              <div className="mt-4 rounded-md border border-border bg-muted/20 p-3">
+                <p className="text-sm font-semibold text-foreground">Customer & Delivery Information</p>
+                <div className="mt-2 space-y-1 text-sm text-foreground">
+                  <p>
+                    <span className="text-muted-foreground">Commune / Jamaa Tourabiya:</span> {order.communeName || "-"}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Douar / Neighborhood:</span> {order.neighborhoodName || "-"}
+                  </p>
+                </div>
+                <div className="mt-3 rounded-md border border-dashed border-border bg-background px-3 py-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Special Instructions</p>
+                  <p className="mt-1 text-sm text-foreground">{order.specialInstructions || "None / لا توجد"}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
@@ -278,11 +294,11 @@ function CustomerOrderDetailsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">{copy.deliveryFee}</span>
-                    <span>{order.deliveryFeeMad.toFixed(2)} MAD</span>
+                    <span>{Number(order.deliveryFeeMad ?? 0).toFixed(2)} MAD</span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-border pt-2 text-base font-semibold">
+                  <div className="flex items-center justify-between border-t border-border pt-2 text-lg font-bold">
                     <span>{copy.grandTotal}</span>
-                    <span>{order.grandTotalMad.toFixed(2)} MAD</span>
+                    <span>{Number(order.grandTotalMad ?? 0).toFixed(2)} MAD</span>
                   </div>
                 </div>
                 </div>
