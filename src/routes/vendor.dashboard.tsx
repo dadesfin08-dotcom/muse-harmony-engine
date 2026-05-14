@@ -76,7 +76,7 @@ import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, isThisMonth, isThisWeek, isToday } from "date-fns";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -212,16 +212,18 @@ type DashboardOrder = {
 };
 
 function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
-  if (status === "picked_up" || status === "in_transit") {
+  const normalized = String(status ?? "").trim().toLowerCase();
+
+  if (normalized === "picked_up" || normalized === "in_transit") {
     return "in_transit";
   }
 
-  if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
+  if (normalized === "delivered_cash_with_cyclist" || normalized === "cash_transferred_to_vendor" || normalized === "completed") {
     return "delivered";
   }
 
-  if (status === "new" || status === "preparing" || status === "ready" || status === "delivering" || status === "delivered") {
-    return status;
+  if (normalized === "new" || normalized === "preparing" || normalized === "ready" || normalized === "delivering" || normalized === "delivered") {
+    return normalized;
   }
 
   return "new";
@@ -833,42 +835,25 @@ function VendorDashboardPage() {
   };
 
   const quickStats = useMemo(() => {
-    const now = new Date();
     const inKpiWindow = (createdAt: string) => {
       const date = new Date(createdAt);
       if (Number.isNaN(date.getTime())) {
         return false;
       }
 
-      const normalizedDate = date.getTime();
-
       if (kpiFilter === "all") {
         return true;
       }
 
       if (kpiFilter === "today") {
-        const startOfDay = new Date(now);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(endOfDay.getDate() + 1);
-        return normalizedDate >= startOfDay.getTime() && normalizedDate < endOfDay.getTime();
+        return isToday(date);
       }
 
       if (kpiFilter === "week") {
-        const startOfWeek = new Date(now);
-        const dayOffset = (startOfWeek.getDay() + 6) % 7;
-        startOfWeek.setDate(startOfWeek.getDate() - dayOffset);
-        startOfWeek.setHours(0, 0, 0, 0);
-        const endOfWeek = new Date(now);
-        endOfWeek.setHours(23, 59, 59, 999);
-        return normalizedDate >= startOfWeek.getTime() && normalizedDate <= endOfWeek.getTime();
+        return isThisWeek(date, { weekStartsOn: 1 });
       }
 
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      endOfMonth.setMilliseconds(-1);
-      return normalizedDate >= startOfMonth.getTime() && normalizedDate <= endOfMonth.getTime();
+      return isThisMonth(date);
     };
 
     const pendingOrders = queue.new.length + queue.preparing.length;
