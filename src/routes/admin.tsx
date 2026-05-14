@@ -167,6 +167,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { clearRoleSessions } from "@/lib/operational-auth";
+import {
+  DEFAULT_RECEIPT_ADDRESS,
+  DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_PHONE,
+} from "@/lib/receipt-settings.defaults";
 
 type AdminTab =
   | "overview"
@@ -684,11 +690,11 @@ function AdminPage() {
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
-    storeName: "",
-    address: "",
-    phone: "",
+    storeName: DEFAULT_RECEIPT_HEADER_CONTENT,
+    address: DEFAULT_RECEIPT_ADDRESS,
+    phone: DEFAULT_RECEIPT_PHONE,
     taxId: "",
-    footerMessage: "",
+    footerMessage: DEFAULT_RECEIPT_FOOTER_CONTENT,
   });
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
 
