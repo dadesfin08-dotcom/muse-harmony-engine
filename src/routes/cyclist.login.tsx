@@ -168,8 +168,8 @@ function CyclistLoginPage() {
               <Bike className="h-7 w-7" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Cyclist App Login</CardTitle>
-              <p className="text-sm text-muted-foreground">Sign in and start delivering</p>
+              <CardTitle className="text-2xl font-semibold">{t("cyclistLogin.title")}</CardTitle>
+              <p className="text-sm text-muted-foreground">{t("cyclistLogin.subtitle")}</p>
             </div>
           </CardHeader>
 
@@ -179,7 +179,7 @@ function CyclistLoginPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="cyclist-phone" className="text-sm">
-                  Phone Number
+                  {t("cyclistLogin.phoneLabel")}
                 </Label>
                 <div className="flex items-center overflow-hidden rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                   <span className="px-3 text-base font-medium text-muted-foreground">+212</span>
@@ -203,7 +203,7 @@ function CyclistLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 <MessageCircle className="h-5 w-5" aria-hidden="true" />
-                {isSendingCode ? "Sending..." : "Send Code via WhatsApp"}
+                {isSendingCode ? t("cyclistLogin.sending") : t("cyclistLogin.sendCode")}
               </Button>
             </div>
 
@@ -211,8 +211,8 @@ function CyclistLoginPage() {
               className={`space-y-4 transition-all duration-300 ${step === "otp" ? "relative opacity-100" : "pointer-events-none absolute opacity-0"}`}
             >
               <div className="space-y-1 text-center">
-                <h2 className="text-base font-semibold text-foreground">Enter your OTP</h2>
-                <p className="text-sm text-muted-foreground">Use the code sent to your WhatsApp</p>
+                <h2 className="text-base font-semibold text-foreground">{t("cyclistLogin.enterOtpTitle")}</h2>
+                <p className="text-sm text-muted-foreground">{t("cyclistLogin.enterOtpSubtitle")}</p>
               </div>
 
               <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
@@ -251,10 +251,10 @@ function CyclistLoginPage() {
                 onClick={sendCodeViaWhatsApp}
               >
                 {otpResendCountdown > 0
-                  ? `Resend available in ${otpResendCountdown}s`
+                  ? t("cyclistLogin.resendIn", { count: otpResendCountdown })
                   : isSendingCode
-                    ? "Sending..."
-                    : "Resend code"}
+                    ? t("cyclistLogin.sending")
+                    : t("cyclistLogin.resend")}
               </Button>
 
               <Button
@@ -265,7 +265,7 @@ function CyclistLoginPage() {
                 onClick={verifyAndLogin}
               >
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                {isVerifying ? "Verifying..." : "Verify & Login"}
+                {isVerifying ? t("cyclistLogin.verifying") : t("cyclistLogin.verifyLogin")}
               </Button>
 
               <Button
@@ -277,7 +277,7 @@ function CyclistLoginPage() {
                   setOtpCode("");
                 }}
               >
-                Change phone number
+                {t("cyclistLogin.changePhone")}
               </Button>
             </div>
           </CardContent>
