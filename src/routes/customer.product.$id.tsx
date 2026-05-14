@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { getBrandSuggestionsForNeighborhood, getCustomerProductDetail } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -95,6 +94,26 @@ function ProductDetailPage() {
     if (!product) return "";
     return `${product.measurementValue != null ? `${product.measurementValue} ` : ""}${product.measurementUnit}`;
   }, [product]);
+
+  const productDescription = useMemo(() => {
+    if (!product) return "";
+
+    const source = product as {
+      description?: string | null;
+      descriptionAr?: string | null;
+      descriptionFr?: string | null;
+    };
+
+    if (language === "ar") {
+      return source.descriptionAr || source.description || "منتج بجودة عالية ومختار بعناية باش يوصل ليك طازج وبأفضل قيمة يومياً.";
+    }
+
+    if (language === "fr") {
+      return source.descriptionFr || source.description || "Produit sélectionné avec soin pour une qualité fraîche et un usage quotidien.";
+    }
+
+    return source.description || "Carefully selected product with reliable quality, freshness, and everyday value.";
+  }, [language, product]);
 
   const suggestionsQuery = useQuery({
     queryKey: ["product-brand-suggestions", id, neighborhoodId, product?.brandId],
@@ -186,7 +205,7 @@ function ProductDetailPage() {
         </section>
       ) : (
         <section className="space-y-6">
-          <div className="relative -mx-0 rounded-b-3xl bg-slate-50 pb-8 pt-4">
+          <div className="relative z-10 w-full rounded-b-[40px] bg-white p-6 shadow-[0_10px_30px_rgba(0,0,0,0.03)]">
             <button
               type="button"
               onClick={() => {
@@ -203,17 +222,17 @@ function ProductDetailPage() {
               <ArrowLeft className="size-5" />
             </button>
 
-            <div className="mx-auto flex min-h-[270px] items-center justify-center px-5">
+            <div className="mx-auto flex aspect-square w-full items-center justify-center">
               <img
                 src={product.imageUrl || fallbackProductImage}
                 alt={composedProductLabel}
-                className="max-h-[250px] w-full object-contain object-center"
+                className="max-h-full w-full object-contain object-center"
                 loading="lazy"
               />
             </div>
           </div>
 
-          <div className="space-y-4 px-4 sm:px-6">
+          <div className="space-y-4 px-5 pb-2 pt-6">
             <span className="w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
               {product.brand || "—"}
             </span>
@@ -245,12 +264,17 @@ function ProductDetailPage() {
                   ))}
               </select>
             ) : null}
+
+            <section>
+              <h3 className="mb-2 mt-6 text-lg font-bold text-slate-800">تفاصيل المنتج</h3>
+              <p className="text-sm leading-relaxed text-slate-500">{productDescription}</p>
+            </section>
           </div>
 
           {(suggestionsQuery.data?.length ?? 0) > 0 ? (
-            <section className="space-y-3 px-4 sm:px-6">
+            <section className="mt-6 space-y-3 px-5 pb-32">
               <h2 className="text-base font-semibold text-foreground">{t("productDetail.moreFromBrand")}</h2>
-              <div className="no-scrollbar flex snap-x gap-4 overflow-x-auto pb-4">
+              <div className="grid grid-cols-2 gap-4">
                 {(suggestionsQuery.data ?? []).map((item) => {
                   const suggestionLabel = formatSuggestedName(item);
 
@@ -266,32 +290,30 @@ function ProductDetailPage() {
                           void navigate({ to: "/customer/product/$id", params: { id: item.id } });
                         }
                       }}
-                      className="min-w-[140px] snap-start rounded-xl border border-border bg-card p-2.5 shadow-sm"
+                      className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                     >
-                      <div className="aspect-square overflow-hidden rounded-lg bg-muted/40">
+                      <div className="aspect-square overflow-hidden rounded-t-2xl bg-slate-50">
                         <img
                           src={item.imageUrl || fallbackProductImage}
                           alt={suggestionLabel}
-                          className="h-full w-full object-contain object-center p-2"
+                          className="h-full w-full object-cover object-center"
                           loading="lazy"
                         />
                       </div>
 
-                      <p className="mt-2 line-clamp-1 text-xs font-medium text-foreground">{suggestionLabel}</p>
-
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold text-primary">{Number(item.vendorPrice ?? 0)} MAD</span>
-                        <Button
-                          size="sm"
-                          variant="hero"
-                          className="h-8 rounded-lg px-2.5 text-[11px]"
+                      <div className="flex flex-col gap-1 p-3">
+                        <p className="line-clamp-1 text-xs font-medium text-foreground">{suggestionLabel}</p>
+                        <span className="text-sm font-bold text-emerald-600">{Number(item.vendorPrice ?? 0)} MAD</span>
+                        <button
+                          type="button"
+                          className="mt-2 w-full rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-emerald-700"
                           onClick={(event) => {
                             event.stopPropagation();
                             addSuggestedToCart(item);
                           }}
                         >
                           {t("productDetail.quickAdd")}
-                        </Button>
+                        </button>
                       </div>
                     </article>
                   );
