@@ -71,6 +71,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import {
+  DEFAULT_RECEIPT_ADDRESS,
+  DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_PHONE,
+} from "@/lib/receipt-settings.defaults";
+import {
   ThermalReceipt,
   type ThermalInvoiceSettings,
   type ThermalReceiptOrder,
@@ -650,11 +656,11 @@ function VendorDashboardPage() {
   );
   const printableSettings = useMemo<ThermalInvoiceSettings>(
     () => ({
-      storeName: invoiceSettingsQuery.data?.store_name ?? "Store",
-      address: invoiceSettingsQuery.data?.address ?? "",
-      phone: invoiceSettingsQuery.data?.phone ?? "",
+      storeName: invoiceSettingsQuery.data?.store_name ?? DEFAULT_RECEIPT_HEADER_CONTENT,
+      address: invoiceSettingsQuery.data?.address ?? DEFAULT_RECEIPT_ADDRESS,
+      phone: invoiceSettingsQuery.data?.phone ?? DEFAULT_RECEIPT_PHONE,
       taxId: invoiceSettingsQuery.data?.tax_id ?? null,
-      footerMessage: invoiceSettingsQuery.data?.footer_message ?? "Thank you!",
+      footerMessage: invoiceSettingsQuery.data?.footer_message ?? DEFAULT_RECEIPT_FOOTER_CONTENT,
     }),
     [invoiceSettingsQuery.data],
   );
