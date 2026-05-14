@@ -546,12 +546,37 @@ function Index() {
         { event: "*", schema: "public", table: "orders", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession.phoneNumber] });
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
+    const carnetLedgerChannel = supabase
+      .channel(`customer-carnet-ledger-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "carnet_transactions", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
+    const carnetBalanceChannel = supabase
+      .channel(`customer-carnet-balance-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "vendor_carnet", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
         },
       )
       .subscribe();
 
     return () => {
       void supabase.removeChannel(ordersChannel);
+      void supabase.removeChannel(carnetLedgerChannel);
+      void supabase.removeChannel(carnetBalanceChannel);
     };
   }, [customerSession?.phoneNumber, queryClient]);
 
@@ -1142,6 +1167,10 @@ function Index() {
   };
 
   const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").toLowerCase());
+  const isCarnetUnpaidOrder = (paymentMethod: string | null | undefined) => {
+    const normalized = String(paymentMethod ?? "").trim().toLowerCase();
+    return normalized === "carnet" || normalized === "credit";
+  };
 
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
