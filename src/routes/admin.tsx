@@ -2478,13 +2478,13 @@ function AdminPage() {
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
             <div>
-              <h1 className="text-base font-bold tracking-tight text-foreground">Super-Admin Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Marketplace operations and control center</p>
+              <h1 className="text-base font-bold tracking-tight text-foreground">{t("admin.header.title")}</h1>
+              <p className="text-xs text-muted-foreground">{t("admin.header.subtitle")}</p>
             </div>
             <div className="ml-auto">
               <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
                 <LogOut className="size-4" />
-                <span>تسجيل الخروج</span>
+                <span>{t("admin.actions.logout")}</span>
               </Button>
             </div>
           </header>
@@ -2495,14 +2495,14 @@ function AdminPage() {
                 <div className="flex items-start gap-3">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0" />
                   <div className="space-y-1 text-sm">
-                    <p className="font-semibold">Database health check failed</p>
+                    <p className="font-semibold">{t("admin.health.failedTitle")}</p>
                     <p>
                       {dbHealthQuery.data?.error
                         ? dbHealthQuery.data.error
-                        : "Required tables are missing. Please run backend migrations before using admin data."}
+                        : t("admin.health.requiredTablesMissing")}
                     </p>
                     {dbHealthQuery.data?.missingTables?.length ? (
-                      <p>Missing tables: {dbHealthQuery.data.missingTables.join(", ")}</p>
+                      <p>{t("admin.health.missingTables", { tables: dbHealthQuery.data.missingTables.join(", ") })}</p>
                     ) : null}
                   </div>
                 </div>
