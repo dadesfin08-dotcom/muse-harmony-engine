@@ -2903,6 +2903,7 @@ function OrderCard({
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
   const isInDeliveryTab = tab === "inDelivery";
+  const isPreparingTab = tab === "preparing";
   const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
@@ -2951,17 +2952,19 @@ function OrderCard({
       )}
     >
       <div className={cn("space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
-        <div className="flex w-full items-start justify-between gap-2">
-          <div className={cn("flex min-w-0 flex-1 items-center gap-2", isInDeliveryTab ? "gap-0" : "")}>
-            <p
-              className={cn(
-                "font-black tracking-tight",
-                isInDeliveryTab ? "text-lg font-bold leading-none text-foreground" : "text-2xl text-foreground",
-              )}
-            >
-              {shortId}
-            </p>
-          </div>
+        <div className={cn("flex w-full items-start justify-between gap-2", isPreparingTab ? "mb-3 flex-row items-center justify-end" : "") }>
+          {isPreparingTab ? null : (
+            <div className={cn("flex min-w-0 flex-1 items-center gap-2", isInDeliveryTab ? "gap-0" : "") }>
+              <p
+                className={cn(
+                  "font-black tracking-tight",
+                  isInDeliveryTab ? "text-lg font-bold leading-none text-foreground" : "text-2xl text-foreground",
+                )}
+              >
+                {shortId}
+              </p>
+            </div>
+          )}
 
           {isInDeliveryTab ? (
             <div className="flex shrink-0 flex-col items-end gap-1">
@@ -3012,7 +3015,14 @@ function OrderCard({
               <span>{destination || "Destination unavailable"}</span>
             </p>
 
-            <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
+            {isPreparingTab ? (
+              <div className="mb-3 flex w-full flex-row items-center justify-between">
+                <p className="text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+                <p className="text-xl font-extrabold text-gray-900">{shortId}</p>
+              </div>
+            ) : (
+              <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
+            )}
           </>
         )}
 
