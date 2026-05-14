@@ -298,11 +298,15 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        storeName: z.string().trim().min(1).max(1200),
-        address: z.string().trim().min(1).max(220),
-        phone: z.string().trim().min(3).max(30),
+        receiptLogoUrl: z.string().trim().url().max(2000).nullable(),
+        receiptStoreName: z.string().trim().min(1).max(120),
+        receiptSlogan: z.string().trim().min(1).max(240),
+        receiptPhone: z.string().trim().min(3).max(30),
+        receiptAddress: z.string().trim().min(1).max(220),
+        receiptWebsite: z.string().trim().min(1).max(200),
         taxId: z.string().trim().max(120).nullable(),
-        footerMessage: z.string().trim().min(1).max(1200),
+        receiptFooterMessage: z.string().trim().min(1).max(500),
+        receiptSocialSupport: z.string().trim().min(1).max(500),
       })
       .parse(input),
   )
@@ -310,14 +314,24 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("invoice_settings")
       .update({
-        store_name: data.storeName,
-        address: data.address,
-        phone: data.phone,
+        store_name: data.receiptStoreName,
+        address: data.receiptAddress,
+        phone: data.receiptPhone,
         tax_id: data.taxId,
-        footer_message: data.footerMessage,
+        footer_message: data.receiptFooterMessage,
+        receipt_logo_url: data.receiptLogoUrl,
+        receipt_store_name: data.receiptStoreName,
+        receipt_slogan: data.receiptSlogan,
+        receipt_phone: data.receiptPhone,
+        receipt_address: data.receiptAddress,
+        receipt_website: data.receiptWebsite,
+        receipt_footer_message: data.receiptFooterMessage,
+        receipt_social_support: data.receiptSocialSupport,
       })
       .eq("id", data.id)
-      .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+      .select(
+        "id, store_name, address, phone, tax_id, footer_message, receipt_logo_url, receipt_store_name, receipt_slogan, receipt_phone, receipt_address, receipt_website, receipt_footer_message, receipt_social_support, created_at, updated_at",
+      )
       .single();
 
     if (error || !updated?.id) {
