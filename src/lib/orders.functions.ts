@@ -110,6 +110,10 @@ export type VendorSettlementSummary = {
   pendingCyclistCount: number;
 };
 
+function roundMoney(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
 export type VendorOrderDetails = {
   id: string;
   customerName: string;
@@ -477,7 +481,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, vendor_id, customer_name, customer_phone, payment_method, status, created_at, delivery_fee, order_items")
+        .select("id, vendor_id, customer_name, customer_phone, payment_method, status, created_at, delivery_fee, total_price, order_items")
         .eq("id", data.orderId)
         .eq("vendor_id", vendor.id)
         .maybeSingle();
@@ -547,7 +551,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
           (typeof item?.productId === "string" ? productsById.get(item.productId) : null) ??
           productsByName.get(normalizedFallbackName) ??
           fallbackName;
-        const lineTotalMad = quantity * unitPriceMad;
+        const lineTotalMad = roundMoney(unitPriceMad * quantity);
 
         return {
           productName,
@@ -557,8 +561,9 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         };
       });
 
-      const subtotalMad = items.reduce((sum, item) => sum + item.lineTotalMad, 0);
-      const deliveryFeeMad = Number(orderRow.delivery_fee ?? 0);
+      const computedSubtotalMad = items.reduce((sum, item) => sum + Number(item.lineTotalMad ?? 0), 0);
+      const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
+      const deliveryFeeMad = roundMoney(Number(orderRow.delivery_fee ?? 0));
 
       return {
         id: String(orderRow.id),
@@ -569,7 +574,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,
-        grandTotalMad: subtotalMad + deliveryFeeMad,
+        grandTotalMad: roundMoney(subtotalMad + deliveryFeeMad),
         items,
       } satisfies VendorOrderDetails;
     } catch (error) {
@@ -599,7 +604,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, customer_user_id, payment_method, status, delivery_auth_code, created_at, delivery_fee, order_items")
+        .select("id, customer_user_id, payment_method, status, delivery_auth_code, created_at, delivery_fee, total_price, order_items")
         .eq("id", data.orderId)
         .eq("customer_user_id", customerUserId)
         .maybeSingle();
@@ -669,7 +674,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
           (typeof item?.productId === "string" ? productsById.get(item.productId) : null) ??
           productsByName.get(normalizedFallbackName) ??
           fallbackName;
-        const lineTotalMad = quantity * unitPriceMad;
+        const lineTotalMad = roundMoney(unitPriceMad * quantity);
 
         return {
           productName,
@@ -679,8 +684,9 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
         };
       });
 
-      const subtotalMad = items.reduce((sum, item) => sum + item.lineTotalMad, 0);
-      const deliveryFeeMad = Number(orderRow.delivery_fee ?? 0);
+      const computedSubtotalMad = items.reduce((sum, item) => sum + Number(item.lineTotalMad ?? 0), 0);
+      const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
+      const deliveryFeeMad = roundMoney(Number(orderRow.delivery_fee ?? 0));
       const normalizedStatus = String(orderRow.status ?? "new").toLowerCase();
 
       return {
@@ -694,7 +700,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,
-        grandTotalMad: subtotalMad + deliveryFeeMad,
+        grandTotalMad: roundMoney(subtotalMad + deliveryFeeMad),
         items,
       } satisfies CustomerOrderDetails;
     } catch (error) {
