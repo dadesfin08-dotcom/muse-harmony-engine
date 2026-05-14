@@ -2973,9 +2973,9 @@ function OrderCard({
                 <span>في الطريق</span>
                 <Bike className="h-3.5 w-3.5" />
               </span>
-              <p className="inline-flex items-center gap-1 text-xs text-gray-500">
+              <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-gray-500">
                 <Clock3 className="h-3.5 w-3.5" />
-                <span className="max-w-[130px] truncate">{elapsed}</span>
+                <span className="max-w-[130px] truncate whitespace-nowrap">{elapsed}</span>
               </p>
             </div>
           ) : (
@@ -2995,7 +2995,7 @@ function OrderCard({
               </div>
               <div className="space-y-1 text-right">
                 <p className="text-right text-xs text-gray-500">Total</p>
-                <p className="text-right text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+                <p className="whitespace-nowrap text-right text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
             <div className="my-0.5 border-t-2 border-dashed border-border/70" />
@@ -3021,12 +3021,12 @@ function OrderCard({
               className={cn(
                 "flex items-center justify-between gap-3",
                 isInDeliveryTab
-                  ? "w-full rounded-xl bg-emerald-50 p-3"
+                  ? "w-full flex-row items-center justify-between rounded-xl bg-emerald-50 p-3"
                   : "mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3",
               )}
           >
-              <div className={cn("flex min-w-0 items-center", isInDeliveryTab ? "flex-row gap-3 overflow-hidden" : "gap-2.5")}>
-              <div className="relative">
+              <div className={cn("flex min-w-0 items-center", isInDeliveryTab ? "flex-row gap-0 overflow-hidden" : "gap-2.5")}>
+              <div className="relative shrink-0">
                 <Avatar
                   className={cn(
                     "rounded-full",
@@ -3047,14 +3047,14 @@ function OrderCard({
                 ) : null}
               </div>
 
-              <div className={cn("min-w-0", isInDeliveryTab ? "flex flex-col" : "")}>
+              <div className={cn("min-w-0", isInDeliveryTab ? "mx-2 flex min-w-0 flex-1 flex-col" : "")}>
                 <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-sm font-bold text-foreground" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
                   {driver.name}
                 </p>
                 <p
                   className={cn(
                     "font-medium text-muted-foreground",
-                    isInDeliveryTab ? "text-xs text-gray-500" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
+                    isInDeliveryTab ? "truncate text-xs text-gray-500" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
