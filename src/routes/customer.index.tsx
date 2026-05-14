@@ -2647,24 +2647,24 @@ function Index() {
                       Save Profile
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
                     {customerOrdersQuery.isLoading ? (
-                      <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
+                      <AppEmptyState title="جاري تحميل طلباتك..." subtitle="المرجو الانتظار لحظة." className="p-5" />
                     ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
                       <AppEmptyState
-                        title="No orders yet."
-                        subtitle="Your order history will appear here after checkout."
+                        title="لا توجد طلبات بعد."
+                        subtitle="سيظهر سجل طلباتك هنا بعد أول عملية شراء."
                         className="p-5"
                       />
                     ) : (
                       <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                         {activeCustomerOrders.length > 0 ? (
                           <div className="space-y-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">الطلبات النشطة</p>
                             {activeCustomerOrders.map((order) => {
                               const activeStepIndex = getOrderStepIndex(order.status);
                               const orderDate = new Date(order.created_at);
@@ -2763,17 +2763,17 @@ function Index() {
                     )}
 
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      رجوع للحساب
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                     {customerCarnetQuery.isLoading ? (
-                      <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
+                      <AppEmptyState title="جاري تحميل دفترك..." subtitle="نجلب آخر تفاصيل الرصيد." className="p-5" />
                     ) : !customerCarnet ? (
                       <AppEmptyState
-                        title="No active carnet found for your account."
-                        subtitle="Ask your vendor to enable carnet access for your phone number."
+                        title="ما كاينش دفتر فعّال لحسابك حالياً."
+                        subtitle="تواصل مع التاجر باش يفعّل لك الدفتر برقم الهاتف ديالك."
                         className="p-5"
                       />
                     ) : (
@@ -2781,7 +2781,7 @@ function Index() {
                         <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
                           <div className="rounded-xl border border-border bg-muted/30 p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                              {language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Dette actuelle" : "Current Debt"}
+                              الرصيد الحالي
                             </p>
                             <p className="mt-1 text-xl font-semibold text-destructive">
                               {carnetCurrentDebt.toFixed(2)} MAD
