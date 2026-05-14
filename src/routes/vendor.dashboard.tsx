@@ -498,11 +498,13 @@ function VendorDashboardPage() {
             return;
           }
 
-          if (shownIncomingToastIdsRef.current.has(inserted.id)) {
+          const insertedId = inserted.id;
+
+          if (shownIncomingToastIdsRef.current.has(insertedId)) {
             return;
           }
 
-          shownIncomingToastIdsRef.current.add(inserted.id);
+          shownIncomingToastIdsRef.current.add(insertedId);
 
           if (shownIncomingToastIdsRef.current.size > 80) {
             const oldestId = shownIncomingToastIdsRef.current.values().next().value;
@@ -512,7 +514,7 @@ function VendorDashboardPage() {
           }
 
           const totalMad = roundMoney(Number(inserted.total_price ?? 0));
-          const toastId = `incoming-order-${inserted.id}`;
+          const toastId = `incoming-order-${insertedId}`;
 
           if (isSoundEnabled) {
             void playAlertSound({ enabled: true }).then((played) => {
@@ -534,7 +536,7 @@ function VendorDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">طلب جديد واصل! 🛍️</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Order {shortOrderId(inserted.id)} - {totalMad.toFixed(2)} MAD
+                      Order {shortOrderId(insertedId)} - {totalMad.toFixed(2)} MAD
                     </p>
                     <div className="mt-2">
                       <Button
