@@ -4013,6 +4013,53 @@ function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={isFactoryResetDialogOpen}
+        onOpenChange={(open) => {
+          setIsFactoryResetDialogOpen(open);
+          if (!open) {
+            setFactoryResetConfirmationText("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Factory Reset (مسح شامل للبيانات)</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف كل البيانات نهائيًا: Orders, Customers, Vendors, Cyclists, Service Zones, Global Catalog, Master Product List,
+              Brands, Categories, Ads & Content, Settings. اكتب RESET_ALL للتأكيد.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="factory-reset-confirmation" className="text-sm font-medium text-foreground">
+              Confirmation text
+            </label>
+            <Input
+              id="factory-reset-confirmation"
+              value={factoryResetConfirmationText}
+              onChange={(event) => setFactoryResetConfirmationText(event.target.value)}
+              placeholder="RESET_ALL"
+              autoComplete="off"
+              className="rounded-md"
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResettingFactoryData}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleFactoryReset();
+              }}
+              disabled={isResettingFactoryData || factoryResetConfirmationText.trim() !== "RESET_ALL"}
+            >
+              {isResettingFactoryData ? "Resetting..." : "Reset Everything"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
