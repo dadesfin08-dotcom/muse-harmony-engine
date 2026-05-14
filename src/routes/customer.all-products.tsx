@@ -22,6 +22,7 @@ type CatalogProduct = {
   name: string;
   nameFr: string | null;
   nameAr: string | null;
+  productVariants?: string[];
   brand?: string | null;
   brandNameEn?: string | null;
   brandNameFr?: string | null;
@@ -109,11 +110,19 @@ function AllProductsPage() {
   );
 
   const addToCart = (product: (typeof displayedProducts)[number]) => {
+    const selectedVariant = product.productVariants?.[0]?.trim() || null;
+    const cartItemId = selectedVariant ? `${product.id}::${selectedVariant}` : product.id;
+
     addCartItem({
       id: product.id,
+      cartItemId,
+      productId: product.id,
       name: product.localizedName,
+      selectedVariant,
       price: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
+      measurementValue: product.measurementValue ?? null,
+      brandName: product.localizedBrand || null,
       image: product.imageUrl || fallbackProductImage,
       alt: product.localizedName,
     });
@@ -124,8 +133,18 @@ function AllProductsPage() {
     });
   };
 
-  const getCartQuantity = (productId: string) =>
-    cartItems.find((item) => item.id === productId)?.quantity ?? 0;
+  const getCartQuantity = (productId: string, selectedVariant?: string | null) => {
+    const normalizedVariant = selectedVariant?.trim() || null;
+    const fallbackId = normalizedVariant ? `${productId}::${normalizedVariant}` : productId;
+
+    return (
+      cartItems.find(
+        (item) =>
+          (item.cartItemId || item.id) === fallbackId ||
+          (item.id === productId && (item.selectedVariant?.trim() || null) === normalizedVariant),
+      )?.quantity ?? 0
+    );
+  };
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-8 pt-0 sm:px-6">
@@ -173,12 +192,42 @@ function AllProductsPage() {
             measurementValue={product.measurementValue}
             measurementUnit={product.measurementUnit}
             imageUrl={product.imageUrl}
+            productVariants={product.productVariants ?? []}
             price={Number(product.vendorPrice ?? 0)}
-            cartQuantity={getCartQuantity(product.id)}
+            cartQuantity={getCartQuantity(product.id, product.productVariants?.[0] ?? null)}
+            selectedVariant={product.productVariants?.[0] ?? null}
             addLabel={t("products.add")}
-            onAdd={() => addToCart(product)}
-            onIncrease={() => increaseItem(product.id)}
-            onDecrease={() => decreaseItem(product.id)}
+            onAdd={(selectedVariant) => {
+              const normalizedVariant = selectedVariant?.trim() || null;
+              const cartItemId = normalizedVariant ? `${product.id}::${normalizedVariant}` : product.id;
+
+              addCartItem({
+                id: product.id,
+                cartItemId,
+                productId: product.id,
+                name: product.localizedName,
+                selectedVariant: normalizedVariant,
+                price: Number(product.vendorPrice ?? 0),
+                measurementUnit: product.measurementUnit,
+                measurementValue: product.measurementValue ?? null,
+                brandName: product.localizedBrand || null,
+                image: product.imageUrl || fallbackProductImage,
+                alt: product.localizedName,
+              });
+
+              toast.success(t("products.add"), {
+                description: normalizedVariant ? `${product.localizedName} • ${normalizedVariant}` : product.localizedName,
+                duration: 1200,
+              });
+            }}
+            onIncrease={(selectedVariant) => {
+              const normalizedVariant = selectedVariant?.trim() || null;
+              increaseItem(normalizedVariant ? `${product.id}::${normalizedVariant}` : product.id);
+            }}
+            onDecrease={(selectedVariant) => {
+              const normalizedVariant = selectedVariant?.trim() || null;
+              decreaseItem(normalizedVariant ? `${product.id}::${normalizedVariant}` : product.id);
+            }}
           />
         ))}
       </section>

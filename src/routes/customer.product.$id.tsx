@@ -27,6 +27,7 @@ function ProductDetailPage() {
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const fetchProductDetail = useServerFn(getCustomerProductDetail);
   const fetchBrandSuggestions = useServerFn(getBrandSuggestionsForNeighborhood);
   const addCartItem = useCustomerCartStore((state) => state.addItem);
@@ -54,6 +55,21 @@ function ProductDetailPage() {
   });
 
   const product = productQuery.data;
+
+  useEffect(() => {
+    const variants = Array.isArray((product as { productVariants?: string[] } | null)?.productVariants)
+      ? ((product as { productVariants?: string[] }).productVariants ?? [])
+          .map((variant) => (typeof variant === "string" ? variant.trim() : ""))
+          .filter((variant) => variant.length > 0)
+      : [];
+
+    if (variants.length === 0) {
+      setSelectedVariant(null);
+      return;
+    }
+
+    setSelectedVariant((current) => (current && variants.includes(current) ? current : (variants[0] ?? null)));
+  }, [product]);
 
   const localizedName = useMemo(() => {
     if (!product) return "";
@@ -101,9 +117,17 @@ function ProductDetailPage() {
   const addToCart = () => {
     if (!product) return;
 
+    const normalizedVariant = selectedVariant?.trim() || null;
+    const cartItemId = normalizedVariant ? `${product.id}::${normalizedVariant}` : product.id;
+
     addCartItem({
       id: product.id,
+      cartItemId,
+      productId: product.id,
       name: localizedName,
+      selectedVariant: normalizedVariant,
+      brandName: product.brand || null,
+      measurementValue: product.measurementValue ?? null,
       price: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.imageUrl || fallbackProductImage,
@@ -163,6 +187,23 @@ function ProductDetailPage() {
               <div className="space-y-2 p-5">
                 <p className="text-sm font-medium text-muted-foreground">{product.brand || ""}</p>
                 <h2 className="text-xl font-semibold text-foreground">{composedProductLabel}</h2>
+                {Array.isArray((product as { productVariants?: string[] }).productVariants) &&
+                (product as { productVariants?: string[] }).productVariants!.length > 0 ? (
+                  <select
+                    value={selectedVariant ?? ""}
+                    onChange={(event) => setSelectedVariant(event.target.value || null)}
+                    className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+                  >
+                    {(product as { productVariants?: string[] }).productVariants!
+                      .map((variant) => (typeof variant === "string" ? variant.trim() : ""))
+                      .filter((variant) => variant.length > 0)
+                      .map((variant) => (
+                        <option key={variant} value={variant}>
+                          {variant}
+                        </option>
+                      ))}
+                  </select>
+                ) : null}
                 <p className="text-lg font-semibold text-primary">
                   {Number(product.vendorPrice ?? 0)} MAD / {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                   {product.measurementUnit}
