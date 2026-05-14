@@ -632,43 +632,39 @@ function CyclistDashboardPage() {
                     detailsOrder.items.map((item, index) => (
                       <div
                         key={`${detailsOrder.id}-${item.name}-${index}`}
-                        className="flex flex-row items-center gap-4 border-b border-slate-100 px-3.5 py-3 last:border-0"
+                        className="flex min-w-0 flex-row items-center gap-2.5 border-b border-slate-100 px-2.5 py-2.5 last:border-0"
                       >
-                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-50">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-50">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="h-12 w-12 object-cover" loading="lazy" />
+                            <img src={item.imageUrl} alt={item.name} className="h-10 w-10 object-cover" loading="lazy" />
                           ) : (
-                            <div className="flex h-12 w-12 items-center justify-center text-slate-400">
+                            <div className="flex h-10 w-10 items-center justify-center text-slate-400">
                               <ShoppingBasket className="size-4" />
                             </div>
                           )}
                         </div>
 
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <p className="min-w-[100px] truncate text-sm font-bold text-slate-800">{item.name}</p>
+                        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                          <p className="min-w-0 shrink truncate text-sm font-bold text-slate-800">{item.name}</p>
 
                           {item.brandName ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+                            <span className="inline-flex max-w-[84px] shrink-0 items-center gap-1 truncate rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
                               <Tag className="h-3 w-3" />
                               {item.brandName}
                             </span>
                           ) : null}
 
                           {item.measurementValue || item.measurementUnit ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-600 whitespace-nowrap">
+                            <span className="inline-flex max-w-[78px] shrink-0 items-center gap-1 truncate whitespace-nowrap text-[10px] text-slate-600">
                               <Scale className="h-3 w-3 text-slate-400" />
                               {[item.measurementValue, item.measurementUnit].filter(Boolean).join(" ")}
                             </span>
                           ) : null}
-
-                          {item.selectedVariant ? (
-                            <span className="truncate text-[11px] text-slate-500">{item.selectedVariant}</span>
-                          ) : null}
                         </div>
 
-                        <div className="ms-auto flex shrink-0 items-center gap-2">
-                          <span className="rounded bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">x{item.quantity}</span>
-                          <span className="ml-auto text-sm font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
+                        <div className="ms-auto flex shrink-0 items-center gap-1.5">
+                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] font-black text-emerald-700">x{item.quantity}</span>
+                          <span className="ml-auto whitespace-nowrap text-xs font-bold text-slate-900">{item.lineTotalMad.toFixed(2)} MAD</span>
                         </div>
                       </div>
                     ))
