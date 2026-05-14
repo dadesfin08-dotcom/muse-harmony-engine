@@ -1197,6 +1197,10 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      recompute_vendor_carnet_customer_debt: {
+        Args: { p_customer_phone: string; p_vendor_id: string }
+        Returns: number
+      }
       record_vendor_carnet_payment: {
         Args: {
           p_amount: number
