@@ -86,6 +86,8 @@ type VendorRow = {
 type OrderRow = {
   id: string;
   vendor_id: string;
+  customer_user_id?: string | null;
+  specific_address?: string | null;
   neighborhood_id?: string | null;
   neighborhood_name?: string | null;
   commune_name?: string | null;
@@ -417,7 +419,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
+        "id, vendor_id, customer_user_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -455,6 +457,30 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
           .map((product: any) => [product.product_name.trim().toLowerCase(), product.image_url ?? null]),
       );
     }
+
+    const customerUserIds = Array.from(
+      new Set(
+        (orders ?? [])
+          .map((order: any) => (typeof order?.customer_user_id === "string" ? order.customer_user_id : null))
+          .filter((value: string | null): value is string => Boolean(value)),
+      ),
+    );
+
+    const profilesQuery =
+      customerUserIds.length > 0
+        ? await (supabaseAdmin as any).from("profiles").select("id, address").in("id", customerUserIds)
+        : { data: [], error: null };
+
+    if (profilesQuery.error) {
+      throw new Error(profilesQuery.error.message);
+    }
+
+    const profileAddressById = new Map(
+      ((profilesQuery.data ?? []) as Array<{ id: string; address?: string | null }>).map((row) => [
+        row.id,
+        typeof row.address === "string" ? row.address.trim() : null,
+      ]),
+    );
 
     const neighborhoodIds = Array.from(
       new Set(
@@ -537,10 +563,13 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         neighborhoodRow && typeof neighborhoodRow.commune_id === "string"
           ? communesById.get(neighborhoodRow.commune_id)
           : undefined;
+      const specificAddress =
+        typeof order?.customer_user_id === "string" ? profileAddressById.get(order.customer_user_id) ?? null : null;
 
       return {
         ...order,
         order_items: items,
+        specific_address: specificAddress,
         neighborhood_name: localizedName(neighborhoodRow) || null,
         commune_name: localizedName(communeRow) || null,
       };
