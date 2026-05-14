@@ -7,6 +7,7 @@ import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
   Banknote,
   BadgeCheck,
+  Bell,
   Boxes,
   Zap,
   BookUser,
@@ -2233,16 +2234,32 @@ function LiveOrdersView({
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="new" className="rounded-lg">
-            New ({queue.new.length})
+            <span className="flex items-center gap-2">
+              <Bell size={16} className="text-current" />
+              <span>New</span>
+              <span>({queue.new.length})</span>
+            </span>
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
-            Preparing ({queue.preparing.length})
+            <span className="flex items-center gap-2">
+              <Package size={16} className="text-current" />
+              <span>Preparing</span>
+              <span>({queue.preparing.length})</span>
+            </span>
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
-            Ready ({queue.ready.length})
+            <span className="flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-current" />
+              <span>Ready</span>
+              <span>({queue.ready.length})</span>
+            </span>
           </TabsTrigger>
           <TabsTrigger value="inDelivery" className="rounded-lg">
-            In Delivery / في الطريق ({queue.inDelivery.length})
+            <span className="flex items-center gap-2">
+              <Bike size={16} className="text-current" />
+              <span>In Delivery / في الطريق</span>
+              <span>({queue.inDelivery.length})</span>
+            </span>
           </TabsTrigger>
         </TabsList>
 
