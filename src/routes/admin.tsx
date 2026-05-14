@@ -155,6 +155,7 @@ import {
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
