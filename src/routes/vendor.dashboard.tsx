@@ -250,6 +250,7 @@ function VendorDashboardPage() {
   const [timeTick, setTimeTick] = useState(Date.now());
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
+  const shownIncomingToastIdsRef = useRef<Set<string>>(new Set());
   const [printOrder, setPrintOrder] = useState<DashboardOrder | null>(null);
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
   const vendorPhoneNumber = useMemo(() => {
@@ -467,6 +468,123 @@ function VendorDashboardPage() {
   }, [queryClient]);
 
   useEffect(() => {
+    if (!hasValidVendorPhoneSession) {
+      return;
+    }
+
+    const alertChannel = supabase
+      .channel(`vendor-new-order-alerts-${normalizedVendorPhoneNumber}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "orders",
+        },
+        (payload) => {
+          const inserted = payload.new as {
+            id?: string;
+            vendor_id?: string;
+            status?: string;
+            total_price?: number | string;
+          };
+
+          const knownVendorId = dashboardQuery.data?.vendor?.id;
+          if (!knownVendorId || inserted?.vendor_id !== knownVendorId) {
+            return;
+          }
+
+          if (inserted?.status !== "new" || !inserted?.id) {
+            return;
+          }
+
+          const insertedId = inserted.id;
+
+          if (shownIncomingToastIdsRef.current.has(insertedId)) {
+            return;
+          }
+
+          shownIncomingToastIdsRef.current.add(insertedId);
+
+          if (shownIncomingToastIdsRef.current.size > 80) {
+            const oldestId = shownIncomingToastIdsRef.current.values().next().value;
+            if (oldestId) {
+              shownIncomingToastIdsRef.current.delete(oldestId);
+            }
+          }
+
+          const totalMad = roundMoney(Number(inserted.total_price ?? 0));
+          const toastId = `incoming-order-${insertedId}`;
+
+          if (isSoundEnabled) {
+            void playAlertSound({ enabled: true }).then((played) => {
+              if (!played && !hasAudioPermissionHintShown) {
+                toast.info("Click the sound icon to allow alerts in your browser.");
+                setHasAudioPermissionHintShown(true);
+              }
+            });
+          }
+
+          toast.custom(
+            () => (
+              <div className="w-[min(360px,92vw)] rounded-xl border border-success/25 bg-card p-3 shadow-lg">
+                <div className="flex items-start gap-3">
+                  <span className="relative mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-success/25 bg-success/12 text-success">
+                    <ShoppingBag className="size-4" />
+                    <span className="absolute inset-0 rounded-full border border-success/35 animate-ping" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">طلب جديد واصل! 🛍️</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Order {shortOrderId(insertedId)} - {totalMad.toFixed(2)} MAD
+                    </p>
+                    <div className="mt-2">
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        className="h-8 rounded-lg"
+                        onClick={() => {
+                          void navigate({
+                            search: (prev: VendorDashboardSearch) => ({
+                              ...prev,
+                              tab: "live",
+                              sub: "new",
+                            }),
+                            replace: true,
+                          });
+                          toast.dismiss(toastId);
+                        }}
+                      >
+                        View Order
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ),
+            {
+              id: toastId,
+              duration: 6000,
+              position: "top-right",
+            },
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(alertChannel);
+    };
+  }, [
+    dashboardQuery.data?.vendor?.id,
+    hasAudioPermissionHintShown,
+    hasValidVendorPhoneSession,
+    isSoundEnabled,
+    navigate,
+    normalizedVendorPhoneNumber,
+  ]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setTimeTick(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
@@ -572,35 +690,6 @@ function VendorDashboardPage() {
 
     setIsSoundEnabled(localStorage.getItem(VENDOR_SOUNDS_STORAGE_KEY) === "1");
   }, []);
-
-  const previousNewOrderIdsRef = useRef<Set<string>>(new Set());
-  const hasInitializedNewOrdersRef = useRef(false);
-
-  useEffect(() => {
-    const currentNewOrderIds = new Set(queue.new.map((order) => order.id));
-
-    if (!hasInitializedNewOrdersRef.current) {
-      previousNewOrderIdsRef.current.clear();
-      currentNewOrderIds.forEach((id) => previousNewOrderIdsRef.current.add(id));
-      hasInitializedNewOrdersRef.current = true;
-      return;
-    }
-
-    const hasIncomingNewOrder = Array.from(currentNewOrderIds).some((id) => !previousNewOrderIdsRef.current.has(id));
-    previousNewOrderIdsRef.current.clear();
-    currentNewOrderIds.forEach((id) => previousNewOrderIdsRef.current.add(id));
-
-    if (!hasIncomingNewOrder || !isSoundEnabled) {
-      return;
-    }
-
-    void playAlertSound({ enabled: true }).then((played) => {
-      if (!played && !hasAudioPermissionHintShown) {
-        toast.info("Click the sound icon to allow alerts in your browser.");
-        setHasAudioPermissionHintShown(true);
-      }
-    });
-  }, [queue.new, isSoundEnabled, hasAudioPermissionHintShown]);
 
   const handleToggleSounds = async () => {
     const nextEnabled = !isSoundEnabled;
