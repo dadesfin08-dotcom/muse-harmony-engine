@@ -2906,7 +2906,6 @@ function OrderCard({
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
   const isInDeliveryTab = tab === "inDelivery";
-  const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
