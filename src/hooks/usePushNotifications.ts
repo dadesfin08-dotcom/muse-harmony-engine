@@ -59,6 +59,9 @@ export function usePushNotifications() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [permissionState, setPermissionState] = useState<NotificationPermission | null>(
+    typeof window !== "undefined" && "Notification" in window ? Notification.permission : null,
+  );
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -67,6 +70,11 @@ export function usePushNotifications() {
     "Notification" in window;
 
   const showIosInstallHint = useMemo(() => detectIosSafariInstallHint(), []);
+  const isPermissionDenied = permissionState === "denied";
+
+  const deniedPermissionMessage = showIosInstallHint
+    ? "Notifications are blocked. On iOS, install the app first (Safari → Share → Add to Home Screen), then enable notifications from app/site settings."
+    : "Notifications are blocked. Please enable notifications from browser/site settings and try again.";
 
   const syncSubscriptionState = useCallback(async () => {
     if (!isSupported) {
@@ -93,9 +101,20 @@ export function usePushNotifications() {
       setError(null);
 
       try {
-        const permission = await Notification.requestPermission();
+        let permission = Notification.permission;
+        if (permission === "denied") {
+          setPermissionState(permission);
+          throw new Error(deniedPermissionMessage);
+        }
+
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+
+        setPermissionState(permission);
+
         if (permission !== "granted") {
-          throw new Error("Notification permission was denied.");
+          throw new Error(deniedPermissionMessage);
         }
 
         const registration =
@@ -153,7 +172,7 @@ export function usePushNotifications() {
         setIsLoading(false);
       }
     },
-    [isSupported],
+    [deniedPermissionMessage, isSupported],
   );
 
   const unsubscribe = useCallback(async () => {
@@ -221,6 +240,7 @@ export function usePushNotifications() {
   return {
     isSupported,
     showIosInstallHint,
+    isPermissionDenied,
     isLoading,
     error,
     isSubscribed,
