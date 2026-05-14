@@ -619,6 +619,7 @@ function AdminPage() {
     measurementUnit: "Piece" as MeasurementUnit,
     popularityScore: "0",
   });
+  const [productVariantInput, setProductVariantInput] = useState("");
   const [categoryForm, setCategoryForm] = useState({
     id: "",
     nameEn: "",
@@ -1235,6 +1236,37 @@ function AdminPage() {
     await importServiceZonesFromSheet(file);
   };
 
+  const parsedProductVariants = useMemo(
+    () =>
+      productForm.productVariants
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value, index, values) => value.length > 0 && values.indexOf(value) === index),
+    [productForm.productVariants],
+  );
+
+  const addProductVariantTag = (rawValue: string) => {
+    const normalizedValue = rawValue.trim();
+    if (!normalizedValue) return;
+    if (parsedProductVariants.includes(normalizedValue)) {
+      setProductVariantInput("");
+      return;
+    }
+
+    setProductForm((current) => ({
+      ...current,
+      productVariants: [...parsedProductVariants, normalizedValue].join(", "),
+    }));
+    setProductVariantInput("");
+  };
+
+  const removeProductVariantTag = (variantToRemove: string) => {
+    setProductForm((current) => ({
+      ...current,
+      productVariants: parsedProductVariants.filter((variant) => variant !== variantToRemove).join(", "),
+    }));
+  };
+
   const saveMasterProduct = async () => {
     const parsedMeasurementValue = productForm.measurementValue.trim()
       ? Number(productForm.measurementValue)
@@ -1243,10 +1275,7 @@ function AdminPage() {
       name: productForm.name,
       nameFr: productForm.nameFr,
       nameAr: productForm.nameAr,
-      productVariants: productForm.productVariants
-        .split(",")
-        .map((value) => value.trim())
-        .filter((value) => value.length > 0),
+      productVariants: parsedProductVariants,
       brandId: productForm.brandId.trim() ? productForm.brandId : null,
       categoryId: productForm.categoryId,
       measurementValue: parsedMeasurementValue,
@@ -1354,6 +1383,7 @@ function AdminPage() {
         measurementUnit: "Piece",
         popularityScore: "0",
       });
+      setProductVariantInput("");
       setEditingProductId(null);
       setProductImageFile(null);
       setProductImagePreviewUrl(null);
@@ -1410,6 +1440,7 @@ function AdminPage() {
       measurementUnit: "Piece",
       popularityScore: "0",
     });
+    setProductVariantInput("");
     setProductImageFile(null);
     setProductImagePreviewUrl(null);
     setCurrentProductImageUrl(null);
@@ -1432,6 +1463,7 @@ function AdminPage() {
       measurementUnit: product.measurementUnit,
       popularityScore: String(Math.max(0, Math.trunc(product.popularityScore ?? 0))),
     });
+    setProductVariantInput("");
     setProductImageFile(null);
     setCurrentProductImageUrl(product.imageUrl ?? null);
     setProductImagePreviewUrl(product.imageUrl ?? fallbackProductImage);
@@ -3340,6 +3372,45 @@ function AdminPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="product-variant-input" className="text-sm font-medium text-foreground">
+                Product Variants / الأنواع أو النكهات
+              </label>
+              <Input
+                id="product-variant-input"
+                value={productVariantInput}
+                onChange={(event) => setProductVariantInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addProductVariantTag(productVariantInput);
+                  }
+                }}
+                onBlur={() => {
+                  if (productVariantInput.trim().length > 0) {
+                    addProductVariantTag(productVariantInput);
+                  }
+                }}
+                placeholder="Type variant (e.g. Vanilla) and press Enter"
+              />
+              {parsedProductVariants.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {parsedProductVariants.map((variant) => (
+                    <button
+                      key={variant}
+                      type="button"
+                      onClick={() => removeProductVariantTag(variant)}
+                      className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
+                    >
+                      {variant} ×
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No variants added yet.</p>
+              )}
             </div>
 
             <div className="space-y-2">
