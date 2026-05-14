@@ -441,7 +441,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .in("status", ["delivered", "completed", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
+          .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
           .eq("cyclist_id", cyclist.id),
         (supabaseAdmin as any)
           .from("orders")
