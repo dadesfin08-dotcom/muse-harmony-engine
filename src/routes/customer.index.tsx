@@ -2093,9 +2093,9 @@ function Index() {
                     </div>
                     <div className="border-t border-border pt-3">
                       <div className="mb-1.5 flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
+                      <p className="text-sm text-muted-foreground">رسوم التوصيل</p>
                         <p className="text-sm font-medium text-foreground">
-                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : isArabic ? "قيد التحديد" : "Pending"}
+                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : "قيد التحديد"}
                         </p>
                       </div>
                       {selectedNeighborhoodId ? (
@@ -2103,24 +2103,18 @@ function Index() {
                           <p className="inline-flex items-center gap-2 text-xs font-semibold text-success">
                             <Gift className="size-3.5" />
                             {amountToFreeDeliveryMad > 0
-                              ? isArabic
-                                ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
-                                : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
-                              : isArabic
-                                ? "مبروك! عندك توصيل فابور"
-                                : "You have unlocked Free Delivery! 🎉"}
+                              ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
+                              : "مبروك! عندك توصيل فابور"}
                           </p>
                         </div>
                       ) : null}
                       {!isMinimumOrderMet ? (
                         <p className="mb-2 text-xs font-medium text-destructive">
-                          {isArabic
-                            ? `الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`
-                            : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
+                          {`الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`}
                         </p>
                       ) : null}
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Final Total</p>
+                        <p className="text-sm text-muted-foreground">المجموع النهائي</p>
                         <p className="text-lg font-semibold text-foreground">{finalTotalMad.toFixed(2)} MAD</p>
                       </div>
                     </div>
@@ -2257,27 +2251,27 @@ function Index() {
                       }
                     }}
                   >
-                    Save Profile
+                    حفظ الملف
                   </Button>
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                    Back to Account
+                    رجوع للحساب
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
                   {customerOrdersQuery.isLoading ? (
-                    <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
+                    <AppEmptyState title="جاري تحميل طلباتك..." subtitle="المرجو الانتظار لحظة." className="p-5" />
                   ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
                     <AppEmptyState
-                      title="No orders yet."
-                      subtitle="Your order history will appear here after checkout."
+                      title="لا توجد طلبات بعد."
+                      subtitle="سيظهر سجل طلباتك هنا بعد أول عملية شراء."
                       className="p-5"
                     />
                   ) : (
                     <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                       {activeCustomerOrders.length > 0 ? (
                         <div className="space-y-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">الطلبات النشطة</p>
                           {activeCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
                             const orderDate = new Date(order.created_at);
