@@ -15,6 +15,11 @@ import {
   Clock3,
   History,
   LogOut,
+  Rocket,
+  ArrowRight,
+  Layers3,
+  Smartphone,
+  Star,
   Bike,
   Package,
   Phone,
@@ -24,7 +29,6 @@ import {
   Store,
   Truck,
   User,
-  Users,
   Tag,
   Scale,
   Sparkles,
@@ -47,7 +51,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
