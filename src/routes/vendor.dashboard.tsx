@@ -1699,7 +1699,7 @@ function LiveOrdersView({
             <EmptyState label="No new orders right now." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {queue.new.map((order) => (
                   <OrderCard
                     key={order.id}
@@ -1724,7 +1724,7 @@ function LiveOrdersView({
             <EmptyState label="No orders are currently being prepared." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {queue.preparing.map((order) => (
                   <OrderCard
                     key={order.id}
@@ -1748,7 +1748,7 @@ function LiveOrdersView({
             <EmptyState label="No orders waiting for pickup." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {queue.ready.map((order) => (
                   <OrderCard
                     key={order.id}
