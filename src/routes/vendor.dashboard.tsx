@@ -679,6 +679,7 @@ function VendorDashboardPage() {
     if (!hasValidVendorPhoneSession) return;
 
     const refreshCarnetQueries = () => {
+      void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet"] });
       if (selectedCarnetPhone) {
         void queryClient.invalidateQueries({ queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone] });
@@ -1909,7 +1910,7 @@ function VendorDashboardPage() {
                         },
                       });
                       setLedgerPaymentAmount("");
-                      await Promise.all([carnetQuery.refetch(), ledgerQuery.refetch()]);
+                      await Promise.all([dashboardQuery.refetch(), carnetQuery.refetch(), ledgerQuery.refetch()]);
                       toast.success("Payment recorded successfully.");
                     } catch (error) {
                       console.error("Failed to record payment:", error);
