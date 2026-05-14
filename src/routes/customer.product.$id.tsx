@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Minus, Package, Plus, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { getBrandSuggestionsForNeighborhood, getCustomerProductDetail } from "@/lib/catalog.functions";
@@ -24,6 +24,7 @@ function ProductDetailPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
+  const isRtl = i18n.dir(language) === "rtl";
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const fetchProductDetail = useServerFn(getCustomerProductDetail);
@@ -197,6 +198,22 @@ function ProductDetailPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl bg-background pb-[210px]">
+      <button
+        type="button"
+        onClick={() => {
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            window.history.back();
+            return;
+          }
+
+          void navigate({ to: "/customer/all-products" });
+        }}
+        aria-label={t("common.back", { defaultValue: "Back" })}
+        className="fixed left-4 top-4 z-50 rounded-full bg-white/70 p-2.5 shadow-md backdrop-blur-sm"
+      >
+        {isRtl ? <ChevronRight className="h-6 w-6 text-slate-800" /> : <ChevronLeft className="h-6 w-6 text-slate-800" />}
+      </button>
+
       {!product ? (
         <section className="px-4 pt-4 sm:px-6">
           <div className="rounded-2xl border border-border bg-card p-6 text-center">
@@ -223,22 +240,6 @@ function ProductDetailPage() {
                 filter: "blur(16px)",
               }}
             />
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined" && window.history.length > 1) {
-                  window.history.back();
-                  return;
-                }
-
-                void navigate({ to: "/customer/all-products" });
-              }}
-              aria-label={t("common.back", { defaultValue: "Back" })}
-              className="absolute left-4 top-4 inline-flex rounded-full bg-white/80 p-2 text-slate-700 shadow-sm backdrop-blur"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-
             <div className="relative mx-auto flex aspect-square w-full items-center justify-center">
               <span
                 aria-hidden="true"
@@ -257,12 +258,14 @@ function ProductDetailPage() {
                   filter: "blur(1px)",
                 }}
               />
-              <img
-                src={product.imageUrl || fallbackProductImage}
-                alt={composedProductLabel}
-                className="relative z-10 max-h-full w-full object-contain object-center [filter:drop-shadow(0_10px_12px_rgba(0,0,0,0.18))_drop-shadow(0_0_10px_rgba(255,255,255,0.45))_drop-shadow(0_0_20px_rgba(255,215,0,0.22))_drop-shadow(0_0_28px_rgba(0,206,209,0.18))]"
-                loading="lazy"
-              />
+              <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-[40px] bg-white p-4 shadow-lg sm:p-6">
+                <img
+                  src={product.imageUrl || fallbackProductImage}
+                  alt={composedProductLabel}
+                  className="max-h-full w-full object-contain object-center [filter:drop-shadow(0_10px_12px_rgba(0,0,0,0.18))_drop-shadow(0_0_10px_rgba(255,255,255,0.45))_drop-shadow(0_0_20px_rgba(255,215,0,0.22))_drop-shadow(0_0_28px_rgba(0,206,209,0.18))]"
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
 
