@@ -182,6 +182,7 @@ type MasterProductExportRow = {
   name_ar: string | null;
   image_url: string | null;
   barcode: string | null;
+  product_variants: string[];
   measurement_value: number | null;
   measurement_unit: MeasurementUnit;
   category_name: string | null;
