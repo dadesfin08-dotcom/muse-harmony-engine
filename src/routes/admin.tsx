@@ -174,6 +174,7 @@ import {
 import { uploadReceiptLogo } from "@/lib/invoice-settings.functions";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PushNotificationsToggle } from "@/components/PushNotificationsToggle";
 import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
@@ -2841,6 +2842,7 @@ function AdminPage() {
             </div>
             <div className="ml-auto flex items-center gap-2">
               <LanguageSwitcher />
+              <PushNotificationsToggle role="admin" label="Push Notifications" className="hidden min-w-[240px] md:block" />
               <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
                 <LogOut className="size-4" />
                 <span>{t("admin.actions.logout")}</span>
