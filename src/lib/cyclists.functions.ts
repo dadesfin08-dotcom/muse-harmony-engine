@@ -823,12 +823,12 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
           .select("total_price")
           .eq("cyclist_id", data.cyclistId)
           .eq("status", "delivered_cash_with_cyclist")
-          .in("payment_method", ["COD", "cash"]),
+          .eq("payment_method", "COD"),
         (supabaseAdmin as any)
           .from("orders")
           .select("delivery_fee")
           .eq("cyclist_id", data.cyclistId)
-          .in("payment_method", ["Carnet", "carnet", "credit"])
+          .eq("payment_method", "Carnet")
           .eq("vendor_settlement_status", "pending")
           .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]),
         (supabaseAdmin as any)
