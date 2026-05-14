@@ -56,6 +56,7 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
+  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -120,6 +121,9 @@ function CyclistDashboardPage() {
         },
       });
     },
+    onMutate: ({ vendorId }) => {
+      setSettlingVendorId(vendorId);
+    },
     onSuccess: async (result) => {
       toast.success(
         `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
@@ -130,6 +134,9 @@ function CyclistDashboardPage() {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
+    },
+    onSettled: () => {
+      setSettlingVendorId(null);
     },
   });
 
@@ -485,6 +492,38 @@ function CyclistDashboardPage() {
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
+
+        <section className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <Wallet className="size-4 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Pending Settlements · تصفية الحسابات</p>
+          </div>
+          {pendingSettlements.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No pending cash handover settlements. · لا توجد تصفية معلقة حالياً.</p>
+          ) : (
+            <div className="space-y-2">
+              {pendingSettlements.map((settlement) => (
+                <div key={settlement.vendorId} className="rounded-xl border border-border bg-background p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{settlement.vendorName}</p>
+                      <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
+                    disabled={confirmCashHandoverMutation.isPending}
+                  >
+                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
+                      ? "Processing..."
+                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {activeView === "available" ? (
           <div className="space-y-3">
