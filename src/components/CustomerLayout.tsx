@@ -263,8 +263,18 @@ export function CustomerLayout({
     <>
       <main className="pb-24 md:pb-0">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.05)] md:hidden">
-        <div className="mx-auto grid h-[76px] max-w-6xl grid-cols-5 items-end px-3 pb-2">
+      <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 md:hidden">
+        <div className="pointer-events-auto relative mx-auto max-w-6xl pb-safe">
+          <div className="relative h-[84px] [filter:drop-shadow(0_-5px_15px_rgba(0,0,0,0.08))]">
+            <div
+              className="absolute inset-0 border-t border-border bg-background"
+              style={{
+                WebkitMaskImage: "radial-gradient(circle at 50% 0, transparent 34px, black 39px)",
+                maskImage: "radial-gradient(circle at 50% 0, transparent 34px, black 39px)",
+              }}
+            />
+
+            <div className="relative z-10 grid h-[76px] grid-cols-5 items-end px-3 pb-2">
           <Link to="/" className="flex flex-col items-center justify-center gap-1 text-primary">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
@@ -285,13 +295,13 @@ export function CustomerLayout({
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="flex items-end justify-center">
+          <div className="relative z-20 flex items-end justify-center">
             <LanguageSwitcher
               trigger={
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="relative inline-flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110 sm:h-16 sm:w-16 sm:-translate-y-5 sm:border-4"
+                  className="relative z-30 inline-flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110 sm:h-16 sm:w-16 sm:-translate-y-5 sm:border-4"
                 >
                   <Languages className="size-6 sm:size-7" />
                   <span className="pointer-events-none absolute inset-0 rounded-full animate-pulse bg-emerald-400/20" />
@@ -332,6 +342,8 @@ export function CustomerLayout({
             <UserCircle2 className="size-5" />
             <span className="text-[10px]">{t("nav.profile")}</span>
           </button>
+            </div>
+          </div>
         </div>
       </nav>
 
