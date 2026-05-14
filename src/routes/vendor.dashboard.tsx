@@ -3194,7 +3194,12 @@ function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: Dashboa
   }
 
   if (tab === "preparing") {
-    return <Badge className="rounded-md bg-accent/20 text-foreground hover:bg-accent/20">Preparing</Badge>;
+    return (
+      <Badge className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent/20 px-2.5 py-0.5 text-foreground hover:bg-accent/20">
+        <Package className="h-3.5 w-3.5 shrink-0" />
+        <span>Preparing</span>
+      </Badge>
+    );
   }
 
   if (tab === "inDelivery") {
