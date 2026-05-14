@@ -859,6 +859,25 @@ function Index() {
   }, [customerSession]);
 
   useEffect(() => {
+    if (!customerSession?.phoneNumber) {
+      return;
+    }
+
+    const localPrefs = readPersistedCheckoutPrefs(customerSession.phoneNumber);
+    if (!localPrefs) {
+      return;
+    }
+
+    setFullName(localPrefs.fullName || "");
+    setAddress(localPrefs.address || "");
+    setDeliveryNotes(localPrefs.deliveryNotes || "");
+
+    if (!selectedNeighborhoodId && localPrefs.neighborhoodId) {
+      void resolveLocationAndApply(localPrefs.neighborhoodId);
+    }
+  }, [customerSession?.phoneNumber]);
+
+  useEffect(() => {
     const profile = customerProfileQuery.data;
     if (!customerSession?.phoneNumber) {
       checkoutPrefsHydrationRef.current = null;
