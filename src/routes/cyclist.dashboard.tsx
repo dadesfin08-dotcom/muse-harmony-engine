@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -15,15 +15,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
-  confirmCashHandoverToVendor,
+  completeCustomerDeliveryByOrder,
   getCyclistDashboardData,
   setCyclistActiveState,
+  settleVendorCashHandover,
   type CyclistOrderCard,
-  verifyDeliveryCodeAndComplete,
 } from "@/lib/cyclists.functions";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
-import { extractDeliveryCode } from "@/lib/extract-delivery-code";
 import appI18n from "@/lib/i18n";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
@@ -56,14 +55,10 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
-  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scannerOrder, setScannerOrder] = useState<CyclistOrderCard | null>(null);
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
-  const [manualCode, setManualCode] = useState("");
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
@@ -93,8 +88,8 @@ function CyclistDashboardPage() {
   const fetchDashboardData = useServerFn(getCyclistDashboardData);
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
-  const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
-  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
+  const completeCustomerDelivery = useServerFn(completeCustomerDeliveryByOrder);
+  const settleVendorHandover = useServerFn(settleVendorCashHandover);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -108,37 +103,6 @@ function CyclistDashboardPage() {
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
   const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
-
-  const confirmCashHandoverMutation = useMutation({
-    mutationFn: async ({ vendorId }: { vendorId: string }) => {
-      if (!session?.cyclistId) {
-        throw new Error("Session expired.");
-      }
-      return confirmCashHandover({
-        data: {
-          cyclistId: session.cyclistId,
-          vendorId,
-        },
-      });
-    },
-    onMutate: ({ vendorId }) => {
-      setSettlingVendorId(vendorId);
-    },
-    onSuccess: async (result) => {
-      toast.success(
-        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
-      );
-      await dashboardQuery.refetch();
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
-    },
-    onSettled: () => {
-      setSettlingVendorId(null);
-    },
-  });
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -271,78 +235,81 @@ function CyclistDashboardPage() {
 
   const closeScanner = () => {
     setIsScannerOpen(false);
-    setScannerOrder(null);
-    setManualCode("");
-    setShowManualEntry(false);
     setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.readyToScan"));
     isVerifyingCodeRef.current = false;
   };
 
-  const handleVerifyDeliveryCode = async (order: CyclistOrderCard, rawValue: string) => {
+  const handleCyclistQrScan = async (rawValue: string) => {
     if (!session?.cyclistId || isVerifyingCodeRef.current) {
       return;
     }
 
-    const extractedCode = extractDeliveryCode(rawValue, order.id);
-    if (!extractedCode) {
-      toast.error(t("cyclist.invalidQr"));
+    let payload: unknown;
+    try {
+      payload = JSON.parse(rawValue);
+    } catch {
+      toast.error("Invalid QR Code recognized.");
       return;
     }
 
+    const parsed = payload as { action?: string; order_id?: string; vendor_id?: string };
+    const action = String(parsed.action ?? "").trim();
+
     isVerifyingCodeRef.current = true;
-    setIsUpdatingOrderId(order.id);
     setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
-      queryClient.setQueryData(["cyclist", "dashboard", session.cyclistId], (current: any) => {
-        if (!current) {
-          return current;
+      if (action === "customer_delivery") {
+        const orderId = String(parsed.order_id ?? "").trim();
+        if (!orderId) {
+          throw new Error("Invalid QR Code recognized.");
         }
 
-        return {
-          ...current,
-          activeDeliveries: (current.activeDeliveries as CyclistOrderCard[]).filter(
-            (delivery) => delivery.id !== order.id,
-          ),
-        };
-      });
+        setIsUpdatingOrderId(orderId);
+        await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
+        toast.success("Order delivered. Cash kept with cyclist.");
+      } else if (action === "vendor_handover") {
+        const vendorId = String(parsed.vendor_id ?? "").trim();
+        if (!vendorId) {
+          throw new Error("Invalid QR Code recognized.");
+        }
 
-      await verifyDeliveryCode({
-        data: {
-          cyclistId: session.cyclistId,
-          orderId: order.id,
-          deliveryAuthCode: extractedCode,
-        },
-      });
+        setIsUpdatingOrderId(`vendor:${vendorId}`);
+        await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
+        toast.success("Cash handed over. Settlement complete.");
+      } else {
+        throw new Error("Invalid QR Code recognized.");
+      }
 
       setIsScannerSuccess(true);
       setScannerStatus(t("cyclist.scannerVerified"));
-      toast.success(t("cyclist.deliveryCompleted"));
-      await dashboardQuery.refetch();
+      await Promise.all([
+        dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] }),
+        queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] }),
+      ]);
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
-      console.error("Failed to verify delivery:", error);
+      console.error("Cyclist scanner state-machine failed:", error);
       await dashboardQuery.refetch();
       setScannerStatus(t("cyclist.scannerFailed"));
-      toast.error(error instanceof Error ? error.message : t("cyclist.failedVerify"));
+      toast.error(error instanceof Error ? error.message : "Invalid QR Code recognized.");
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
     }
   };
 
-  const openScannerForOrder = (order: CyclistOrderCard) => {
-    setScannerOrder(order);
-    setManualCode("");
-    setShowManualEntry(false);
+  const openScanner = () => {
     setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.cameraPreparing"));
     setIsScannerOpen(true);
   };
 
   useEffect(() => {
-    if (!isScannerOpen || !scannerOrder || showManualEntry || isScannerSuccess) {
+    if (!isScannerOpen || isScannerSuccess) {
       return;
     }
 
@@ -363,7 +330,7 @@ function CyclistDashboardPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decodedText: string) => {
-            void handleVerifyDeliveryCode(scannerOrder, decodedText);
+            void handleCyclistQrScan(decodedText);
           },
           () => undefined,
         );
@@ -373,10 +340,7 @@ function CyclistDashboardPage() {
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
-        if (mounted) {
-          setShowManualEntry(true);
-          setScannerStatus(t("cyclist.cameraUnavailableManual"));
-        }
+        if (mounted) setScannerStatus(t("cyclist.cameraUnavailableManual"));
       }
     };
 
@@ -395,14 +359,7 @@ function CyclistDashboardPage() {
           });
       }
     };
-  }, [isScannerOpen, scannerOrder, showManualEntry, isScannerSuccess]);
-
-  const handleManualVerify = async () => {
-    if (!scannerOrder) {
-      return;
-    }
-    await handleVerifyDeliveryCode(scannerOrder, manualCode);
-  };
+  }, [isScannerOpen, isScannerSuccess]);
 
   const handleLogout = async () => {
     clearRoleSessions();
@@ -510,17 +467,15 @@ function CyclistDashboardPage() {
                       <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
                     </div>
                   </div>
-                  <Button
-                    className="w-full"
-                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
-                    disabled={confirmCashHandoverMutation.isPending}
-                  >
-                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
-                      ? "Processing..."
-                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
-                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Scan vendor wallet QR ({'{"action":"vendor_handover","vendor_id":"..."}'}) from the scanner to settle.
+                  </p>
                 </div>
               ))}
+              <Button className="w-full" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+                <Camera className="size-4" />
+                Open Universal Scanner · فتح الماسح الشامل
+              </Button>
             </div>
           )}
         </section>
@@ -566,7 +521,7 @@ function CyclistDashboardPage() {
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
                   onOpenDetails={() => setDetailsOrder(order)}
-                  onAction={() => openScannerForOrder(order)}
+                  onAction={() => openScanner()}
                 />
               ))
             )}
@@ -589,40 +544,11 @@ function CyclistDashboardPage() {
                 <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
               </div>
-            ) : showManualEntry ? (
-              <div className="flex flex-1 flex-col justify-center gap-4">
-                <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm font-medium text-foreground">{t("cyclist.enterCustomerPin")}</p>
-                  <input
-                    value={manualCode}
-                    onChange={(event) => setManualCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder={t("cyclist.pinPlaceholder")}
-                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-center text-base tracking-wide outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-                  />
-                  <Button
-                    className="h-11 w-full rounded-xl"
-                    onClick={handleManualVerify}
-                    disabled={!scannerOrder || manualCode.length < 4 || isUpdatingOrderId === scannerOrder.id}
-                  >
-                    {isUpdatingOrderId === scannerOrder?.id ? t("cyclist.verifying") : t("cyclist.verifyAndDeliver")}
-                  </Button>
-                </div>
-                <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(false)}>
-                  <Camera className="size-4" />
-                  {t("cyclist.backToCamera")}
-                </Button>
-              </div>
             ) : (
               <>
                 <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
                   <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
                 </div>
-                <Button variant="soft" className="h-10 rounded-xl" onClick={() => setShowManualEntry(true)}>
-                  <Keyboard className="size-4" />
-                  {t("cyclist.enterCodeManually")}
-                </Button>
               </>
             )}
 

@@ -216,11 +216,15 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
     return "in_transit";
   }
 
-  if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
-    return "delivered";
-  }
-
-  if (status === "new" || status === "preparing" || status === "ready" || status === "delivering" || status === "delivered") {
+  if (
+    status === "new" ||
+    status === "preparing" ||
+    status === "ready" ||
+    status === "delivering" ||
+    status === "delivered" ||
+    status === "delivered_cash_with_cyclist" ||
+    status === "cash_transferred_to_vendor"
+  ) {
     return status;
   }
 
@@ -873,11 +877,14 @@ function VendorDashboardPage() {
     const pendingOrders = queue.new.length + queue.preparing.length;
     const deliveredInFilter = orders.filter(
       (order) =>
-        order.status === "delivered" &&
+        (order.status === "delivered" ||
+          order.status === "delivered_cash_with_cyclist" ||
+          order.status === "cash_transferred_to_vendor") &&
         inKpiWindow(order.createdAt),
     );
-    const cashOrders = deliveredInFilter.filter((order) => order.paymentMethod === "COD");
-    const carnetOrders = deliveredInFilter.filter((order) => order.paymentMethod === "Carnet");
+    const transferredCashOrders = deliveredInFilter.filter(
+      (order) => order.status === "cash_transferred_to_vendor" && order.paymentMethod === "COD",
+    );
     const outstandingCreditMad = (carnetQuery.data?.carnetCustomers ?? []).reduce(
       (sum, customer) => sum + Number(customer.currentDebt ?? 0),
       0,
@@ -886,11 +893,16 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      totalCashInHandMad: roundMoney(Number(dashboardQuery.data?.vendor?.totalCashInHandMad ?? 0)),
-      myNetProfitMad: roundMoney(Number(dashboardQuery.data?.vendor?.myNetProfitMad ?? 0)),
-      platformDuesMad: roundMoney(Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0)),
-      cashEarningsMad: roundMoney(cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
-      creditIssuedMad: roundMoney(carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
+      totalCashInHandMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
+      myNetProfitMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0)),
+      platformDuesMad: roundMoney(
+        transferredCashOrders.reduce(
+          (sum, order) => sum + Math.max(Number(order.totalMad ?? 0) - Number(order.vendorShareMad ?? 0), 0),
+          0,
+        ),
+      ),
+      cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
+      creditIssuedMad: roundMoney(0),
       outstandingCreditMad: roundMoney(outstandingCreditMad),
     };
   }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers, dashboardQuery.data?.vendor]);
