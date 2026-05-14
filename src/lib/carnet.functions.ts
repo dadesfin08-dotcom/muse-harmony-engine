@@ -660,25 +660,28 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
         id: string;
         order_id?: string | null;
         payment_id?: string | null;
-        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID";
+        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID" | "CREDIT_CANCELLED";
         amount?: number | null;
         created_at: string;
       }>)
         .map((row) => {
           const isIssued = row.transaction_type === "CREDIT_ISSUED";
+          const isCancelled = row.transaction_type === "CREDIT_CANCELLED";
           const orderId = row.order_id ? String(row.order_id) : null;
           const paymentId = row.payment_id ? String(row.payment_id) : null;
 
           return {
-            id: isIssued
+            id: isIssued || isCancelled
               ? `order:${orderId ?? row.id}`
               : `payment:${paymentId ?? row.id}`,
             createdAt: row.created_at,
-            description: isIssued
-              ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
-              : "Payment recorded",
+            description: isCancelled
+              ? `Order cancelled #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+              : isIssued
+                ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+                : "Payment recorded",
             amount: Number(row.amount ?? 0),
-            kind: isIssued ? ("debt" as const) : ("payment" as const),
+            kind: isCancelled ? ("cancelled" as const) : isIssued ? ("debt" as const) : ("payment" as const),
           };
         })
         .sort((a, b) => {
@@ -893,25 +896,28 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         id: string;
         order_id?: string | null;
         payment_id?: string | null;
-        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID";
+        transaction_type: "CREDIT_ISSUED" | "CREDIT_REPAID" | "CREDIT_CANCELLED";
         amount?: number | null;
         created_at: string;
       }>)
         .map((row) => {
           const isIssued = row.transaction_type === "CREDIT_ISSUED";
+          const isCancelled = row.transaction_type === "CREDIT_CANCELLED";
           const orderId = row.order_id ? String(row.order_id) : null;
           const paymentId = row.payment_id ? String(row.payment_id) : null;
 
           return {
-            id: isIssued
+            id: isIssued || isCancelled
               ? `order:${orderId ?? row.id}`
               : `payment:${paymentId ?? row.id}`,
             createdAt: row.created_at,
-            description: isIssued
-              ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
-              : "Payment recorded",
+            description: isCancelled
+              ? `Order cancelled #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+              : isIssued
+                ? `Order placed #${String(orderId ?? row.id).slice(0, 8).toUpperCase()}`
+                : "Payment recorded",
             amount: Number(row.amount ?? 0),
-            kind: isIssued ? ("debt" as const) : ("payment" as const),
+            kind: isCancelled ? ("cancelled" as const) : isIssued ? ("debt" as const) : ("payment" as const),
           };
         })
         .sort((a, b) => {
