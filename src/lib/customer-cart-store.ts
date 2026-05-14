@@ -23,9 +23,9 @@ type CustomerCartState = {
   items: CustomerCartItem[];
   isCartOpen: boolean;
   addItem: (item: AddCartInput) => void;
-  increaseItem: (productId: string) => void;
-  decreaseItem: (productId: string) => void;
-  removeItem: (productId: string) => void;
+  increaseItem: (cartItemId: string) => void;
+  decreaseItem: (cartItemId: string) => void;
+  removeItem: (cartItemId: string) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -58,23 +58,23 @@ export const useCustomerCartStore = create<CustomerCartState>()(
             items: [...state.items, { ...item, quantity: 1 }],
           };
         }),
-      increaseItem: (productId) =>
+      increaseItem: (cartItemId) =>
         set((state) => ({
           items: state.items.map((item) =>
-            item.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
+            (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: item.quantity + 1 } : item,
           ),
         })),
-      decreaseItem: (productId) =>
+      decreaseItem: (cartItemId) =>
         set((state) => ({
           items: state.items
             .map((item) =>
-              item.id === productId ? { ...item, quantity: item.quantity - 1 } : item,
+              (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: item.quantity - 1 } : item,
             )
             .filter((item) => item.quantity > 0),
         })),
-      removeItem: (productId) =>
+      removeItem: (cartItemId) =>
         set((state) => ({
-          items: state.items.filter((item) => item.id !== productId),
+          items: state.items.filter((item) => (item.cartItemId || item.id) !== cartItemId),
         })),
       clearCart: () => set({ items: [] }),
       openCart: () => set({ isCartOpen: true }),
