@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, ArrowLeft, Bike, Camera, CheckCircle2, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, PackageSearch, Phone, PhoneCall, ShoppingBasket, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ function CyclistDashboardPage() {
   const [manualCode, setManualCode] = useState("");
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
+  const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
@@ -486,6 +488,7 @@ function CyclistDashboardPage() {
                   actionTone="success"
                   actionIcon={Camera}
                   isBusy={isUpdatingOrderId === order.id}
+                  onOpenDetails={() => setDetailsOrder(order)}
                   onAction={() => openScannerForOrder(order)}
                 />
               ))
@@ -577,6 +580,73 @@ function CyclistDashboardPage() {
           </button>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {detailsOrder ? (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed inset-0 z-50 flex flex-col bg-background"
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <Button variant="soft" className="h-11 rounded-xl px-4" onClick={() => setDetailsOrder(null)}>
+                <ArrowLeft className="size-4" />
+                Back (رجوع)
+              </Button>
+              <p className="text-sm font-semibold text-foreground">Order Details</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                  <p className="text-xl font-black text-foreground">#{detailsOrder.id.replace(/-/g, "").slice(-4).toUpperCase()}</p>
+                  <p className="text-lg font-bold text-emerald-600">{detailsOrder.totalMad.toFixed(2)} MAD</p>
+                </div>
+
+                <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  {detailsOrder.items.length > 0 ? (
+                    detailsOrder.items.map((item, index) => (
+                      <div
+                        key={`${detailsOrder.id}-${item.name}-${index}`}
+                        className="flex items-start gap-3 border-b border-slate-100 p-3.5 last:border-0"
+                      >
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-400">
+                          <ShoppingBasket className="size-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">x{item.quantity}</p>
+                          {item.selectedVariant ? <p className="mt-1 text-xs text-slate-600">{item.selectedVariant}</p> : null}
+                        </div>
+                        <p className="text-sm font-semibold text-slate-700">{item.lineTotalMad.toFixed(2)} MAD</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="p-4 text-sm text-muted-foreground">No items available for this order.</p>
+                  )}
+                </div>
+
+                <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm">
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span>{Math.max(0, detailsOrder.totalMad - detailsOrder.deliveryFeeMad).toFixed(2)} MAD</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Delivery Fee</span>
+                    <span>{detailsOrder.deliveryFeeMad.toFixed(2)} MAD</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-800">
+                    <span>Total</span>
+                    <span>{detailsOrder.totalMad.toFixed(2)} MAD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }
@@ -588,6 +658,7 @@ function OrderCard({
   actionTone,
   actionIcon: ActionIcon,
   isBusy,
+  onOpenDetails,
   onAction,
 }: {
   order: CyclistOrderCard;
@@ -596,6 +667,7 @@ function OrderCard({
   actionTone: "primary" | "success";
   actionIcon: typeof Truck;
   isBusy: boolean;
+  onOpenDetails?: () => void;
   onAction: () => void;
 }) {
   const actionClass =
@@ -619,7 +691,9 @@ function OrderCard({
         ) : null}
 
         <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
-          <p className="text-2xl font-black text-gray-900">{shortOrderId}</p>
+          <button type="button" className="text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
+            {shortOrderId}
+          </button>
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
@@ -707,6 +781,13 @@ function OrderCard({
             </div>
           </div>
         </div>
+
+        {order.deliveryInstructions?.trim() ? (
+          <div className="mt-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-bold text-slate-700">📝 تعليمات هامة من الزبون</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">{order.deliveryInstructions.trim()}</p>
+          </div>
+        ) : null}
 
         <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
