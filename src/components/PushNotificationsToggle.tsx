@@ -16,6 +16,7 @@ export function PushNotificationsToggle({ role, label, className }: PushNotifica
     isSupported,
     showIosInstallHint,
     isPermissionDenied,
+    isAuthenticated,
     isSubscribed,
     isLoading,
     subscribe,
@@ -50,8 +51,12 @@ export function PushNotificationsToggle({ role, label, className }: PushNotifica
           <BellRing className="size-4 text-primary" />
           <span className="truncate text-xs text-muted-foreground sm:text-sm">{label}</span>
         </div>
-        <Switch checked={isSubscribed} onCheckedChange={handleCheckedChange} disabled={!isSupported || isLoading} />
+        <Switch checked={isSubscribed} onCheckedChange={handleCheckedChange} disabled={!isSupported || isLoading || !isAuthenticated} />
       </div>
+
+      {!isAuthenticated ? (
+        <p className="mt-2 text-xs text-muted-foreground">سجّل الدخول أولاً لتفعيل الإشعارات.</p>
+      ) : null}
 
       {isPermissionDenied ? (
         <p className="mt-2 text-xs text-destructive">
