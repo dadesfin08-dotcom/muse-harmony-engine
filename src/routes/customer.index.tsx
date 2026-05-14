@@ -1445,29 +1445,6 @@ function Index() {
               />
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("language.label")}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted"
-                >
-                  <Globe className="size-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 rounded-md">
-                {languageOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.code}
-                    onClick={() => changeLanguage(option.code)}
-                    className={option.code === language ? "bg-accent text-accent-foreground" : undefined}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <button
               aria-label={t("header.userProfile")}
               onClick={() => {
