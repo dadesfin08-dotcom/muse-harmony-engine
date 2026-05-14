@@ -363,6 +363,7 @@ const masterProductFormSchema = z.object({
 });
 
 const platformCollectionQrPayloadSchema = z.object({
+  action: z.literal("admin_collection").optional(),
   vendor_id: z.string().uuid(),
   amount_owed: z.union([z.number(), z.string()]),
 });
@@ -895,6 +896,7 @@ function AdminPage() {
   const platformCollectionQrPayload = useMemo(() => {
     if (!platformCollectionVendor) return "";
     return JSON.stringify({
+      action: "admin_collection",
       vendor_id: platformCollectionVendor.id,
       amount_owed: Number(platformCollectionVendor.platformDuesMad ?? 0).toFixed(2),
     });
@@ -962,12 +964,22 @@ function AdminPage() {
   };
 
   const openPlatformCollectionQr = (vendor: AdminVendorRecord) => {
-    if (Number(vendor.platformDuesMad ?? 0) <= 0) {
+    const amountMad = Number(vendor.platformDuesMad ?? 0);
+    if (amountMad <= 0) {
       toast.info("No platform dues pending for this vendor.");
       return;
     }
-    setPlatformCollectionVendor(vendor);
-    setIsPlatformCollectionQrOpen(true);
+
+    setPlatformCollectionConfirmation({
+      vendorId: vendor.id,
+      vendorName: vendor.storeName,
+      amountMad,
+      payload: {
+        action: "admin_collection",
+        vendor_id: vendor.id,
+        amount_owed: amountMad.toFixed(2),
+      },
+    });
   };
 
   const handlePlatformCollectionConfirm = async () => {
