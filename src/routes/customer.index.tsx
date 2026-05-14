@@ -73,7 +73,6 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -1582,8 +1581,6 @@ function Index() {
                 ) : null}
               </AnimatePresence>
             </div>
-
-            <LanguageSwitcher />
 
             <button
               aria-label={t("header.userProfile")}
