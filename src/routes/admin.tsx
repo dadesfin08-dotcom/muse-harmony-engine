@@ -3908,6 +3908,7 @@ function ServiceZonesSection({
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
 }) {
+  const { t } = useTranslation();
   const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
     const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
       .map((value) => value?.trim())
@@ -3918,14 +3919,14 @@ function ServiceZonesSection({
   return (
     <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Service Zones</h2>
-        <p className="text-sm text-muted-foreground">Define communes and neighborhoods for strict routing.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("admin.serviceZones.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("admin.serviceZones.subtitle")}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" className="rounded-md" onClick={onDownloadExport}>
           <Download className="size-4" />
-          Download / Export Service Zones (XLSX)
+          {t("admin.serviceZones.downloadExportXlsx")}
         </Button>
         <input
           ref={serviceZonesCsvInputRef}
@@ -3941,42 +3942,42 @@ function ServiceZonesSection({
           disabled={isImporting}
         >
           <FileUp className="size-4" />
-          {isImporting ? "Importing..." : "Import Bulk Service Zones"}
+          {isImporting ? t("admin.common.importing") : t("admin.serviceZones.importBulk")}
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 rounded-md border border-border bg-background p-3">
           <label htmlFor="new-commune" className="text-sm font-medium text-foreground">
-            New Jamaa Tourabiya
+            {t("admin.serviceZones.newCommune")}
           </label>
           <input
             id="new-commune"
             value={form.communeNameEn}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameEn: event.target.value }))}
-            placeholder="Commune Name (EN) — e.g. Sidi Bernoussi"
+            placeholder={t("admin.serviceZones.placeholders.communeNameEnExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.communeNameFr}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameFr: event.target.value }))}
-            placeholder="Commune Name (FR)"
+            placeholder={t("admin.serviceZones.placeholders.communeNameFr")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.communeNameAr}
             onChange={(event) => onFormChange((current) => ({ ...current, communeNameAr: event.target.value }))}
-            placeholder="Commune Name (AR) - مثال: سيدي البرنوصي"
+            placeholder={t("admin.serviceZones.placeholders.communeNameArExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <Button variant="hero" className="w-full rounded-md" onClick={onSaveCommune}>
-            Add Commune
+            {t("admin.serviceZones.addCommune")}
           </Button>
         </div>
 
         <div className="space-y-2 rounded-md border border-border bg-background p-3">
           <label htmlFor="neighborhood-commune" className="text-sm font-medium text-foreground">
-            Commune for New Hay / Douar
+            {t("admin.serviceZones.communeForNewDouar")}
           </label>
           <select
             id="neighborhood-commune"
@@ -3989,7 +3990,7 @@ function ServiceZonesSection({
             }
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           >
-            <option value="">Select commune</option>
+            <option value="">{t("admin.common.selectCommune")}</option>
             {zones.map((zone) => (
               <option key={zone.id} value={zone.id}>
                 {localizeCommuneName(zone)}
@@ -4000,19 +4001,19 @@ function ServiceZonesSection({
             id="new-neighborhood"
             value={form.neighborhoodNameEn}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameEn: event.target.value }))}
-            placeholder="Neighborhood Name (EN)"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameEn")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.neighborhoodNameFr}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameFr: event.target.value }))}
-            placeholder="Neighborhood Name (FR)"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameFr")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
             value={form.neighborhoodNameAr}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodNameAr: event.target.value }))}
-            placeholder="Neighborhood Name (AR) - مثال: حي الفرح"
+            placeholder={t("admin.serviceZones.placeholders.neighborhoodNameArExample")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <input
@@ -4022,26 +4023,26 @@ function ServiceZonesSection({
             step="0.01"
             value={form.neighborhoodDeliveryFee}
             onChange={(event) => onFormChange((current) => ({ ...current, neighborhoodDeliveryFee: event.target.value }))}
-            placeholder="Delivery Fee (MAD)"
+            placeholder={t("admin.serviceZones.placeholders.deliveryFeeMad")}
             className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           />
           <Button variant="hero" className="w-full rounded-md" onClick={onSaveNeighborhood}>
-            Add Neighborhood / Douar
+            {t("admin.serviceZones.addNeighborhoodDouar")}
           </Button>
         </div>
       </div>
 
       <div className="rounded-md border border-border">
         <div className="border-b border-border bg-muted/40 px-4 py-2 text-sm font-medium text-foreground">
-          Configured Zones
+          {t("admin.serviceZones.configuredZones")}
         </div>
         {isLoading ? (
           <div className="p-4">
-            <AppEmptyState title="Loading service zones..." subtitle="Fetching configured communes and neighborhoods." />
+            <AppEmptyState title={t("admin.serviceZones.loadingTitle")} subtitle={t("admin.serviceZones.loadingSubtitle")} />
           </div>
         ) : zones.length === 0 ? (
           <div className="p-4">
-            <AppEmptyState title="No service zones yet." subtitle="Create your first commune and neighborhood to start dispatching." />
+            <AppEmptyState title={t("admin.serviceZones.emptyTitle")} subtitle={t("admin.serviceZones.emptySubtitle")} />
           </div>
         ) : (
           <div className="space-y-3 p-4">
@@ -4056,12 +4057,12 @@ function ServiceZonesSection({
                     {localizeCommuneName(zone)}
                   </button>
                   <Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => onOpenCommuneProfile(zone.id)}>
-                    Manage
+                    {t("admin.common.manage")}
                   </Button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {zone.neighborhoods.length === 0 ? (
-                    <span className="text-xs text-muted-foreground">No neighborhoods yet</span>
+                    <span className="text-xs text-muted-foreground">{t("admin.serviceZones.noNeighborhoodsYet")}</span>
                   ) : (
                     zone.neighborhoods.map((neighborhood) => (
                       <div key={neighborhood.id} className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-2 py-1">
