@@ -116,6 +116,7 @@ export type CyclistOrderCard = {
   customerPhone: string;
   deliveryAddress: string;
   deliveryInstructions: string;
+  deliveryZone: string;
   douar: string;
   deliveryFeeMad: number;
   totalMad: number;
@@ -446,7 +447,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         throw new Error(profilesError.message);
       }
 
-      const { neighborhoodMap } = await buildServiceZoneMaps();
+      const { neighborhoodMap, communeMap } = await buildServiceZoneMaps();
       const customerInstructionMap = new Map(
         ((customers ?? []) as CustomerRow[]).map((customer) => [customer.phone_number, customer.saved_instructions]),
       );
@@ -459,11 +460,15 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       const mapOrder = (row: OrderRow): CyclistOrderCard => {
         const neighborhood = neighborhoodMap.get(row.neighborhood_id);
+        const neighborhoodName =
+          neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified";
+        const communeName = neighborhood?.commune_id ? communeMap.get(neighborhood.commune_id) ?? "" : "";
+        const deliveryZone = communeName ? `${communeName} / ${neighborhoodName}` : neighborhoodName;
         const savedInstructions = customerInstructionMap.get(row.customer_phone) ?? "";
         const checkoutAddress =
           typeof row.customer_user_id === "string" ? (profileAddressMap.get(row.customer_user_id) ?? "") : "";
         const deliveryAddress =
-          checkoutAddress || neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified";
+          checkoutAddress || neighborhoodName;
         const deliveryInstructions = (row.delivery_notes ?? "").trim();
 
         return {
@@ -472,7 +477,8 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           customerPhone: row.customer_phone,
           deliveryAddress,
           deliveryInstructions,
-          douar: neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified",
+          deliveryZone,
+          douar: neighborhoodName,
           deliveryFeeMad: Number(row.delivery_fee ?? 0),
           totalMad: Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
           paymentMethod: row.payment_method === "Carnet" ? "Carnet" : "COD",
