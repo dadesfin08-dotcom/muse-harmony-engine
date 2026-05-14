@@ -356,6 +356,14 @@ export type Database = {
           footer_message: string | null
           id: string
           phone: string | null
+          receipt_address: string | null
+          receipt_footer_message: string | null
+          receipt_logo_url: string | null
+          receipt_phone: string | null
+          receipt_slogan: string | null
+          receipt_social_support: string | null
+          receipt_store_name: string | null
+          receipt_website: string | null
           store_name: string | null
           tax_id: string | null
           updated_at: string
@@ -366,6 +374,14 @@ export type Database = {
           footer_message?: string | null
           id?: string
           phone?: string | null
+          receipt_address?: string | null
+          receipt_footer_message?: string | null
+          receipt_logo_url?: string | null
+          receipt_phone?: string | null
+          receipt_slogan?: string | null
+          receipt_social_support?: string | null
+          receipt_store_name?: string | null
+          receipt_website?: string | null
           store_name?: string | null
           tax_id?: string | null
           updated_at?: string
@@ -376,6 +392,14 @@ export type Database = {
           footer_message?: string | null
           id?: string
           phone?: string | null
+          receipt_address?: string | null
+          receipt_footer_message?: string | null
+          receipt_logo_url?: string | null
+          receipt_phone?: string | null
+          receipt_slogan?: string | null
+          receipt_social_support?: string | null
+          receipt_store_name?: string | null
+          receipt_website?: string | null
           store_name?: string | null
           tax_id?: string | null
           updated_at?: string

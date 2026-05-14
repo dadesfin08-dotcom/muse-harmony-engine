@@ -158,6 +158,7 @@ import {
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
+import { uploadReceiptLogo } from "@/lib/invoice-settings.functions";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -169,9 +170,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
-  DEFAULT_RECEIPT_FOOTER_CONTENT,
-  DEFAULT_RECEIPT_HEADER_CONTENT,
+  DEFAULT_RECEIPT_FOOTER_MESSAGE,
   DEFAULT_RECEIPT_PHONE,
+  DEFAULT_RECEIPT_SLOGAN,
+  DEFAULT_RECEIPT_SOCIAL_SUPPORT,
+  DEFAULT_RECEIPT_STORE_NAME,
+  DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 
 type AdminTab =
@@ -392,6 +396,7 @@ function AdminPage() {
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
+  const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
@@ -690,12 +695,18 @@ function AdminPage() {
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
   const [receiptForm, setReceiptForm] = useState({
     id: "",
-    storeName: DEFAULT_RECEIPT_HEADER_CONTENT,
-    address: DEFAULT_RECEIPT_ADDRESS,
-    phone: DEFAULT_RECEIPT_PHONE,
+    receiptLogoUrl: "",
+    receiptStoreName: DEFAULT_RECEIPT_STORE_NAME,
+    receiptSlogan: DEFAULT_RECEIPT_SLOGAN,
+    receiptPhone: DEFAULT_RECEIPT_PHONE,
+    receiptAddress: DEFAULT_RECEIPT_ADDRESS,
+    receiptWebsite: DEFAULT_RECEIPT_WEBSITE,
     taxId: "",
-    footerMessage: DEFAULT_RECEIPT_FOOTER_CONTENT,
+    receiptFooterMessage: DEFAULT_RECEIPT_FOOTER_MESSAGE,
+    receiptSocialSupport: DEFAULT_RECEIPT_SOCIAL_SUPPORT,
   });
+  const [receiptLogoFile, setReceiptLogoFile] = useState<File | null>(null);
+  const [receiptLogoPreviewUrl, setReceiptLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingReceiptSettings, setIsSavingReceiptSettings] = useState(false);
 
   useEffect(() => {
@@ -732,13 +743,20 @@ function AdminPage() {
 
       return {
         id: row.id,
-        storeName: row.store_name ?? "",
-        address: row.address ?? "",
-        phone: row.phone ?? "",
+        receiptLogoUrl: row.receipt_logo_url ?? "",
+        receiptStoreName: row.receipt_store_name ?? row.store_name ?? DEFAULT_RECEIPT_STORE_NAME,
+        receiptSlogan: row.receipt_slogan ?? DEFAULT_RECEIPT_SLOGAN,
+        receiptPhone: row.receipt_phone ?? row.phone ?? DEFAULT_RECEIPT_PHONE,
+        receiptAddress: row.receipt_address ?? row.address ?? DEFAULT_RECEIPT_ADDRESS,
+        receiptWebsite: row.receipt_website ?? DEFAULT_RECEIPT_WEBSITE,
         taxId: row.tax_id ?? "",
-        footerMessage: row.footer_message ?? "",
+        receiptFooterMessage: row.receipt_footer_message ?? row.footer_message ?? DEFAULT_RECEIPT_FOOTER_MESSAGE,
+        receiptSocialSupport: row.receipt_social_support ?? DEFAULT_RECEIPT_SOCIAL_SUPPORT,
       };
     });
+
+    setReceiptLogoFile(null);
+    setReceiptLogoPreviewUrl(row.receipt_logo_url ?? null);
 
   }, [adminInvoiceSettingsQuery.data]);
 
@@ -2269,10 +2287,13 @@ function AdminPage() {
   const saveReceiptSettings = async () => {
     if (
       !receiptForm.id ||
-      !receiptForm.storeName.trim() ||
-      !receiptForm.address.trim() ||
-      !receiptForm.phone.trim() ||
-      !receiptForm.footerMessage.trim()
+      !receiptForm.receiptStoreName.trim() ||
+      !receiptForm.receiptSlogan.trim() ||
+      !receiptForm.receiptPhone.trim() ||
+      !receiptForm.receiptAddress.trim() ||
+      !receiptForm.receiptWebsite.trim() ||
+      !receiptForm.receiptFooterMessage.trim() ||
+      !receiptForm.receiptSocialSupport.trim()
     ) {
       toast.error("Please complete all required receipt settings.");
       return;
@@ -2280,18 +2301,46 @@ function AdminPage() {
 
     try {
       setIsSavingReceiptSettings(true);
+
+      let receiptLogoUrl = receiptForm.receiptLogoUrl.trim() || null;
+      if (receiptLogoFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(receiptLogoFile);
+        });
+
+        const uploaded = await uploadReceiptLogoToStorage({
+          data: {
+            fileName: receiptLogoFile.name,
+            contentType: receiptLogoFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+        receiptLogoUrl = uploaded.publicUrl;
+      }
+
       await saveAdminInvoiceSettings({
         data: {
           id: receiptForm.id,
-          storeName: receiptForm.storeName.trim(),
-          address: receiptForm.address.trim(),
-          phone: receiptForm.phone.trim(),
+          receiptLogoUrl,
+          receiptStoreName: receiptForm.receiptStoreName.trim(),
+          receiptSlogan: receiptForm.receiptSlogan.trim(),
+          receiptPhone: receiptForm.receiptPhone.trim(),
+          receiptAddress: receiptForm.receiptAddress.trim(),
+          receiptWebsite: receiptForm.receiptWebsite.trim(),
           taxId: receiptForm.taxId.trim() || null,
-          footerMessage: receiptForm.footerMessage.trim(),
+          receiptFooterMessage: receiptForm.receiptFooterMessage.trim(),
+          receiptSocialSupport: receiptForm.receiptSocialSupport.trim(),
         },
       });
 
       await adminInvoiceSettingsQuery.refetch();
+      setReceiptLogoFile(null);
       toast.success("Configuration saved successfully");
     } catch (error) {
       console.error("Failed to save receipt settings:", error);
@@ -2551,6 +2600,9 @@ function AdminPage() {
                   onSaveGlobalSettings={saveGlobalSettings}
                   isGlobalSettingsLoading={isSavingGlobalSettings || dbHealthQuery.isLoading || globalSettingsQuery.isLoading}
                   receiptForm={receiptForm}
+                  receiptLogoPreviewUrl={receiptLogoPreviewUrl}
+                  onReceiptLogoFileChange={(file: File | null) => setReceiptLogoFile(file)}
+                  onReceiptLogoPreviewChange={(url: string | null) => setReceiptLogoPreviewUrl(url)}
                   onReceiptFormChange={setReceiptForm}
                   onSaveReceiptSettings={saveReceiptSettings}
                   isReceiptSettingsLoading={
@@ -5041,6 +5093,9 @@ function SettingsSection({
   onSaveGlobalSettings,
   isGlobalSettingsLoading,
   receiptForm,
+  receiptLogoPreviewUrl,
+  onReceiptLogoFileChange,
+  onReceiptLogoPreviewChange,
   onReceiptFormChange,
   onSaveReceiptSettings,
   isReceiptSettingsLoading,
@@ -5065,20 +5120,31 @@ function SettingsSection({
   isGlobalSettingsLoading: boolean;
   receiptForm: {
     id: string;
-    storeName: string;
-    address: string;
-    phone: string;
+    receiptLogoUrl: string;
+    receiptStoreName: string;
+    receiptSlogan: string;
+    receiptPhone: string;
+    receiptAddress: string;
+    receiptWebsite: string;
     taxId: string;
-    footerMessage: string;
+    receiptFooterMessage: string;
+    receiptSocialSupport: string;
   };
+  receiptLogoPreviewUrl: string | null;
+  onReceiptLogoFileChange: (file: File | null) => void;
+  onReceiptLogoPreviewChange: (url: string | null) => void;
   onReceiptFormChange: Dispatch<
     SetStateAction<{
       id: string;
-      storeName: string;
-      address: string;
-      phone: string;
+      receiptLogoUrl: string;
+      receiptStoreName: string;
+      receiptSlogan: string;
+      receiptPhone: string;
+      receiptAddress: string;
+      receiptWebsite: string;
       taxId: string;
-      footerMessage: string;
+      receiptFooterMessage: string;
+      receiptSocialSupport: string;
     }>
   >;
   onSaveReceiptSettings: () => Promise<void>;
@@ -5165,33 +5231,85 @@ function SettingsSection({
 
       <div>
         <h3 className="text-base font-semibold text-foreground">Receipt Settings</h3>
-        <p className="text-sm text-muted-foreground">Configure thermal receipt header and footer details.</p>
+        <p className="text-sm text-muted-foreground">Configure logo, branding and footer details for thermal receipts.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
+          <label className="text-sm font-medium text-foreground">Receipt Logo</label>
+          <div className="flex items-center gap-4 rounded-md border border-border bg-background p-3">
+            {receiptLogoPreviewUrl ? (
+              <img src={receiptLogoPreviewUrl} alt="Receipt logo preview" className="h-14 w-14 rounded-sm border border-border object-contain" />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-sm border border-dashed border-border text-xs text-muted-foreground">No logo</div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                id="receipt-logo-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  onReceiptLogoFileChange(file);
+                  if (!file) {
+                    onReceiptLogoPreviewChange(receiptForm.receiptLogoUrl || null);
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => onReceiptLogoPreviewChange(typeof reader.result === "string" ? reader.result : null);
+                  reader.onerror = () => toast.error("Unable to preview selected logo.");
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-md"
+                onClick={() => document.getElementById("receipt-logo-upload")?.click()}
+              >
+                Upload logo
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <label htmlFor="receipt-store-name" className="text-sm font-medium text-foreground">
-            Receipt Header
+            Store Name
           </label>
-          <Textarea
+          <Input
             id="receipt-store-name"
-            value={receiptForm.storeName}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, storeName: event.target.value }))}
-            className="min-h-28 rounded-md"
-            placeholder={DEFAULT_RECEIPT_HEADER_CONTENT}
+            value={receiptForm.receiptStoreName}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptStoreName: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_STORE_NAME}
           />
         </div>
 
         <div className="space-y-2">
+          <label htmlFor="receipt-slogan" className="text-sm font-medium text-foreground">
+            Slogan
+          </label>
+          <Input
+            id="receipt-slogan"
+            value={receiptForm.receiptSlogan}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptSlogan: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_SLOGAN}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-phone" className="text-sm font-medium text-foreground">
             Phone
           </label>
           <Input
             id="receipt-phone"
-            value={receiptForm.phone}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, phone: event.target.value }))}
+            value={receiptForm.receiptPhone}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptPhone: event.target.value }))}
             className="h-10 rounded-md"
-            placeholder="+212XXXXXXXXX"
+            placeholder={DEFAULT_RECEIPT_PHONE}
           />
         </div>
 
@@ -5201,10 +5319,23 @@ function SettingsSection({
           </label>
           <Input
             id="receipt-address"
-            value={receiptForm.address}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, address: event.target.value }))}
+            value={receiptForm.receiptAddress}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptAddress: event.target.value }))}
             className="h-10 rounded-md"
-            placeholder="Casablanca, Morocco"
+            placeholder={DEFAULT_RECEIPT_ADDRESS}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="receipt-website" className="text-sm font-medium text-foreground">
+            Website
+          </label>
+          <Input
+            id="receipt-website"
+            value={receiptForm.receiptWebsite}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptWebsite: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_WEBSITE}
           />
         </div>
 
@@ -5223,14 +5354,27 @@ function SettingsSection({
 
         <div className="space-y-2 md:col-span-2">
           <label htmlFor="receipt-footer" className="text-sm font-medium text-foreground">
-            Receipt Footer
+            Footer Message
           </label>
-          <Textarea
+          <Input
             id="receipt-footer"
-            value={receiptForm.footerMessage}
-            onChange={(event) => onReceiptFormChange((current) => ({ ...current, footerMessage: event.target.value }))}
-            className="min-h-20 rounded-md"
-            placeholder={DEFAULT_RECEIPT_FOOTER_CONTENT}
+            value={receiptForm.receiptFooterMessage}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptFooterMessage: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_FOOTER_MESSAGE}
+          />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <label htmlFor="receipt-social-support" className="text-sm font-medium text-foreground">
+            Social & Support
+          </label>
+          <Input
+            id="receipt-social-support"
+            value={receiptForm.receiptSocialSupport}
+            onChange={(event) => onReceiptFormChange((current) => ({ ...current, receiptSocialSupport: event.target.value }))}
+            className="h-10 rounded-md"
+            placeholder={DEFAULT_RECEIPT_SOCIAL_SUPPORT}
           />
         </div>
       </div>

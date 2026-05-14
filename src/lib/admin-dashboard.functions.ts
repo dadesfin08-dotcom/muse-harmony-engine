@@ -5,8 +5,13 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
+  DEFAULT_RECEIPT_FOOTER_MESSAGE,
   DEFAULT_RECEIPT_HEADER_CONTENT,
   DEFAULT_RECEIPT_PHONE,
+  DEFAULT_RECEIPT_SLOGAN,
+  DEFAULT_RECEIPT_SOCIAL_SUPPORT,
+  DEFAULT_RECEIPT_STORE_NAME,
+  DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 
 type AdminOrderStatus = "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
@@ -32,6 +37,14 @@ type InvoiceSettingsRow = {
   phone: string;
   tax_id: string | null;
   footer_message: string;
+  receipt_logo_url: string | null;
+  receipt_store_name: string;
+  receipt_slogan: string;
+  receipt_phone: string;
+  receipt_address: string;
+  receipt_website: string;
+  receipt_footer_message: string;
+  receipt_social_support: string;
   created_at: string;
   updated_at: string;
 };
@@ -70,6 +83,14 @@ function normalizeInvoiceSettingsRow(row: any): InvoiceSettingsRow {
     phone: row.phone ?? DEFAULT_RECEIPT_PHONE,
     tax_id: row.tax_id ?? null,
     footer_message: row.footer_message ?? DEFAULT_RECEIPT_FOOTER_CONTENT,
+    receipt_logo_url: row.receipt_logo_url ?? null,
+    receipt_store_name: row.receipt_store_name ?? DEFAULT_RECEIPT_STORE_NAME,
+    receipt_slogan: row.receipt_slogan ?? DEFAULT_RECEIPT_SLOGAN,
+    receipt_phone: row.receipt_phone ?? DEFAULT_RECEIPT_PHONE,
+    receipt_address: row.receipt_address ?? DEFAULT_RECEIPT_ADDRESS,
+    receipt_website: row.receipt_website ?? DEFAULT_RECEIPT_WEBSITE,
+    receipt_footer_message: row.receipt_footer_message ?? DEFAULT_RECEIPT_FOOTER_MESSAGE,
+    receipt_social_support: row.receipt_social_support ?? DEFAULT_RECEIPT_SOCIAL_SUPPORT,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -181,7 +202,9 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
 export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("invoice_settings")
-    .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+    .select(
+      "id, store_name, address, phone, tax_id, footer_message, receipt_logo_url, receipt_store_name, receipt_slogan, receipt_phone, receipt_address, receipt_website, receipt_footer_message, receipt_social_support, created_at, updated_at",
+    )
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -196,19 +219,39 @@ export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler
       address: data.address?.trim() ? data.address : DEFAULT_RECEIPT_ADDRESS,
       phone: data.phone?.trim() ? data.phone : DEFAULT_RECEIPT_PHONE,
       footer_message: data.footer_message?.trim() ? data.footer_message : DEFAULT_RECEIPT_FOOTER_CONTENT,
+      receipt_store_name: data.receipt_store_name?.trim() ? data.receipt_store_name : DEFAULT_RECEIPT_STORE_NAME,
+      receipt_slogan: data.receipt_slogan?.trim() ? data.receipt_slogan : DEFAULT_RECEIPT_SLOGAN,
+      receipt_phone: data.receipt_phone?.trim() ? data.receipt_phone : DEFAULT_RECEIPT_PHONE,
+      receipt_address: data.receipt_address?.trim() ? data.receipt_address : DEFAULT_RECEIPT_ADDRESS,
+      receipt_website: data.receipt_website?.trim() ? data.receipt_website : DEFAULT_RECEIPT_WEBSITE,
+      receipt_footer_message: data.receipt_footer_message?.trim()
+        ? data.receipt_footer_message
+        : DEFAULT_RECEIPT_FOOTER_MESSAGE,
+      receipt_social_support: data.receipt_social_support?.trim()
+        ? data.receipt_social_support
+        : DEFAULT_RECEIPT_SOCIAL_SUPPORT,
     };
 
     if (
       normalizedDefaultsPatch.store_name !== data.store_name ||
       normalizedDefaultsPatch.address !== data.address ||
       normalizedDefaultsPatch.phone !== data.phone ||
-      normalizedDefaultsPatch.footer_message !== data.footer_message
+      normalizedDefaultsPatch.footer_message !== data.footer_message ||
+      normalizedDefaultsPatch.receipt_store_name !== data.receipt_store_name ||
+      normalizedDefaultsPatch.receipt_slogan !== data.receipt_slogan ||
+      normalizedDefaultsPatch.receipt_phone !== data.receipt_phone ||
+      normalizedDefaultsPatch.receipt_address !== data.receipt_address ||
+      normalizedDefaultsPatch.receipt_website !== data.receipt_website ||
+      normalizedDefaultsPatch.receipt_footer_message !== data.receipt_footer_message ||
+      normalizedDefaultsPatch.receipt_social_support !== data.receipt_social_support
     ) {
       const { data: patchedRow, error: patchError } = await (supabaseAdmin as any)
         .from("invoice_settings")
         .update(normalizedDefaultsPatch)
         .eq("id", data.id)
-        .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+        .select(
+          "id, store_name, address, phone, tax_id, footer_message, receipt_logo_url, receipt_store_name, receipt_slogan, receipt_phone, receipt_address, receipt_website, receipt_footer_message, receipt_social_support, created_at, updated_at",
+        )
         .single();
 
       if (patchError || !patchedRow?.id) {
@@ -229,8 +272,18 @@ export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler
       phone: DEFAULT_RECEIPT_PHONE,
       tax_id: null,
       footer_message: DEFAULT_RECEIPT_FOOTER_CONTENT,
+      receipt_logo_url: null,
+      receipt_store_name: DEFAULT_RECEIPT_STORE_NAME,
+      receipt_slogan: DEFAULT_RECEIPT_SLOGAN,
+      receipt_phone: DEFAULT_RECEIPT_PHONE,
+      receipt_address: DEFAULT_RECEIPT_ADDRESS,
+      receipt_website: DEFAULT_RECEIPT_WEBSITE,
+      receipt_footer_message: DEFAULT_RECEIPT_FOOTER_MESSAGE,
+      receipt_social_support: DEFAULT_RECEIPT_SOCIAL_SUPPORT,
     })
-    .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+    .select(
+      "id, store_name, address, phone, tax_id, footer_message, receipt_logo_url, receipt_store_name, receipt_slogan, receipt_phone, receipt_address, receipt_website, receipt_footer_message, receipt_social_support, created_at, updated_at",
+    )
     .single();
 
   if (insertError || !inserted?.id) {
@@ -245,11 +298,15 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        storeName: z.string().trim().min(1).max(1200),
-        address: z.string().trim().min(1).max(220),
-        phone: z.string().trim().min(3).max(30),
+        receiptLogoUrl: z.string().trim().url().max(2000).nullable(),
+        receiptStoreName: z.string().trim().min(1).max(120),
+        receiptSlogan: z.string().trim().min(1).max(240),
+        receiptPhone: z.string().trim().min(3).max(30),
+        receiptAddress: z.string().trim().min(1).max(220),
+        receiptWebsite: z.string().trim().min(1).max(200),
         taxId: z.string().trim().max(120).nullable(),
-        footerMessage: z.string().trim().min(1).max(1200),
+        receiptFooterMessage: z.string().trim().min(1).max(500),
+        receiptSocialSupport: z.string().trim().min(1).max(500),
       })
       .parse(input),
   )
@@ -257,14 +314,24 @@ export const updateAdminInvoiceSettings = createServerFn({ method: "POST" })
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("invoice_settings")
       .update({
-        store_name: data.storeName,
-        address: data.address,
-        phone: data.phone,
+        store_name: data.receiptStoreName,
+        address: data.receiptAddress,
+        phone: data.receiptPhone,
         tax_id: data.taxId,
-        footer_message: data.footerMessage,
+        footer_message: data.receiptFooterMessage,
+        receipt_logo_url: data.receiptLogoUrl,
+        receipt_store_name: data.receiptStoreName,
+        receipt_slogan: data.receiptSlogan,
+        receipt_phone: data.receiptPhone,
+        receipt_address: data.receiptAddress,
+        receipt_website: data.receiptWebsite,
+        receipt_footer_message: data.receiptFooterMessage,
+        receipt_social_support: data.receiptSocialSupport,
       })
       .eq("id", data.id)
-      .select("id, store_name, address, phone, tax_id, footer_message, created_at, updated_at")
+      .select(
+        "id, store_name, address, phone, tax_id, footer_message, receipt_logo_url, receipt_store_name, receipt_slogan, receipt_phone, receipt_address, receipt_website, receipt_footer_message, receipt_social_support, created_at, updated_at",
+      )
       .single();
 
     if (error || !updated?.id) {
