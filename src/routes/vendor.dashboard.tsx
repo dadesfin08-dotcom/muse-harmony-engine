@@ -2902,6 +2902,8 @@ function OrderCard({
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
+  const isInDeliveryTab = tab === "inDelivery";
+  const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
@@ -2940,35 +2942,126 @@ function OrderCard({
   }
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-2xl font-black tracking-tight text-foreground">{shortId}</p>
-        <OrderStatusBadge tab={tab} status={order.status} />
-      </div>
+    <article
+      className={cn(
+        "transition hover:shadow-md",
+        isInDeliveryTab
+          ? "rounded-2xl border border-gray-100 bg-white p-6 shadow-md"
+          : "rounded-xl border border-border bg-card p-4 shadow-sm",
+      )}
+    >
+      <div className={cn("space-y-2.5", isInDeliveryTab ? "space-y-4" : "")}> 
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className={cn("font-black tracking-tight", isInDeliveryTab ? "text-lg text-gray-950" : "text-2xl text-foreground")}>
+              {shortId}
+            </p>
+            {isInDeliveryTab ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                في الطريق
+              </span>
+            ) : (
+              <OrderStatusBadge tab={tab} status={order.status} />
+            )}
+          </div>
 
-      <div className="mt-3 space-y-2.5">
-        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-          <Clock3 className="size-4" />
-          ⏱ {elapsed}
-        </p>
+          <p className={cn("inline-flex items-center gap-1.5", isInDeliveryTab ? "text-xs text-gray-500" : "text-sm font-medium text-muted-foreground")}>
+            <Clock3 className="size-4" />
+            ⏱ {elapsed}
+          </p>
+        </div>
+
+        {isInDeliveryTab ? (
+          <>
+            <div>
+              <p className="truncate text-base font-semibold text-gray-900">{customerOrAreaLabel}</p>
+              <p className="mt-1 text-xl font-bold text-gray-900">{order.totalMad.toFixed(2)} MAD</p>
+            </div>
+            <div className="my-4 border-t-2 border-dashed border-gray-100" />
+          </>
+        ) : (
+          <>
+            <p className="inline-flex items-center gap-2 text-sm text-foreground">
+              <User className="size-4 text-muted-foreground" />
+              <span className="font-semibold">{order.customerName}</span>
+            </p>
+
+            <p className="inline-flex items-center gap-2 text-sm text-foreground">
+              <MapPin className="size-4 text-muted-foreground" />
+              <span>{destination || "Destination unavailable"}</span>
+            </p>
+
+            <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
+          </>
+        )}
 
         {shouldShowDriverBlock && driver ? (
-          <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3">
-            <div className="flex flex-row items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar className="h-10 w-10 rounded-full border border-emerald-200">
+          <div className={cn("flex items-center justify-between gap-3", isInDeliveryTab ? "rounded-xl bg-slate-50 p-4" : "mt-3 rounded-lg border border-emerald-100 bg-emerald-50 p-3")}>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative">
+                <Avatar className={cn("rounded-full", isInDeliveryTab ? "h-14 w-14 border-2 border-emerald-200" : "h-10 w-10 border border-emerald-200")}>
                   <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
                   <AvatarFallback className="bg-emerald-100 text-xs font-semibold text-emerald-700">
                     {cyclistNameInitials}
                   </AvatarFallback>
                 </Avatar>
-
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Driver / الليفرور</p>
-                  <p className="truncate text-sm font-semibold text-gray-900">{driver.name}</p>
-                </div>
+                {isInDeliveryTab ? (
+                  <span className="absolute -bottom-1 -right-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white bg-emerald-600 text-white shadow-sm">
+                    <Bike className="h-3.5 w-3.5" />
+                  </span>
+                ) : null}
               </div>
 
+              <div className="min-w-0">
+                <p className={cn("truncate font-semibold text-gray-900", isInDeliveryTab ? "text-base" : "text-sm")}>{driver.name}</p>
+                <p className={cn("text-sm text-gray-500", isInDeliveryTab ? "" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600")} dir={isInDeliveryTab ? "rtl" : undefined}>
+                  {isInDeliveryTab ? "الليفرور المكلف" : "Driver / الليفرور"}
+                </p>
+              </div>
+            </div>
+
+            {isInDeliveryTab ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                  >
+                    <Users className="mr-1.5 h-4 w-4" />
+                    Contact Driver
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-72 p-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-2">
+                    {driverPhoneForCall ? (
+                      <a
+                        href={`tel:${driverPhoneForCall}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex w-full items-center gap-2 rounded-lg border border-gray-100 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+                      >
+                        <Phone className="h-4 w-4 text-emerald-700" />
+                        <span>Call Directly / اتصال هاتفي</span>
+                      </a>
+                    ) : null}
+
+                    {driverPhoneForWhatsApp ? (
+                      <a
+                        href={`https://wa.me/${driverPhoneForWhatsApp}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex w-full items-center gap-2 rounded-lg border border-green-100 px-3 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-green-50"
+                      >
+                        <MessageSquare className="h-4 w-4 text-green-600" />
+                        <span>Open WhatsApp Chat / واتساب</span>
+                      </a>
+                    ) : null}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
               <div className="flex items-center gap-2">
                 {driverPhoneForCall ? (
                   <a
@@ -2990,25 +3083,13 @@ function OrderCard({
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-700 shadow-sm transition hover:bg-green-100"
                     aria-label={`WhatsApp driver ${driver.name}`}
                   >
-                    <MessageCircle className="h-4 w-4" />
+                    <MessageSquare className="h-4 w-4" />
                   </a>
                 ) : null}
               </div>
-            </div>
+            )}
           </div>
         ) : null}
-
-        <p className="inline-flex items-center gap-2 text-sm text-foreground">
-          <User className="size-4 text-muted-foreground" />
-          <span className="font-semibold">{order.customerName}</span>
-        </p>
-
-        <p className="inline-flex items-center gap-2 text-sm text-foreground">
-          <MapPin className="size-4 text-muted-foreground" />
-          <span>{destination || "Destination unavailable"}</span>
-        </p>
-
-        <p className="text-lg font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
       </div>
 
       <Button variant="hero" className="mt-4 h-10 w-full rounded-xl" onClick={onOpenDetails}>
