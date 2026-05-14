@@ -645,6 +645,51 @@ export type Database = {
           },
         ]
       }
+      order_audit_logs: {
+        Row: {
+          actor_role: string | null
+          actor_user_id: string | null
+          created_at: string
+          cyclist_id: string | null
+          event_type: string
+          id: string
+          new_status: Database["public"]["Enums"]["order_status"] | null
+          order_id: string | null
+          previous_status: Database["public"]["Enums"]["order_status"] | null
+          settlement_context: Json
+          source: string
+          vendor_id: string | null
+        }
+        Insert: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          cyclist_id?: string | null
+          event_type: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["order_status"] | null
+          order_id?: string | null
+          previous_status?: Database["public"]["Enums"]["order_status"] | null
+          settlement_context?: Json
+          source?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          cyclist_id?: string | null
+          event_type?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["order_status"] | null
+          order_id?: string | null
+          previous_status?: Database["public"]["Enums"]["order_status"] | null
+          settlement_context?: Json
+          source?: string
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
