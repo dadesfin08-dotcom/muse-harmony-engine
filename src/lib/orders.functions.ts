@@ -91,6 +91,7 @@ type OrderRow = {
   id: string;
   vendor_id: string;
   customer_user_id?: string | null;
+  cyclist_id?: string | null;
   specific_address?: string | null;
   neighborhood_id?: string | null;
   neighborhood_name?: string | null;
@@ -99,7 +100,7 @@ type OrderRow = {
   customer_phone: string;
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
-  status: "new" | "preparing" | "ready" | "delivering" | "delivered";
+  status: "new" | "preparing" | "ready" | "picked_up" | "in_transit" | "delivering" | "delivered";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
@@ -114,6 +115,12 @@ type OrderRow = {
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
+  cyclist?: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    avatarUrl?: string | null;
+  } | null;
   vendor_settlement_status?: "pending" | "settled";
   created_at: string;
 };
