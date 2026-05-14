@@ -48,7 +48,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2957,13 +2956,13 @@ function OrderCard({
             <p
               className={cn(
                 "font-black tracking-tight",
-                isInDeliveryTab ? "text-[50px]/none text-foreground sm:text-[54px]/none" : "text-2xl text-foreground",
+                isInDeliveryTab ? "text-4xl leading-none text-foreground sm:text-5xl" : "text-2xl text-foreground",
               )}
             >
               {shortId}
             </p>
             {isInDeliveryTab ? (
-              <span className="inline-flex h-12 items-center gap-2 rounded-full border border-primary/10 bg-primary/10 px-5 text-xl font-semibold text-primary" dir="rtl">
+              <span className="inline-flex h-10 items-center gap-2 rounded-full border border-primary/10 bg-primary/10 px-4 text-sm font-semibold text-primary sm:text-base" dir="rtl">
                 <span className="h-2.5 w-2.5 rounded-full bg-primary" />
                 <span>في الطريق</span>
                 <Bike className="h-5 w-5" />
@@ -2991,11 +2990,11 @@ function OrderCard({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <p className="text-sm font-medium text-muted-foreground">Customer</p>
-                <p className="truncate text-5xl font-black leading-none text-foreground sm:text-6xl">{customerOrAreaLabel}</p>
+                <p className="truncate text-3xl font-black leading-none text-foreground sm:text-4xl">{customerOrAreaLabel}</p>
               </div>
               <div className="space-y-1.5 text-right">
                 <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-5xl font-black leading-none text-primary sm:text-6xl">{order.totalMad.toFixed(2)} MAD</p>
+                <p className="text-3xl font-black leading-none text-primary sm:text-4xl">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
             <div className="my-1 border-t-2 border-dashed border-border/70" />
@@ -3036,7 +3035,7 @@ function OrderCard({
                   )}
                 >
                   <AvatarImage src={driver.avatarUrl ?? undefined} alt={driver.name} />
-                  <AvatarFallback className="bg-primary/10 text-4xl font-bold text-primary sm:text-5xl">
+                  <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary sm:text-3xl">
                     {cyclistNameInitials || "9"}
                   </AvatarFallback>
                 </Avatar>
@@ -3048,13 +3047,13 @@ function OrderCard({
               </div>
 
               <div className="min-w-0">
-                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-4xl text-foreground sm:text-5xl" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
+                <p className={cn("truncate font-semibold", isInDeliveryTab ? "text-2xl text-foreground sm:text-3xl" : "text-sm text-foreground")} dir={isInDeliveryTab ? "rtl" : undefined}>
                   {driver.name}
                 </p>
                 <p
                   className={cn(
                     "font-medium text-muted-foreground",
-                    isInDeliveryTab ? "mt-1 text-3xl sm:text-4xl" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
+                    isInDeliveryTab ? "mt-1 text-lg sm:text-xl" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
@@ -3067,7 +3066,7 @@ function OrderCard({
               <a
                 href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex h-16 items-center justify-center rounded-[20px] bg-gradient-to-r from-primary via-primary to-success px-7 text-2xl font-semibold text-primary-foreground shadow-[0_20px_36px_-22px_rgba(14,116,144,0.65)] transition hover:brightness-105"
+                className="inline-flex h-12 items-center justify-center rounded-[18px] bg-gradient-to-r from-primary via-primary to-success px-6 text-base font-semibold text-primary-foreground shadow-[0_20px_36px_-22px_rgba(14,116,144,0.65)] transition hover:brightness-105"
                 aria-label={`Contact driver ${driver.name}`}
               >
                 <Users className="mr-2 h-6 w-6" />
@@ -3109,12 +3108,12 @@ function OrderCard({
         className={cn(
           "mt-4 w-full rounded-[20px]",
           isInDeliveryTab
-            ? "h-16 bg-gradient-to-r from-primary via-primary to-success text-2xl font-semibold shadow-[0_22px_40px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_26px_46px_-24px_rgba(14,116,144,0.78)]"
+            ? "h-14 bg-gradient-to-r from-primary via-primary to-success text-base font-semibold shadow-[0_22px_40px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_26px_46px_-24px_rgba(14,116,144,0.78)]"
             : "h-10 rounded-xl",
         )}
         onClick={onOpenDetails}
       >
-        {isInDeliveryTab ? <Eye className="mr-2 h-6 w-6" /> : null}
+        {isInDeliveryTab ? <Eye className="mr-2 h-5 w-5" /> : null}
         {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
