@@ -720,7 +720,9 @@ function OrderCard({
                   الدفع عند الاستلام (COD)
                 </span>
               ) : (
-                <span className="rounded-md bg-emerald-100 px-2 py-1 text-xs text-emerald-800">مدفوع (Carnet)</span>
+                <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
+                  مدفوع (Carnet)
+                </span>
               )}
             </div>
           </div>
