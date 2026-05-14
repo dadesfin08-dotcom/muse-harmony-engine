@@ -1095,20 +1095,28 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "Order Placed", statuses: ["new"] },
-    { label: "Preparing", statuses: ["preparing", "ready"] },
-    { label: "Out for Delivery", statuses: ["delivering", "out_for_delivery"] },
-    { label: "Delivered", statuses: ["delivered"] },
+    { label: "Order Placed", statuses: ["pending", "new"] },
+    { label: "Preparing", statuses: ["preparing", "accepted", "processing"] },
+    { label: "Out for Delivery", statuses: ["out_for_delivery", "picked_up", "on_the_way", "delivering"] },
+    {
+      label: "Delivered",
+      statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
+    },
   ];
 
+  const deliveredStatuses = new Set(statusSteps[3].statuses);
+
   const getOrderStepIndex = (status: string) => {
-    const index = statusSteps.findIndex((step) => step.statuses.includes(status));
+    const normalizedStatus = String(status ?? "").toLowerCase();
+    const index = statusSteps.findIndex((step) => step.statuses.includes(normalizedStatus));
     return index < 0 ? 0 : index;
   };
 
+  const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").toLowerCase());
+
   const allCustomerOrders = customerOrdersQuery.data ?? [];
-  const activeCustomerOrders = allCustomerOrders.filter((order) => order.status !== "delivered");
-  const deliveredCustomerOrders = allCustomerOrders.filter((order) => order.status === "delivered");
+  const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
+  const deliveredCustomerOrders = allCustomerOrders.filter((order) => isDeliveredOrderStatus(order.status));
 
   const addToCart = (product: Product, selectedVariant?: string | null) => {
     if (!selectedNeighborhoodId) {
