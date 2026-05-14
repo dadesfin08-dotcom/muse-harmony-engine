@@ -2925,7 +2925,6 @@ function AdminPage() {
               {cyclistForm.neighborhoodIds.length > 0 ? (
                 <p className="text-xs text-muted-foreground">
                   {t("admin.forms.selectedNeighborhoods", { count: cyclistForm.neighborhoodIds.length })}
-                  {cyclistForm.neighborhoodIds.length === 1 ? "" : "s"}
                 </p>
               ) : null}
             </div>
