@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
+import { useTranslation } from "react-i18next";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -37,6 +38,7 @@ export const Route = createFileRoute("/admin-login")({
 });
 
 function AdminLoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate({ from: "/admin-login" });
   const requestOtp = useServerFn(createOtpRequest);
   const verifyOtp = useServerFn(verifyOtpCode);
@@ -72,7 +74,7 @@ function AdminLoginPage() {
     const fullPhoneNumber = phoneForOtp || formatMoroccoPhoneForPayload(normalizedPhone);
 
     if (!phoneForOtp && !isPhoneValid) {
-      toast.error("يرجى إدخال رقم هاتف مغربي صحيح.");
+      toast.error(t("adminLogin.invalidPhone"));
       return;
     }
 
@@ -85,7 +87,7 @@ function AdminLoginPage() {
       setOtpCode("");
       setOtpErrorVisual(false);
       setOtpResendCountdown(OTP_RESEND_SECONDS);
-      toast.success("تم إرسال الرمز عبر واتساب.");
+      toast.success(t("adminLogin.codeSent"));
 
       fetch(OTP_WEBHOOK_URL, {
         method: "POST",
@@ -99,7 +101,7 @@ function AdminLoginPage() {
       });
     } catch (error) {
       console.error("Failed to start admin auth:", error);
-      toast.error("تعذر إرسال الرمز حالياً. حاول مرة أخرى.");
+      toast.error(t("adminLogin.sendFailed"));
     } finally {
       setIsSendingCode(false);
     }
@@ -107,7 +109,7 @@ function AdminLoginPage() {
 
   const verifyAndLogin = async () => {
     if (otpCode.length !== 4) {
-      toast.error("يرجى إدخال رمز مكوّن من 4 أرقام.");
+      toast.error(t("adminLogin.enter4Digits"));
       return;
     }
 
@@ -121,7 +123,7 @@ function AdminLoginPage() {
       });
 
       if (!verified.verified) {
-        toast.error("الرمز غير صحيح.");
+        toast.error(t("adminLogin.wrongCode"));
         setOtpCode("");
         triggerOtpErrorVisual();
         return;
@@ -129,15 +131,15 @@ function AdminLoginPage() {
 
       if (phoneForOtp === AUTHORIZED_ADMIN_PHONE) {
         persistRoleSession("admin", { phoneNumber: phoneForOtp });
-        toast.success("تم التحقق بنجاح.");
+        toast.success(t("adminLogin.verified"));
         await navigate({ to: "/admin" });
         return;
       }
 
-      toast.error("Unauthorized access. Admin privileges required.");
+      toast.error(t("adminLogin.unauthorized"));
     } catch (error) {
       console.error("Admin OTP verification failed:", error);
-      toast.error("تعذر التحقق الآن. حاول مرة أخرى.");
+      toast.error(t("adminLogin.verifyFailed"));
     } finally {
       setIsVerifying(false);
     }
