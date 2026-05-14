@@ -855,7 +855,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
     try {
       const { data: carnetRows, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
-        .select("id, vendor_id, customer_phone, current_debt, max_limit, status")
+        .select("id, vendor_id, customer_phone, max_limit, status")
         .eq("customer_phone", data.customerPhone)
         .eq("status", "active")
         .order("updated_at", { ascending: false });
@@ -868,7 +868,6 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         id?: string | null;
         vendor_id?: string | null;
         customer_phone?: string | null;
-        current_debt?: number | null;
         max_limit?: number | null;
       }>;
 
@@ -921,10 +920,11 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         return bTime - aTime;
         });
 
-      const totalCurrentDebtMad = activeRows.reduce(
-        (sum, row) => sum + Number(row.current_debt ?? 0),
-        0,
+      const debtByVendor = await Promise.all(
+        vendorIds.map((vendorId) => getDynamicDebtForVendorCustomer(vendorId, data.customerPhone)),
       );
+
+      const totalCurrentDebtMad = debtByVendor.reduce((sum, value) => sum + Number(value ?? 0), 0);
 
       const totalMaxLimitMad = activeRows.reduce(
         (sum, row) => sum + Number(row.max_limit ?? 0),
@@ -949,25 +949,7 @@ export const getCustomerCarnetBalance = createServerFn({ method: "POST" })
   .inputValidator((input) => getCustomerCarnetBalanceInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: rows, error } = await (supabaseAdmin as any)
-        .from("vendor_carnet")
-        .select("current_debt")
-        .eq("customer_phone", data.customerPhone)
-        .eq("status", "active");
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const totalDebtMad = (rows ?? []).reduce(
-        (sum: number, row: { current_debt?: number | null }) => sum + Number(row.current_debt ?? 0),
-        0,
-      );
-
-      return {
-        hasCarnet: (rows ?? []).length > 0,
-        totalDebtMad,
-      };
+      return await getDynamicDebtForCustomerAcrossVendors(data.customerPhone);
     } catch (error) {
       console.error("getCustomerCarnetBalance failed:", error);
       throw new Error("Failed to load carnet balance.");
