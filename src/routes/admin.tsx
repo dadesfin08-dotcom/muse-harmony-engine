@@ -2690,6 +2690,48 @@ function AdminPage() {
     }
   };
 
+  const handleFactoryReset = async () => {
+    if (factoryResetConfirmationText.trim() !== "RESET_ALL") {
+      toast.error("Type RESET_ALL exactly to confirm factory reset.");
+      return;
+    }
+
+    try {
+      setIsResettingFactoryData(true);
+      await resetFactoryDataInDatabase({
+        data: {
+          confirmationText: "RESET_ALL",
+        },
+      });
+
+      await Promise.all([
+        vendorsQuery.refetch(),
+        cyclistsQuery.refetch(),
+        serviceZonesQuery.refetch(),
+        masterProductsQuery.refetch(),
+        brandsQuery.refetch(),
+        categoriesQuery.refetch(),
+        siteAdsQuery.refetch(),
+        announcementsQuery.refetch(),
+        adminOrdersQuery.refetch(),
+        adminCustomersQuery.refetch(),
+        globalSettingsQuery.refetch(),
+        adminInvoiceSettingsQuery.refetch(),
+        markupRulesQuery.refetch(),
+        overviewAnalyticsQuery.refetch(),
+      ]);
+
+      setFactoryResetConfirmationText("");
+      setIsFactoryResetDialogOpen(false);
+      toast.success("Factory reset completed successfully.");
+    } catch (error) {
+      console.error("Factory reset failed:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to run factory reset.");
+    } finally {
+      setIsResettingFactoryData(false);
+    }
+  };
+
   const resetMarkupRuleForm = () => {
     setEditingMarkupRuleId(null);
     setMarkupRuleForm({
