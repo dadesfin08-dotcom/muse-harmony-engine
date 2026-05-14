@@ -17,6 +17,7 @@ import {
 } from "@/lib/morocco-phone";
 import { useServerFn } from "@tanstack/react-start";
 import { ADMIN_PHONE, persistRoleSession } from "@/lib/operational-auth";
+import i18n from "@/lib/i18n";
 
 type AdminLoginStep = "phone" | "otp";
 
@@ -27,10 +28,10 @@ const OTP_RESEND_SECONDS = 45;
 export const Route = createFileRoute("/admin-login")({
   head: () => ({
     meta: [
-      { title: "Super-Admin Login | Bzaf Fresh" },
+      { title: i18n.t("adminLogin.metaTitle") },
       {
         name: "description",
-        content: "Secure WhatsApp OTP login for super-admin access.",
+        content: i18n.t("adminLogin.metaDescription"),
       },
     ],
   }),
