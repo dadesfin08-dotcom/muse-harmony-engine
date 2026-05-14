@@ -739,6 +739,8 @@ function OrderCard({
   onOpenDetails?: () => void;
   onAction: () => void;
 }) {
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
   const actionClass =
     actionTone === "success"
       ? "bg-success text-success-foreground hover:bg-success/90"
@@ -754,7 +756,7 @@ function OrderCard({
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
               <AlertTriangle className="size-4" />
-              CREDIT ORDER - DO NOT COLLECT CASH
+              {t("cyclist.creditWarning")}
             </p>
           </div>
         ) : null}
@@ -766,11 +768,11 @@ function OrderCard({
           <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div dir="rtl" className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
+        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <User className="h-4 w-4 text-slate-400" />
-              الاسم الكامل
+              {t("cyclist.fullName")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.customerName}</div>
           </div>
@@ -778,7 +780,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Phone className="h-4 w-4 text-slate-400" />
-              رقم الهاتف
+              {t("cyclist.phoneNumber")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               <span dir="ltr" className="font-mono text-sm tracking-wide text-slate-700">
@@ -788,7 +790,7 @@ function OrderCard({
                 <a
                   href={`tel:${order.customerPhone}`}
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
-                  aria-label="Call customer"
+                  aria-label={t("cyclist.callCustomerAria")}
                 >
                   <PhoneCall className="size-4" />
                 </a>
@@ -798,7 +800,7 @@ function OrderCard({
                   rel="noopener noreferrer"
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors hover:bg-emerald-200"
                   onClick={(e) => e.stopPropagation()}
-                  aria-label="Open WhatsApp chat"
+                  aria-label={t("cyclist.whatsappAria")}
                 >
                   <MessageCircle className="h-5 w-5" />
                 </a>
@@ -809,7 +811,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <Map className="h-4 w-4 text-slate-400" />
-              المنطقة
+              {t("cyclist.area")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.deliveryZone}</div>
           </div>
@@ -817,7 +819,7 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <MapPin className="h-4 w-4 text-slate-400" />
-              العنوان
+              {t("cyclist.address")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               <a
@@ -835,16 +837,16 @@ function OrderCard({
           <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
             <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
               <CreditCard className="h-4 w-4 text-slate-400" />
-              الدفع
+              {t("cyclist.payment")}
             </div>
             <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
               {order.paymentMethod === "COD" ? (
                 <span className="rounded-md border border-orange-200/50 bg-orange-50 px-2.5 py-1 text-[12px] font-semibold text-orange-700">
-                  الدفع عند الاستلام (COD)
+                  {t("cyclist.codBadge")}
                 </span>
               ) : (
                 <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
-                  مدفوع (Carnet)
+                  {t("cyclist.carnetBadge")}
                 </span>
               )}
             </div>
@@ -853,7 +855,7 @@ function OrderCard({
 
         <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
-          {isBusy ? "Updating..." : actionLabel}
+          {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
       </article>
     );
@@ -866,7 +868,7 @@ function OrderCard({
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
               <AlertTriangle className="size-4" />
-              CREDIT ORDER - DO NOT COLLECT CASH
+              {t("cyclist.creditWarning")}
             </p>
           </div>
         ) : null}
@@ -878,15 +880,15 @@ function OrderCard({
           <PhoneCall className="size-4" />
           {order.customerPhone}
         </a>
-        <p className="text-sm text-muted-foreground">Douar: {order.douar}</p>
-        <p className="text-sm font-medium text-foreground">Total: {order.totalMad.toFixed(2)} MAD</p>
-        <p className="text-xs text-muted-foreground">Delivery notes: {order.deliveryNotes || "—"}</p>
-        <p className="text-xs text-muted-foreground">Saved instructions: {order.savedInstructions || "—"}</p>
+        <p className="text-sm text-muted-foreground">{t("cyclist.douar")}: {order.douar}</p>
+        <p className="text-sm font-medium text-foreground">{t("cyclist.total")}: {order.totalMad.toFixed(2)} MAD</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || "—"}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || "—"}</p>
       </div>
 
       <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
-        {isBusy ? "Updating..." : actionLabel}
+        {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
     </article>
   );
