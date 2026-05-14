@@ -777,6 +777,8 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       vendor: {
         id: (vendor as VendorRow).id,
         storeName: (vendor as VendorRow).store_name,
+        totalCashInHandMad: Number((vendor as VendorRow).total_cash_received ?? 0),
+        myNetProfitMad: Number((vendor as VendorRow).vendor_earnings ?? 0),
         platformDuesMad: Number((vendor as VendorRow).platform_dues ?? 0),
       },
       orders: hydratedOrders as Array<OrderRow>,
@@ -1264,6 +1266,9 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
       const pendingCyclistCount = new Set(pending.map((row) => row.cyclist_id).filter(Boolean)).size;
 
       return {
+        totalCashInHandMad: roundMoney(Number((vendor as VendorRow).total_cash_received ?? 0)),
+        myNetProfitMad: roundMoney(Number((vendor as VendorRow).vendor_earnings ?? 0)),
+        platformDuesMad: roundMoney(Number((vendor as VendorRow).platform_dues ?? 0)),
         unsettledCashWithCyclistsMad,
         owedToCyclistMad,
         totalReceivedTodayMad,
@@ -1318,7 +1323,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         .filter((row) => isCreditPayment(row.payment_method))
         .reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
 
-      const computedAmount = cashToRemitMad - owedByVendorMad;
+      const computedAmount = cashToRemitMad;
 
       if (Math.abs(computedAmount - data.expectedAmount) > 0.5) {
         throw new Error("Settlement amount mismatch. Please refresh and scan again.");
