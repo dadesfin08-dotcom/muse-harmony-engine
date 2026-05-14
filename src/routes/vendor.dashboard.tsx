@@ -55,6 +55,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PushNotificationsToggle } from "@/components/PushNotificationsToggle";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -1361,6 +1362,7 @@ function VendorDashboardPage() {
                   <span className="text-xs text-muted-foreground sm:text-sm">{isOnline ? "Online" : "Offline"}</span>
                   <Switch checked={isOnline} onCheckedChange={setIsOnline} />
                 </div>
+                <PushNotificationsToggle role="vendor" label="Push Notifications" />
                 <Button variant="soft" className="rounded-xl" onClick={handleLogout}>
                   <LogOut className="size-4" />
                   Logout
