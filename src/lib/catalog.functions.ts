@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizeBarcodeInput } from "@/lib/barcode-normalization";
 import { buildBarcodeUpsertPlan } from "@/lib/barcode-upsert-planner";
+import { calculateFinalPrice } from "@/lib/pricing";
 
 const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]);
 const productCategorySchema = z.enum([
@@ -1320,7 +1321,9 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           measurementUnit: row.master_products!.measurement_unit,
           imageUrl: row.master_products!.image_url,
           vendorPrice: Number(row.vendor_price ?? 0),
+          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
           flashSalePrice: Number(row.flash_sale_price!),
+          finalFlashSalePrice: calculateFinalPrice(Number(row.flash_sale_price!), true).finalPrice,
           flashSaleEndTime: row.flash_sale_end_time!,
         }));
     } catch (error) {
@@ -1403,6 +1406,7 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
           category: row.master_products.category as ProductCategory,
           imageUrl: (row.master_products.image_url as string | null) ?? null,
           vendorPrice: Number(row.vendor_price ?? 0),
+          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
           brandNameEn: (row.master_products.brands?.name_en as string | null) ?? null,
           brandNameFr: (row.master_products.brands?.name_fr as string | null) ?? null,
           brandNameAr: (row.master_products.brands?.name_ar as string | null) ?? null,
@@ -1563,6 +1567,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             imageUrl: row.master_products!.image_url,
             popularityScore: Number(row.master_products!.popularity_score ?? 0),
             vendorPrice: Number(row.vendor_price ?? 0),
+            finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
             isAvailable: row.is_available,
           })),
         hasMore: (rows?.length ?? 0) > data.pageSize,
@@ -1638,6 +1643,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         imageUrl: row.master_products.image_url,
         popularityScore: Number(row.master_products.popularity_score ?? 0),
         vendorPrice: Number(row.vendor_price ?? 0),
+        finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
         isAvailable: row.is_available,
       };
     } catch (error) {
@@ -1756,6 +1762,7 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           measurementUnit: row.master_products.measurement_unit,
           imageUrl: row.master_products.image_url,
           vendorPrice: Number(row.vendor_price ?? 0),
+          finalVendorPrice: calculateFinalPrice(Number(row.vendor_price ?? 0), true).finalPrice,
         });
         return acc;
       }, []);
