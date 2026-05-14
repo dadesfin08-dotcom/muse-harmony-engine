@@ -2570,6 +2570,10 @@ function AdminPage() {
                   onSaveGlobalSettings={saveGlobalSettings}
                   isGlobalSettingsLoading={isSavingGlobalSettings || dbHealthQuery.isLoading || globalSettingsQuery.isLoading}
                   receiptForm={receiptForm}
+                  receiptLogoPreviewUrl={receiptLogoPreviewUrl}
+                  onReceiptLogoFileChange={(file) => setReceiptLogoFile(file)}
+                  onReceiptLogoPreviewChange={(url) => setReceiptLogoPreviewUrl(url)}
+                  onOpenReceiptLogoPicker={() => receiptLogoInputRef.current?.click()}
                   onReceiptFormChange={setReceiptForm}
                   onSaveReceiptSettings={saveReceiptSettings}
                   isReceiptSettingsLoading={
