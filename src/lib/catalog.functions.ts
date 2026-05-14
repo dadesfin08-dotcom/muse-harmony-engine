@@ -154,7 +154,7 @@ const activeFlashDealsInputSchema = z.object({
 const customerSearchInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
   query: z.string().trim().min(1).max(80),
-  limit: z.number().int().min(1).max(20).default(8),
+  limit: z.number().int().min(1).max(6).default(6),
 });
 
 type MasterProductRow = {
@@ -1339,6 +1339,17 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
       const normalizedQuery = data.query.trim();
       const escapedLike = normalizedQuery.replace(/[%_]/g, "");
       const ilikePattern = `%${escapedLike}%`;
+      const resultLimit = Math.min(data.limit, 6);
+
+      const { data: matchedBrands } = await (supabaseAdmin as any)
+        .from("brands")
+        .select("id")
+        .or(`name_en.ilike.${ilikePattern},name_fr.ilike.${ilikePattern},name_ar.ilike.${ilikePattern}`)
+        .limit(24);
+
+      const matchedBrandIds = ((matchedBrands ?? []) as Array<{ id: string }>)
+        .map((brand) => brand.id)
+        .filter(Boolean);
 
       const categoryMatches = [
         "Groceries",
@@ -1356,6 +1367,10 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
         `name_ar.ilike.${ilikePattern}`,
       ];
 
+      if (matchedBrandIds.length > 0) {
+        orParts.push(`brand_id.in.(${matchedBrandIds.join(",")})`);
+      }
+
       if (categoryMatches.length > 0) {
         for (const category of categoryMatches) {
           orParts.push(`category.eq.${category}`);
@@ -1372,7 +1387,7 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
         .eq("master_products.is_active", true)
         .or(orParts.join(","), { foreignTable: "master_products" })
         .order("popularity_score", { foreignTable: "master_products", ascending: false })
-        .limit(Math.max(data.limit * 4, 20));
+        .limit(6);
 
       if (error) throw new Error(error.message);
 
@@ -1407,7 +1422,7 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
 
           return searchable.some((value) => value.includes(normalizedNeedle));
         })
-        .slice(0, data.limit);
+        .slice(0, resultLimit);
 
       return result;
     } catch (error) {
