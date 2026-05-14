@@ -767,42 +767,47 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         throw new Error(deliveredError.message);
       }
 
-      const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
-        .from("orders")
-        .select("delivery_fee, total_price, payment_method")
-        .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered_cash_with_cyclist")
-        .eq("vendor_settlement_status", "pending");
+      const [cashToRemitResult, owedByVendorResult, pendingEarningsResult] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("orders")
+          .select("total_price")
+          .eq("cyclist_id", data.cyclistId)
+          .eq("status", "delivered_cash_with_cyclist")
+          .in("payment_method", ["COD", "cash"]),
+        (supabaseAdmin as any)
+          .from("orders")
+          .select("delivery_fee")
+          .eq("cyclist_id", data.cyclistId)
+          .in("payment_method", ["Carnet", "carnet", "credit"])
+          .eq("vendor_settlement_status", "pending")
+          .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]),
+        (supabaseAdmin as any)
+          .from("orders")
+          .select("delivery_fee")
+          .eq("cyclist_id", data.cyclistId)
+          .eq("status", "delivering"),
+      ]);
 
-      if (pendingSettlementError) {
-        throw new Error(pendingSettlementError.message);
+      if (cashToRemitResult.error) {
+        throw new Error(cashToRemitResult.error.message);
+      }
+      if (owedByVendorResult.error) {
+        throw new Error(owedByVendorResult.error.message);
+      }
+      if (pendingEarningsResult.error) {
+        throw new Error(pendingEarningsResult.error.message);
       }
 
       const lifetimeRows = (deliveredRows ?? []) as Array<{
         delivery_fee: number;
       }>;
 
-      const pendingRows = (pendingSettlementRows ?? []) as Array<{
-        total_price: number;
-        delivery_fee: number;
-        payment_method: string;
-      }>;
-
-      const isCashPayment = (paymentMethod: string | null | undefined) => {
-        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-        return normalized === "cash" || normalized === "cod";
-      };
-
-      const isCreditPayment = (paymentMethod: string | null | undefined) => {
-        const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-        return normalized === "credit" || normalized === "carnet";
-      };
-
       const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingCashRows = pendingRows.filter((row) => isCashPayment(row.payment_method));
-      const pendingCreditRows = pendingRows.filter((row) => isCreditPayment(row.payment_method));
+      const pendingCashRows = (cashToRemitResult.data ?? []) as Array<{ total_price: number }>;
+      const pendingCreditRows = (owedByVendorResult.data ?? []) as Array<{ delivery_fee: number }>;
+      const inProgressRows = (pendingEarningsResult.data ?? []) as Array<{ delivery_fee: number }>;
 
-      const pendingEarningsMad = pendingCashRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const pendingEarningsMad = inProgressRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const cashToRemitMad = pendingCashRows.reduce((sum, row) => sum + Number(row.total_price ?? 0), 0);
       const owedByVendorMad = pendingCreditRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const netCashToHandoverMad = cashToRemitMad - owedByVendorMad;
@@ -817,7 +822,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         cashToRemitMad,
         owedByVendorMad,
         netCashToHandoverMad,
-        pendingSettlementOrdersCount: pendingRows.length,
+        pendingSettlementOrdersCount: pendingCashRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
         pendingCarnetSettlementOrdersCount: pendingCreditRows.length,
       } satisfies CyclistWalletSummary;
