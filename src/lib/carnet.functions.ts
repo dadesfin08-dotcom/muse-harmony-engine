@@ -687,7 +687,6 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         .from("carnet_transactions")
         .select("id, order_id, payment_id, vendor_carnet_id, transaction_type, amount, created_at")
         .in("vendor_id", vendorIds)
-        .in("vendor_carnet_id", carnetIds)
         .eq("customer_phone", data.customerPhone)
         .order("created_at", { ascending: false });
 
