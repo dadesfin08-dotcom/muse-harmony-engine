@@ -44,13 +44,12 @@ const markDeliveredInputSchema = z.object({
   orderId: z.string().uuid(),
 });
 
-const verifyDeliveryInputSchema = z.object({
+const completeCustomerDeliveryInputSchema = z.object({
   cyclistId: z.string().uuid(),
   orderId: z.string().uuid(),
-  deliveryAuthCode: z.string().trim().regex(/^\d{4,6}$/),
 });
 
-const confirmCashHandoverInputSchema = z.object({
+const settleVendorHandoverInputSchema = z.object({
   cyclistId: z.string().uuid(),
   vendorId: z.string().uuid(),
 });
