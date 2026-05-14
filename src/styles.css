@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=Almarai:wght@300;400;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
+@source "../src";
 
 @custom-variant dark (&:is(.dark *));
 
