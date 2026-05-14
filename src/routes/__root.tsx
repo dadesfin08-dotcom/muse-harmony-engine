@@ -103,6 +103,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       {
+        rel: "manifest",
+        href: "/manifest.webmanifest",
+      },
+      {
         rel: "stylesheet",
         href: appCss,
       },
@@ -130,6 +134,32 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const isInIframe = (() => {
+      try {
+        return window.self !== window.top;
+      } catch {
+        return true;
+      }
+    })();
+
+    const host = window.location.hostname;
+    const isPreviewHost = host.includes("id-preview--") || host.includes("lovableproject.com");
+
+    if (isInIframe || isPreviewHost) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          void registration.unregister();
+        });
+      });
+      return;
+    }
+
+    void navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
+  }, []);
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {

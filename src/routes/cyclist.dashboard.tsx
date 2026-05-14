@@ -13,6 +13,7 @@ import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { PushNotificationsToggle } from "@/components/PushNotificationsToggle";
 import {
   acceptDeliveryRun,
   executeVendorQrCashHandover,
@@ -575,6 +576,9 @@ function CyclistDashboardPage() {
         <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <span className="text-sm text-muted-foreground">{cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}</span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
+        </div>
+        <div className="mx-auto mt-2 w-full max-w-lg">
+          <PushNotificationsToggle role="cyclist" label="Push Notifications" />
         </div>
       </header>
 

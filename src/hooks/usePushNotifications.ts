@@ -1,0 +1,218 @@
+import { useCallback, useMemo, useState } from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+
+export type PushUserType = "customer" | "vendor" | "cyclist" | "admin";
+
+type NotificationPayload = {
+  title: string;
+  body?: string;
+  icon?: string;
+  badge?: string;
+  url?: string;
+};
+
+function base64UrlToUint8Array(base64UrlString: string) {
+  const padding = "=".repeat((4 - (base64UrlString.length % 4)) % 4);
+  const base64 = (base64UrlString + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; i += 1) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+function detectIosSafariInstallHint() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const ua = window.navigator.userAgent;
+  const isIos = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+  return isIos && isSafari && !isStandalone;
+}
+
+export function usePushNotifications() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  const isSupported =
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window;
+
+  const showIosInstallHint = useMemo(() => detectIosSafariInstallHint(), []);
+
+  const syncSubscriptionState = useCallback(async () => {
+    if (!isSupported) {
+      setIsSubscribed(false);
+      return false;
+    }
+
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    const currentSubscription = await registration?.pushManager.getSubscription();
+    const next = Boolean(currentSubscription);
+    setIsSubscribed(next);
+    return next;
+  }, [isSupported]);
+
+  const subscribe = useCallback(
+    async (user_type: PushUserType) => {
+      if (!isSupported) {
+        throw new Error("Push notifications are not supported on this device/browser.");
+      }
+
+      const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        throw new Error("Missing VITE_VAPID_PUBLIC_KEY.");
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          throw new Error("Notification permission was denied.");
+        }
+
+        const registration =
+          (await navigator.serviceWorker.getRegistration("/")) ||
+          (await navigator.serviceWorker.register("/sw-push.js", { scope: "/" }));
+
+        const existingSubscription = await registration.pushManager.getSubscription();
+        const subscription =
+          existingSubscription ||
+          (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: base64UrlToUint8Array(vapidPublicKey),
+          }));
+
+        const subscriptionJson = subscription.toJSON();
+        const p256dh = subscriptionJson.keys?.p256dh;
+        const auth = subscriptionJson.keys?.auth;
+
+        if (!p256dh || !auth) {
+          throw new Error("Invalid push subscription keys.");
+        }
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          throw new Error("User not authenticated.");
+        }
+
+        const { error: upsertError } = await supabase.from("push_subscriptions").upsert(
+          {
+            user_id: user.id,
+            user_type,
+            endpoint: subscription.endpoint,
+            p256dh,
+            auth,
+          },
+          {
+            onConflict: "user_id,endpoint",
+          },
+        );
+
+        if (upsertError) {
+          throw upsertError;
+        }
+
+        setIsSubscribed(true);
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to subscribe for push notifications.";
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isSupported],
+  );
+
+  const unsubscribe = useCallback(async () => {
+    if (!isSupported) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const subscription = await registration?.pushManager.getSubscription();
+
+      if (!subscription) {
+        setIsSubscribed(false);
+        return;
+      }
+
+      const endpoint = subscription.endpoint;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      await subscription.unsubscribe();
+
+      if (user?.id) {
+        await supabase.from("push_subscriptions").delete().eq("user_id", user.id).eq("endpoint", endpoint);
+      }
+
+      setIsSubscribed(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to unsubscribe from push notifications.";
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isSupported]);
+
+  const sendTestNotification = useCallback(async (payload: NotificationPayload) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("User not authenticated.");
+    }
+
+    const response = await fetch("/api/public/send-push-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user.id,
+        payload,
+      }),
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+      throw new Error(details || "Failed to send push notification.");
+    }
+
+    return response.json();
+  }, []);
+
+  return {
+    isSupported,
+    showIosInstallHint,
+    isLoading,
+    error,
+    isSubscribed,
+    subscribe,
+    unsubscribe,
+    syncSubscriptionState,
+    sendTestNotification,
+  };
+}

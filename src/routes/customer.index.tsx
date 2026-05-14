@@ -82,6 +82,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
+import { PushNotificationsToggle } from "@/components/PushNotificationsToggle";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -2496,6 +2497,7 @@ function Index() {
                   >
                     Carnet Details
                   </Button>
+                  <PushNotificationsToggle role="customer" label="Push Notifications" />
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
                     Close
                   </Button>
@@ -2907,6 +2909,7 @@ function Index() {
                     >
                       Carnet Details
                     </Button>
+                    <PushNotificationsToggle role="customer" label="Push Notifications" />
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
                       Close
                     </Button>
