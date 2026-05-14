@@ -3,11 +3,15 @@ import { persist } from "zustand/middleware";
 
 export type CustomerCartItem = {
   id: string;
+  cartItemId?: string;
   productId?: string;
   vendorId?: string;
   name: string;
+  brandName?: string | null;
+  measurementValue?: number | null;
   price: number;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
+  selectedVariant?: string | null;
   image: string;
   alt: string;
   quantity: number;
@@ -19,9 +23,9 @@ type CustomerCartState = {
   items: CustomerCartItem[];
   isCartOpen: boolean;
   addItem: (item: AddCartInput) => void;
-  increaseItem: (productId: string) => void;
-  decreaseItem: (productId: string) => void;
-  removeItem: (productId: string) => void;
+  increaseItem: (cartItemId: string) => void;
+  decreaseItem: (cartItemId: string) => void;
+  removeItem: (cartItemId: string) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -34,12 +38,13 @@ export const useCustomerCartStore = create<CustomerCartState>()(
       isCartOpen: false,
       addItem: (item) =>
         set((state) => {
-          const existingItem = state.items.find((cartItem) => cartItem.id === item.id);
+          const itemKey = item.cartItemId || item.id;
+          const existingItem = state.items.find((cartItem) => (cartItem.cartItemId || cartItem.id) === itemKey);
 
           if (existingItem) {
             return {
               items: state.items.map((cartItem) =>
-                cartItem.id === item.id
+                (cartItem.cartItemId || cartItem.id) === itemKey
                   ? {
                       ...cartItem,
                       quantity: cartItem.quantity + 1,
@@ -53,23 +58,23 @@ export const useCustomerCartStore = create<CustomerCartState>()(
             items: [...state.items, { ...item, quantity: 1 }],
           };
         }),
-      increaseItem: (productId) =>
+      increaseItem: (cartItemId) =>
         set((state) => ({
           items: state.items.map((item) =>
-            item.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
+            (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: item.quantity + 1 } : item,
           ),
         })),
-      decreaseItem: (productId) =>
+      decreaseItem: (cartItemId) =>
         set((state) => ({
           items: state.items
             .map((item) =>
-              item.id === productId ? { ...item, quantity: item.quantity - 1 } : item,
+              (item.cartItemId || item.id) === cartItemId ? { ...item, quantity: item.quantity - 1 } : item,
             )
             .filter((item) => item.quantity > 0),
         })),
-      removeItem: (productId) =>
+      removeItem: (cartItemId) =>
         set((state) => ({
-          items: state.items.filter((item) => item.id !== productId),
+          items: state.items.filter((item) => (item.cartItemId || item.id) !== cartItemId),
         })),
       clearCart: () => set({ items: [] }),
       openCart: () => set({ isCartOpen: true }),

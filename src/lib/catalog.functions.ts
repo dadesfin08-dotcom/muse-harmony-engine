@@ -24,6 +24,7 @@ const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
@@ -54,6 +55,7 @@ const updateMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
   nameFr: z.string().trim().min(1).max(140),
   nameAr: z.string().trim().min(1).max(140),
+  productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
   categoryId: z.string().uuid(),
   measurementValue: z.number().positive().max(10_000).nullable(),
@@ -153,6 +155,7 @@ type MasterProductRow = {
   product_name: string;
   name_fr: string | null;
   name_ar: string | null;
+  product_variants: string[] | null;
   barcode: string | null;
   brand_id: string | null;
   brands: {
@@ -250,7 +253,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -848,6 +851,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
+          product_variants: data.productVariants,
           brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
@@ -858,7 +862,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -946,6 +950,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           product_name: data.name,
           name_fr: data.nameFr,
           name_ar: data.nameAr,
+          product_variants: data.productVariants,
           brand_id: data.brandId,
           category_id: data.categoryId,
           category: parsedCategory.data,
@@ -956,7 +961,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -1370,7 +1375,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .in("vendor_id", vendorIds)
         .eq("is_available", true)
@@ -1395,6 +1400,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             product_name: string;
             name_fr: string | null;
             name_ar: string | null;
+            product_variants: string[] | null;
             brand_id: string | null;
             brands: {
               id: string;
@@ -1420,6 +1426,11 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
+            productVariants: Array.isArray(row.master_products!.product_variants)
+              ? row.master_products!.product_variants
+                  .map((value) => (typeof value === "string" ? value.trim() : ""))
+                  .filter((value) => value.length > 0)
+              : [],
             brandId: row.master_products!.brand_id,
             brand: row.master_products!.brands?.name_en ?? null,
             brandNameEn: row.master_products!.brands?.name_en ?? null,
@@ -1462,7 +1473,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -1490,6 +1501,11 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,
+          productVariants: Array.isArray(row.master_products.product_variants)
+            ? row.master_products.product_variants
+                .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+                .filter((value: string) => value.length > 0)
+            : [],
         brandId: row.master_products.brand_id,
         brand: row.master_products.brands?.name_en ?? null,
         brandNameEn: row.master_products.brands?.name_en ?? null,

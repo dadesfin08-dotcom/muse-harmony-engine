@@ -16,6 +16,7 @@ export interface MasterProductEntity extends EntityBase {
   name: string;
   nameFr?: string | null;
   nameAr?: string | null;
+  productVariants?: string[];
   barcode?: string | null;
   brandId?: string | null;
   brandNameEn?: string | null;
