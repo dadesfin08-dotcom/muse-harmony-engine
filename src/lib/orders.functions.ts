@@ -390,7 +390,21 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
   .inputValidator((input) => vendorDashboardInputSchema.parse(input))
   .handler(async ({ data }) => {
   try {
-    const vendor = await resolveVendorByPhone(data.phoneNumber);
+    let vendor: VendorRow;
+    try {
+      vendor = await resolveVendorByPhone(data.phoneNumber);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Vendor session is invalid.") {
+        return {
+          vendor: {
+            id: "",
+            storeName: "Vendor Store",
+          },
+          orders: [] as Array<OrderRow>,
+        };
+      }
+      throw error;
+    }
 
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
