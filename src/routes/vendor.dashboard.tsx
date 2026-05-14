@@ -21,6 +21,9 @@ import {
   Store,
   Truck,
   User,
+  Tag,
+  Scale,
+  Sparkles,
   Volume2,
   VolumeX,
   Wallet,
@@ -1474,20 +1477,25 @@ function VendorDashboardPage() {
                           }
 
                           return (
-                            <div className="mt-1 flex flex-row items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                            <div className="mt-1 flex flex-row items-center gap-2 whitespace-nowrap overflow-hidden">
                               {normalizedBrand ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
-                                  الماركة: {normalizedBrand}
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 shadow-sm">
+                                  <Tag className="me-1 h-3 w-3 text-slate-500" aria-hidden="true" />
+                                  <span>الماركة: {normalizedBrand}</span>
                                 </span>
                               ) : null}
                               {normalizedMeasurement ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-orange-100 bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700">
-                                  الحجم: {normalizedMeasurement}
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 shadow-sm">
+                                  <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
+                                  <span>
+                                    الحجم: <span dir="ltr">{normalizedMeasurement}</span>
+                                  </span>
                                 </span>
                               ) : null}
                               {normalizedVariant ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
-                                  النوع: {normalizedVariant}
+                                <span className="inline-flex shrink-0 items-center rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 shadow-sm">
+                                  <Sparkles className="me-1 h-3 w-3 text-violet-500" aria-hidden="true" />
+                                  <span>النوع: {normalizedVariant}</span>
                                 </span>
                               ) : null}
                             </div>
