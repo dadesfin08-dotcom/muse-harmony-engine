@@ -1674,6 +1674,7 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
           vendorPrice: number;
+          finalVendorPrice: number;
         }>;
       }
 
@@ -1736,6 +1737,7 @@ export const getBrandSuggestionsForNeighborhood = createServerFn({ method: "POST
           measurementUnit: MeasurementUnit;
           imageUrl: string | null;
           vendorPrice: number;
+           finalVendorPrice: number;
         }>
       >((acc, row) => {
         if (!row.master_products || seen.has(row.master_products.id)) {
