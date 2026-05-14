@@ -25,7 +25,6 @@ import {
   MessageCircle,
   ClipboardList,
   BookOpen,
-  Globe,
   Share2,
   Flame,
   Clock3,
@@ -72,12 +71,7 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -246,12 +240,6 @@ type CheckoutPrefs = {
 
 type AppLanguage = "en" | "fr" | "ar";
 
-const languageOptions: Array<{ code: AppLanguage; label: string }> = [
-  { code: "ar", label: "🇲🇦 العربية" },
-  { code: "fr", label: "🇫🇷 Français" },
-  { code: "en", label: "🇬🇧 English" },
-];
-
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -336,10 +324,6 @@ function Index() {
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
-
-  const changeLanguage = (nextLanguage: AppLanguage) => {
-    void i18n.changeLanguage(nextLanguage);
-  };
 
   const getLocalizedText = ({
     en,
@@ -1470,28 +1454,7 @@ function Index() {
               />
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("language.label")}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted"
-                >
-                  <Globe className="size-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 rounded-md">
-                {languageOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.code}
-                    onClick={() => changeLanguage(option.code)}
-                    className={option.code === language ? "bg-accent text-accent-foreground" : undefined}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <LanguageSwitcher />
 
             <button
               aria-label={t("header.userProfile")}
