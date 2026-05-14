@@ -113,6 +113,12 @@ function CyclistDashboardPage() {
   }, []);
 
   useEffect(() => {
+    if (!isScannerOpen) {
+      setScannerStatus(t("cyclist.readyToScan"));
+    }
+  }, [isScannerOpen, t]);
+
+  useEffect(() => {
     const currentAvailableRunIds = new Set(availableRuns.map((order) => order.id));
 
     if (!hasInitializedRunsRef.current) {
@@ -895,10 +901,12 @@ function OrderCard({
 }
 
 function EmptyState({ label }: { label: string }) {
+  const { t } = useTranslation();
+
   return (
     <AppEmptyState
       title={label}
-      subtitle="New delivery tasks will appear here automatically."
+      subtitle={t("cyclist.autoAppearSubtitle")}
       icon={PackageSearch}
       className="bg-card"
     />
