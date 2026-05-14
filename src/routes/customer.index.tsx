@@ -1468,6 +1468,41 @@ function Index() {
     setNeighborhoodSearchInput("");
   };
 
+  const predictiveSearchResults = useMemo(() => {
+    const rows = (predictiveSearchQuery.data ?? []) as SearchResultProduct[];
+    return rows.map((row) => ({
+      ...row,
+      localizedName: getLocalizedText({ en: row.name, fr: row.nameFr, ar: row.nameAr }),
+      localizedBrand: getLocalizedText({
+        en: row.brandNameEn || "",
+        fr: row.brandNameFr || row.brandNameEn || "",
+        ar: row.brandNameAr || row.brandNameEn || "",
+      }),
+    }));
+  }, [getLocalizedText, predictiveSearchQuery.data]);
+
+  const hasSearchTerm = debouncedSearchTerm.trim().length > 0;
+
+  const highlightSearchMatch = (text: string, query: string) => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return text;
+
+    const escaped = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escaped})`, "ig");
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      part.toLocaleLowerCase() === normalizedQuery.toLocaleLowerCase() ? <strong key={`${part}-${index}`}>{part}</strong> : part,
+    );
+  };
+
+  const handleSearchResultClick = (productId: string) => {
+    setDesktopSearchInput("");
+    setMobileSearchInput("");
+    setIsSearchOpen(false);
+    void navigate({ to: "/customer/product/$id", params: { id: productId } });
+  };
+
   return (
     <>
       <main className="app-shell min-h-screen bg-muted/20 pb-24 text-foreground md:pb-0">
