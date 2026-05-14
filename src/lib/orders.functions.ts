@@ -1506,11 +1506,17 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
       }
 
       const settleRow = Array.isArray(settleResult) ? settleResult[0] : null;
+      const settledOrdersCount = Number(settleRow?.settled_orders_count ?? 0);
+      const settledAmountMad = Number(settleRow?.total_cash_received_added ?? 0);
+
+      if (settledOrdersCount <= 0 || settledAmountMad <= 0) {
+        throw new Error("No eligible orders matched final settlement conditions.");
+      }
 
       return {
         ok: true,
-        settledAmountMad: computedAmount,
-        settledOrdersCount: Number(settleRow?.settled_orders_count ?? 0),
+        settledAmountMad,
+        settledOrdersCount,
       };
     } catch (error) {
       console.error("settleCyclistCashHandover failed:", error);
