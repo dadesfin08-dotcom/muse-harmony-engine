@@ -469,31 +469,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       }
     };
 
-    const tablesInDeleteOrder = [
-      "platform_collections",
-      "carnet_payments",
-      "vendor_carnet",
-      "orders",
-      "vendor_products",
-      "master_products",
-      "brands",
-      "categories",
-      "site_ads",
-      "announcements",
-      "vendor_service_zones",
-      "cyclist_coverage",
-      "neighborhoods",
-      "communes",
-      "customers",
-      "vendors",
-      "cyclists",
-      "profiles",
-      "user_roles",
-      "markup_rules",
-      "global_settings",
-      "invoice_settings",
-      "otp_requests",
-    ] as const;
+    const tablesInDeleteOrder = ["orders"] as const;
 
     for (const tableName of tablesInDeleteOrder) {
       await wipeTable(tableName);
@@ -501,7 +477,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      message: "Factory reset completed.",
+      message: "Orders data reset completed.",
     };
   });
 
