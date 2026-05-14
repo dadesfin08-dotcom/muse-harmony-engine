@@ -628,12 +628,17 @@ function CyclistDashboardPage() {
                   </div>
                   <Button
                     className="w-full"
-                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
-                    disabled={confirmCashHandoverMutation.isPending}
+                    onClick={() => {
+                      setVendorSettlementTarget({ vendorId: settlement.vendorId, vendorName: settlement.vendorName });
+                      setVendorQrScannerStatus("جاري تجهيز الكاميرا...");
+                      setIsVendorQrScannerSuccess(false);
+                      setIsVendorQrScannerOpen(true);
+                    }}
+                    disabled={executeVendorQrCashHandoverMutation.isPending}
                   >
-                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
+                    {executeVendorQrCashHandoverMutation.isPending && vendorSettlementTarget?.vendorId === settlement.vendorId
                       ? "Processing..."
-                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
+                      : "مسح كود التاجر لتسليم النقد"}
                   </Button>
                 </div>
               ))}
@@ -743,6 +748,31 @@ function CyclistDashboardPage() {
             )}
 
             <p className="text-center text-xs text-muted-foreground">{scannerStatus}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isVendorQrScannerOpen} onOpenChange={(open) => (!open ? closeVendorQrScanner() : undefined)}>
+        <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
+          <DialogHeader className="border-b border-border px-4 py-3">
+            <DialogTitle className="text-base font-semibold">مسح كود التاجر لتسليم النقد</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex h-full flex-col gap-3 p-4">
+            {isVendorQrScannerSuccess ? (
+              <div className="flex flex-1 flex-col items-center justify-center text-center">
+                <span className="inline-flex h-24 w-24 items-center justify-center rounded-full bg-success/15 text-success">
+                  <CheckCircle2 className="size-14" />
+                </span>
+                <p className="mt-4 text-2xl font-bold text-success">تم تسليم العهدة بنجاح</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
+                <div id="vendor-cash-receipt-qr-reader" className="min-h-[340px] w-full" />
+              </div>
+            )}
+
+            <p className="text-center text-xs text-muted-foreground">{vendorQrScannerStatus}</p>
           </div>
         </DialogContent>
       </Dialog>
