@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   formatMoroccoPhoneForPayload,
@@ -85,7 +86,6 @@ const collectVendorPlatformDuesInputSchema = z.object({
   vendorId: z.string().uuid(),
   amount: z.number().positive(),
   qrPayload: z.record(z.string(), z.any()).nullable().optional(),
-  adminPhoneNumber: z.string().trim().min(1),
 });
 
 type VendorOrderRow = {
@@ -457,19 +457,16 @@ export const getVendorSalesAnalytics = createServerFn({ method: "POST" })
   });
 
 export const collectVendorPlatformDues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      const normalizedAdminPhone = formatMoroccoPhoneForPayload(normalizeMoroccoPhoneInput(data.adminPhoneNumber));
-      if (normalizedAdminPhone !== "+212605377941") {
-        throw new Error("Unauthorized: admin access required.");
-      }
-
-      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("collect_platform_dues", {
+      const { supabase, userId } = context;
+      const { data: rpcResult, error } = await (supabase as any).rpc("collect_platform_dues", {
         p_vendor_id: data.vendorId,
         p_amount: Number(data.amount.toFixed(2)),
         p_qr_payload: data.qrPayload ?? null,
-        p_collected_by_user_id: null,
+        p_collected_by_user_id: userId,
       });
 
       if (error) {
