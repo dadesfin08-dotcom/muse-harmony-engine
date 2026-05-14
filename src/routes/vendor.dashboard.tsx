@@ -116,6 +116,53 @@ type LedgerOrderItem = {
   unitPriceMad: number;
 };
 
+const INCOMING_ALERT_CACHE_TTL_MS = 15 * 60 * 1000;
+const INCOMING_ALERT_CACHE_MAX_ITEMS = 160;
+
+function incomingAlertCacheKey(phoneNumber: string) {
+  return `vendor.incoming-order-alerts.${phoneNumber}`;
+}
+
+function readIncomingAlertCache(phoneNumber: string) {
+  if (typeof window === "undefined" || !phoneNumber) return new Map<string, number>();
+
+  try {
+    const raw = window.localStorage.getItem(incomingAlertCacheKey(phoneNumber));
+    if (!raw) return new Map<string, number>();
+
+    const parsed = JSON.parse(raw) as Array<{ id?: string; seenAt?: number }>;
+    const now = Date.now();
+    const next = new Map<string, number>();
+
+    for (const entry of parsed) {
+      if (!entry?.id || typeof entry.seenAt !== "number") continue;
+      if (now - entry.seenAt > INCOMING_ALERT_CACHE_TTL_MS) continue;
+      next.set(entry.id, entry.seenAt);
+    }
+
+    return next;
+  } catch {
+    return new Map<string, number>();
+  }
+}
+
+function writeIncomingAlertCache(phoneNumber: string, cache: Map<string, number>) {
+  if (typeof window === "undefined" || !phoneNumber) return;
+
+  const now = Date.now();
+  const entries = Array.from(cache.entries())
+    .filter(([, seenAt]) => now - seenAt <= INCOMING_ALERT_CACHE_TTL_MS)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, INCOMING_ALERT_CACHE_MAX_ITEMS)
+    .map(([id, seenAt]) => ({ id, seenAt }));
+
+  try {
+    window.localStorage.setItem(incomingAlertCacheKey(phoneNumber), JSON.stringify(entries));
+  } catch {
+    // ignore localStorage write errors (quota/privacy mode)
+  }
+}
+
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
 }
