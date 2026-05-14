@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getVendorOrderDetails, updateVendorOrderStatus } from "@/lib/orders.functions";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/vendor/order/$orderId")({
   component: VendorOrderDetailsPage,
