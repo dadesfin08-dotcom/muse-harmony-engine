@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Keyboard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
+  confirmCashHandoverToVendor,
   getCyclistDashboardData,
   setCyclistActiveState,
   type CyclistOrderCard,
@@ -55,6 +56,7 @@ function CyclistDashboardPage() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<CyclistView>("available");
   const [isUpdatingOrderId, setIsUpdatingOrderId] = useState<string | null>(null);
+  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -92,6 +94,7 @@ function CyclistDashboardPage() {
   const setActiveState = useServerFn(setCyclistActiveState);
   const acceptRun = useServerFn(acceptDeliveryRun);
   const verifyDeliveryCode = useServerFn(verifyDeliveryCodeAndComplete);
+  const confirmCashHandover = useServerFn(confirmCashHandoverToVendor);
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],
@@ -103,7 +106,39 @@ function CyclistDashboardPage() {
   const cyclist = dashboardQuery.data?.cyclist;
   const availableRuns = dashboardQuery.data?.availableRuns ?? [];
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
+  const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
+
+  const confirmCashHandoverMutation = useMutation({
+    mutationFn: async ({ vendorId }: { vendorId: string }) => {
+      if (!session?.cyclistId) {
+        throw new Error("Session expired.");
+      }
+      return confirmCashHandover({
+        data: {
+          cyclistId: session.cyclistId,
+          vendorId,
+        },
+      });
+    },
+    onMutate: ({ vendorId }) => {
+      setSettlingVendorId(vendorId);
+    },
+    onSuccess: async (result) => {
+      toast.success(
+        `تم تأكيد تحويل النقد: ${result.settledOrdersCount} طلب · أرباح التاجر +${result.vendorEarningsAddedMad.toFixed(2)} MAD · مستحقات التطبيق +${result.platformDuesAddedMad.toFixed(2)} MAD`,
+      );
+      await dashboardQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "فشل تأكيد تحويل النقد.");
+    },
+    onSettled: () => {
+      setSettlingVendorId(null);
+    },
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -457,6 +492,38 @@ function CyclistDashboardPage() {
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
+
+        <section className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <Wallet className="size-4 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Pending Settlements · تصفية الحسابات</p>
+          </div>
+          {pendingSettlements.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No pending cash handover settlements. · لا توجد تصفية معلقة حالياً.</p>
+          ) : (
+            <div className="space-y-2">
+              {pendingSettlements.map((settlement) => (
+                <div key={settlement.vendorId} className="rounded-xl border border-border bg-background p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{settlement.vendorName}</p>
+                      <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={() => confirmCashHandoverMutation.mutate({ vendorId: settlement.vendorId })}
+                    disabled={confirmCashHandoverMutation.isPending}
+                  >
+                    {confirmCashHandoverMutation.isPending && settlingVendorId === settlement.vendorId
+                      ? "Processing..."
+                      : "Confirm Cash Handover to Vendor · تأكيد تسليم المبلغ للتاجر"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {activeView === "available" ? (
           <div className="space-y-3">

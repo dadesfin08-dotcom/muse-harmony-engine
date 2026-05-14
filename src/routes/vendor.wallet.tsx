@@ -175,7 +175,9 @@ function VendorWalletPage() {
   const summary = settlementQuery.data;
   const hasSummary = Boolean(summary);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
-  const deliveredOrders = (dashboardQuery.data?.orders ?? []).filter((order) => order.status === "delivered").slice(0, 8);
+  const deliveredOrders = (dashboardQuery.data?.orders ?? [])
+    .filter((order) => ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(order.status))
+    .slice(0, 8);
   const platformCollectionQrPayload = useMemo(() => {
     if (!vendorId || !dashboardQuery.data?.vendor) return null;
     const amountMad = Number(dashboardQuery.data.vendor.platformDuesMad ?? 0);

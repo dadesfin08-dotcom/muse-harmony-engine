@@ -50,6 +50,11 @@ const verifyDeliveryInputSchema = z.object({
   deliveryAuthCode: z.string().trim().regex(/^\d{4,6}$/),
 });
 
+const confirmCashHandoverInputSchema = z.object({
+  cyclistId: z.string().uuid(),
+  vendorId: z.string().uuid(),
+});
+
 type CyclistRow = {
   id: string;
   full_name: string;
@@ -87,7 +92,14 @@ type OrderRow = {
   payment_method: "COD" | "Carnet";
   delivery_fee: number;
   total_price: number;
-  status: "ready" | "delivering" | "delivered" | "new" | "preparing";
+  status:
+    | "ready"
+    | "delivering"
+    | "delivered"
+    | "delivered_cash_with_cyclist"
+    | "cash_transferred_to_vendor"
+    | "new"
+    | "preparing";
   order_items?: Array<{
     name?: string;
     quantity?: number;
@@ -178,6 +190,13 @@ export type CyclistEarningsHistoryResponse = {
   period: EarningsHistoryPeriod;
   totalEarningsMad: number;
   deliveries: CyclistEarningsHistoryEntry[];
+};
+
+export type CyclistPendingSettlement = {
+  vendorId: string;
+  vendorName: string;
+  ordersCount: number;
+  cashToHandoverMad: number;
 };
 
 async function buildServiceZoneMaps() {
@@ -398,7 +417,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         new Set(((coverageRows ?? []) as CyclistCoverageRow[]).map((row) => row.neighborhood_id)),
       );
 
-      const [availableResult, activeResult, deliveredResult] = await Promise.all([
+      const [availableResult, activeResult, deliveredResult, pendingSettlementResult] = await Promise.all([
         coverageNeighborhoodIds.length
           ? (supabaseAdmin as any)
               .from("orders")
@@ -421,8 +440,14 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .eq("status", "delivered")
+          .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
           .eq("cyclist_id", cyclist.id),
+        (supabaseAdmin as any)
+          .from("orders")
+          .select("vendor_id, payment_method, total_price")
+          .eq("cyclist_id", cyclist.id)
+          .eq("status", "delivered_cash_with_cyclist")
+          .eq("vendor_settlement_status", "pending"),
       ]);
 
       const availableRows = availableResult.data;
@@ -431,6 +456,8 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
       const activeError = activeResult.error;
       const deliveredRows = deliveredResult.data;
       const deliveredError = deliveredResult.error;
+      const pendingSettlementRows = pendingSettlementResult.data;
+      const pendingSettlementError = pendingSettlementResult.error;
 
       if (availableError) {
         throw new Error(availableError.message);
@@ -441,6 +468,50 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
       if (deliveredError) {
         throw new Error(deliveredError.message);
       }
+      if (pendingSettlementError) {
+        throw new Error(pendingSettlementError.message);
+      }
+
+      const pendingRows = (pendingSettlementRows ?? []) as Array<{
+        vendor_id: string;
+        payment_method: string;
+        total_price: number;
+      }>;
+
+      const pendingCashRows = pendingRows.filter((row) => String(row.payment_method).toUpperCase() === "COD");
+      const pendingVendorIds = Array.from(new Set(pendingCashRows.map((row) => row.vendor_id)));
+      const { data: pendingVendors, error: pendingVendorsError } = pendingVendorIds.length
+        ? await (supabaseAdmin as any).from("vendors").select("id, store_name").in("id", pendingVendorIds)
+        : { data: [], error: null };
+
+      if (pendingVendorsError) {
+        throw new Error(pendingVendorsError.message);
+      }
+
+      const vendorNameMap = new Map(
+        ((pendingVendors ?? []) as Array<{ id: string; store_name: string | null }>).map((vendor) => [
+          vendor.id,
+          vendor.store_name?.trim() || "Vendor",
+        ]),
+      );
+
+      const pendingSettlementsMap = new Map<string, CyclistPendingSettlement>();
+      for (const row of pendingCashRows) {
+        const current = pendingSettlementsMap.get(row.vendor_id);
+        if (current) {
+          current.ordersCount += 1;
+          current.cashToHandoverMad += Number(row.total_price ?? 0);
+        } else {
+          pendingSettlementsMap.set(row.vendor_id, {
+            vendorId: row.vendor_id,
+            vendorName: vendorNameMap.get(row.vendor_id) ?? "Vendor",
+            ordersCount: 1,
+            cashToHandoverMad: Number(row.total_price ?? 0),
+          });
+        }
+      }
+
+      const pendingSettlements = Array.from(pendingSettlementsMap.values()).sort((a, b) => b.cashToHandoverMad - a.cashToHandoverMad);
 
       const activeOrderRows = (activeRows ?? []) as OrderRow[];
       const shouldLockAvailableRuns = activeOrderRows.length > 0;
@@ -564,6 +635,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         },
         availableRuns: safeAvailableRows.map(mapOrder),
         activeDeliveries: activeOrderRows.map(mapOrder),
+        pendingSettlements,
         totalCashCollectedMad,
       };
     } catch (error) {
@@ -680,7 +752,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         .from("orders")
         .select("delivery_fee")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered");
+        .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
 
       if (deliveredError) {
         throw new Error(deliveredError.message);
@@ -690,7 +762,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         .from("orders")
         .select("delivery_fee, total_price, payment_method")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
+        .eq("status", "delivered_cash_with_cyclist")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingSettlementError) {
@@ -779,7 +851,7 @@ export const getCyclistEarningsHistory = createServerFn({ method: "POST" })
         .from("orders")
         .select("id, delivered_at, delivery_fee")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
+        .in("status", ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"])
         .gte("delivered_at", start.toISOString())
         .order("delivered_at", { ascending: false });
 
@@ -873,5 +945,34 @@ export const verifyDeliveryCodeAndComplete = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("verifyDeliveryCodeAndComplete failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to verify delivery code.");
+    }
+  });
+
+export const confirmCashHandoverToVendor = createServerFn({ method: "POST" })
+  .inputValidator((input) => confirmCashHandoverInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("confirm_cash_transferred_to_vendor", {
+        p_cyclist_id: data.cyclistId,
+        p_vendor_id: data.vendorId,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : null;
+      if (!result) {
+        throw new Error("No settlement result returned.");
+      }
+
+      return {
+        settledOrdersCount: Number(result.settled_orders_count ?? 0),
+        vendorEarningsAddedMad: Number(result.vendor_earnings_added ?? 0),
+        platformDuesAddedMad: Number(result.platform_dues_added ?? 0),
+      };
+    } catch (error) {
+      console.error("confirmCashHandoverToVendor failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to confirm cash handover.");
     }
   });
