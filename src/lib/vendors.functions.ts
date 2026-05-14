@@ -251,6 +251,7 @@ async function fetchVendorRecord(vendorId: string) {
   }
 
   const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
+  const dueByVendor = await getPendingPlatformDuesByVendorIds([vendorId]);
   const vendorNeighborhoods = (neighborhoods ?? []) as NeighborhoodRow[];
   const row = vendor as VendorRow;
 
@@ -260,7 +261,7 @@ async function fetchVendorRecord(vendorId: string) {
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
     vendorEarningsMad: Number(row.vendor_earnings ?? 0),
-    platformDuesMad: Number(row.platform_dues ?? 0),
+    platformDuesMad: Number(dueByVendor.get(vendorId) ?? 0),
     vendorType: row.vendor_type ?? "general",
     assignedCategories: row.vendor_type === "specialized" ? (row.assigned_categories ?? []) : [],
     neighborhoodIds: vendorNeighborhoods.map((n) => n.id),
@@ -295,6 +296,9 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
 
   const communeMap = new Map(((communes ?? []) as CommuneRow[]).map((c) => [c.id, c.name_en]));
   const neighborhoodsByVendor = new Map<string, NeighborhoodRow[]>();
+  const dueByVendor = await getPendingPlatformDuesByVendorIds(
+    ((vendors ?? []) as VendorRow[]).map((vendor) => vendor.id),
+  );
 
   for (const neighborhood of (neighborhoods ?? []) as NeighborhoodRow[]) {
     if (!neighborhood.vendor_id) continue;
@@ -312,7 +316,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
       vendorEarningsMad: Number(vendor.vendor_earnings ?? 0),
-      platformDuesMad: Number(vendor.platform_dues ?? 0),
+      platformDuesMad: Number(dueByVendor.get(vendor.id) ?? 0),
       vendorType: vendor.vendor_type ?? "general",
       assignedCategories: vendor.vendor_type === "specialized" ? (vendor.assigned_categories ?? []) : [],
       neighborhoodIds: vendorNeighborhoods.map((neighborhood) => neighborhood.id),
