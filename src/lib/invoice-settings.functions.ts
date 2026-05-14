@@ -11,11 +11,11 @@ import {
 
 const updateInvoiceSettingsInputSchema = z.object({
   id: z.string().uuid(),
-  storeName: z.string().trim().min(1).max(120),
+  storeName: z.string().trim().min(1).max(1200),
   address: z.string().trim().min(1).max(220),
   phone: z.string().trim().min(3).max(30),
   taxId: z.string().trim().max(120).nullable(),
-  footerMessage: z.string().trim().min(1).max(240),
+  footerMessage: z.string().trim().min(1).max(1200),
 });
 
 export type InvoiceSettingsRecord = {
