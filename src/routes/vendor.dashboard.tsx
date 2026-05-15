@@ -193,6 +193,7 @@ type DashboardOrder = {
   vendorShareMad: number;
   platformProfitMad: number;
   platformMarkupMad: number;
+  subtotalBasePriceMad: number;
   adminSettled: boolean;
   itemCount: number;
   items: Array<{
@@ -795,6 +796,7 @@ function VendorDashboardPage() {
               ? Number(row.platform_profit)
               : Number(row.delivery_fee ?? 0),
         ),
+        subtotalBasePriceMad: roundMoney(Number((row as { subtotal_base_price?: number | null }).subtotal_base_price ?? 0)),
         adminSettled: Boolean(row.admin_settled ?? false),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
@@ -923,7 +925,14 @@ function VendorDashboardPage() {
           settledCarnetNetProfitMad,
       ),
       platformDuesMad: roundMoney(
-        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformMarkupMad ?? 0), 0) +
+        transferredCashOrders.reduce((sum, order) => {
+          const isSettledByAdmin = order.adminSettled === true;
+          if (isSettledByAdmin) return sum;
+
+          const fallbackMarkup = Number(order.totalMad ?? 0) - Number(order.subtotalBasePriceMad ?? 0);
+          const markup = Number(order.platformMarkupMad) || fallbackMarkup;
+          return sum + (Number.isFinite(markup) ? markup : 0);
+        }, 0) +
           settledCarnetPlatformDuesMad,
       ),
       cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
