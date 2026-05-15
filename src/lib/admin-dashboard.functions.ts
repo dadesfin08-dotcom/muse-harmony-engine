@@ -872,21 +872,50 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await (supabaseAdmin as any)
-    .from("platform_packs")
-    .select("id, name_en, name_fr, name_ar, description, price_per_unit, unit_type, image_url, is_active, created_at, updated_at")
-    .order("created_at", { ascending: false });
+  const [packsRes, itemsRes, featuresRes] = await Promise.all([
+    (supabaseAdmin as any)
+      .from("platform_packs")
+      .select(
+        "id, name_en, name_fr, name_ar, description, base_price_mad, billing_cycle, price_per_unit, unit_type, delivery_window, image_url, is_active, created_at, updated_at",
+      )
+      .order("created_at", { ascending: false }),
+    (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, sort_order").order("sort_order", { ascending: true }),
+    (supabaseAdmin as any)
+      .from("pack_features")
+      .select("id, pack_id, feature_label, sort_order")
+      .order("sort_order", { ascending: true }),
+  ]);
 
-  if (error) throw new Error(error.message ?? "Failed to load platform packs.");
+  if (packsRes.error) throw new Error(packsRes.error.message ?? "Failed to load platform packs.");
+  if (itemsRes.error) throw new Error(itemsRes.error.message ?? "Failed to load pack items.");
+  if (featuresRes.error) throw new Error(featuresRes.error.message ?? "Failed to load pack features.");
 
-  return ((data ?? []) as PlatformPackRow[]).map((row) => ({
+  const itemMap = new Map<string, string[]>();
+  for (const row of (itemsRes.data ?? []) as PlatformPackItemRow[]) {
+    const current = itemMap.get(row.pack_id) ?? [];
+    current.push(row.item_label);
+    itemMap.set(row.pack_id, current);
+  }
+
+  const featureMap = new Map<string, string[]>();
+  for (const row of (featuresRes.data ?? []) as PlatformPackFeatureRow[]) {
+    const current = featureMap.get(row.pack_id) ?? [];
+    current.push(row.feature_label);
+    featureMap.set(row.pack_id, current);
+  }
+
+  return ((packsRes.data ?? []) as PlatformPackRow[]).map((row) => ({
     id: row.id,
     nameEn: row.name_en,
     nameFr: row.name_fr,
     nameAr: row.name_ar,
     description: row.description,
-    pricePerUnit: Number(row.price_per_unit ?? 0),
+    basePriceMad: Number(row.base_price_mad ?? row.price_per_unit ?? 0),
+    billingCycle: row.billing_cycle,
     unitType: row.unit_type,
+    deliveryWindow: row.delivery_window,
+    packItems: itemMap.get(row.id) ?? [],
+    packFeatures: featureMap.get(row.id) ?? [],
     imageUrl: row.image_url,
     isActive: Boolean(row.is_active),
     createdAt: row.created_at,
@@ -904,8 +933,11 @@ export const createPlatformPack = createServerFn({ method: "POST" })
         name_fr: data.nameFr ?? null,
         name_ar: data.nameAr ?? null,
         description: data.description ?? null,
-        price_per_unit: data.pricePerUnit,
+        base_price_mad: data.basePriceMad,
+        billing_cycle: data.billingCycle,
+        price_per_unit: data.basePriceMad,
         unit_type: data.unitType,
+        delivery_window: data.deliveryWindow ?? null,
         image_url: data.imageUrl ?? null,
         is_active: data.isActive,
       })
@@ -914,6 +946,30 @@ export const createPlatformPack = createServerFn({ method: "POST" })
 
     if (error || !inserted?.id) {
       throw new Error(error?.message ?? "Failed to create platform pack.");
+    }
+
+    if (data.packItems.length > 0) {
+      const { error: packItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
+        data.packItems.map((item, index) => ({
+          pack_id: inserted.id,
+          item_label: item,
+          sort_order: index,
+        })),
+      );
+
+      if (packItemsError) throw new Error(packItemsError.message ?? "Failed to create pack items.");
+    }
+
+    if (data.packFeatures.length > 0) {
+      const { error: packFeaturesError } = await (supabaseAdmin as any).from("pack_features").insert(
+        data.packFeatures.map((feature, index) => ({
+          pack_id: inserted.id,
+          feature_label: feature,
+          sort_order: index,
+        })),
+      );
+
+      if (packFeaturesError) throw new Error(packFeaturesError.message ?? "Failed to create pack features.");
     }
 
     return { ok: true, id: inserted.id };
@@ -929,8 +985,11 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
         name_fr: data.nameFr ?? null,
         name_ar: data.nameAr ?? null,
         description: data.description ?? null,
-        price_per_unit: data.pricePerUnit,
+        base_price_mad: data.basePriceMad,
+        billing_cycle: data.billingCycle,
+        price_per_unit: data.basePriceMad,
         unit_type: data.unitType,
+        delivery_window: data.deliveryWindow ?? null,
         image_url: data.imageUrl ?? null,
         is_active: data.isActive,
       })
@@ -940,6 +999,38 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
 
     if (error || !updated?.id) {
       throw new Error(error?.message ?? "Failed to update platform pack.");
+    }
+
+    const [{ error: deleteItemsError }, { error: deleteFeaturesError }] = await Promise.all([
+      (supabaseAdmin as any).from("pack_items").delete().eq("pack_id", data.id),
+      (supabaseAdmin as any).from("pack_features").delete().eq("pack_id", data.id),
+    ]);
+
+    if (deleteItemsError) throw new Error(deleteItemsError.message ?? "Failed to refresh pack items.");
+    if (deleteFeaturesError) throw new Error(deleteFeaturesError.message ?? "Failed to refresh pack features.");
+
+    if (data.packItems.length > 0) {
+      const { error: insertItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
+        data.packItems.map((item, index) => ({
+          pack_id: data.id,
+          item_label: item,
+          sort_order: index,
+        })),
+      );
+
+      if (insertItemsError) throw new Error(insertItemsError.message ?? "Failed to save pack items.");
+    }
+
+    if (data.packFeatures.length > 0) {
+      const { error: insertFeaturesError } = await (supabaseAdmin as any).from("pack_features").insert(
+        data.packFeatures.map((feature, index) => ({
+          pack_id: data.id,
+          feature_label: feature,
+          sort_order: index,
+        })),
+      );
+
+      if (insertFeaturesError) throw new Error(insertFeaturesError.message ?? "Failed to save pack features.");
     }
 
     return { ok: true };
