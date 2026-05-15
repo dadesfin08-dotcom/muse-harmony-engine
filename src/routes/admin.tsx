@@ -5712,6 +5712,14 @@ function AdsContentSection({
     return date.toLocaleString();
   };
 
+  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} · ${zone.zoneName}`]));
+
+  const getCampaignTypeBadgeClass = (campaignType: "AD" | "PROMO" | "NEWS") => {
+    if (campaignType === "NEWS") return "border-transparent bg-primary/15 text-primary";
+    if (campaignType === "PROMO") return "border-transparent bg-success/15 text-success";
+    return "border-transparent bg-chart-1/15 text-chart-1";
+  };
+
   return (
     <section className="space-y-6 rounded-lg border border-border bg-card p-4 shadow-sm md:p-6">
       <div>
@@ -5730,6 +5738,37 @@ function AdsContentSection({
             onChange={(event) => onAdFormChange((current) => ({ ...current, campaignName: event.target.value }))}
             placeholder="Campaign name"
           />
+          <Select
+            value={adForm.campaignType}
+            onValueChange={(value) =>
+              onAdFormChange((current) => ({ ...current, campaignType: value as "AD" | "PROMO" | "NEWS" }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Campaign type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="AD">Advertisement (إعلان)</SelectItem>
+              <SelectItem value="PROMO">Promotion (ترويج)</SelectItem>
+              <SelectItem value="NEWS">News (خبر)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={adForm.zoneId}
+            onValueChange={(value) => onAdFormChange((current) => ({ ...current, zoneId: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Target zone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="global">Global / All Zones</SelectItem>
+              {adTargetZones.map((zone) => (
+                <SelectItem key={zone.id} value={zone.id}>
+                  {zone.communeName} · {zone.zoneName} ({zone.zoneCode})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             value={adForm.targetUrl}
             onChange={(event) => onAdFormChange((current) => ({ ...current, targetUrl: event.target.value }))}
@@ -5809,6 +5848,9 @@ function AdsContentSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Campaign</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead className="text-right">Views</TableHead>
                 <TableHead>Window</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[190px]">Actions</TableHead>
@@ -5816,11 +5858,29 @@ function AdsContentSection({
             </TableHeader>
             <TableBody>
               {activeCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
               ) : (
                 activeCampaigns.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
+                        <Tag className="mr-1 size-3" />
+                        {ad.campaign_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3" />
+                        {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="size-3" />
+                        {ad.views_count ?? 0}
+                      </span>
+                    </TableCell>
                     <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                     <TableCell><Badge variant="secondary">Active</Badge></TableCell>
                     <TableCell>
@@ -5843,6 +5903,9 @@ function AdsContentSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Campaign</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead className="text-right">Views</TableHead>
                 <TableHead>Window</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[190px]">Actions</TableHead>
@@ -5850,7 +5913,7 @@ function AdsContentSection({
             </TableHeader>
             <TableBody>
               {inactiveCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
               ) : (
                 inactiveCampaigns.map((ad) => {
                   const state = getScheduleState(ad.start_date, ad.end_date);
@@ -5858,6 +5921,24 @@ function AdsContentSection({
                   return (
                     <TableRow key={ad.id}>
                       <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
+                          <Tag className="mr-1 size-3" />
+                          {ad.campaign_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="size-3" />
+                          {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Eye className="size-3" />
+                          {ad.views_count ?? 0}
+                        </span>
+                      </TableCell>
                       <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>
