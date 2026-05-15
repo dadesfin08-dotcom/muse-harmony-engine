@@ -318,7 +318,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
     (supabaseAdmin as any)
       .from("announcements")
       .select(
-        "id, message_en, message_fr, message_ar, content, content_fr, content_ar, bg_color, text_color, start_date, end_date, is_active, created_at",
+        "id, title, messages_en, messages_fr, messages_ar, message_en, message_fr, message_ar, content, content_fr, content_ar, bg_color, text_color, start_date, end_date, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
@@ -362,6 +362,16 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
     .filter((announcement: any) => isWithinSchedule(announcement.start_date, announcement.end_date))
     .map((announcement: any) => ({
       id: announcement.id,
+      title: announcement.title ?? "",
+      messages_en: normalizeOptionalStringArray(announcement.messages_en).length > 0
+        ? normalizeOptionalStringArray(announcement.messages_en)
+        : normalizeOptionalStringArray([announcement.message_en ?? announcement.content]),
+      messages_fr: normalizeOptionalStringArray(announcement.messages_fr).length > 0
+        ? normalizeOptionalStringArray(announcement.messages_fr)
+        : normalizeOptionalStringArray([announcement.message_fr ?? announcement.content_fr]),
+      messages_ar: normalizeOptionalStringArray(announcement.messages_ar).length > 0
+        ? normalizeOptionalStringArray(announcement.messages_ar)
+        : normalizeOptionalStringArray([announcement.message_ar ?? announcement.content_ar]),
       message_en: announcement.message_en ?? announcement.content,
       message_fr: announcement.message_fr ?? announcement.content_fr ?? announcement.content,
       message_ar: announcement.message_ar ?? announcement.content_ar ?? announcement.content,
