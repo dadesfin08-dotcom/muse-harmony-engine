@@ -5821,7 +5821,49 @@ function AdsContentSection({
     return date.toLocaleString();
   };
 
-  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} · ${zone.zoneName}`]));
+  const groupedZonesByCommune = useMemo(() => {
+    const groups = new Map<string, Array<{ id: string; zoneCode: string; zoneName: string }>>();
+    adTargetZones.forEach((zone) => {
+      const current = groups.get(zone.communeName) ?? [];
+      current.push({ id: zone.id, zoneCode: zone.zoneCode, zoneName: zone.zoneName });
+      groups.set(zone.communeName, current);
+    });
+    return Array.from(groups.entries())
+      .map(([communeName, zones]) => ({ communeName, zones }))
+      .sort((a, b) => a.communeName.localeCompare(b.communeName));
+  }, [adTargetZones]);
+
+  const selectedCommuneZones =
+    adForm.selectedCommune === "global"
+      ? []
+      : groupedZonesByCommune.find((group) => group.communeName === adForm.selectedCommune)?.zones ?? [];
+
+  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} - ${zone.zoneName}`]));
+
+  const formatCampaignTargetLabel = (targetZoneIds: string[] | null) => {
+    const ids = Array.isArray(targetZoneIds) ? targetZoneIds : [];
+    if (ids.length === 0) return "Global / All Regions";
+
+    const zones = ids.map((zoneId) => adTargetZones.find((zone) => zone.id === zoneId)).filter(Boolean) as typeof adTargetZones;
+    if (zones.length === 0) return "Global / All Regions";
+
+    const communeNames = Array.from(new Set(zones.map((zone) => zone.communeName)));
+    if (communeNames.length === 1) {
+      const communeName = communeNames[0];
+      const communeAllZoneIds = adTargetZones.filter((zone) => zone.communeName === communeName).map((zone) => zone.id);
+      const isWholeCommune = communeAllZoneIds.length > 0 && communeAllZoneIds.every((zoneId) => ids.includes(zoneId));
+
+      if (isWholeCommune) {
+        return `${communeName} (All Douars)`;
+      }
+
+      if (zones.length === 1) {
+        return `${communeName} - ${zones[0].zoneName}`;
+      }
+    }
+
+    return zones.map((zone) => `${zone.communeName} - ${zone.zoneName}`).join(", ");
+  };
 
   const getCampaignTypeBadgeClass = (campaignType: "AD" | "PROMO" | "NEWS") => {
     if (campaignType === "NEWS") return "border-transparent bg-primary/15 text-primary";
@@ -5863,17 +5905,39 @@ function AdsContentSection({
             </SelectContent>
           </Select>
           <Select
-            value={adForm.zoneId}
-            onValueChange={(value) => onAdFormChange((current) => ({ ...current, zoneId: value }))}
+            value={adForm.selectedCommune}
+            onValueChange={(value) => onAdFormChange((current) => ({ ...current, selectedCommune: value, selectedDouarIds: [] }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Target zone" />
+              <SelectValue placeholder="Commune (الجماعة)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="global">Global / All Zones</SelectItem>
-              {adTargetZones.map((zone) => (
+              <SelectItem value="global">Global / All Regions</SelectItem>
+              {groupedZonesByCommune.map((group) => (
+                <SelectItem key={group.communeName} value={group.communeName}>
+                  {group.communeName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={adForm.selectedDouarIds[0] ?? "all-douars"}
+            onValueChange={(value) =>
+              onAdFormChange((current) => ({
+                ...current,
+                selectedDouarIds: value === "all-douars" ? [] : [value],
+              }))
+            }
+            disabled={adForm.selectedCommune === "global"}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Douar / Sub-zone (الدوار)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-douars">All Douars in selected commune</SelectItem>
+              {selectedCommuneZones.map((zone) => (
                 <SelectItem key={zone.id} value={zone.id}>
-                  {zone.communeName} · {zone.zoneName} ({zone.zoneCode})
+                  {zone.zoneName} ({zone.zoneCode})
                 </SelectItem>
               ))}
             </SelectContent>
