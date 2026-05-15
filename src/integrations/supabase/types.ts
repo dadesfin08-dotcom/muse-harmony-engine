@@ -21,11 +21,16 @@ export type Database = {
           content_ar: string | null
           content_fr: string | null
           created_at: string
+          end_date: string | null
           id: string
           image_url: string | null
           is_active: boolean
           link_url: string | null
+          message_ar: string | null
+          message_en: string | null
+          message_fr: string | null
           sort_order: number
+          start_date: string | null
           text_color: string | null
           updated_at: string
         }
@@ -35,11 +40,16 @@ export type Database = {
           content_ar?: string | null
           content_fr?: string | null
           created_at?: string
+          end_date?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          message_ar?: string | null
+          message_en?: string | null
+          message_fr?: string | null
           sort_order?: number
+          start_date?: string | null
           text_color?: string | null
           updated_at?: string
         }
@@ -49,11 +59,16 @@ export type Database = {
           content_ar?: string | null
           content_fr?: string | null
           created_at?: string
+          end_date?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           link_url?: string | null
+          message_ar?: string | null
+          message_en?: string | null
+          message_fr?: string | null
           sort_order?: number
+          start_date?: string | null
           text_color?: string | null
           updated_at?: string
         }
@@ -988,43 +1003,64 @@ export type Database = {
       site_ads: {
         Row: {
           bg_color: string | null
+          campaign_name: string
           content: string
           content_ar: string | null
           content_fr: string | null
           created_at: string
+          end_date: string | null
           id: string
+          image_ar: string | null
+          image_en: string | null
+          image_fr: string | null
           image_url: string | null
           is_active: boolean
           link_url: string | null
           sort_order: number
+          start_date: string | null
+          target_url: string | null
           text_color: string | null
           updated_at: string
         }
         Insert: {
           bg_color?: string | null
+          campaign_name?: string
           content: string
           content_ar?: string | null
           content_fr?: string | null
           created_at?: string
+          end_date?: string | null
           id?: string
+          image_ar?: string | null
+          image_en?: string | null
+          image_fr?: string | null
           image_url?: string | null
           is_active?: boolean
           link_url?: string | null
           sort_order?: number
+          start_date?: string | null
+          target_url?: string | null
           text_color?: string | null
           updated_at?: string
         }
         Update: {
           bg_color?: string | null
+          campaign_name?: string
           content?: string
           content_ar?: string | null
           content_fr?: string | null
           created_at?: string
+          end_date?: string | null
           id?: string
+          image_ar?: string | null
+          image_en?: string | null
+          image_fr?: string | null
           image_url?: string | null
           is_active?: boolean
           link_url?: string | null
           sort_order?: number
+          start_date?: string | null
+          target_url?: string | null
           text_color?: string | null
           updated_at?: string
         }

@@ -52,6 +52,10 @@ import {
   Clock3,
   Trophy,
   TrendingDown,
+  CalendarDays,
+  Pencil,
+  Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -190,6 +194,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   DEFAULT_RECEIPT_ADDRESS,
@@ -807,19 +813,22 @@ function AdminPage() {
   });
   const [adForm, setAdForm] = useState({
     id: "",
-    imageUrl: "",
-    linkUrl: "",
-    sortOrder: "0",
+    campaignName: "",
+    imageAr: "",
+    imageFr: "",
+    imageEn: "",
+    targetUrl: "",
+    startDate: "",
+    endDate: "",
     isActive: true,
   });
-  const [adImageFile, setAdImageFile] = useState<File | null>(null);
-  const [adImagePreviewUrl, setAdImagePreviewUrl] = useState<string | null>(null);
-  const adImageInputRef = useRef<HTMLInputElement | null>(null);
   const [announcementForm, setAnnouncementForm] = useState({
     id: "",
-    content: "",
-    contentFr: "",
-    contentAr: "",
+    messageEn: "",
+    messageFr: "",
+    messageAr: "",
+    startDate: "",
+    endDate: "",
     isActive: true,
     bgColor: "#deff9a",
     textColor: "#000000",
@@ -2379,17 +2388,27 @@ function AdminPage() {
   };
 
   const resetAdForm = () => {
-    setAdForm({ id: "", imageUrl: "", linkUrl: "", sortOrder: "0", isActive: true });
-    setAdImageFile(null);
-    setAdImagePreviewUrl(null);
+    setAdForm({
+      id: "",
+      campaignName: "",
+      imageAr: "",
+      imageFr: "",
+      imageEn: "",
+      targetUrl: "",
+      startDate: "",
+      endDate: "",
+      isActive: true,
+    });
   };
 
   const resetAnnouncementForm = () => {
     setAnnouncementForm({
       id: "",
-      content: "",
-      contentFr: "",
-      contentAr: "",
+      messageEn: "",
+      messageFr: "",
+      messageAr: "",
+      startDate: "",
+      endDate: "",
       isActive: true,
       bgColor: "#deff9a",
       textColor: "#000000",
@@ -2397,66 +2416,52 @@ function AdminPage() {
   };
 
   const saveAd = async () => {
-    if (!adForm.imageUrl.trim() && !adImageFile) {
-      toast.error("Please provide an ad image URL or upload an image.");
+    if (!adForm.campaignName.trim()) {
+      toast.error("Campaign name is required.");
       return;
     }
 
-    const parsedSortOrder = Number(adForm.sortOrder);
-    if (!Number.isFinite(parsedSortOrder) || parsedSortOrder < 0) {
-      toast.error("Sort order must be zero or greater.");
+    if (!adForm.imageAr.trim() && !adForm.imageFr.trim() && !adForm.imageEn.trim()) {
+      toast.error("Add at least one localized image URL.");
+      return;
+    }
+
+    if (adForm.startDate && adForm.endDate && new Date(adForm.endDate).getTime() < new Date(adForm.startDate).getTime()) {
+      toast.error("Expiration date must be after start date.");
       return;
     }
 
     setIsSavingAd(true);
     try {
-      let adImageUrl = adForm.imageUrl.trim();
-
-      if (adImageFile) {
-        const extension = adImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-        const sanitizedBaseName = adImageFile.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[^a-zA-Z0-9-_]/g, "-")
-          .slice(0, 60);
-        const fileName = `${crypto.randomUUID()}-${sanitizedBaseName || "ad"}.${extension}`;
-        const filePath = `site-ads/${fileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("products")
-          .upload(filePath, adImageFile, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (uploadError || !uploadData?.path) {
-          throw new Error(uploadError?.message || "Ad image upload failed.");
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
-        adImageUrl = publicUrlData.publicUrl;
-      }
-
       if (adForm.id) {
         await updateSiteAdInDatabase({
           data: {
             id: adForm.id,
-            imageUrl: adImageUrl,
-            linkUrl: adForm.linkUrl.trim() || null,
-            sortOrder: Math.floor(parsedSortOrder),
+            campaignName: adForm.campaignName.trim(),
+            imageAr: adForm.imageAr.trim() || null,
+            imageFr: adForm.imageFr.trim() || null,
+            imageEn: adForm.imageEn.trim() || null,
+            targetUrl: adForm.targetUrl.trim() || null,
+            startDate: adForm.startDate || null,
+            endDate: adForm.endDate || null,
             isActive: adForm.isActive,
           },
         });
-        toast.success("Ad updated.");
+        toast.success("Campaign updated.");
       } else {
         await createSiteAdInDatabase({
           data: {
-            imageUrl: adImageUrl,
-            linkUrl: adForm.linkUrl.trim() || null,
-            sortOrder: Math.floor(parsedSortOrder),
+            campaignName: adForm.campaignName.trim(),
+            imageAr: adForm.imageAr.trim() || null,
+            imageFr: adForm.imageFr.trim() || null,
+            imageEn: adForm.imageEn.trim() || null,
+            targetUrl: adForm.targetUrl.trim() || null,
+            startDate: adForm.startDate || null,
+            endDate: adForm.endDate || null,
             isActive: adForm.isActive,
           },
         });
-        toast.success("Ad created.");
+        toast.success("Campaign created.");
       }
 
       await siteAdsQuery.refetch();
@@ -2470,8 +2475,17 @@ function AdminPage() {
   };
 
   const saveAnnouncement = async () => {
-    if (!announcementForm.content.trim() || !announcementForm.contentFr.trim() || !announcementForm.contentAr.trim()) {
-      toast.error("Please enter ticker messages in EN, FR, and AR.");
+    if (!announcementForm.messageAr.trim() && !announcementForm.messageFr.trim() && !announcementForm.messageEn.trim()) {
+      toast.error("Add at least one localized announcement message.");
+      return;
+    }
+
+    if (
+      announcementForm.startDate &&
+      announcementForm.endDate &&
+      new Date(announcementForm.endDate).getTime() < new Date(announcementForm.startDate).getTime()
+    ) {
+      toast.error("Expiration date must be after start date.");
       return;
     }
 
@@ -2481,9 +2495,11 @@ function AdminPage() {
         await updateAnnouncementInDatabase({
           data: {
             id: announcementForm.id,
-            content: announcementForm.content.trim(),
-            contentFr: announcementForm.contentFr.trim(),
-            contentAr: announcementForm.contentAr.trim(),
+            messageEn: announcementForm.messageEn.trim() || null,
+            messageFr: announcementForm.messageFr.trim() || null,
+            messageAr: announcementForm.messageAr.trim() || null,
+            startDate: announcementForm.startDate || null,
+            endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
             bgColor: announcementForm.bgColor.trim() || "#deff9a",
             textColor: announcementForm.textColor.trim() || "#000000",
@@ -2493,9 +2509,11 @@ function AdminPage() {
       } else {
         await createAnnouncementInDatabase({
           data: {
-            content: announcementForm.content.trim(),
-            contentFr: announcementForm.contentFr.trim(),
-            contentAr: announcementForm.contentAr.trim(),
+            messageEn: announcementForm.messageEn.trim() || null,
+            messageFr: announcementForm.messageFr.trim() || null,
+            messageAr: announcementForm.messageAr.trim() || null,
+            startDate: announcementForm.startDate || null,
+            endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
             bgColor: announcementForm.bgColor.trim() || "#deff9a",
             textColor: announcementForm.textColor.trim() || "#000000",
@@ -2516,43 +2534,26 @@ function AdminPage() {
 
   const editAd = (ad: {
     id: string;
-    image_url: string;
-    link_url: string | null;
-    sort_order: number;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
   }) => {
     setAdForm({
       id: ad.id,
-      imageUrl: ad.image_url,
-      linkUrl: ad.link_url ?? "",
-      sortOrder: String(ad.sort_order ?? 0),
+      campaignName: ad.campaign_name ?? "",
+      imageAr: ad.image_ar ?? "",
+      imageFr: ad.image_fr ?? "",
+      imageEn: ad.image_en ?? "",
+      targetUrl: ad.target_url ?? "",
+      startDate: ad.start_date ? ad.start_date.slice(0, 16) : "",
+      endDate: ad.end_date ? ad.end_date.slice(0, 16) : "",
       isActive: ad.is_active,
     });
-    setAdImageFile(null);
-    setAdImagePreviewUrl(ad.image_url);
-  };
-
-  const applyAdImageFile = (file: File | null) => {
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAdImageFile(file);
-      setAdImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
-    };
-    reader.onerror = () => toast.error("Unable to preview selected ad image.");
-    reader.readAsDataURL(file);
-  };
-
-  const handleAdImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    applyAdImageFile(event.target.files?.[0] ?? null);
   };
 
   const removeAd = async (id: string) => {
@@ -2569,20 +2570,57 @@ function AdminPage() {
     }
   };
 
+  const toggleAdActive = async (ad: {
+    id: string;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+  }) => {
+    try {
+      await updateSiteAdInDatabase({
+        data: {
+          id: ad.id,
+          campaignName: ad.campaign_name,
+          imageAr: ad.image_ar,
+          imageFr: ad.image_fr,
+          imageEn: ad.image_en,
+          targetUrl: ad.target_url,
+          startDate: ad.start_date,
+          endDate: ad.end_date,
+          isActive: !ad.is_active,
+        },
+      });
+      await siteAdsQuery.refetch();
+      toast.success(!ad.is_active ? "Campaign activated." : "Campaign paused.");
+    } catch (error) {
+      console.error("Failed to toggle campaign state:", error);
+      toast.error("Failed to update campaign state.");
+    }
+  };
+
   const editAnnouncement = (announcement: {
     id: string;
-    content: string;
-    content_fr: string | null;
-    content_ar: string | null;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     bg_color: string;
     text_color: string;
   }) => {
     setAnnouncementForm({
       id: announcement.id,
-      content: announcement.content,
-      contentFr: announcement.content_fr ?? announcement.content,
-      contentAr: announcement.content_ar ?? announcement.content,
+      messageEn: announcement.message_en ?? "",
+      messageFr: announcement.message_fr ?? "",
+      messageAr: announcement.message_ar ?? "",
+      startDate: announcement.start_date ? announcement.start_date.slice(0, 16) : "",
+      endDate: announcement.end_date ? announcement.end_date.slice(0, 16) : "",
       isActive: announcement.is_active,
       bgColor: announcement.bg_color,
       textColor: announcement.text_color,
@@ -2600,6 +2638,39 @@ function AdminPage() {
     } catch (error) {
       console.error("Failed to remove announcement:", error);
       toast.error("Failed to remove announcement.");
+    }
+  };
+
+  const toggleAnnouncementActive = async (announcement: {
+    id: string;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+    bg_color: string;
+    text_color: string;
+  }) => {
+    try {
+      await updateAnnouncementInDatabase({
+        data: {
+          id: announcement.id,
+          messageEn: announcement.message_en,
+          messageFr: announcement.message_fr,
+          messageAr: announcement.message_ar,
+          startDate: announcement.start_date,
+          endDate: announcement.end_date,
+          isActive: !announcement.is_active,
+          bgColor: announcement.bg_color,
+          textColor: announcement.text_color,
+        },
+      });
+      await announcementsQuery.refetch();
+      toast.success(!announcement.is_active ? "Announcement activated." : "Announcement paused.");
+    } catch (error) {
+      console.error("Failed to toggle announcement state:", error);
+      toast.error("Failed to update announcement state.");
     }
   };
 
@@ -3018,17 +3089,23 @@ function AdminPage() {
                 <AdsContentSection
                   ads={(siteAdsQuery.data ?? []) as Array<{
                     id: string;
-                    image_url: string;
-                    link_url: string | null;
-                    sort_order: number;
+                    campaign_name: string;
+                    image_ar: string | null;
+                    image_fr: string | null;
+                    image_en: string | null;
+                    target_url: string | null;
+                    start_date: string | null;
+                    end_date: string | null;
                     is_active: boolean;
                     created_at: string;
                   }>}
                   announcements={(announcementsQuery.data ?? []) as Array<{
                     id: string;
-                    content: string;
-                    content_fr: string | null;
-                    content_ar: string | null;
+                    message_en: string | null;
+                    message_fr: string | null;
+                    message_ar: string | null;
+                    start_date: string | null;
+                    end_date: string | null;
                     is_active: boolean;
                     bg_color: string;
                     text_color: string;
@@ -3042,16 +3119,15 @@ function AdminPage() {
                   onSaveAd={saveAd}
                   onEditAd={editAd}
                   onDeleteAd={removeAd}
+                  onToggleAdActive={toggleAdActive}
                   onResetAdForm={resetAdForm}
                   isSavingAd={isSavingAd}
-                  adImageInputRef={adImageInputRef}
-                  adImagePreviewUrl={adImagePreviewUrl}
-                  onAdImageChange={handleAdImageChange}
                   announcementForm={announcementForm}
                   onAnnouncementFormChange={setAnnouncementForm}
                   onSaveAnnouncement={saveAnnouncement}
                   onEditAnnouncement={editAnnouncement}
                   onDeleteAnnouncement={removeAnnouncement}
+                  onToggleAnnouncementActive={toggleAnnouncementActive}
                   onResetAnnouncementForm={resetAnnouncementForm}
                   isSavingAnnouncement={isSavingAnnouncement}
                 />
@@ -5389,32 +5465,37 @@ function AdsContentSection({
   onSaveAd,
   onEditAd,
   onDeleteAd,
+  onToggleAdActive,
   onResetAdForm,
   isSavingAd,
-  adImageInputRef,
-  adImagePreviewUrl,
-  onAdImageChange,
   announcementForm,
   onAnnouncementFormChange,
   onSaveAnnouncement,
   onEditAnnouncement,
   onDeleteAnnouncement,
+  onToggleAnnouncementActive,
   onResetAnnouncementForm,
   isSavingAnnouncement,
 }: {
   ads: Array<{
     id: string;
-    image_url: string;
-    link_url: string | null;
-    sort_order: number;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     created_at: string;
   }>;
   announcements: Array<{
     id: string;
-    content: string;
-    content_fr: string | null;
-    content_ar: string | null;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     bg_color: string;
     text_color: string;
@@ -5423,39 +5504,61 @@ function AdsContentSection({
   isLoading: boolean;
   adForm: {
     id: string;
-    imageUrl: string;
-    linkUrl: string;
-    sortOrder: string;
+    campaignName: string;
+    imageAr: string;
+    imageFr: string;
+    imageEn: string;
+    targetUrl: string;
+    startDate: string;
+    endDate: string;
     isActive: boolean;
   };
   onAdFormChange: Dispatch<
     SetStateAction<{
       id: string;
-      imageUrl: string;
-      linkUrl: string;
-      sortOrder: string;
+      campaignName: string;
+      imageAr: string;
+      imageFr: string;
+      imageEn: string;
+      targetUrl: string;
+      startDate: string;
+      endDate: string;
       isActive: boolean;
     }>
   >;
   onSaveAd: () => void;
   onEditAd: (ad: {
     id: string;
-    image_url: string;
-    link_url: string | null;
-    sort_order: number;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
   }) => void;
   onDeleteAd: (id: string) => void;
+  onToggleAdActive: (ad: {
+    id: string;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+  }) => void;
   onResetAdForm: () => void;
   isSavingAd: boolean;
-  adImageInputRef: RefObject<HTMLInputElement | null>;
-  adImagePreviewUrl: string | null;
-  onAdImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   announcementForm: {
     id: string;
-    content: string;
-    contentFr: string;
-    contentAr: string;
+    messageEn: string;
+    messageFr: string;
+    messageAr: string;
+    startDate: string;
+    endDate: string;
     isActive: boolean;
     bgColor: string;
     textColor: string;
@@ -5463,9 +5566,11 @@ function AdsContentSection({
   onAnnouncementFormChange: Dispatch<
     SetStateAction<{
       id: string;
-      content: string;
-      contentFr: string;
-      contentAr: string;
+      messageEn: string;
+      messageFr: string;
+      messageAr: string;
+      startDate: string;
+      endDate: string;
       isActive: boolean;
       bgColor: string;
       textColor: string;
@@ -5474,263 +5579,361 @@ function AdsContentSection({
   onSaveAnnouncement: () => void;
   onEditAnnouncement: (announcement: {
     id: string;
-    content: string;
-    content_fr: string | null;
-    content_ar: string | null;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     bg_color: string;
     text_color: string;
   }) => void;
   onDeleteAnnouncement: (id: string) => void;
+  onToggleAnnouncementActive: (announcement: {
+    id: string;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+    bg_color: string;
+    text_color: string;
+  }) => void;
   onResetAnnouncementForm: () => void;
   isSavingAnnouncement: boolean;
 }) {
-  const { t } = useTranslation();
+  const getScheduleState = (startDate: string | null, endDate: string | null) => {
+    const now = Date.now();
+    const startMs = startDate ? new Date(startDate).getTime() : Number.NEGATIVE_INFINITY;
+    const endMs = endDate ? new Date(endDate).getTime() : Number.POSITIVE_INFINITY;
+    if (Number.isFinite(startMs) && now < startMs) return "scheduled" as const;
+    if (Number.isFinite(endMs) && now > endMs) return "expired" as const;
+    return "active_window" as const;
+  };
+
+  const activeCampaigns = ads.filter((ad) => ad.is_active && getScheduleState(ad.start_date, ad.end_date) === "active_window");
+  const inactiveCampaigns = ads.filter((ad) => !(ad.is_active && getScheduleState(ad.start_date, ad.end_date) === "active_window"));
+
+  const formatDateTime = (value: string | null) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString();
+  };
 
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+    <section className="space-y-6 rounded-lg border border-border bg-card p-4 shadow-sm md:p-6">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Ads & Content</h2>
-        <p className="text-sm text-muted-foreground">Manage homepage banners and global scrolling ticker content.</p>
+        <h2 className="text-base font-semibold text-foreground">Ads & Content CMS</h2>
+        <p className="text-sm text-muted-foreground">Manage multilingual campaigns and scheduled announcements.</p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <div className="space-y-3 rounded-md border border-border bg-background p-3">
-          <h3 className="text-sm font-semibold text-foreground">Ads Manager</h3>
-          <button
-            type="button"
-            onClick={() => adImageInputRef.current?.click()}
-            className="w-full rounded-md border border-dashed border-border bg-muted/40 p-3 text-center transition hover:border-primary/60"
-          >
-            <input
-              ref={adImageInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onAdImageChange}
-            />
-            {adImagePreviewUrl ? (
-              <img
-                src={adImagePreviewUrl}
-                alt="Selected ad preview"
-                className="mx-auto h-28 w-full rounded-md border border-border bg-muted/30 object-cover"
-              />
-            ) : (
-              <span className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <ImagePlus className="size-5" />
-              </span>
-            )}
-            <p className="mt-2 text-xs text-muted-foreground">Upload ad image (optional if URL already set)</p>
-          </button>
+      <div className="space-y-4 rounded-md border border-border bg-background p-4">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="size-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Ad Campaigns</h3>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Input
+            value={adForm.campaignName}
+            onChange={(event) => onAdFormChange((current) => ({ ...current, campaignName: event.target.value }))}
+            placeholder="Campaign name"
+          />
+          <Input
+            value={adForm.targetUrl}
+            onChange={(event) => onAdFormChange((current) => ({ ...current, targetUrl: event.target.value }))}
+            placeholder="Target URL"
+          />
+        </div>
 
-          <input
-            value={adForm.imageUrl}
-            onChange={(event) => onAdFormChange((current) => ({ ...current, imageUrl: event.target.value }))}
-            placeholder="https://...ad-image.jpg"
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-          />
-          <input
-            value={adForm.linkUrl}
-            onChange={(event) => onAdFormChange((current) => ({ ...current, linkUrl: event.target.value }))}
-            placeholder="Optional target URL"
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-          />
-          <div className="grid grid-cols-[1fr_auto] items-center gap-3">
-            <input
-              type="number"
-              min={0}
-              value={adForm.sortOrder}
-              onChange={(event) => onAdFormChange((current) => ({ ...current, sortOrder: event.target.value }))}
-              placeholder="Sort order"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+        <Tabs defaultValue="en" className="space-y-3">
+          <TabsList>
+            <TabsTrigger value="en">EN</TabsTrigger>
+            <TabsTrigger value="fr">FR</TabsTrigger>
+            <TabsTrigger value="ar">AR</TabsTrigger>
+          </TabsList>
+          <TabsContent value="en">
+            <Input
+              value={adForm.imageEn}
+              onChange={(event) => onAdFormChange((current) => ({ ...current, imageEn: event.target.value }))}
+              placeholder="English image URL"
             />
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Active</span>
-              <Switch
-                checked={adForm.isActive}
-                onCheckedChange={(checked) => onAdFormChange((current) => ({ ...current, isActive: checked }))}
-              />
-            </div>
+          </TabsContent>
+          <TabsContent value="fr">
+            <Input
+              value={adForm.imageFr}
+              onChange={(event) => onAdFormChange((current) => ({ ...current, imageFr: event.target.value }))}
+              placeholder="French image URL"
+            />
+          </TabsContent>
+          <TabsContent value="ar">
+            <Input
+              value={adForm.imageAr}
+              onChange={(event) => onAdFormChange((current) => ({ ...current, imageAr: event.target.value }))}
+              placeholder="Arabic image URL"
+            />
+          </TabsContent>
+        </Tabs>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="space-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Start date</span>
+            <Input
+              type="datetime-local"
+              value={adForm.startDate}
+              onChange={(event) => onAdFormChange((current) => ({ ...current, startDate: event.target.value }))}
+            />
+          </label>
+          <label className="space-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Expiration date</span>
+            <Input
+              type="datetime-local"
+              value={adForm.endDate}
+              onChange={(event) => onAdFormChange((current) => ({ ...current, endDate: event.target.value }))}
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Active</span>
+            <Switch
+              checked={adForm.isActive}
+              onCheckedChange={(checked) => onAdFormChange((current) => ({ ...current, isActive: checked }))}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="ml-auto grid grid-cols-2 gap-2">
             <Button variant="hero" className="rounded-md" onClick={onSaveAd} disabled={isSavingAd}>
-              {isSavingAd ? "Saving..." : adForm.id ? "Update Ad" : "Create Ad"}
+              {isSavingAd ? "Saving..." : adForm.id ? "Update Campaign" : "Create Campaign"}
             </Button>
             <Button variant="outline" className="rounded-md" onClick={onResetAdForm}>
               Reset
             </Button>
           </div>
-
-          <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
-            {isLoading ? (
-              <AppEmptyState title="Loading ads..." subtitle="Fetching homepage campaigns." className="py-5" />
-            ) : ads.length === 0 ? (
-              <AppEmptyState title="No ads configured yet." subtitle="Create your first campaign banner." className="py-5" />
-            ) : (
-              ads.map((ad) => (
-                <article key={ad.id} className="rounded-md border border-border bg-card p-2">
-                  <img
-                    src={ad.image_url}
-                    alt="Homepage ad preview"
-                    className="h-20 w-full rounded-md object-cover"
-                    loading="lazy"
-                  />
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Order #{ad.sort_order}</span>
-                    <span>{ad.is_active ? "Active" : "Disabled"}</span>
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={() => onEditAd(ad)}>
-                      Edit
-                    </Button>
-                    <Button type="button" size="sm" variant="destructive" className="rounded-md" onClick={() => onDeleteAd(ad.id)}>
-                      Delete
-                    </Button>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
         </div>
 
-        <div className="space-y-3 rounded-md border border-border bg-background p-3">
-          <h3 className="text-sm font-semibold text-foreground">Ticker Manager</h3>
-          <label className="space-y-1 text-xs font-medium text-muted-foreground">
-            <span>{t("admin.tickerEn")}</span>
-            <textarea
-              value={announcementForm.content}
-              onChange={(event) =>
-                onAnnouncementFormChange((current) => ({
-                  ...current,
-                  content: event.target.value,
-                }))
-              }
-              placeholder="Write a global announcement"
-              className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-            />
-          </label>
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <h4 className="text-xs font-semibold text-foreground">Active Campaigns</h4>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Campaign</TableHead>
+                <TableHead>Window</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[190px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {activeCampaigns.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
+              ) : (
+                activeCampaigns.map((ad) => (
+                  <TableRow key={ad.id}>
+                    <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                    <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
+                    <TableCell><Badge variant="secondary">Active</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
+                        <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>Pause</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-          <label className="space-y-1 text-xs font-medium text-muted-foreground">
-            <span>{t("admin.tickerFr")}</span>
-            <textarea
-              value={announcementForm.contentFr}
-              onChange={(event) =>
-                onAnnouncementFormChange((current) => ({
-                  ...current,
-                  contentFr: event.target.value,
-                }))
-              }
-              placeholder="Écrivez un message global"
-              className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-            />
-          </label>
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <h4 className="text-xs font-semibold text-foreground">Scheduled / Expired Campaigns</h4>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Campaign</TableHead>
+                <TableHead>Window</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[190px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {inactiveCampaigns.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
+              ) : (
+                inactiveCampaigns.map((ad) => {
+                  const state = getScheduleState(ad.start_date, ad.end_date);
+                  const badgeLabel = !ad.is_active ? "Disabled" : state === "scheduled" ? "Scheduled" : "Expired";
+                  return (
+                    <TableRow key={ad.id}>
+                      <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                      <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
+                      <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
+                          <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{ad.is_active ? "Pause" : "Activate"}</Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
-          <label className="space-y-1 text-xs font-medium text-muted-foreground">
-            <span>{t("admin.tickerAr")}</span>
-            <textarea
-              value={announcementForm.contentAr}
-              onChange={(event) =>
-                onAnnouncementFormChange((current) => ({
-                  ...current,
-                  contentAr: event.target.value,
-                }))
-              }
-              placeholder="اكتب إعلانًا عامًا"
-              className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+      <div className="space-y-4 rounded-md border border-border bg-background p-4">
+        <div className="flex items-center gap-2">
+          <Megaphone className="size-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Announcement Manager</h3>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <Textarea
+            value={announcementForm.messageEn}
+            onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, messageEn: event.target.value }))}
+            placeholder="EN message"
+            className="min-h-24"
+          />
+          <Textarea
+            value={announcementForm.messageFr}
+            onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, messageFr: event.target.value }))}
+            placeholder="FR message"
+            className="min-h-24"
+          />
+          <Textarea
+            value={announcementForm.messageAr}
+            onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, messageAr: event.target.value }))}
+            placeholder="AR message"
+            className="min-h-24"
+          />
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="space-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Start date</span>
+            <Input
+              type="datetime-local"
+              value={announcementForm.startDate}
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, startDate: event.target.value }))}
             />
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <label className="space-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Expiration date</span>
+            <Input
+              type="datetime-local"
+              value={announcementForm.endDate}
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, endDate: event.target.value }))}
+            />
+          </label>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Background</span>
             <input
+              type="color"
               value={announcementForm.bgColor}
-              onChange={(event) =>
-                onAnnouncementFormChange((current) => ({ ...current, bgColor: event.target.value }))
-              }
-              placeholder="#deff9a"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, bgColor: event.target.value }))}
+              className="h-8 w-8 rounded border border-border"
             />
+            <Input
+              value={announcementForm.bgColor}
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, bgColor: event.target.value }))}
+              className="h-8"
+            />
+          </label>
+          <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Text</span>
             <input
+              type="color"
               value={announcementForm.textColor}
-              onChange={(event) =>
-                onAnnouncementFormChange((current) => ({ ...current, textColor: event.target.value }))
-              }
-              placeholder="#000000"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, textColor: event.target.value }))}
+              className="h-8 w-8 rounded border border-border"
             />
-          </div>
+            <Input
+              value={announcementForm.textColor}
+              onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, textColor: event.target.value }))}
+              className="h-8"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Active</span>
             <Switch
               checked={announcementForm.isActive}
-              onCheckedChange={(checked) =>
-                onAnnouncementFormChange((current) => ({
-                  ...current,
-                  isActive: checked,
-                }))
-              }
+              onCheckedChange={(checked) => onAnnouncementFormChange((current) => ({ ...current, isActive: checked }))}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="ml-auto grid grid-cols-2 gap-2">
             <Button variant="hero" className="rounded-md" onClick={onSaveAnnouncement} disabled={isSavingAnnouncement}>
-              {isSavingAnnouncement
-                ? "Saving..."
-                : announcementForm.id
-                  ? "Update Message"
-                  : "Create Message"}
+              {isSavingAnnouncement ? "Saving..." : announcementForm.id ? "Update Announcement" : "Add Announcement"}
             </Button>
-            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>
-              Reset
-            </Button>
+            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>Reset</Button>
           </div>
+        </div>
 
-          <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
-            {isLoading ? (
-              <AppEmptyState title="Loading announcements..." subtitle="Fetching ticker messages." className="py-5" />
-            ) : announcements.length === 0 ? (
-              <AppEmptyState title="No announcements configured yet." subtitle="Create your first global announcement." className="py-5" />
-            ) : (
-              announcements.map((announcement) => (
-                <article key={announcement.id} className="rounded-md border border-border bg-card p-2">
-                  <div
-                    className="rounded-md px-2 py-1 text-xs font-medium"
-                    style={{
-                      backgroundColor: announcement.bg_color,
-                      color: announcement.text_color,
-                    }}
-                  >
-                    EN: {announcement.content}
-                    <br />
-                    FR: {announcement.content_fr ?? announcement.content}
-                    <br />
-                    AR: {announcement.content_ar ?? announcement.content}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{announcement.is_active ? "Active" : "Disabled"}</span>
-                    <span>{new Date(announcement.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="rounded-md"
-                      onClick={() => onEditAnnouncement(announcement)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      className="rounded-md"
-                      onClick={() => onDeleteAnnouncement(announcement.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <h4 className="text-xs font-semibold text-foreground">Configured Announcements</h4>
+          {isLoading ? (
+            <AppEmptyState title="Loading announcements..." subtitle="Fetching content entries." className="py-5" />
+          ) : announcements.length === 0 ? (
+            <AppEmptyState title="No announcements yet" subtitle="Create the first scheduled announcement." className="py-5" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Window</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[190px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {announcements.map((announcement) => {
+                  const state = getScheduleState(announcement.start_date, announcement.end_date);
+                  const badgeLabel = !announcement.is_active
+                    ? "Disabled"
+                    : state === "scheduled"
+                      ? "Scheduled"
+                      : state === "expired"
+                        ? "Expired"
+                        : "Active";
+                  return (
+                    <TableRow key={announcement.id}>
+                      <TableCell>
+                        <div
+                          className="rounded-md px-2 py-1 text-xs"
+                          style={{ backgroundColor: announcement.bg_color, color: announcement.text_color }}
+                        >
+                          EN: {announcement.message_en ?? "—"}<br />
+                          FR: {announcement.message_fr ?? "—"}<br />
+                          AR: {announcement.message_ar ?? "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDateTime(announcement.start_date)} → {formatDateTime(announcement.end_date)}</TableCell>
+                      <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => onEditAnnouncement(announcement)}><Pencil className="size-3" />Edit</Button>
+                          <Button size="sm" variant="outline" onClick={() => onToggleAnnouncementActive(announcement)}>
+                            {announcement.is_active ? "Pause" : "Activate"}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAnnouncement(announcement.id)}><Trash2 className="size-3" />Delete</Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </section>
