@@ -3576,6 +3576,50 @@ function AdminPage() {
                 <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin />
               </div>
             ) : null}
+
+            <div className="space-y-2 pt-2">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
+                <p className="text-xs text-muted-foreground">Vendor-only accrual/withdrawal history.</p>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto rounded-md border border-border">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="sticky top-0 bg-muted/60 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Date / Time</th>
+                      <th className="px-3 py-2">Transaction</th>
+                      <th className="px-3 py-2">Amount</th>
+                      <th className="px-3 py-2">Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {platformCollectionHistoryQuery.isLoading ? (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-6 text-center text-xs text-muted-foreground sm:text-sm">
+                          Loading collection history...
+                        </td>
+                      </tr>
+                    ) : vendorScopedCollectionHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-6 text-center text-xs text-muted-foreground sm:text-sm">
+                          No collection history yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      vendorScopedCollectionHistory.map((row) => (
+                        <tr key={row.transactionId} className="border-t border-border bg-card">
+                          <td className="px-3 py-2 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
+                          <td className="px-3 py-2 text-foreground">{row.transactionLabel}</td>
+                          <td className="px-3 py-2 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
+                          <td className="px-3 py-2 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -4230,50 +4274,6 @@ function VendorsSection({
         </table>
       </div>
 
-      <div className="mt-6 space-y-3">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
-          <p className="text-sm text-muted-foreground">Accrual and withdrawal ledger with running balance.</p>
-        </div>
-        <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Date / Time · تاريخ التحصيل</th>
-                <th className="px-4 py-3">Vendor Name · اسم التاجر</th>
-                <th className="px-4 py-3">Transaction · نوع الحركة</th>
-                <th className="px-4 py-3">Amount · المبلغ</th>
-                <th className="px-4 py-3">Remaining Balance · الرصيد المتبقي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isCollectionHistoryLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    Loading collection history...
-                  </td>
-                </tr>
-              ) : collectionHistory.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No collection history yet.
-                  </td>
-                </tr>
-              ) : (
-                collectionHistory.map((row) => (
-                  <tr key={row.transactionId} className="border-t border-border bg-card">
-                    <td className="px-4 py-3 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
-                    <td className="px-4 py-3 font-medium text-foreground">{row.vendorName}</td>
-                    <td className="px-4 py-3 text-foreground">{row.transactionLabel}</td>
-                    <td className="px-4 py-3 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
-                    <td className="px-4 py-3 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
   );
 }
