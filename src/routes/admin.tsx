@@ -141,7 +141,6 @@ import {
 import { checkAdminDatabaseHealth } from "@/lib/admin-health.functions";
 import {
   createVendor,
-  collectVendorPlatformDues,
   getVendorSalesAnalytics,
   listPlatformCollectionHistory,
   listVendors,
@@ -420,7 +419,6 @@ function AdminPage() {
   const fetchCyclists = useServerFn(listCyclists);
   const saveCyclistToDatabase = useServerFn(createCyclist);
   const saveVendorToDatabase = useServerFn(createVendor);
-  const collectPlatformDues = useServerFn(collectVendorPlatformDues);
   const fetchPlatformCollectionHistory = useServerFn(listPlatformCollectionHistory);
   const saveVendorDetails = useServerFn(updateVendorDetails);
   const setVendorActiveState = useServerFn(updateVendorActiveState);
@@ -642,19 +640,11 @@ function AdminPage() {
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isUpdatingVendorState, setIsUpdatingVendorState] = useState(false);
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
-  const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
   const [isInitiateWithdrawalOpen, setIsInitiateWithdrawalOpen] = useState(false);
   const [platformCollectionScanTargetVendor, setPlatformCollectionScanTargetVendor] = useState<AdminVendorRecord | null>(null);
   const [amountToCollectMad, setAmountToCollectMad] = useState(0);
   const [platformCollectionQrPayload, setPlatformCollectionQrPayload] = useState<string | null>(null);
-  const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
-    vendorName: string;
-    amountMad: number;
-    transactionId: string;
-    remainingDuesMad: number;
-    collectedAt: string;
-  } | null>(null);
   const [pendingArchiveProduct, setPendingArchiveProduct] = useState<MasterProductEntity | null>(null);
 
   const [vendorForm, setVendorForm] = useState({
