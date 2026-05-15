@@ -532,81 +532,27 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
+      const { error: settleError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, payment_method, admin_settled, platform_markup, total_price, subtotal_base_price, platform_profit, delivery_fee")
+        .update({ admin_settled: true, updated_at: new Date().toISOString() })
         .eq("vendor_id", data.vendorId)
-        .eq("status", "cash_transferred_to_vendor");
+        .not("admin_settled", "is", true)
+        .gt("platform_markup", 0)
+        .select("id");
 
-      if (pendingError) {
-        throw new Error(pendingError.message);
+      if (settleError) {
+        throw new Error(settleError.message);
       }
 
-      const pendingDuesMad = roundMad(
-        ((pendingRows ?? []) as Array<{ admin_settled?: boolean | null; platform_markup?: number | null; total_price?: number | null; subtotal_base_price?: number | null }>).reduce(
-          (sum, row) => {
-            const isSettledByAdmin = row.admin_settled === true;
-            if (isSettledByAdmin) return sum;
-
-            const fallbackMarkup = Number(row.total_price ?? 0) - Number(row.subtotal_base_price ?? 0);
-            const markup = Number(row.platform_markup) || fallbackMarkup;
-            return sum + (Number.isFinite(markup) ? markup : 0);
-          },
-          0,
-        ),
+      const collectedAmountMad = roundMad(
+        data.amount == null || Number.isNaN(Number(data.amount)) ? 0 : Number(data.amount),
       );
-
-      if (pendingDuesMad <= 0) {
-        throw new Error("No platform dues pending for this vendor.");
-      }
-
-      const providedAmountMad =
-        data.amount == null || Number.isNaN(Number(data.amount))
-          ? null
-          : roundMad(Number(data.amount));
-      const targetAmountMad = providedAmountMad ?? pendingDuesMad;
-      if (providedAmountMad != null && Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
-        throw new Error(
-          `Collection amount mismatch. Expected ${pendingDuesMad.toFixed(2)} MAD, received ${targetAmountMad.toFixed(2)} MAD.`,
-        );
-      }
-
-      const { data: vendorRow, error: vendorReadError } = await (supabaseAdmin as any)
-        .from("vendors")
-        .select("platform_dues")
-        .eq("id", data.vendorId)
-        .single();
-
-      if (vendorReadError) {
-        throw new Error(vendorReadError.message);
-      }
-
-      const currentVendorDuesMad = Number(vendorRow?.platform_dues ?? 0);
-      if (targetAmountMad > currentVendorDuesMad + 0.01) {
-        throw new Error(
-          `Collection amount exceeds current platform dues (${currentVendorDuesMad.toFixed(2)} MAD).`,
-        );
-      }
-
-      const remainingDuesMad = roundMad(Math.max(0, currentVendorDuesMad - targetAmountMad));
-
-      const { error: vendorUpdateError } = await (supabaseAdmin as any)
-        .from("vendors")
-        .update({
-          platform_dues: remainingDuesMad,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", data.vendorId);
-
-      if (vendorUpdateError) {
-        throw new Error(vendorUpdateError.message);
-      }
 
       const { data: insertedCollection, error: collectionInsertError } = await (supabaseAdmin as any)
         .from("platform_collections")
         .insert({
           vendor_id: data.vendorId,
-          amount: targetAmountMad,
+          amount: collectedAmountMad,
           collected_by_user_id: null,
           qr_payload: data.qrPayload ?? null,
         })
@@ -621,22 +567,10 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
         throw new Error("Collection failed. Please try again.");
       }
 
-      const pendingOrderIds = ((pendingRows ?? []) as Array<{ id: string }>).map((row) => row.id);
-      if (pendingOrderIds.length > 0) {
-        const { error: settleError } = await (supabaseAdmin as any)
-          .from("orders")
-          .update({ admin_settled: true, updated_at: new Date().toISOString() })
-          .in("id", pendingOrderIds);
-
-        if (settleError) {
-          throw new Error(settleError.message);
-        }
-      }
-
       return {
         transactionId: String(insertedCollection.id),
-        collectedAmountMad: roundMad(targetAmountMad),
-        remainingDuesMad,
+        collectedAmountMad,
+        remainingDuesMad: 0,
       } satisfies PlatformDuesCollectionResult;
     } catch (error) {
       console.error("collectVendorPlatformDues failed:", error);
