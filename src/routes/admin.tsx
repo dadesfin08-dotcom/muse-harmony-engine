@@ -4866,6 +4866,27 @@ function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{collapsed ? "" : "Platform Packs"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {platformPacksNavItems.map((item) => (
+                <SidebarMenuItem key={item.tab}>
+                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={item.label}>
+                    <Link
+                      to="/admin"
+                      search={{ tab: item.tab }}
+                      className="flex items-center gap-2 rounded-md hover:bg-sidebar-accent/70"
+                    >
+                      <item.icon className="size-4" />
+                      {!collapsed ? <span>{item.label}</span> : null}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
