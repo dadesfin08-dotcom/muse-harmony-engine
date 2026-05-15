@@ -596,6 +596,10 @@ function AdminPage() {
   const createMarkupRuleInDatabase = useServerFn(createMarkupRule);
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
+  const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
+  const triggerManualBoost = useServerFn(manualBoostBrandScore);
+  const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
+  const triggerScoreReset = useServerFn(resetBrandEngineScore);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
@@ -691,6 +695,13 @@ function AdminPage() {
     staleTime: 60_000,
     placeholderData: (previousData) => previousData,
   });
+  const brandEngineQuery = useQuery({
+    queryKey: ["admin", "brand-engine"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchBrandEngineAnalytics(),
+    refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -748,6 +759,7 @@ function AdminPage() {
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
+  const brandEngineAnalytics = brandEngineQuery.data as BrandEngineAnalytics | undefined;
   const activeCategories = categories.filter((category) => category.is_active);
   const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
@@ -858,6 +870,13 @@ function AdminPage() {
   const [isImportingBrands, setIsImportingBrands] = useState(false);
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
+  const [isBrandEngineActionLoading, setIsBrandEngineActionLoading] = useState(false);
+  const [rotationRatios, setRotationRatios] = useState({
+    trending: 70,
+    midTier: 20,
+    discovery: 10,
+  });
+  const [previewSeedUser, setPreviewSeedUser] = useState("user-demo-001");
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
