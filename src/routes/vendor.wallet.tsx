@@ -24,6 +24,7 @@ export const Route = createFileRoute("/vendor/wallet")({
 function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
   const [isPlatformScannerOpen, setIsPlatformScannerOpen] = useState(false);
   const [isSubmittingPlatformPayment, setIsSubmittingPlatformPayment] = useState(false);
@@ -74,6 +75,32 @@ function VendorWalletPage() {
     queryFn: () => fetchSettlementSummary({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
   });
+
+  useEffect(() => {
+    let mounted = true;
+
+    const hydrateAuthUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+      setAuthUserId(session?.user?.id ?? null);
+    };
+
+    void hydrateAuthUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUserId(session?.user?.id ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -235,30 +262,26 @@ function VendorWalletPage() {
   }, [isPlatformScannerOpen, vendorId]);
 
   const handleConfirmPlatformPayment = async () => {
-    if (!pendingScannedPayment) return;
+    if (!pendingScannedPayment || isSubmittingPlatformPayment) return;
+
+    if (!authUserId) {
+      toast.error("Authentication lost. Please refresh the page.");
+      return;
+    }
 
     setIsSubmittingPlatformPayment(true);
     try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-
-      if (authError || !user?.id) {
-        throw new Error("Authentication required to confirm payment.");
-      }
-
       const { data: vendorRow, error: vendorLookupError } = await supabase
         .from("vendors")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", authUserId)
         .single();
 
       if (vendorLookupError || !vendorRow?.id) {
         throw new Error("Vendor account not found for this authenticated user.");
       }
 
-      const normalizedAmount = Number(pendingScannedPayment.amount ?? 0);
+      const normalizedAmount = Number.parseFloat(String(pendingScannedPayment.amount ?? 0));
       if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
         throw new Error("Invalid payment amount.");
       }
@@ -269,21 +292,21 @@ function VendorWalletPage() {
           vendor_id: vendorRow.id,
           transaction_type: "WITHDRAWAL",
           amount: -Math.abs(Number(normalizedAmount.toFixed(2))),
-          created_by: user.id,
+          created_by: authUserId,
           order_id: null,
         });
 
       if (ledgerInsertError) {
-        console.error("Ledger Insert Error:", ledgerInsertError);
-        throw new Error("Failed to process payment.");
+        throw ledgerInsertError;
       }
 
       setPendingScannedPayment(null);
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorRow.id, normalizedVendorPhoneNumber] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-      toast.success("Payment recorded successfully.");
+      toast.success("Payment confirmed successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to record payment.");
+      console.error("Ledger Insert Failed:", error);
+      toast.error("Failed to process payment. Check your connection.");
     } finally {
       setIsSubmittingPlatformPayment(false);
     }
