@@ -205,7 +205,7 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const [issuedRowsResult, repaidRowsResult] = await Promise.all([
+    const [issuedRowsResult, repaidRowsResult, carnetOrdersResult] = await Promise.all([
       (supabaseAdmin as any)
         .from("carnet_transactions")
         .select("amount, created_at")
@@ -216,6 +216,13 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
         .select("amount")
         .eq("vendor_id", vendor.id)
         .eq("transaction_type", "CREDIT_REPAID"),
+      (supabaseAdmin as any)
+        .from("orders")
+        .select("id, customer_phone, total_price, delivery_fee, vendor_revenue, platform_markup, platform_profit, created_at, delivered_at")
+        .eq("vendor_id", vendor.id)
+        .eq("payment_method", "Carnet")
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: true }),
     ]);
 
     if (issuedRowsResult.error) {
@@ -224,6 +231,10 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
 
     if (repaidRowsResult.error) {
       throw new Error(repaidRowsResult.error.message);
+    }
+
+    if (carnetOrdersResult.error) {
+      throw new Error(carnetOrdersResult.error.message);
     }
 
     const totalIssuedCreditMad = (issuedRowsResult.data ?? []).reduce(
@@ -237,6 +248,62 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
     );
 
     const totalOutstandingCreditMad = Math.max(totalIssuedCreditMad - settledCreditMad, 0);
+
+    const carnetOrders = (carnetOrdersResult.data ?? []) as Array<{
+      id: string;
+      customer_phone?: string | null;
+      total_price?: number | null;
+      delivery_fee?: number | null;
+      vendor_revenue?: number | null;
+      platform_markup?: number | null;
+      platform_profit?: number | null;
+      created_at?: string | null;
+      delivered_at?: string | null;
+    }>;
+
+    const repaymentsByCustomer = new Map<string, number>();
+    for (const customer of carnetCustomers) {
+      const phone = String(customer.customerPhone ?? "").trim();
+      if (!phone) continue;
+      const issuedForCustomer = carnetOrders
+        .filter((order) => String(order.customer_phone ?? "") === phone)
+        .reduce((sum, order) => sum + Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0), 0);
+      const repaidForCustomer = Math.max(issuedForCustomer - Number(customer.currentDebt ?? 0), 0);
+      repaymentsByCustomer.set(phone, repaidForCustomer);
+    }
+
+    let adminDuesInCarnetMad = 0;
+    let settledCarnetVendorRevenueMad = 0;
+    let settledCarnetPlatformDuesMad = 0;
+    const settledOrderIds = new Set<string>();
+    const outstandingOrderIds = new Set<string>();
+
+    for (const order of carnetOrders) {
+      const customerPhone = String(order.customer_phone ?? "").trim();
+      if (!customerPhone) continue;
+      const gross = roundMoney(Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0));
+      if (gross <= 0) continue;
+
+      const remainingRepayment = repaymentsByCustomer.get(customerPhone) ?? 0;
+      const allocated = Math.min(gross, Math.max(remainingRepayment, 0));
+      const isFullySettled = allocated >= gross - 0.01;
+      repaymentsByCustomer.set(customerPhone, Math.max(remainingRepayment - allocated, 0));
+
+      const fixedMarkup = roundMoney(
+        Number.isFinite(Number(order.platform_markup))
+          ? Number(order.platform_markup)
+          : Number(order.platform_profit ?? 0),
+      );
+
+      if (isFullySettled) {
+        settledOrderIds.add(order.id);
+        settledCarnetVendorRevenueMad += roundMoney(Number(order.vendor_revenue ?? 0));
+        settledCarnetPlatformDuesMad += Math.max(fixedMarkup, 0);
+      } else {
+        outstandingOrderIds.add(order.id);
+        adminDuesInCarnetMad += Math.max(fixedMarkup, 0);
+      }
+    }
 
     const creditIssuedTodayMad = (issuedRowsResult.data ?? []).reduce(
       (sum: number, row: { amount?: number | null; created_at?: string | null }) => {
@@ -254,6 +321,11 @@ export const getVendorCarnetData = createServerFn({ method: "POST" })
         totalOutstandingCreditMad: Number(totalOutstandingCreditMad.toFixed(2)),
         creditIssuedTodayMad: Number(creditIssuedTodayMad.toFixed(2)),
         settledCreditMad: Number(settledCreditMad.toFixed(2)),
+        adminDuesInCarnetMad: Number(roundMoney(adminDuesInCarnetMad).toFixed(2)),
+        settledCarnetVendorRevenueMad: Number(roundMoney(settledCarnetVendorRevenueMad).toFixed(2)),
+        settledCarnetPlatformDuesMad: Number(roundMoney(settledCarnetPlatformDuesMad).toFixed(2)),
+        settledCarnetOrderIds: Array.from(settledOrderIds),
+        outstandingCarnetOrderIds: Array.from(outstandingOrderIds),
       },
     };
   } catch (error) {
