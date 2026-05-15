@@ -120,7 +120,15 @@ const idInputSchema = z.object({
 });
 
 const activeAdsFilterSchema = z.object({
-  zoneId: z.string().uuid().optional().nullable(),
+  zoneId: z.preprocess(
+    (value) => {
+      if (typeof value === "string" && value.trim().length === 0) {
+        return null;
+      }
+      return value;
+    },
+    z.string().uuid().optional().nullable(),
+  ),
   campaignType: z.enum(["AD", "PROMO", "NEWS"]).optional().nullable(),
 });
 
