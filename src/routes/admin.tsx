@@ -3557,6 +3557,26 @@ function AdminPage() {
     }
   };
 
+  const updateSubscriptionOrderStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string; status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled" }) =>
+      updateSubscriptionOrderStatusInDatabase({ data: { orderId, status } }),
+    onSuccess: async () => {
+      await adminOrdersQuery.refetch();
+      toast.success("Subscription order status updated.");
+    },
+    onError: (error) => {
+      console.error("Failed to update subscription order status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update subscription order status.");
+    },
+  });
+
+  const updateSubscriptionOrderStatusHandler = async (
+    orderId: string,
+    status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled",
+  ) => {
+    await updateSubscriptionOrderStatusMutation.mutateAsync({ orderId, status });
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
