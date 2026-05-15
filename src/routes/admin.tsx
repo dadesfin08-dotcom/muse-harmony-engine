@@ -561,17 +561,6 @@ function AdminPage() {
     staleTime: 60_000,
     placeholderData: (previousData) => previousData,
   });
-  const platformCollectionHistoryQuery = useQuery({
-    queryKey: ["admin", "platform-collections-history", platformCollectionScanTargetVendor?.id ?? null],
-    enabled: isAdminDataEnabled && isInitiateWithdrawalOpen && Boolean(platformCollectionScanTargetVendor?.id),
-    queryFn: () =>
-      fetchPlatformCollectionHistory({
-        data: { vendorId: platformCollectionScanTargetVendor!.id },
-      }),
-    refetchInterval: isInitiateWithdrawalOpen ? 10_000 : false,
-    placeholderData: (previousData) => previousData,
-  });
-
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -878,6 +867,17 @@ function AdminPage() {
     queryKey: ["admin", "vendor-analytics", selectedVendor?.id],
     enabled: Boolean(isManageVendorPanelOpen && selectedVendor?.id),
     queryFn: () => fetchVendorSalesAnalytics({ data: { vendorId: selectedVendor!.id } }),
+  });
+
+  const platformCollectionHistoryQuery = useQuery({
+    queryKey: ["admin", "platform-collections-history", platformCollectionScanTargetVendor?.id ?? null],
+    enabled: isAdminDataEnabled && isInitiateWithdrawalOpen && Boolean(platformCollectionScanTargetVendor?.id),
+    queryFn: () =>
+      fetchPlatformCollectionHistory({
+        data: { vendorId: platformCollectionScanTargetVendor!.id },
+      }),
+    refetchInterval: isInitiateWithdrawalOpen ? 10_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 
   const filteredOrders = useMemo(
@@ -2870,8 +2870,6 @@ function AdminPage() {
                 <VendorsSection
                   vendors={vendors}
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
-                  collectionHistory={collectionHistory}
-                  isCollectionHistoryLoading={platformCollectionHistoryQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
                   onCollectPlatformDues={openPlatformCollectionQr}
