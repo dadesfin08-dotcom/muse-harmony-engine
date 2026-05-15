@@ -7658,7 +7658,7 @@ function PackOrdersSection({
   onUpdateStatus: (orderId: string, status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => Promise<void>;
 }) {
   const statusBadgeClass: Record<string, string> = {
-    new: "bg-warning/20 text-warning-foreground",
+    new: "bg-chart-4/20 text-chart-4",
     preparing: "bg-highlight/20 text-highlight-foreground",
     ready: "bg-chart-2/20 text-chart-2",
     delivering: "bg-primary/20 text-primary",
