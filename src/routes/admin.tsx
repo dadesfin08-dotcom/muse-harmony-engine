@@ -3223,9 +3223,10 @@ function AdminPage() {
                   }>}
                   announcements={(announcementsQuery.data ?? []) as Array<{
                     id: string;
-                    message_en: string | null;
-                    message_fr: string | null;
-                    message_ar: string | null;
+                    title: string;
+                    messages_en: string[] | null;
+                    messages_fr: string[] | null;
+                    messages_ar: string[] | null;
                     start_date: string | null;
                     end_date: string | null;
                     is_active: boolean;
