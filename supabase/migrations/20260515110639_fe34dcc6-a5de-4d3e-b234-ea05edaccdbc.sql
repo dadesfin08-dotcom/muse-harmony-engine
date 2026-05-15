@@ -1,0 +1,11 @@
+drop trigger if exists trg_sync_platform_commission_ledger_from_cash_transfer on public.orders;
+create trigger trg_sync_platform_commission_ledger_from_cash_transfer
+after update of status on public.orders
+for each row
+execute function public.sync_platform_commission_ledger_from_cash_transfer();
+
+drop trigger if exists trg_sync_platform_commission_ledger_from_carnet_payment on public.carnet_payments;
+create trigger trg_sync_platform_commission_ledger_from_carnet_payment
+after insert on public.carnet_payments
+for each row
+execute function public.sync_platform_commission_ledger_from_carnet_payment();
