@@ -1004,6 +1004,7 @@ export type Database = {
         Row: {
           bg_color: string | null
           campaign_name: string
+          campaign_type: Database["public"]["Enums"]["campaign_type"]
           content: string
           content_ar: string | null
           content_fr: string | null
@@ -1021,10 +1022,13 @@ export type Database = {
           target_url: string | null
           text_color: string | null
           updated_at: string
+          views_count: number
+          zone_id: string | null
         }
         Insert: {
           bg_color?: string | null
           campaign_name?: string
+          campaign_type?: Database["public"]["Enums"]["campaign_type"]
           content: string
           content_ar?: string | null
           content_fr?: string | null
@@ -1042,10 +1046,13 @@ export type Database = {
           target_url?: string | null
           text_color?: string | null
           updated_at?: string
+          views_count?: number
+          zone_id?: string | null
         }
         Update: {
           bg_color?: string | null
           campaign_name?: string
+          campaign_type?: Database["public"]["Enums"]["campaign_type"]
           content?: string
           content_ar?: string | null
           content_fr?: string | null
@@ -1063,8 +1070,18 @@ export type Database = {
           target_url?: string | null
           text_color?: string | null
           updated_at?: string
+          views_count?: number
+          zone_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_ads_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1358,6 +1375,10 @@ export type Database = {
           vendor_earnings_added: number
         }[]
       }
+      increment_campaign_view: {
+        Args: { campaign_id_input: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       recompute_vendor_carnet_customer_debt: {
         Args: { p_customer_phone: string; p_vendor_id: string }
@@ -1377,6 +1398,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      campaign_type: "AD" | "PROMO" | "NEWS"
       carnet_transaction_type:
         | "CREDIT_ISSUED"
         | "CREDIT_REPAID"
@@ -1544,6 +1566,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      campaign_type: ["AD", "PROMO", "NEWS"],
       carnet_transaction_type: [
         "CREDIT_ISSUED",
         "CREDIT_REPAID",

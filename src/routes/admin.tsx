@@ -53,6 +53,8 @@ import {
   Trophy,
   TrendingDown,
   CalendarDays,
+  Eye,
+  Tag,
   Pencil,
   Trash2,
   Image as ImageIcon,
@@ -814,6 +816,8 @@ function AdminPage() {
   const [adForm, setAdForm] = useState({
     id: "",
     campaignName: "",
+    zoneId: "global",
+    campaignType: "AD" as "AD" | "PROMO" | "NEWS",
     imageAr: "",
     imageFr: "",
     imageEn: "",
@@ -959,6 +963,18 @@ function AdminPage() {
   );
 
   const communeOptions = serviceZones;
+  const adTargetZones = useMemo(
+    () =>
+      communeOptions.flatMap((commune) =>
+        commune.neighborhoods.map((zone) => ({
+          id: zone.id,
+          zoneCode: zone.zoneCode,
+          communeName: getLocalizedCommuneName(commune),
+          zoneName: zone.name,
+        })),
+      ),
+    [communeOptions],
+  );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
   const cyclistNeighborhoodOptions =
     communeOptions.find((commune) => commune.id === cyclistForm.communeId)?.neighborhoods ?? [];
@@ -1126,6 +1142,40 @@ function AdminPage() {
       void supabase.removeChannel(channel);
     };
   }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
+
+  useEffect(() => {
+    if (!isAdminDataEnabled) return;
+
+    const channel = supabase
+      .channel("admin-site-ads-live-views")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "site_ads",
+        },
+        (payload) => {
+          const updated = payload.new as { id?: string; views_count?: number } | null;
+          if (!updated?.id || typeof updated.views_count !== "number") return;
+
+          queryClient.setQueryData(
+            ["admin", "site-ads"],
+            (current:
+              | Array<{ id: string; views_count: number } & Record<string, unknown>>
+              | undefined) =>
+              (current ?? []).map((row) =>
+                row.id === updated.id ? { ...row, views_count: updated.views_count } : row,
+              ),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [isAdminDataEnabled, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
@@ -2391,6 +2441,8 @@ function AdminPage() {
     setAdForm({
       id: "",
       campaignName: "",
+      zoneId: "global",
+      campaignType: "AD",
       imageAr: "",
       imageFr: "",
       imageEn: "",
@@ -2438,6 +2490,8 @@ function AdminPage() {
           data: {
             id: adForm.id,
             campaignName: adForm.campaignName.trim(),
+            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
             imageEn: adForm.imageEn.trim() || null,
@@ -2452,6 +2506,8 @@ function AdminPage() {
         await createSiteAdInDatabase({
           data: {
             campaignName: adForm.campaignName.trim(),
+            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
             imageEn: adForm.imageEn.trim() || null,
@@ -2535,6 +2591,9 @@ function AdminPage() {
   const editAd = (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -2546,6 +2605,8 @@ function AdminPage() {
     setAdForm({
       id: ad.id,
       campaignName: ad.campaign_name ?? "",
+      zoneId: ad.zone_id ?? "global",
+      campaignType: ad.campaign_type ?? "AD",
       imageAr: ad.image_ar ?? "",
       imageFr: ad.image_fr ?? "",
       imageEn: ad.image_en ?? "",
@@ -2573,6 +2634,9 @@ function AdminPage() {
   const toggleAdActive = async (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -2586,6 +2650,8 @@ function AdminPage() {
         data: {
           id: ad.id,
           campaignName: ad.campaign_name,
+          zoneId: ad.zone_id,
+          campaignType: ad.campaign_type,
           imageAr: ad.image_ar,
           imageFr: ad.image_fr,
           imageEn: ad.image_en,
@@ -3090,6 +3156,9 @@ function AdminPage() {
                   ads={(siteAdsQuery.data ?? []) as Array<{
                     id: string;
                     campaign_name: string;
+                    zone_id: string | null;
+                    campaign_type: "AD" | "PROMO" | "NEWS";
+                    views_count: number;
                     image_ar: string | null;
                     image_fr: string | null;
                     image_en: string | null;
@@ -3114,6 +3183,7 @@ function AdminPage() {
                   isLoading={
                     dbHealthQuery.isLoading || siteAdsQuery.isLoading || announcementsQuery.isLoading
                   }
+                  adTargetZones={adTargetZones}
                   adForm={adForm}
                   onAdFormChange={setAdForm}
                   onSaveAd={saveAd}
@@ -5460,6 +5530,7 @@ function AdsContentSection({
   ads,
   announcements,
   isLoading,
+  adTargetZones,
   adForm,
   onAdFormChange,
   onSaveAd,
@@ -5480,6 +5551,9 @@ function AdsContentSection({
   ads: Array<{
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -5502,9 +5576,17 @@ function AdsContentSection({
     created_at: string;
   }>;
   isLoading: boolean;
+  adTargetZones: Array<{
+    id: string;
+    zoneCode: string;
+    communeName: string;
+    zoneName: string;
+  }>;
   adForm: {
     id: string;
     campaignName: string;
+    zoneId: string;
+    campaignType: "AD" | "PROMO" | "NEWS";
     imageAr: string;
     imageFr: string;
     imageEn: string;
@@ -5517,6 +5599,8 @@ function AdsContentSection({
     SetStateAction<{
       id: string;
       campaignName: string;
+      zoneId: string;
+      campaignType: "AD" | "PROMO" | "NEWS";
       imageAr: string;
       imageFr: string;
       imageEn: string;
@@ -5530,6 +5614,9 @@ function AdsContentSection({
   onEditAd: (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -5542,6 +5629,9 @@ function AdsContentSection({
   onToggleAdActive: (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -5622,6 +5712,14 @@ function AdsContentSection({
     return date.toLocaleString();
   };
 
+  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} · ${zone.zoneName}`]));
+
+  const getCampaignTypeBadgeClass = (campaignType: "AD" | "PROMO" | "NEWS") => {
+    if (campaignType === "NEWS") return "border-transparent bg-primary/15 text-primary";
+    if (campaignType === "PROMO") return "border-transparent bg-success/15 text-success";
+    return "border-transparent bg-chart-1/15 text-chart-1";
+  };
+
   return (
     <section className="space-y-6 rounded-lg border border-border bg-card p-4 shadow-sm md:p-6">
       <div>
@@ -5640,6 +5738,37 @@ function AdsContentSection({
             onChange={(event) => onAdFormChange((current) => ({ ...current, campaignName: event.target.value }))}
             placeholder="Campaign name"
           />
+          <Select
+            value={adForm.campaignType}
+            onValueChange={(value) =>
+              onAdFormChange((current) => ({ ...current, campaignType: value as "AD" | "PROMO" | "NEWS" }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Campaign type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="AD">Advertisement (إعلان)</SelectItem>
+              <SelectItem value="PROMO">Promotion (ترويج)</SelectItem>
+              <SelectItem value="NEWS">News (خبر)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={adForm.zoneId}
+            onValueChange={(value) => onAdFormChange((current) => ({ ...current, zoneId: value }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Target zone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="global">Global / All Zones</SelectItem>
+              {adTargetZones.map((zone) => (
+                <SelectItem key={zone.id} value={zone.id}>
+                  {zone.communeName} · {zone.zoneName} ({zone.zoneCode})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             value={adForm.targetUrl}
             onChange={(event) => onAdFormChange((current) => ({ ...current, targetUrl: event.target.value }))}
@@ -5719,6 +5848,9 @@ function AdsContentSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Campaign</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead className="text-right">Views</TableHead>
                 <TableHead>Window</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[190px]">Actions</TableHead>
@@ -5726,11 +5858,29 @@ function AdsContentSection({
             </TableHeader>
             <TableBody>
               {activeCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
               ) : (
                 activeCampaigns.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
+                        <Tag className="mr-1 size-3" />
+                        {ad.campaign_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3" />
+                        {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="size-3" />
+                        {ad.views_count ?? 0}
+                      </span>
+                    </TableCell>
                     <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                     <TableCell><Badge variant="secondary">Active</Badge></TableCell>
                     <TableCell>
@@ -5753,6 +5903,9 @@ function AdsContentSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Campaign</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Zone</TableHead>
+                <TableHead className="text-right">Views</TableHead>
                 <TableHead>Window</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[190px]">Actions</TableHead>
@@ -5760,7 +5913,7 @@ function AdsContentSection({
             </TableHeader>
             <TableBody>
               {inactiveCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
               ) : (
                 inactiveCampaigns.map((ad) => {
                   const state = getScheduleState(ad.start_date, ad.end_date);
@@ -5768,6 +5921,24 @@ function AdsContentSection({
                   return (
                     <TableRow key={ad.id}>
                       <TableCell className="font-medium">{ad.campaign_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
+                          <Tag className="mr-1 size-3" />
+                          {ad.campaign_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="size-3" />
+                          {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                          <Eye className="size-3" />
+                          {ad.views_count ?? 0}
+                        </span>
+                      </TableCell>
                       <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>

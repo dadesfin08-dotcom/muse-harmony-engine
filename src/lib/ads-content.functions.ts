@@ -19,6 +19,8 @@ const parseOptionalDateTime = (value?: string | null) => {
 
 const adBaseSchema = z.object({
   campaignName: z.string().trim().min(1).max(120),
+  zoneId: z.string().uuid().optional().nullable(),
+  campaignType: z.enum(["AD", "PROMO", "NEWS"]).default("AD"),
   imageAr: z.string().trim().url().max(2000).optional().nullable(),
   imageFr: z.string().trim().url().max(2000).optional().nullable(),
   imageEn: z.string().trim().url().max(2000).optional().nullable(),
@@ -107,7 +109,7 @@ export const listSiteAds = createServerFn({ method: "GET" }).handler(async () =>
   const { data, error } = await (supabaseAdmin as any)
     .from("site_ads")
     .select(
-      "id, campaign_name, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
+      "id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -128,6 +130,8 @@ export const createSiteAd = createServerFn({ method: "POST" })
       .insert({
         campaign_name: campaignName,
         content: campaignName,
+        zone_id: data.zoneId ?? null,
+        campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
         image_en: imageEn,
@@ -138,7 +142,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
         end_date: parseOptionalDateTime(data.endDate),
         is_active: data.isActive,
       })
-      .select("id, campaign_name, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !inserted) throw new Error(error?.message ?? "Failed to create ad.");
@@ -158,6 +162,8 @@ export const updateSiteAd = createServerFn({ method: "POST" })
       .update({
         campaign_name: campaignName,
         content: campaignName,
+        zone_id: data.zoneId ?? null,
+        campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
         image_en: imageEn,
@@ -169,7 +175,7 @@ export const updateSiteAd = createServerFn({ method: "POST" })
         is_active: data.isActive,
       })
       .eq("id", data.id)
-      .select("id, campaign_name, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !updated) throw new Error(error?.message ?? "Failed to update ad.");
@@ -268,7 +274,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
     (supabaseAdmin as any)
       .from("site_ads")
       .select(
-        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, start_date, end_date, is_active, created_at",
+        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, zone_id, views_count, start_date, end_date, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
@@ -296,6 +302,9 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
     .map((ad: any) => ({
       id: ad.id,
       campaign_name: ad.campaign_name,
+      campaign_type: ad.campaign_type ?? "AD",
+      zone_id: ad.zone_id ?? null,
+      views_count: Number(ad.views_count ?? 0),
       image_ar: ad.image_ar,
       image_fr: ad.image_fr,
       image_en: ad.image_en,
