@@ -134,7 +134,7 @@ export const listSiteAds = createServerFn({ method: "GET" }).handler(async () =>
   const { data, error } = await (supabaseAdmin as any)
     .from("site_ads")
     .select(
-      "id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
+      "id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -155,7 +155,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
       .insert({
         campaign_name: campaignName,
         content: campaignName,
-        zone_id: data.zoneId ?? null,
+        target_zone_ids: normalizeTargetZoneIds(data.targetZoneIds),
         campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
@@ -167,7 +167,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
         end_date: parseOptionalDateTime(data.endDate),
         is_active: data.isActive,
       })
-      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !inserted) throw new Error(error?.message ?? "Failed to create ad.");
@@ -187,7 +187,7 @@ export const updateSiteAd = createServerFn({ method: "POST" })
       .update({
         campaign_name: campaignName,
         content: campaignName,
-        zone_id: data.zoneId ?? null,
+        target_zone_ids: normalizeTargetZoneIds(data.targetZoneIds),
         campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
@@ -200,7 +200,7 @@ export const updateSiteAd = createServerFn({ method: "POST" })
         is_active: data.isActive,
       })
       .eq("id", data.id)
-      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !updated) throw new Error(error?.message ?? "Failed to update ad.");
