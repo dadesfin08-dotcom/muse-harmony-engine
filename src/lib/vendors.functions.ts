@@ -543,45 +543,45 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { error: settleError } = await (supabaseAdmin as any)
-        .from("orders")
-        .update({ admin_settled: true, updated_at: new Date().toISOString() })
-        .eq("vendor_id", data.vendorId)
-        .not("admin_settled", "is", true)
-        .gt("platform_markup", 0)
-        .select("id");
+      await ensureVendorProfileExists(data.vendorId);
 
-      if (settleError) {
-        throw new Error(settleError.message);
+      const currentPendingMad = await getVendorPendingCommissionMad(data.vendorId);
+      const collectedAmountMad = roundMad(Number(data.amount));
+
+      if (!Number.isFinite(collectedAmountMad) || collectedAmountMad <= 0) {
+        throw new Error("Collection amount must be greater than zero.");
       }
 
-      const collectedAmountMad = roundMad(
-        data.amount == null || Number.isNaN(Number(data.amount)) ? 0 : Number(data.amount),
-      );
+      if (collectedAmountMad > currentPendingMad + 0.01) {
+        throw new Error(`Collection amount exceeds current platform dues (${currentPendingMad.toFixed(2)} MAD).`);
+      }
 
-      const { data: insertedCollection, error: collectionInsertError } = await (supabaseAdmin as any)
-        .from("platform_collections")
+      const { data: insertedLedgerRow, error: ledgerInsertError } = await (supabaseAdmin as any)
+        .from("platform_commission_ledger")
         .insert({
           vendor_id: data.vendorId,
-          amount: collectedAmountMad,
-          collected_by_user_id: null,
-          qr_payload: data.qrPayload ?? null,
+          order_id: null,
+          transaction_type: "WITHDRAWAL",
+          amount: -collectedAmountMad,
+          created_by: data.createdBy ?? null,
         })
         .select("id")
         .single();
 
-      if (collectionInsertError) {
-        throw new Error(collectionInsertError.message);
+      if (ledgerInsertError) {
+        throw new Error(ledgerInsertError.message);
       }
 
-      if (!insertedCollection?.id) {
+      if (!insertedLedgerRow?.id) {
         throw new Error("Collection failed. Please try again.");
       }
 
+      const remainingDuesMad = roundMad(Math.max(currentPendingMad - collectedAmountMad, 0));
+
       return {
-        transactionId: String(insertedCollection.id),
+        transactionId: String(insertedLedgerRow.id),
         collectedAmountMad,
-        remainingDuesMad: 0,
+        remainingDuesMad,
       } satisfies PlatformDuesCollectionResult;
     } catch (error) {
       console.error("collectVendorPlatformDues failed:", error);
@@ -591,51 +591,63 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
 
 export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
-    .from("orders")
-    .select("id, vendor_id, platform_markup, platform_profit, delivery_fee, updated_at, vendors(store_name)")
-    .eq("status", "cash_transferred_to_vendor")
-    .eq("admin_settled", true)
-    .order("updated_at", { ascending: false })
-    .limit(1000);
+    .from("platform_commission_ledger")
+    .select("id, vendor_id, transaction_type, amount, created_at")
+    .order("created_at", { ascending: true })
+    .limit(2000);
 
   if (error) {
     throw new Error(`Failed to load collection history: ${error.message}`);
   }
 
-  const grouped = new Map<
-    string,
-    { transactionId: string; vendorId: string; vendorName: string; amountMad: number; collectedAt: string }
-  >();
-
-  for (const row of (data ?? []) as Array<{
+  const rows = (data ?? []) as Array<{
     id: string;
     vendor_id: string;
-    platform_markup: number | null;
-    platform_profit: number | null;
-    delivery_fee: number | null;
-    updated_at: string | null;
-    vendors?: { store_name?: string | null } | null;
-  }>) {
-    const collectedAt = row.updated_at ?? new Date(0).toISOString();
-    const key = `${row.vendor_id}::${collectedAt}`;
-    const existing = grouped.get(key);
-    const dueAmount = platformDueFromOrder(row);
+    transaction_type: "ACCRUAL" | "WITHDRAWAL";
+    amount: number | null;
+    created_at: string | null;
+  }>;
 
-    if (existing) {
-      existing.amountMad = roundMad(existing.amountMad + dueAmount);
-      continue;
+  const vendorIds = Array.from(new Set(rows.map((row) => row.vendor_id).filter(Boolean)));
+  const vendorNamesById = new Map<string, string>();
+
+  if (vendorIds.length > 0) {
+    const { data: vendorRows, error: vendorsError } = await (supabaseAdmin as any)
+      .from("vendors")
+      .select("id, store_name")
+      .in("id", vendorIds);
+
+    if (vendorsError) {
+      throw new Error(`Failed to load vendor names: ${vendorsError.message}`);
     }
 
-    grouped.set(key, {
-      transactionId: row.id,
-      vendorId: row.vendor_id,
-      vendorName: row.vendors?.store_name?.trim() || "Vendor",
-      amountMad: roundMad(dueAmount),
-      collectedAt,
-    });
+    for (const vendorRow of (vendorRows ?? []) as Array<{ id: string; store_name: string | null }>) {
+      vendorNamesById.set(vendorRow.id, String(vendorRow.store_name ?? "Vendor").trim() || "Vendor");
+    }
   }
 
-  return Array.from(grouped.values())
+  const runningBalanceByVendor = new Map<string, number>();
+  const history = rows.map((row) => {
+    const amountMad = roundMad(Number(row.amount ?? 0));
+    const nextBalance = roundMad((runningBalanceByVendor.get(row.vendor_id) ?? 0) + amountMad);
+    runningBalanceByVendor.set(row.vendor_id, nextBalance);
+
+    return {
+      transactionId: row.id,
+      vendorId: row.vendor_id,
+      vendorName: vendorNamesById.get(row.vendor_id) ?? "Vendor",
+      transactionType: row.transaction_type,
+      transactionLabel:
+        row.transaction_type === "ACCRUAL"
+          ? "🟢 Added from Order"
+          : "🔴 Admin Withdrawal",
+      amountMad,
+      remainingBalanceMad: nextBalance,
+      collectedAt: row.created_at ?? new Date(0).toISOString(),
+    } satisfies PlatformCollectionHistoryItem;
+  });
+
+  return history
     .sort((a, b) => new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime())
-    .slice(0, 200) satisfies PlatformCollectionHistoryItem[];
+    .slice(0, 500) satisfies PlatformCollectionHistoryItem[];
 });
