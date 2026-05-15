@@ -109,22 +109,14 @@ function VendorWalletPage() {
       (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
       0,
     );
-    const platformDuesMad = transferredCashOrders.reduce((sum, order) => {
-      const isSettledByAdmin = order.admin_settled === true;
-      if (isSettledByAdmin) return sum;
-
-      const fallbackMarkup = Number(order.total_price ?? 0) - Number(order.subtotal_base_price ?? 0);
-      const markup = Number(order.platform_markup) || fallbackMarkup;
-      return sum + (Number.isFinite(markup) ? markup : 0);
-    }, 0);
-    const settledCarnetPlatformDuesMad = Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0);
+    const platformDuesMad = Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0);
 
     return {
       totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
       myNetProfitMad: Math.round(myNetProfitMad * 100) / 100,
-      platformDuesMad: Math.round((platformDuesMad + settledCarnetPlatformDuesMad) * 100) / 100,
+      platformDuesMad: Math.round(platformDuesMad * 100) / 100,
     };
-  }, [dashboardQuery.data?.orders, carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad]);
+  }, [dashboardQuery.data?.orders, dashboardQuery.data?.vendor?.platformDuesMad]);
   const hasSummary = Boolean(summary);
   const hasCashBreakdown = Boolean(dashboardQuery.data);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");

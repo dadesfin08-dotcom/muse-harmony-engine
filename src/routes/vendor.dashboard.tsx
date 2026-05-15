@@ -194,7 +194,6 @@ type DashboardOrder = {
   platformProfitMad: number;
   platformMarkupMad: number;
   subtotalBasePriceMad: number;
-  adminSettled: boolean;
   itemCount: number;
   items: Array<{
     name: string;
@@ -797,7 +796,6 @@ function VendorDashboardPage() {
               : Number(row.delivery_fee ?? 0),
         ),
         subtotalBasePriceMad: roundMoney(Number((row as { subtotal_base_price?: number | null }).subtotal_base_price ?? 0)),
-        adminSettled: Boolean(row.admin_settled ?? false),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
         cyclist:
@@ -910,9 +908,7 @@ function VendorDashboardPage() {
     const settledCarnetNetProfitMad = roundMoney(
       Number(carnetQuery.data?.kpis?.settledCarnetVendorRevenueMad ?? 0),
     );
-    const settledCarnetPlatformDuesMad = roundMoney(
-      Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0),
-    );
+    const ledgerPlatformDuesMad = roundMoney(Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0));
 
     return {
       pendingOrders,
@@ -924,22 +920,12 @@ function VendorDashboardPage() {
         transferredCashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0) +
           settledCarnetNetProfitMad,
       ),
-      platformDuesMad: roundMoney(
-        transferredCashOrders.reduce((sum, order) => {
-          const isSettledByAdmin = order.adminSettled === true;
-          if (isSettledByAdmin) return sum;
-
-          const fallbackMarkup = Number(order.totalMad ?? 0) - Number(order.subtotalBasePriceMad ?? 0);
-          const markup = Number(order.platformMarkupMad) || fallbackMarkup;
-          return sum + (Number.isFinite(markup) ? markup : 0);
-        }, 0) +
-          settledCarnetPlatformDuesMad,
-      ),
+      platformDuesMad: ledgerPlatformDuesMad,
       cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
       creditIssuedMad: roundMoney(0),
       outstandingCreditMad: roundMoney(Number(carnetQuery.data?.kpis?.totalOutstandingCreditMad ?? 0)),
     };
-  }, [orders, queue, kpiFilter, carnetQuery.data?.kpis]);
+  }, [orders, queue, kpiFilter, carnetQuery.data?.kpis, dashboardQuery.data?.vendor?.platformDuesMad]);
 
   const printableOrder = useMemo<ThermalReceiptOrder>(
     () =>
