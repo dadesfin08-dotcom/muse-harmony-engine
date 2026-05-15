@@ -4190,10 +4190,10 @@ function OverviewSection({
   ];
 
   const toneClasses = {
-    indigo: "bg-[oklch(0.95_0.03_275)] text-[oklch(0.5_0.18_275)]",
-    emerald: "bg-[oklch(0.95_0.03_160)] text-[oklch(0.53_0.15_160)]",
-    violet: "bg-[oklch(0.95_0.03_300)] text-[oklch(0.53_0.16_300)]",
-    amber: "bg-[oklch(0.96_0.03_80)] text-[oklch(0.63_0.15_80)]",
+    indigo: "bg-primary/12 text-primary",
+    emerald: "bg-success/16 text-success",
+    violet: "bg-highlight/16 text-highlight-foreground",
+    amber: "bg-accent/16 text-accent-foreground",
   };
 
   const zoneChartData = useMemo(() => {
@@ -4237,11 +4237,11 @@ function OverviewSection({
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs font-medium">
               {metric.metric.change >= 0 ? (
-                <ArrowUpRight className="size-3.5 text-[oklch(0.62_0.16_160)]" />
+                <ArrowUpRight className="size-3.5 text-success" />
               ) : (
-                <ArrowDownRight className="size-3.5 text-[oklch(0.62_0.16_30)]" />
+                <ArrowDownRight className="size-3.5 text-accent" />
               )}
-              <span className={metric.metric.change >= 0 ? "text-[oklch(0.52_0.14_160)]" : "text-[oklch(0.59_0.18_30)]"}>
+              <span className={metric.metric.change >= 0 ? "text-success" : "text-accent-foreground"}>
                 {formatDelta(metric.metric.change, metric.metric.format)} ({Math.abs(metric.metric.changePercentage).toFixed(1)}%)
               </span>
               <span className="text-muted-foreground">vs yesterday</span>
@@ -4293,8 +4293,8 @@ function OverviewSection({
                 <span
                   className={cn(
                     "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
-                    zone.performance === "fast" && "bg-[oklch(0.94_0.03_160)] text-[oklch(0.5_0.14_160)]",
-                    zone.performance === "slow" && "bg-[oklch(0.95_0.03_50)] text-[oklch(0.58_0.16_50)]",
+                    zone.performance === "fast" && "bg-success/15 text-success",
+                    zone.performance === "slow" && "bg-accent/20 text-accent-foreground",
                     zone.performance === "normal" && "bg-muted text-muted-foreground",
                   )}
                 >
