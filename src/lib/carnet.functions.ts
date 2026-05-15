@@ -86,6 +86,10 @@ type VendorCarnetRow = {
   status: string;
 };
 
+function roundMoney(value: number) {
+  return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
 const getActiveVendor = async (phoneNumber?: string) => {
   if (!phoneNumber) {
     const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
