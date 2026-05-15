@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatMoroccoPhoneForPayload, normalizeMoroccoPhoneInput } from "@/lib/morocco-phone";
+import { getVendorCarnetData } from "@/lib/carnet.functions";
 import {
   getVendorDashboardData,
   getVendorSettlementSummary,
@@ -40,12 +41,21 @@ function VendorWalletPage() {
   }, [vendorPhoneNumber]);
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
+  const fetchCarnet = useServerFn(getVendorCarnetData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
     enabled: Boolean(normalizedVendorPhoneNumber),
     queryFn: () => fetchDashboard({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    refetchInterval: 4_000,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const carnetQuery = useQuery({
+    queryKey: ["vendor", "carnet", normalizedVendorPhoneNumber],
+    enabled: Boolean(normalizedVendorPhoneNumber),
+    queryFn: () => fetchCarnet({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
@@ -104,16 +114,22 @@ function VendorWalletPage() {
       0,
     );
     const platformDuesMad = unsettledTransferredCashOrders.reduce(
-      (sum, order) => sum + Number(order.delivery_fee ?? 0),
+      (sum, order) => {
+        const fixedMarkup = Number.isFinite(Number(order.platform_markup))
+          ? Number(order.platform_markup)
+          : Number(order.platform_profit ?? order.delivery_fee ?? 0);
+        return sum + fixedMarkup;
+      },
       0,
     );
+    const settledCarnetPlatformDuesMad = Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0);
 
     return {
       totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
       myNetProfitMad: Math.round(myNetProfitMad * 100) / 100,
-      platformDuesMad: Math.round(platformDuesMad * 100) / 100,
+      platformDuesMad: Math.round((platformDuesMad + settledCarnetPlatformDuesMad) * 100) / 100,
     };
-  }, [dashboardQuery.data?.orders]);
+  }, [dashboardQuery.data?.orders, carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad]);
   const hasSummary = Boolean(summary);
   const hasCashBreakdown = Boolean(dashboardQuery.data);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");

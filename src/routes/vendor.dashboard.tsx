@@ -192,6 +192,7 @@ type DashboardOrder = {
   totalMad: number;
   vendorShareMad: number;
   platformProfitMad: number;
+  platformMarkupMad: number;
   adminSettled: boolean;
   itemCount: number;
   items: Array<{
@@ -787,6 +788,13 @@ function VendorDashboardPage() {
         platformProfitMad: roundMoney(
           Number.isFinite(Number(row.platform_profit)) ? Number(row.platform_profit) : Number(row.delivery_fee ?? 0),
         ),
+        platformMarkupMad: roundMoney(
+          Number.isFinite(Number((row as { platform_markup?: number | null }).platform_markup))
+            ? Number((row as { platform_markup?: number | null }).platform_markup)
+            : Number.isFinite(Number(row.platform_profit))
+              ? Number(row.platform_profit)
+              : Number(row.delivery_fee ?? 0),
+        ),
         adminSettled: Boolean(row.admin_settled ?? false),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
@@ -895,32 +903,14 @@ function VendorDashboardPage() {
     const transferredCashOrders = deliveredInFilter.filter(
       (order) => order.status === "cash_transferred_to_vendor" && order.paymentMethod === "COD",
     );
-    const settledCarnetOrders = deliveredInFilter.filter(
-      (order) =>
-        order.paymentMethod === "Carnet" &&
-        (order.status === "cash_transferred_to_vendor" || order.status === "delivered"),
-    );
 
     const settledCreditMad = Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0);
-    const settledCarnetGrossMad = roundMoney(
-      settledCarnetOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
+    const settledCarnetNetProfitMad = roundMoney(
+      Number(carnetQuery.data?.kpis?.settledCarnetVendorRevenueMad ?? 0),
     );
-    const settledCarnetProfitRatio =
-      settledCarnetGrossMad > 0
-        ? roundMoney(
-            settledCarnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0) /
-              settledCarnetGrossMad,
-          )
-        : 0;
-    const settledCarnetPlatformRatio =
-      settledCarnetGrossMad > 0
-        ? roundMoney(
-            settledCarnetOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) /
-              settledCarnetGrossMad,
-          )
-        : 0;
-    const settledCarnetNetProfitMad = roundMoney(settledCreditMad * settledCarnetProfitRatio);
-    const settledCarnetPlatformDuesMad = roundMoney(settledCreditMad * settledCarnetPlatformRatio);
+    const settledCarnetPlatformDuesMad = roundMoney(
+      Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0),
+    );
 
     return {
       pendingOrders,
@@ -933,7 +923,7 @@ function VendorDashboardPage() {
           settledCarnetNetProfitMad,
       ),
       platformDuesMad: roundMoney(
-        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) +
+        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformMarkupMad ?? 0), 0) +
           settledCarnetPlatformDuesMad,
       ),
       cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),
@@ -1531,6 +1521,7 @@ function VendorDashboardPage() {
                 totalOutstandingCreditMad={Number(carnetQuery.data?.kpis?.totalOutstandingCreditMad ?? 0)}
                 creditIssuedTodayMad={Number(carnetQuery.data?.kpis?.creditIssuedTodayMad ?? 0)}
                 settledCreditMad={Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0)}
+                adminDuesInCarnetMad={Number(carnetQuery.data?.kpis?.adminDuesInCarnetMad ?? 0)}
                 onPhoneChange={setTrustedCustomerPhone}
                 onMaxLimitChange={setTrustedCustomerMaxLimit}
                 onNameChange={setTrustedCustomerName}
@@ -2469,6 +2460,7 @@ function CarnetView({
   totalOutstandingCreditMad,
   creditIssuedTodayMad,
   settledCreditMad,
+  adminDuesInCarnetMad,
   onPhoneChange,
   onMaxLimitChange,
   onNameChange,
@@ -2487,6 +2479,7 @@ function CarnetView({
   totalOutstandingCreditMad: number;
   creditIssuedTodayMad: number;
   settledCreditMad: number;
+  adminDuesInCarnetMad: number;
   onPhoneChange: (value: string) => void;
   onMaxLimitChange: (value: string) => void;
   onNameChange: (value: string) => void;
@@ -2514,7 +2507,7 @@ function CarnetView({
         <p className="text-xs text-muted-foreground">Manage trusted customers and their credit balances.</p>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -2547,6 +2540,18 @@ function CarnetView({
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
               <CheckCircle2 className="size-4" />
+            </span>
+          </div>
+        </article>
+
+        <article className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Admin Dues in Carnet · مستحقات المنصة من الكريدي</p>
+              <p className="mt-1 text-2xl font-extrabold text-destructive">{adminDuesInCarnetMad.toFixed(2)} MAD</p>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/40 bg-background text-destructive">
+              <History className="size-4" />
             </span>
           </div>
         </article>
