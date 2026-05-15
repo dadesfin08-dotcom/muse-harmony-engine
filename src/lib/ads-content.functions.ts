@@ -317,7 +317,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
     (supabaseAdmin as any)
       .from("site_ads")
       .select(
-        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, zone_id, views_count, start_date, end_date, is_active, created_at",
+        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, target_zone_ids, views_count, start_date, end_date, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
@@ -346,13 +346,17 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
 
   const ads = (adsResponse.data ?? [])
     .filter((ad: any) => isWithinSchedule(ad.start_date, ad.end_date))
-    .filter((ad: any) => normalizedZoneId === null || ad.zone_id === null || ad.zone_id === normalizedZoneId)
+    .filter((ad: any) => {
+      if (normalizedZoneId === null) return true;
+      const zones = Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [];
+      return zones.length === 0 || zones.includes(normalizedZoneId);
+    })
     .filter((ad: any) => normalizedCampaignType === null || ad.campaign_type === normalizedCampaignType)
     .map((ad: any) => ({
       id: ad.id,
       campaign_name: ad.campaign_name,
       campaign_type: ad.campaign_type ?? "AD",
-      zone_id: ad.zone_id ?? null,
+      target_zone_ids: Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [],
       views_count: Number(ad.views_count ?? 0),
       image_ar: ad.image_ar,
       image_fr: ad.image_fr,
