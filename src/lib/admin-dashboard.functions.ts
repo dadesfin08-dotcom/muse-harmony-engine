@@ -44,12 +44,29 @@ type PlatformPackRow = {
   name_fr: string | null;
   name_ar: string | null;
   description: string | null;
+  base_price_mad: number;
+  billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY";
   price_per_unit: number;
   unit_type: string;
+  delivery_window: string | null;
   image_url: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+type PlatformPackItemRow = {
+  id: string;
+  pack_id: string;
+  item_label: string;
+  sort_order: number;
+};
+
+type PlatformPackFeatureRow = {
+  id: string;
+  pack_id: string;
+  feature_label: string;
+  sort_order: number;
 };
 
 const platformPackInputSchema = z.object({
@@ -57,8 +74,12 @@ const platformPackInputSchema = z.object({
   nameFr: z.string().trim().max(160).nullable().optional(),
   nameAr: z.string().trim().max(160).nullable().optional(),
   description: z.string().trim().max(1200).nullable().optional(),
-  pricePerUnit: z.number().min(0).max(1_000_000),
+  basePriceMad: z.number().min(0).max(1_000_000),
+  billingCycle: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
   unitType: z.string().trim().min(1).max(40),
+  deliveryWindow: z.string().trim().max(120).nullable().optional(),
+  packItems: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
+  packFeatures: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
   imageUrl: z.string().trim().url().max(2000).nullable().optional(),
   isActive: z.boolean().default(true),
 });
