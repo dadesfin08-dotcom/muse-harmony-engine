@@ -192,6 +192,7 @@ type DashboardOrder = {
   totalMad: number;
   vendorShareMad: number;
   platformProfitMad: number;
+  platformMarkupMad: number;
   adminSettled: boolean;
   itemCount: number;
   items: Array<{
@@ -787,6 +788,13 @@ function VendorDashboardPage() {
         platformProfitMad: roundMoney(
           Number.isFinite(Number(row.platform_profit)) ? Number(row.platform_profit) : Number(row.delivery_fee ?? 0),
         ),
+        platformMarkupMad: roundMoney(
+          Number.isFinite(Number((row as { platform_markup?: number | null }).platform_markup))
+            ? Number((row as { platform_markup?: number | null }).platform_markup)
+            : Number.isFinite(Number(row.platform_profit))
+              ? Number(row.platform_profit)
+              : Number(row.delivery_fee ?? 0),
+        ),
         adminSettled: Boolean(row.admin_settled ?? false),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
@@ -902,25 +910,12 @@ function VendorDashboardPage() {
     );
 
     const settledCreditMad = Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0);
-    const settledCarnetGrossMad = roundMoney(
-      settledCarnetOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
+    const settledCarnetNetProfitMad = roundMoney(
+      Number(carnetQuery.data?.kpis?.settledCarnetVendorRevenueMad ?? 0),
     );
-    const settledCarnetProfitRatio =
-      settledCarnetGrossMad > 0
-        ? roundMoney(
-            settledCarnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0) /
-              settledCarnetGrossMad,
-          )
-        : 0;
-    const settledCarnetPlatformRatio =
-      settledCarnetGrossMad > 0
-        ? roundMoney(
-            settledCarnetOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) /
-              settledCarnetGrossMad,
-          )
-        : 0;
-    const settledCarnetNetProfitMad = roundMoney(settledCreditMad * settledCarnetProfitRatio);
-    const settledCarnetPlatformDuesMad = roundMoney(settledCreditMad * settledCarnetPlatformRatio);
+    const settledCarnetPlatformDuesMad = roundMoney(
+      Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0),
+    );
 
     return {
       pendingOrders,
