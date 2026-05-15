@@ -41,7 +41,6 @@ import {
   Download,
   FileUp,
   Search,
-  BadgeCheck,
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
