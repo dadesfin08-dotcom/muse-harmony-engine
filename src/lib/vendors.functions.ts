@@ -83,7 +83,7 @@ const getVendorSalesAnalyticsInputSchema = z.object({
 
 const collectVendorPlatformDuesInputSchema = z.object({
   vendorId: z.string().uuid(),
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
   qrPayload: z.record(z.string(), z.any()).nullable().optional(),
 });
 
@@ -110,6 +110,14 @@ export type PlatformDuesCollectionResult = {
   transactionId: string;
   collectedAmountMad: number;
   remainingDuesMad: number;
+};
+
+export type PlatformCollectionHistoryItem = {
+  transactionId: string;
+  vendorId: string;
+  vendorName: string;
+  amountMad: number;
+  collectedAt: string;
 };
 
 type PendingPlatformDuesRow = {
@@ -543,8 +551,12 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
         throw new Error("No platform dues pending for this vendor.");
       }
 
-      const targetAmountMad = roundMad(Number(data.amount ?? 0));
-      if (Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
+      const providedAmountMad =
+        data.amount == null || Number.isNaN(Number(data.amount))
+          ? null
+          : roundMad(Number(data.amount));
+      const targetAmountMad = providedAmountMad ?? pendingDuesMad;
+      if (providedAmountMad != null && Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
         throw new Error(
           `Collection amount mismatch. Expected ${pendingDuesMad.toFixed(2)} MAD, received ${targetAmountMad.toFixed(2)} MAD.`,
         );
@@ -588,3 +600,29 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Failed to collect platform dues.");
     }
   });
+
+export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_collections")
+    .select("id, vendor_id, amount, created_at, vendors!inner(store_name)")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    throw new Error(`Failed to load collection history: ${error.message}`);
+  }
+
+  return ((data ?? []) as Array<{
+    id: string;
+    vendor_id: string;
+    amount: number | null;
+    created_at: string | null;
+    vendors?: { store_name?: string | null } | null;
+  }>).map((row) => ({
+    transactionId: row.id,
+    vendorId: row.vendor_id,
+    vendorName: row.vendors?.store_name?.trim() || "Vendor",
+    amountMad: roundMad(Number(row.amount ?? 0)),
+    collectedAt: row.created_at ?? new Date(0).toISOString(),
+  })) satisfies PlatformCollectionHistoryItem[];
+});
