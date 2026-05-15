@@ -138,7 +138,8 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const tomorrowStartIso = tomorrowStartDate.toISOString();
   const weekStartIso = weekStartDate.toISOString();
 
-  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes] = await Promise.all([
+  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes, ledgerTotalRes, ledgerBeforeTodayRes] =
+    await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
       .select(
@@ -150,6 +151,8 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
     (supabaseAdmin as any).from("master_products").select("id, category, brand_id"),
     (supabaseAdmin as any).from("brands").select("id, name_en"),
+    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()"),
+    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()").lt("created_at", todayStartIso),
   ]);
 
   if (ordersRes.error) throw new Error(ordersRes.error.message);
@@ -157,6 +160,8 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   if (vendorsRes.error) throw new Error(vendorsRes.error.message);
   if (masterProductsRes.error) throw new Error(masterProductsRes.error.message);
   if (brandsRes.error) throw new Error(brandsRes.error.message);
+  if (ledgerTotalRes.error) throw new Error(ledgerTotalRes.error.message);
+  if (ledgerBeforeTodayRes.error) throw new Error(ledgerBeforeTodayRes.error.message);
 
   type DashboardOrderRow = {
     id: string;
@@ -234,11 +239,18 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     yesterdayOrders.map((order) => order.vendor_id).filter((vendorId): vendorId is string => !!vendorId),
   );
 
+  const finalizedStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
+  const todaySuccessfulOrders = todayOrders.filter((order) => finalizedStatuses.has(order.status));
+  const yesterdaySuccessfulOrders = yesterdayOrders.filter((order) => finalizedStatuses.has(order.status));
+
+  const ledgerGrandTotal = Number((ledgerTotalRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
+  const ledgerBeforeToday = Number((ledgerBeforeTodayRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
+
   const totalOrdersKpi = buildKpi(todayOrders.length, yesterdayOrders.length, "integer");
   const activeVendorsKpi = buildKpi(todayActiveVendorIds.size, yesterdayActiveVendorIds.size, "integer");
   const totalGrossVolumeKpi = buildKpi(
-    sumBy(todayOrders, (order) => Number(order.total_price ?? 0)),
-    sumBy(yesterdayOrders, (order) => Number(order.total_price ?? 0)),
+    sumBy(todaySuccessfulOrders, (order) => Number(order.total_price ?? 0)),
+    sumBy(yesterdaySuccessfulOrders, (order) => Number(order.total_price ?? 0)),
     "currency",
   );
   const vendorsRevenueKpi = buildKpi(
@@ -247,15 +259,11 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     "currency",
   );
   const cyclistsEarningsKpi = buildKpi(
-    sumBy(todayOrders, (order) => Number(order.delivery_fee ?? 0)),
-    sumBy(yesterdayOrders, (order) => Number(order.delivery_fee ?? 0)),
+    sumBy(todaySuccessfulOrders, (order) => Number(order.delivery_fee ?? 0)),
+    sumBy(yesterdaySuccessfulOrders, (order) => Number(order.delivery_fee ?? 0)),
     "currency",
   );
-  const platformProfitKpi = buildKpi(
-    sumBy(todayOrders, (order) => Number(order.platform_profit ?? 0)),
-    sumBy(yesterdayOrders, (order) => Number(order.platform_profit ?? 0)),
-    "currency",
-  );
+  const platformProfitKpi = buildKpi(ledgerGrandTotal, ledgerBeforeToday, "currency");
 
   const dayMap = new Map<string, { day: string; label: string; orders: number; revenue: number }>();
   for (let i = 0; i < 7; i += 1) {
@@ -283,8 +291,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const neighborhoodHotspotMap = new Map<string, { neighborhood: string; zone: string; orders: number; revenue: number }>();
   const brandInsightsMap = new Map<string, { name: string; orders: number; revenue: number; quantity: number }>();
   const categoryInsightsMap = new Map<string, { name: string; orders: number; revenue: number; quantity: number }>();
-
-  const finalizedStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
 
   for (const order of last7DaysOrders) {
     const neighborhoodMeta = order.neighborhood_id ? neighborhoodById.get(order.neighborhood_id) : null;
