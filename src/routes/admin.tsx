@@ -18,7 +18,7 @@ import Papa from "papaparse";
 import ExcelJS from "exceljs";
 import { QRCodeSVG } from "qrcode.react";
 import { z } from "zod";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   LayoutDashboard,
   PackageCheck,
@@ -42,6 +42,16 @@ import {
   FileUp,
   Search,
   Plus,
+  Wallet,
+  BikeIcon,
+  Landmark,
+  ArrowUpRight,
+  ArrowDownRight,
+  Gauge,
+  Building2,
+  Clock3,
+  Trophy,
+  TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -367,10 +377,61 @@ const platformCommissionPaymentQrPayloadSchema = z.object({
   timestamp: z.string(),
 });
 
-const weeklyOrdersChartConfig = {
+type OverviewKpiMetric = {
+  value: number;
+  previousValue: number;
+  change: number;
+  changePercentage: number;
+  format: "integer" | "currency";
+};
+
+type OverviewAnalytics = {
+  kpis: {
+    totalOrders: OverviewKpiMetric;
+    activeVendors: OverviewKpiMetric;
+    totalGrossVolume: OverviewKpiMetric;
+    vendorsRevenue: OverviewKpiMetric;
+    cyclistsEarnings: OverviewKpiMetric;
+    platformProfit: OverviewKpiMetric;
+  };
+  salesOrdersTrends: Array<{ day: string; label: string; orders: number; revenue: number }>;
+  zonePerformance: {
+    top: Array<{ zone: string; orders: number; revenue: number; activeVendors: number }>;
+    bottom: Array<{ zone: string; orders: number; revenue: number; activeVendors: number }>;
+  };
+  deliverySpeedMetrics: Array<{
+    zone: string;
+    neighborhood: string;
+    avgMinutes: number;
+    deliveries: number;
+    performance: "fast" | "slow" | "normal";
+  }>;
+  marketInsights: {
+    topNeighborhoods: Array<{ neighborhood: string; zone: string; orders: number; revenue: number }>;
+    topBrands: Array<{ name: string; orders: number; revenue: number; quantity: number }>;
+    topCategories: Array<{ name: string; orders: number; revenue: number; quantity: number }>;
+  };
+};
+
+const salesOrdersChartConfig = {
   orders: {
-    label: i18n.t("admin.nav.orders"),
-    color: "oklch(0.72 0.14 157)",
+    label: "Orders",
+    color: "oklch(0.58 0.18 275)",
+  },
+  revenue: {
+    label: "Revenue",
+    color: "oklch(0.66 0.15 160)",
+  },
+} satisfies ChartConfig;
+
+const zonePerformanceChartConfig = {
+  topOrders: {
+    label: "Top zones",
+    color: "oklch(0.67 0.14 160)",
+  },
+  bottomOrders: {
+    label: "Bottom zones",
+    color: "oklch(0.73 0.15 72)",
   },
 } satisfies ChartConfig;
 
