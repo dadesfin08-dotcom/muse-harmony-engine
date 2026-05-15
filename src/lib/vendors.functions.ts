@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   formatMoroccoPhoneForPayload,
@@ -128,23 +129,6 @@ export type PlatformCollectionHistoryItem = {
 
 function roundMad(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
-}
-
-async function ensureVendorProfileExists(vendorId: string) {
-  const { error } = await (supabaseAdmin as any).from("profiles").upsert(
-    {
-      id: vendorId,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    },
-  );
-
-  if (error) {
-    throw new Error(error.message);
-  }
 }
 
 async function getVendorPendingCommissionMad(vendorId: string) {
@@ -540,10 +524,33 @@ export const getVendorSalesAnalytics = createServerFn({ method: "POST" })
   });
 
 export const collectVendorPlatformDues = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
-      await ensureVendorProfileExists(data.vendorId);
+      const actorUserId = context.userId;
+
+      const [{ data: vendorRow, error: vendorError }, { data: actorRoles, error: roleError }] = await Promise.all([
+        (supabaseAdmin as any).from("vendors").select("id, user_id").eq("id", data.vendorId).single(),
+        (supabaseAdmin as any).from("user_roles").select("role").eq("user_id", actorUserId),
+      ]);
+
+      if (vendorError || !vendorRow?.id) {
+        throw new Error(vendorError?.message ?? "Vendor not found.");
+      }
+      if (roleError) {
+        throw new Error(roleError.message);
+      }
+
+      const normalizedRoles = ((actorRoles ?? []) as Array<{ role: string | null }>)
+        .map((row) => String(row.role ?? "").trim().toLowerCase())
+        .filter(Boolean);
+      const isAdminActor = normalizedRoles.some((role) => role === "admin" || role === "super_admin" || role === "superadmin");
+      const isVendorOwnerActor = String(vendorRow.user_id ?? "") === actorUserId;
+
+      if (!isAdminActor && !isVendorOwnerActor) {
+        throw new Error("You are not authorized to record this platform commission payment.");
+      }
 
       const currentPendingMad = await getVendorPendingCommissionMad(data.vendorId);
       const collectedAmountMad = roundMad(Number(data.amount));
@@ -563,7 +570,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
           order_id: null,
           transaction_type: "WITHDRAWAL",
           amount: -collectedAmountMad,
-          created_by: data.createdBy ?? null,
+          created_by: actorUserId,
         })
         .select("id")
         .single();
