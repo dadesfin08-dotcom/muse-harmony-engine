@@ -86,6 +86,76 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_analytics_events: {
+        Row: {
+          brand_id: string | null
+          created_at: string | null
+          event_type: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_analytics_events_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_scores: {
+        Row: {
+          active_until: string | null
+          base_score: number | null
+          brand_id: string
+          is_trending: boolean | null
+          last_updated: string | null
+          trending_velocity: number | null
+        }
+        Insert: {
+          active_until?: string | null
+          base_score?: number | null
+          brand_id: string
+          is_trending?: boolean | null
+          last_updated?: string | null
+          trending_velocity?: number | null
+        }
+        Update: {
+          active_until?: string | null
+          base_score?: number | null
+          brand_id?: string
+          is_trending?: boolean | null
+          last_updated?: string | null
+          trending_velocity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_scores_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: true
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           created_at: string
@@ -1086,6 +1156,35 @@ export type Database = {
           views_count?: number
         }
         Relationships: []
+      }
+      trending_history: {
+        Row: {
+          brand_id: string | null
+          id: number
+          recorded_at: string | null
+          score: number | null
+        }
+        Insert: {
+          brand_id?: string | null
+          id?: number
+          recorded_at?: string | null
+          score?: number | null
+        }
+        Update: {
+          brand_id?: string | null
+          id?: number
+          recorded_at?: string | null
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trending_history_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
