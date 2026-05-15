@@ -813,19 +813,22 @@ function AdminPage() {
   });
   const [adForm, setAdForm] = useState({
     id: "",
-    imageUrl: "",
-    linkUrl: "",
-    sortOrder: "0",
+    campaignName: "",
+    imageAr: "",
+    imageFr: "",
+    imageEn: "",
+    targetUrl: "",
+    startDate: "",
+    endDate: "",
     isActive: true,
   });
-  const [adImageFile, setAdImageFile] = useState<File | null>(null);
-  const [adImagePreviewUrl, setAdImagePreviewUrl] = useState<string | null>(null);
-  const adImageInputRef = useRef<HTMLInputElement | null>(null);
   const [announcementForm, setAnnouncementForm] = useState({
     id: "",
-    content: "",
-    contentFr: "",
-    contentAr: "",
+    messageEn: "",
+    messageFr: "",
+    messageAr: "",
+    startDate: "",
+    endDate: "",
     isActive: true,
     bgColor: "#deff9a",
     textColor: "#000000",
