@@ -178,6 +178,45 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const products = (masterProductsRes.data ?? []) as Array<{ id: string; category: string | null; brand_id: string | null }>;
   const brands = (brandsRes.data ?? []) as Array<{ id: string; name_en: string | null }>;
 
+  const fetchLedgerTotals = async () => {
+    const pageSize = 1000;
+    let from = 0;
+    let total = 0;
+    let beforeToday = 0;
+
+    while (true) {
+      const to = from + pageSize - 1;
+      const ledgerPageRes = await (supabaseAdmin as any)
+        .from("platform_commission_ledger")
+        .select("amount, created_at")
+        .order("created_at", { ascending: true })
+        .range(from, to);
+
+      if (ledgerPageRes.error) {
+        throw new Error(ledgerPageRes.error.message);
+      }
+
+      const rows = (ledgerPageRes.data ?? []) as Array<{ amount: number | null; created_at: string | null }>;
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const amount = Number(row.amount ?? 0);
+        total += amount;
+
+        if (row.created_at && row.created_at < todayStartIso) {
+          beforeToday += amount;
+        }
+      }
+
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { total, beforeToday };
+  };
+
+  const { total: ledgerGrandTotal, beforeToday: ledgerBeforeToday } = await fetchLedgerTotals();
+
   const neighborhoodById = new Map(
     neighborhoods.map((neighborhood) => [
       neighborhood.id,
@@ -237,9 +276,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const finalizedStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
   const todaySuccessfulOrders = todayOrders.filter((order) => finalizedStatuses.has(order.status));
   const yesterdaySuccessfulOrders = yesterdayOrders.filter((order) => finalizedStatuses.has(order.status));
-
-  const ledgerGrandTotal = Number((ledgerTotalRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
-  const ledgerBeforeToday = Number((ledgerBeforeTodayRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
 
   const totalOrdersKpi = buildKpi(todayOrders.length, yesterdayOrders.length, "integer");
   const activeVendorsKpi = buildKpi(todayActiveVendorIds.size, yesterdayActiveVendorIds.size, "integer");
