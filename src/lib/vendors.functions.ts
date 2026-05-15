@@ -603,26 +603,51 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
 
 export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
-    .from("platform_collections")
-    .select("id, vendor_id, amount, created_at, vendors!inner(store_name)")
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .from("orders")
+    .select("id, vendor_id, platform_markup, platform_profit, delivery_fee, updated_at, vendors(store_name)")
+    .eq("status", "cash_transferred_to_vendor")
+    .eq("admin_settled", true)
+    .order("updated_at", { ascending: false })
+    .limit(1000);
 
   if (error) {
     throw new Error(`Failed to load collection history: ${error.message}`);
   }
 
-  return ((data ?? []) as Array<{
+  const grouped = new Map<
+    string,
+    { transactionId: string; vendorId: string; vendorName: string; amountMad: number; collectedAt: string }
+  >();
+
+  for (const row of (data ?? []) as Array<{
     id: string;
     vendor_id: string;
-    amount: number | null;
-    created_at: string | null;
+    platform_markup: number | null;
+    platform_profit: number | null;
+    delivery_fee: number | null;
+    updated_at: string | null;
     vendors?: { store_name?: string | null } | null;
-  }>).map((row) => ({
-    transactionId: row.id,
-    vendorId: row.vendor_id,
-    vendorName: row.vendors?.store_name?.trim() || "Vendor",
-    amountMad: roundMad(Number(row.amount ?? 0)),
-    collectedAt: row.created_at ?? new Date(0).toISOString(),
-  })) satisfies PlatformCollectionHistoryItem[];
+  }>) {
+    const collectedAt = row.updated_at ?? new Date(0).toISOString();
+    const key = `${row.vendor_id}::${collectedAt}`;
+    const existing = grouped.get(key);
+    const dueAmount = platformDueFromOrder(row);
+
+    if (existing) {
+      existing.amountMad = roundMad(existing.amountMad + dueAmount);
+      continue;
+    }
+
+    grouped.set(key, {
+      transactionId: row.id,
+      vendorId: row.vendor_id,
+      vendorName: row.vendors?.store_name?.trim() || "Vendor",
+      amountMad: roundMad(dueAmount),
+      collectedAt,
+    });
+  }
+
+  return Array.from(grouped.values())
+    .sort((a, b) => new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime())
+    .slice(0, 200) satisfies PlatformCollectionHistoryItem[];
 });
