@@ -361,9 +361,11 @@ const masterProductFormSchema = z.object({
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
 
-const platformCollectionQrPayloadSchema = z.object({
-  action: z.literal("admin_collection"),
+const platformCommissionPaymentQrPayloadSchema = z.object({
+  action: z.literal("platform_commission_payment"),
   vendor_id: z.string().uuid(),
+  amount: z.number().positive(),
+  timestamp: z.string(),
 });
 
 const weeklyOrdersChartConfig = {
@@ -641,8 +643,10 @@ function AdminPage() {
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
   const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
-  const [isPlatformQrScannerOpen, setIsPlatformQrScannerOpen] = useState(false);
+  const [isInitiateWithdrawalOpen, setIsInitiateWithdrawalOpen] = useState(false);
   const [platformCollectionScanTargetVendor, setPlatformCollectionScanTargetVendor] = useState<AdminVendorRecord | null>(null);
+  const [amountToCollectMad, setAmountToCollectMad] = useState(0);
+  const [platformCollectionQrPayload, setPlatformCollectionQrPayload] = useState<string | null>(null);
   const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
     vendorName: string;
     amountMad: number;
