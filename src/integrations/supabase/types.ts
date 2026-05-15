@@ -933,6 +933,76 @@ export type Database = {
         }
         Relationships: []
       }
+      pack_features: {
+        Row: {
+          created_at: string
+          feature_label: string
+          id: string
+          pack_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature_label: string
+          id?: string
+          pack_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature_label?: string
+          id?: string
+          pack_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pack_features_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "platform_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pack_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_label: string
+          pack_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_label: string
+          pack_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_label?: string
+          pack_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pack_items_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "platform_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_collections: {
         Row: {
           amount: number
@@ -1022,7 +1092,10 @@ export type Database = {
       }
       platform_packs: {
         Row: {
+          base_price_mad: number
+          billing_cycle: Database["public"]["Enums"]["pack_billing_cycle"]
           created_at: string
+          delivery_window: string | null
           description: string | null
           id: string
           image_url: string | null
@@ -1035,7 +1108,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_price_mad?: number
+          billing_cycle?: Database["public"]["Enums"]["pack_billing_cycle"]
           created_at?: string
+          delivery_window?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -1048,7 +1124,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_price_mad?: number
+          billing_cycle?: Database["public"]["Enums"]["pack_billing_cycle"]
           created_at?: string
+          delivery_window?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -1611,6 +1690,7 @@ export type Database = {
         | "cancelled"
         | "delivered_cash_with_cyclist"
         | "cash_transferred_to_vendor"
+      pack_billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY"
       payment_method: "COD" | "Carnet"
       platform_commission_transaction_type: "ACCRUAL" | "WITHDRAWAL"
       product_category:
@@ -1783,6 +1863,7 @@ export const Constants = {
         "delivered_cash_with_cyclist",
         "cash_transferred_to_vendor",
       ],
+      pack_billing_cycle: ["DAILY", "WEEKLY", "MONTHLY"],
       payment_method: ["COD", "Carnet"],
       platform_commission_transaction_type: ["ACCRUAL", "WITHDRAWAL"],
       product_category: [
