@@ -562,10 +562,13 @@ function AdminPage() {
     placeholderData: (previousData) => previousData,
   });
   const platformCollectionHistoryQuery = useQuery({
-    queryKey: ["admin", "platform-collections-history"],
-    enabled: isAdminDataEnabled,
-    queryFn: () => fetchPlatformCollectionHistory(),
-    refetchInterval: 10_000,
+    queryKey: ["admin", "platform-collections-history", platformCollectionScanTargetVendor?.id ?? null],
+    enabled: isAdminDataEnabled && isInitiateWithdrawalOpen && Boolean(platformCollectionScanTargetVendor?.id),
+    queryFn: () =>
+      fetchPlatformCollectionHistory({
+        data: { vendorId: platformCollectionScanTargetVendor!.id },
+      }),
+    refetchInterval: isInitiateWithdrawalOpen ? 10_000 : false,
     placeholderData: (previousData) => previousData,
   });
 
@@ -900,7 +903,20 @@ function AdminPage() {
         (neighborhood) => neighborhood.vendorId == null || neighborhood.vendorId === selectedVendorId,
       ) ?? [];
 
-  const collectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
+  const vendorScopedCollectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
+
+  const formatCollectionDateTime = (isoDate: string) => {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
 
   const toggleVendorNeighborhood = (neighborhoodId: string, checked: boolean) => {
     setVendorForm((current) => {
@@ -998,6 +1014,10 @@ function AdminPage() {
   };
 
   useEffect(() => {
+    if (!isInitiateWithdrawalOpen) {
+      return;
+    }
+
     const channel = supabase
       .channel("admin-platform-commission-ledger-withdrawals")
       .on(
@@ -1008,16 +1028,22 @@ function AdminPage() {
           table: "platform_commission_ledger",
           filter: "transaction_type=eq.WITHDRAWAL",
         },
-        () => {
-          toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+        (payload) => {
+          const insertedVendorId =
+            payload.new && typeof payload.new === "object" && "vendor_id" in payload.new
+              ? String((payload.new as { vendor_id?: unknown }).vendor_id ?? "")
+              : "";
 
-          if (isInitiateWithdrawalOpen) {
-            setIsInitiateWithdrawalOpen(false);
-            setPlatformCollectionQrPayload(null);
+          if (!insertedVendorId || insertedVendorId !== platformCollectionScanTargetVendor?.id) {
+            return;
           }
 
+          toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+
           void queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
-          void queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
+          void queryClient.invalidateQueries({
+            queryKey: ["admin", "platform-collections-history", insertedVendorId],
+          });
         },
       )
       .subscribe();
@@ -1025,7 +1051,7 @@ function AdminPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [isInitiateWithdrawalOpen, queryClient]);
+  }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
