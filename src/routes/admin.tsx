@@ -3671,10 +3671,20 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "platform-packs-orders" ? (
-                <PlaceholderSection
-                  icon={PackageCheck}
-                  title="Pack Orders"
-                  subtitle="Phase 1 placeholder. Orders management for platform packs will be enabled in the next phase."
+                <PackOrdersSection
+                  orders={filteredPackOrders}
+                  cyclists={cyclists}
+                  isLoading={dbHealthQuery.isLoading || adminOrdersQuery.isLoading}
+                  isMutating={isAssigningSubscriptionOrder || updateSubscriptionOrderStatusMutation.isPending}
+                  searchTerm={packOrdersSearchTerm}
+                  onSearchTermChange={setPackOrdersSearchTerm}
+                  statusFilter={packOrdersStatusFilter}
+                  onStatusFilterChange={setPackOrdersStatusFilter}
+                  cyclistFilter={packOrdersCyclistFilter}
+                  onCyclistFilterChange={setPackOrdersCyclistFilter}
+                  onAssignCyclist={assignCyclistToSubscriptionOrder}
+                  onAutoDispatch={autoDispatchSubscriptionOrderHandler}
+                  onUpdateStatus={updateSubscriptionOrderStatusHandler}
                 />
               ) : null}
               {tab === "platform-packs-subscribers" ? (
