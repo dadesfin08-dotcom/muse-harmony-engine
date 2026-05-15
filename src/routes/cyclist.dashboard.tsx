@@ -96,6 +96,7 @@ function CyclistDashboardPage() {
     enabled: Boolean(session?.cyclistId),
     queryFn: () => fetchDashboardData({ data: { cyclistId: session!.cyclistId } }),
     refetchInterval: session?.cyclistId ? 4_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 
   const cyclist = dashboardQuery.data?.cyclist;
