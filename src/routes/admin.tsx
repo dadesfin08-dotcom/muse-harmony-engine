@@ -234,7 +234,10 @@ import i18n from "@/lib/i18n";
 type AdminTab =
   | "overview"
   | "ai-brand-engine"
-  | "platform-packs"
+  | "platform-packs-create"
+  | "platform-packs-orders"
+  | "platform-packs-subscribers"
+  | "platform-packs-analytics"
   | "orders"
   | "customers"
   | "vendors"
@@ -249,7 +252,6 @@ type AdminTab =
 const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
   { label: "admin.nav.overview", tab: "overview", icon: LayoutDashboard },
   { label: "admin.nav.aiBrandEngine", tab: "ai-brand-engine", icon: Sparkles },
-  { label: "Platform Packs / باكات المنصة", tab: "platform-packs", icon: Package },
   { label: "admin.nav.orders", tab: "orders", icon: PackageCheck },
   { label: "admin.nav.customers", tab: "customers", icon: Users },
   { label: "admin.nav.vendors", tab: "vendors", icon: Store },
@@ -260,6 +262,13 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "admin.nav.categories", tab: "categories", icon: Shapes },
   { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
   { label: "admin.nav.settings", tab: "settings", icon: Settings },
+];
+
+const platformPacksNavItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
+  { label: "Create Packs", tab: "platform-packs-create", icon: Package },
+  { label: "Pack Orders", tab: "platform-packs-orders", icon: PackageCheck },
+  { label: "Subscribers", tab: "platform-packs-subscribers", icon: Users },
+  { label: "Pack Analytics", tab: "platform-packs-analytics", icon: TrendingUp },
 ];
 
 const initialVendors: AdminVendorRecord[] = [];
