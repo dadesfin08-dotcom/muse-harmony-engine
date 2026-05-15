@@ -24,7 +24,6 @@ export const Route = createFileRoute("/vendor/wallet")({
 function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
   const [isPlatformScannerOpen, setIsPlatformScannerOpen] = useState(false);
   const [isSubmittingPlatformPayment, setIsSubmittingPlatformPayment] = useState(false);
@@ -75,32 +74,6 @@ function VendorWalletPage() {
     queryFn: () => fetchSettlementSummary({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
   });
-
-  useEffect(() => {
-    let mounted = true;
-
-    const hydrateAuthUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-      setAuthUserId(session?.user?.id ?? null);
-    };
-
-    void hydrateAuthUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUserId(session?.user?.id ?? null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     if (!vendorId) return;
@@ -264,17 +237,23 @@ function VendorWalletPage() {
   const handleConfirmPlatformPayment = async () => {
     if (!pendingScannedPayment || isSubmittingPlatformPayment) return;
 
-    if (!authUserId) {
-      toast.error("Authentication lost. Please refresh the page.");
-      return;
-    }
-
     setIsSubmittingPlatformPayment(true);
     try {
+      const {
+        data: { session },
+        error: authError,
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (authError || !userId) {
+        toast.error("Authentication lost. Please refresh or log in again.");
+        return;
+      }
+
       const { data: vendorRow, error: vendorLookupError } = await supabase
         .from("vendors")
         .select("id")
-        .eq("user_id", authUserId)
+        .eq("user_id", userId)
         .single();
 
       if (vendorLookupError || !vendorRow?.id) {
@@ -292,7 +271,7 @@ function VendorWalletPage() {
           vendor_id: vendorRow.id,
           transaction_type: "WITHDRAWAL",
           amount: -Math.abs(Number(normalizedAmount.toFixed(2))),
-          created_by: authUserId,
+          created_by: userId,
           order_id: null,
         });
 
