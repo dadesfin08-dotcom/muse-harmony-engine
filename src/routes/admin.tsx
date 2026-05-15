@@ -3316,6 +3316,124 @@ function AdminPage() {
     }
   };
 
+  const resetPlatformPackForm = () => {
+    setPlatformPackForm({
+      id: "",
+      nameEn: "",
+      nameFr: "",
+      nameAr: "",
+      description: "",
+      pricePerUnit: "",
+      unitType: "Kg",
+      imageUrl: "",
+      isActive: true,
+    });
+  };
+
+  const editPlatformPack = (pack: {
+    id: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
+    description: string | null;
+    pricePerUnit: number;
+    unitType: string;
+    imageUrl: string | null;
+    isActive: boolean;
+  }) => {
+    setPlatformPackForm({
+      id: pack.id,
+      nameEn: pack.nameEn,
+      nameFr: pack.nameFr ?? "",
+      nameAr: pack.nameAr ?? "",
+      description: pack.description ?? "",
+      pricePerUnit: String(pack.pricePerUnit),
+      unitType: pack.unitType,
+      imageUrl: pack.imageUrl ?? "",
+      isActive: pack.isActive,
+    });
+  };
+
+  const savePlatformPack = async () => {
+    const parsedPrice = Number(platformPackForm.pricePerUnit);
+    if (!platformPackForm.nameEn.trim() || !platformPackForm.unitType.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      toast.error("Please fill valid platform pack fields.");
+      return;
+    }
+
+    try {
+      setIsSavingPlatformPack(true);
+      const payload = {
+        nameEn: platformPackForm.nameEn.trim(),
+        nameFr: platformPackForm.nameFr.trim() || null,
+        nameAr: platformPackForm.nameAr.trim() || null,
+        description: platformPackForm.description.trim() || null,
+        pricePerUnit: parsedPrice,
+        unitType: platformPackForm.unitType.trim(),
+        imageUrl: platformPackForm.imageUrl.trim() || null,
+        isActive: platformPackForm.isActive,
+      };
+
+      if (platformPackForm.id) {
+        await updatePlatformPackInDatabase({ data: { id: platformPackForm.id, ...payload } });
+        toast.success("Platform pack updated.");
+      } else {
+        await createPlatformPackInDatabase({ data: payload });
+        toast.success("Platform pack created.");
+      }
+
+      await platformPacksQuery.refetch();
+      resetPlatformPackForm();
+    } catch (error) {
+      console.error("Failed to save platform pack:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save platform pack.");
+    } finally {
+      setIsSavingPlatformPack(false);
+    }
+  };
+
+  const removePlatformPack = async (id: string) => {
+    try {
+      await deletePlatformPackInDatabase({ data: { id } });
+      await platformPacksQuery.refetch();
+      if (platformPackForm.id === id) {
+        resetPlatformPackForm();
+      }
+      toast.success("Platform pack deleted.");
+    } catch (error) {
+      console.error("Failed to delete platform pack:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete platform pack.");
+    }
+  };
+
+  const assignCyclistToSubscriptionOrder = async (orderId: string, cyclistId: string) => {
+    try {
+      setIsAssigningSubscriptionOrder(true);
+      await assignSubscriptionOrderCyclistInDatabase({ data: { orderId, cyclistId } });
+      await adminOrdersQuery.refetch();
+      toast.success("Cyclist assigned.");
+    } catch (error) {
+      console.error("Failed to assign cyclist to subscription order:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to assign cyclist.");
+    } finally {
+      setIsAssigningSubscriptionOrder(false);
+    }
+  };
+
+  const autoDispatchSubscriptionOrderHandler = async (orderId: string) => {
+    try {
+      setIsAssigningSubscriptionOrder(true);
+      await autoDispatchSubscriptionOrderInDatabase({ data: { orderId } });
+      await adminOrdersQuery.refetch();
+      toast.success("Subscription order auto-dispatched.");
+    } catch (error) {
+      console.error("Failed to auto-dispatch subscription order:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to auto-dispatch subscription order.");
+    } finally {
+      setIsAssigningSubscriptionOrder(false);
+    }
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
