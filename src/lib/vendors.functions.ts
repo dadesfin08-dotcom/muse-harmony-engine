@@ -115,6 +115,7 @@ export type PlatformDuesCollectionResult = {
 type PendingPlatformDuesRow = {
   vendor_id: string;
   payment_method: string | null;
+  platform_markup: number | null;
   platform_profit: number | null;
   delivery_fee: number | null;
 };
@@ -128,7 +129,13 @@ function isCashPaymentMethod(paymentMethod: string | null | undefined) {
   return normalized === "cod" || normalized === "cash";
 }
 
-function platformDueFromOrder(row: { platform_profit?: number | null; delivery_fee?: number | null }) {
+function platformDueFromOrder(row: {
+  platform_markup?: number | null;
+  platform_profit?: number | null;
+  delivery_fee?: number | null;
+}) {
+  const markup = Number(row.platform_markup ?? Number.NaN);
+  if (Number.isFinite(markup) && markup > 0) return markup;
   const profit = Number(row.platform_profit ?? Number.NaN);
   if (Number.isFinite(profit) && profit > 0) return profit;
   return Number(row.delivery_fee ?? 0);
@@ -139,7 +146,7 @@ async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
 
   const { data, error } = await (supabaseAdmin as any)
     .from("orders")
-    .select("vendor_id, payment_method, platform_profit, delivery_fee")
+    .select("vendor_id, payment_method, platform_markup, platform_profit, delivery_fee")
     .in("vendor_id", vendorIds)
     .eq("status", "cash_transferred_to_vendor")
     .or("admin_settled.is.null,admin_settled.eq.false");
