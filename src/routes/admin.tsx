@@ -4843,7 +4843,13 @@ function AIBrandEngineSection({
     ? new Date(analytics.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
     : "--";
 
-  const kpiCards = [
+  const kpiCards: Array<{
+    title: string;
+    value: number;
+    sub: string;
+    icon: ComponentType<{ className?: string }>;
+    formatter?: (value: number) => string;
+  }> = [
     {
       title: "Active Trending Brands",
       value: analytics?.kpis.activeTrendingBrands ?? 0,
@@ -4870,7 +4876,7 @@ function AIBrandEngineSection({
       icon: Sparkles,
       formatter: (value: number) => formatPercent(value),
     },
-  ] as const;
+  ];
 
   return (
     <div className="space-y-5">
