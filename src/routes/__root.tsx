@@ -131,14 +131,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const location = useLocation();
-  const isOperationalPath =
-    location.pathname === "/admin" ||
-    location.pathname.startsWith("/admin/") ||
-    location.pathname.startsWith("/vendor") ||
-    location.pathname.startsWith("/cyclist");
-
-  useGlobalRealtimeSync({ enabled: isOperationalPath });
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {
@@ -159,6 +151,7 @@ function RootComponent() {
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
+        <GlobalRealtimeBridge />
         <OperationalRouteGuard>
           <Outlet />
         </OperationalRouteGuard>
@@ -166,6 +159,18 @@ function RootComponent() {
       </QueryClientProvider>
     </I18nextProvider>
   );
+}
+
+function GlobalRealtimeBridge() {
+  const location = useLocation();
+  const isOperationalPath =
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/admin/") ||
+    location.pathname.startsWith("/vendor") ||
+    location.pathname.startsWith("/cyclist");
+
+  useGlobalRealtimeSync({ enabled: isOperationalPath });
+  return null;
 }
 
 function OperationalRouteGuard({ children }: { children: React.ReactNode }) {
