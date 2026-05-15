@@ -53,6 +53,9 @@ import {
   Clock3,
   Trophy,
   TrendingDown,
+  AlertCircle,
+  Ban,
+  Zap,
   CalendarDays,
   Map as MapIcon,
   Eye,
@@ -3313,6 +3316,19 @@ function AdminPage() {
                   analytics={overviewAnalyticsQuery.data}
                   isLoading={dbHealthQuery.isLoading || overviewAnalyticsQuery.isLoading}
                   error={overviewAnalyticsQuery.error}
+                />
+              ) : null}
+              {tab === "ai-brand-engine" ? (
+                <AIBrandEngineSection
+                  analytics={brandEngineAnalytics}
+                  isLoading={dbHealthQuery.isLoading || brandEngineQuery.isLoading}
+                  error={brandEngineQuery.error}
+                  isActionLoading={isBrandEngineActionLoading}
+                  rotationRatios={rotationRatios}
+                  onRotationRatioChange={handleRotationRatioChange}
+                  onManualBoost={handleBrandEngineManualBoost}
+                  onToggleBlacklist={handleBrandEngineBlacklist}
+                  onResetScore={handleBrandEngineResetScore}
                 />
               ) : null}
               {tab === "vendors" ? (
