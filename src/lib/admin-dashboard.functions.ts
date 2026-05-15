@@ -469,7 +469,13 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       }
     };
 
-    const tablesInDeleteOrder = ["orders"] as const;
+    const tablesInDeleteOrder = [
+      "platform_collections",
+      "order_audit_logs",
+      "carnet_payments",
+      "carnet_transactions",
+      "orders",
+    ] as const;
 
     for (const tableName of tablesInDeleteOrder) {
       await wipeTable(tableName);
@@ -480,6 +486,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
       .update({
         vendor_earnings: 0,
         platform_dues: 0,
+        total_cash_received: 0,
         updated_at: new Date().toISOString(),
       })
       .neq("id", "00000000-0000-0000-0000-000000000000");
@@ -490,7 +497,7 @@ export const resetFactoryData = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      message: "Orders data reset completed and vendor balances were reset.",
+      message: "Transactional data was reset (orders, collections, carnet/accounting logs) and vendor balances were recalculated to zero.",
     };
   });
 
