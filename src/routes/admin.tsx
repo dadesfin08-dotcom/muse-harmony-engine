@@ -19,7 +19,7 @@ import Papa from "papaparse";
 import ExcelJS from "exceljs";
 import { QRCodeSVG } from "qrcode.react";
 import { z } from "zod";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   LayoutDashboard,
   PackageCheck,
@@ -60,6 +60,8 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -111,6 +113,8 @@ import {
   type MasterProductEntity,
 } from "@/lib/entities";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -174,10 +178,14 @@ import {
 } from "@/lib/cyclists.functions";
 import {
   getAdminOverviewAnalytics,
+  getBrandEngineAnalytics,
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  manualBoostBrandScore,
   resetFactoryData,
+  resetBrandEngineScore,
+  setBrandBlacklistState,
   uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
