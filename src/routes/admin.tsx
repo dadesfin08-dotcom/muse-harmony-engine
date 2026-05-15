@@ -53,6 +53,8 @@ import {
   Trophy,
   TrendingDown,
   CalendarDays,
+  Eye,
+  Tag,
   Pencil,
   Trash2,
   Image as ImageIcon,
@@ -814,6 +816,8 @@ function AdminPage() {
   const [adForm, setAdForm] = useState({
     id: "",
     campaignName: "",
+    zoneId: "global",
+    campaignType: "AD" as "AD" | "PROMO" | "NEWS",
     imageAr: "",
     imageFr: "",
     imageEn: "",
