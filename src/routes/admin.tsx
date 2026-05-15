@@ -3560,8 +3560,8 @@ function AdminPage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {platformCollectionScanTargetVendor
-                ? `Pending commission: ${Number(platformCollectionScanTargetVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
+              {activeCollectionVendor
+                ? `Pending commission: ${Number(activeCollectionVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
                 : "Select a vendor first."}
             </p>
             <Input
