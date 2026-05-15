@@ -98,6 +98,10 @@ const recordVendorQrPaymentInputSchema = z.object({
   qrPayload: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
+const listPlatformCollectionHistoryInputSchema = z.object({
+  vendorId: z.string().uuid(),
+});
+
 type VendorOrderRow = {
   id: string;
   status: string;
@@ -661,10 +665,13 @@ export const recordVendorQrPayment = createServerFn({ method: "POST" })
     }
   });
 
-export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
+export const listPlatformCollectionHistory = createServerFn({ method: "GET" })
+  .inputValidator((input) => listPlatformCollectionHistoryInputSchema.parse(input))
+  .handler(async ({ data }) => {
   const { data, error } = await (supabaseAdmin as any)
     .from("platform_commission_ledger")
     .select("id, vendor_id, transaction_type, amount, created_at")
+    .eq("vendor_id", data.vendorId)
     .order("created_at", { ascending: true })
     .limit(2000);
 
