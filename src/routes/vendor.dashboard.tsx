@@ -903,11 +903,6 @@ function VendorDashboardPage() {
     const transferredCashOrders = deliveredInFilter.filter(
       (order) => order.status === "cash_transferred_to_vendor" && order.paymentMethod === "COD",
     );
-    const settledCarnetOrders = deliveredInFilter.filter(
-      (order) =>
-        order.paymentMethod === "Carnet" &&
-        (order.status === "cash_transferred_to_vendor" || order.status === "delivered"),
-    );
 
     const settledCreditMad = Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0);
     const settledCarnetNetProfitMad = roundMoney(
@@ -1526,6 +1521,7 @@ function VendorDashboardPage() {
                 totalOutstandingCreditMad={Number(carnetQuery.data?.kpis?.totalOutstandingCreditMad ?? 0)}
                 creditIssuedTodayMad={Number(carnetQuery.data?.kpis?.creditIssuedTodayMad ?? 0)}
                 settledCreditMad={Number(carnetQuery.data?.kpis?.settledCreditMad ?? 0)}
+                adminDuesInCarnetMad={Number(carnetQuery.data?.kpis?.adminDuesInCarnetMad ?? 0)}
                 onPhoneChange={setTrustedCustomerPhone}
                 onMaxLimitChange={setTrustedCustomerMaxLimit}
                 onNameChange={setTrustedCustomerName}
@@ -2464,6 +2460,7 @@ function CarnetView({
   totalOutstandingCreditMad,
   creditIssuedTodayMad,
   settledCreditMad,
+  adminDuesInCarnetMad,
   onPhoneChange,
   onMaxLimitChange,
   onNameChange,
@@ -2482,6 +2479,7 @@ function CarnetView({
   totalOutstandingCreditMad: number;
   creditIssuedTodayMad: number;
   settledCreditMad: number;
+  adminDuesInCarnetMad: number;
   onPhoneChange: (value: string) => void;
   onMaxLimitChange: (value: string) => void;
   onNameChange: (value: string) => void;
@@ -2509,7 +2507,7 @@ function CarnetView({
         <p className="text-xs text-muted-foreground">Manage trusted customers and their credit balances.</p>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -2542,6 +2540,18 @@ function CarnetView({
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
               <CheckCircle2 className="size-4" />
+            </span>
+          </div>
+        </article>
+
+        <article className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Admin Dues in Carnet · مستحقات المنصة من الكريدي</p>
+              <p className="mt-1 text-2xl font-extrabold text-destructive">{adminDuesInCarnetMad.toFixed(2)} MAD</p>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/40 bg-background text-destructive">
+              <History className="size-4" />
             </span>
           </div>
         </article>
