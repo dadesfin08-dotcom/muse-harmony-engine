@@ -2388,17 +2388,27 @@ function AdminPage() {
   };
 
   const resetAdForm = () => {
-    setAdForm({ id: "", imageUrl: "", linkUrl: "", sortOrder: "0", isActive: true });
-    setAdImageFile(null);
-    setAdImagePreviewUrl(null);
+    setAdForm({
+      id: "",
+      campaignName: "",
+      imageAr: "",
+      imageFr: "",
+      imageEn: "",
+      targetUrl: "",
+      startDate: "",
+      endDate: "",
+      isActive: true,
+    });
   };
 
   const resetAnnouncementForm = () => {
     setAnnouncementForm({
       id: "",
-      content: "",
-      contentFr: "",
-      contentAr: "",
+      messageEn: "",
+      messageFr: "",
+      messageAr: "",
+      startDate: "",
+      endDate: "",
       isActive: true,
       bgColor: "#deff9a",
       textColor: "#000000",
@@ -2406,66 +2416,52 @@ function AdminPage() {
   };
 
   const saveAd = async () => {
-    if (!adForm.imageUrl.trim() && !adImageFile) {
-      toast.error("Please provide an ad image URL or upload an image.");
+    if (!adForm.campaignName.trim()) {
+      toast.error("Campaign name is required.");
       return;
     }
 
-    const parsedSortOrder = Number(adForm.sortOrder);
-    if (!Number.isFinite(parsedSortOrder) || parsedSortOrder < 0) {
-      toast.error("Sort order must be zero or greater.");
+    if (!adForm.imageAr.trim() && !adForm.imageFr.trim() && !adForm.imageEn.trim()) {
+      toast.error("Add at least one localized image URL.");
+      return;
+    }
+
+    if (adForm.startDate && adForm.endDate && new Date(adForm.endDate).getTime() < new Date(adForm.startDate).getTime()) {
+      toast.error("Expiration date must be after start date.");
       return;
     }
 
     setIsSavingAd(true);
     try {
-      let adImageUrl = adForm.imageUrl.trim();
-
-      if (adImageFile) {
-        const extension = adImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-        const sanitizedBaseName = adImageFile.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[^a-zA-Z0-9-_]/g, "-")
-          .slice(0, 60);
-        const fileName = `${crypto.randomUUID()}-${sanitizedBaseName || "ad"}.${extension}`;
-        const filePath = `site-ads/${fileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("products")
-          .upload(filePath, adImageFile, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (uploadError || !uploadData?.path) {
-          throw new Error(uploadError?.message || "Ad image upload failed.");
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
-        adImageUrl = publicUrlData.publicUrl;
-      }
-
       if (adForm.id) {
         await updateSiteAdInDatabase({
           data: {
             id: adForm.id,
-            imageUrl: adImageUrl,
-            linkUrl: adForm.linkUrl.trim() || null,
-            sortOrder: Math.floor(parsedSortOrder),
+            campaignName: adForm.campaignName.trim(),
+            imageAr: adForm.imageAr.trim() || null,
+            imageFr: adForm.imageFr.trim() || null,
+            imageEn: adForm.imageEn.trim() || null,
+            targetUrl: adForm.targetUrl.trim() || null,
+            startDate: adForm.startDate || null,
+            endDate: adForm.endDate || null,
             isActive: adForm.isActive,
           },
         });
-        toast.success("Ad updated.");
+        toast.success("Campaign updated.");
       } else {
         await createSiteAdInDatabase({
           data: {
-            imageUrl: adImageUrl,
-            linkUrl: adForm.linkUrl.trim() || null,
-            sortOrder: Math.floor(parsedSortOrder),
+            campaignName: adForm.campaignName.trim(),
+            imageAr: adForm.imageAr.trim() || null,
+            imageFr: adForm.imageFr.trim() || null,
+            imageEn: adForm.imageEn.trim() || null,
+            targetUrl: adForm.targetUrl.trim() || null,
+            startDate: adForm.startDate || null,
+            endDate: adForm.endDate || null,
             isActive: adForm.isActive,
           },
         });
-        toast.success("Ad created.");
+        toast.success("Campaign created.");
       }
 
       await siteAdsQuery.refetch();
@@ -2479,8 +2475,17 @@ function AdminPage() {
   };
 
   const saveAnnouncement = async () => {
-    if (!announcementForm.content.trim() || !announcementForm.contentFr.trim() || !announcementForm.contentAr.trim()) {
-      toast.error("Please enter ticker messages in EN, FR, and AR.");
+    if (!announcementForm.messageAr.trim() && !announcementForm.messageFr.trim() && !announcementForm.messageEn.trim()) {
+      toast.error("Add at least one localized announcement message.");
+      return;
+    }
+
+    if (
+      announcementForm.startDate &&
+      announcementForm.endDate &&
+      new Date(announcementForm.endDate).getTime() < new Date(announcementForm.startDate).getTime()
+    ) {
+      toast.error("Expiration date must be after start date.");
       return;
     }
 
@@ -2490,9 +2495,11 @@ function AdminPage() {
         await updateAnnouncementInDatabase({
           data: {
             id: announcementForm.id,
-            content: announcementForm.content.trim(),
-            contentFr: announcementForm.contentFr.trim(),
-            contentAr: announcementForm.contentAr.trim(),
+            messageEn: announcementForm.messageEn.trim() || null,
+            messageFr: announcementForm.messageFr.trim() || null,
+            messageAr: announcementForm.messageAr.trim() || null,
+            startDate: announcementForm.startDate || null,
+            endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
             bgColor: announcementForm.bgColor.trim() || "#deff9a",
             textColor: announcementForm.textColor.trim() || "#000000",
@@ -2502,9 +2509,11 @@ function AdminPage() {
       } else {
         await createAnnouncementInDatabase({
           data: {
-            content: announcementForm.content.trim(),
-            contentFr: announcementForm.contentFr.trim(),
-            contentAr: announcementForm.contentAr.trim(),
+            messageEn: announcementForm.messageEn.trim() || null,
+            messageFr: announcementForm.messageFr.trim() || null,
+            messageAr: announcementForm.messageAr.trim() || null,
+            startDate: announcementForm.startDate || null,
+            endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
             bgColor: announcementForm.bgColor.trim() || "#deff9a",
             textColor: announcementForm.textColor.trim() || "#000000",
@@ -2525,43 +2534,26 @@ function AdminPage() {
 
   const editAd = (ad: {
     id: string;
-    image_url: string;
-    link_url: string | null;
-    sort_order: number;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
   }) => {
     setAdForm({
       id: ad.id,
-      imageUrl: ad.image_url,
-      linkUrl: ad.link_url ?? "",
-      sortOrder: String(ad.sort_order ?? 0),
+      campaignName: ad.campaign_name ?? "",
+      imageAr: ad.image_ar ?? "",
+      imageFr: ad.image_fr ?? "",
+      imageEn: ad.image_en ?? "",
+      targetUrl: ad.target_url ?? "",
+      startDate: ad.start_date ? ad.start_date.slice(0, 16) : "",
+      endDate: ad.end_date ? ad.end_date.slice(0, 16) : "",
       isActive: ad.is_active,
     });
-    setAdImageFile(null);
-    setAdImagePreviewUrl(ad.image_url);
-  };
-
-  const applyAdImageFile = (file: File | null) => {
-    if (!file) {
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAdImageFile(file);
-      setAdImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
-    };
-    reader.onerror = () => toast.error("Unable to preview selected ad image.");
-    reader.readAsDataURL(file);
-  };
-
-  const handleAdImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    applyAdImageFile(event.target.files?.[0] ?? null);
   };
 
   const removeAd = async (id: string) => {
@@ -2580,18 +2572,22 @@ function AdminPage() {
 
   const editAnnouncement = (announcement: {
     id: string;
-    content: string;
-    content_fr: string | null;
-    content_ar: string | null;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
     is_active: boolean;
     bg_color: string;
     text_color: string;
   }) => {
     setAnnouncementForm({
       id: announcement.id,
-      content: announcement.content,
-      contentFr: announcement.content_fr ?? announcement.content,
-      contentAr: announcement.content_ar ?? announcement.content,
+      messageEn: announcement.message_en ?? "",
+      messageFr: announcement.message_fr ?? "",
+      messageAr: announcement.message_ar ?? "",
+      startDate: announcement.start_date ? announcement.start_date.slice(0, 16) : "",
+      endDate: announcement.end_date ? announcement.end_date.slice(0, 16) : "",
       isActive: announcement.is_active,
       bgColor: announcement.bg_color,
       textColor: announcement.text_color,
