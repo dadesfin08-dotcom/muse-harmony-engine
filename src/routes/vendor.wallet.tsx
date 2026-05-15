@@ -16,7 +16,6 @@ import {
   getVendorDashboardData,
   getVendorSettlementSummary,
 } from "@/lib/orders.functions";
-import { collectVendorPlatformDues } from "@/lib/vendors.functions";
 
 export const Route = createFileRoute("/vendor/wallet")({
   component: VendorWalletPage,
@@ -50,7 +49,6 @@ function VendorWalletPage() {
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchCarnet = useServerFn(getVendorCarnetData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
-  const submitPlatformPayment = useServerFn(collectVendorPlatformDues);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
@@ -237,23 +235,53 @@ function VendorWalletPage() {
   }, [isPlatformScannerOpen, vendorId]);
 
   const handleConfirmPlatformPayment = async () => {
-    if (!pendingScannedPayment || !vendorId) return;
+    if (!pendingScannedPayment) return;
 
     setIsSubmittingPlatformPayment(true);
     try {
-      await submitPlatformPayment({
-        data: {
-          vendorId,
-          amount: Number(pendingScannedPayment.amount.toFixed(2)),
-          qrPayload: pendingScannedPayment.payload,
-          createdBy: vendorId,
-        },
-      });
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user?.id) {
+        throw new Error("Authentication required to confirm payment.");
+      }
+
+      const { data: vendorRow, error: vendorLookupError } = await supabase
+        .from("vendors")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (vendorLookupError || !vendorRow?.id) {
+        throw new Error("Vendor account not found for this authenticated user.");
+      }
+
+      const normalizedAmount = Number(pendingScannedPayment.amount ?? 0);
+      if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+        throw new Error("Invalid payment amount.");
+      }
+
+      const { error: ledgerInsertError } = await supabase
+        .from("platform_commission_ledger")
+        .insert({
+          vendor_id: vendorRow.id,
+          transaction_type: "WITHDRAWAL",
+          amount: -Math.abs(Number(normalizedAmount.toFixed(2))),
+          created_by: user.id,
+          order_id: null,
+        });
+
+      if (ledgerInsertError) {
+        console.error("Ledger Insert Error:", ledgerInsertError);
+        throw new Error("Failed to process payment.");
+      }
 
       setPendingScannedPayment(null);
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorRow.id, normalizedVendorPhoneNumber] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-      toast.success("Platform commission payment recorded.");
+      toast.success("Payment recorded successfully.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to record payment.");
     } finally {
