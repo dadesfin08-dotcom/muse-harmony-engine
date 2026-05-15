@@ -397,9 +397,19 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const fastestZoneNames = new Set(deliverySpeedByZone.slice(0, 2).map((zone) => zone.zone));
   const slowestZoneNames = new Set([...deliverySpeedByZone].reverse().slice(0, 2).map((zone) => zone.zone));
 
-  const deliverySpeedMetrics = deliverySpeedByZone.map((zone) => ({
+  const deliverySpeedMetrics: Array<{
+    zone: string;
+    neighborhood: string;
+    avgMinutes: number;
+    deliveries: number;
+    performance: "fast" | "slow" | "normal";
+  }> = deliverySpeedByZone.map((zone) => ({
     ...zone,
-    performance: fastestZoneNames.has(zone.zone) ? "fast" : slowestZoneNames.has(zone.zone) ? "slow" : "normal",
+    performance: fastestZoneNames.has(zone.zone)
+      ? "fast"
+      : slowestZoneNames.has(zone.zone)
+        ? "slow"
+        : "normal",
   }));
 
   const topNeighborhoods = Array.from(neighborhoodHotspotMap.values())
