@@ -14,6 +14,7 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import Papa from "papaparse";
 import ExcelJS from "exceljs";
 import { QRCodeSVG } from "qrcode.react";
