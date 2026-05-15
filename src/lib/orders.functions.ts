@@ -88,7 +88,6 @@ type VendorRow = {
   phone_number?: string;
   total_cash_received?: number | null;
   vendor_earnings?: number | null;
-  platform_dues?: number | null;
 };
 
 type OrderRow = {
@@ -158,6 +157,24 @@ export type VendorSettlementSummary = {
 
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+async function getVendorPendingCommissionMad(vendorId: string) {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_commission_ledger")
+    .select("amount")
+    .eq("vendor_id", vendorId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return roundMoney(
+    ((data ?? []) as Array<{ amount: number | null }>).reduce(
+      (sum, row) => sum + Number(row.amount ?? 0),
+      0,
+    ),
+  );
 }
 
 export type VendorOrderDetails = {
