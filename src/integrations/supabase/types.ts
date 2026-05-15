@@ -903,7 +903,7 @@ export type Database = {
             foreignKeyName: "platform_commission_ledger_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
