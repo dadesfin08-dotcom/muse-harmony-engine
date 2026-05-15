@@ -40,8 +40,6 @@ import {
   Download,
   FileUp,
   Search,
-  QrCode,
-  ScanLine,
   BadgeCheck,
   Plus,
 } from "lucide-react";
