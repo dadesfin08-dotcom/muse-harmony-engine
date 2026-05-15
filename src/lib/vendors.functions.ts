@@ -125,7 +125,10 @@ export type PlatformCollectionHistoryItem = {
 type PendingPlatformDuesRow = {
   vendor_id: string;
   payment_method: string | null;
+  admin_settled: boolean | null;
   platform_markup: number | null;
+  total_price: number | null;
+  subtotal_base_price: number | null;
   platform_profit: number | null;
   delivery_fee: number | null;
 };
@@ -156,10 +159,9 @@ async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
 
   const { data, error } = await (supabaseAdmin as any)
     .from("orders")
-    .select("vendor_id, payment_method, platform_markup, platform_profit, delivery_fee")
+    .select("vendor_id, payment_method, admin_settled, platform_markup, total_price, subtotal_base_price, platform_profit, delivery_fee")
     .in("vendor_id", vendorIds)
-    .eq("status", "cash_transferred_to_vendor")
-    .or("admin_settled.is.null,admin_settled.eq.false");
+    .eq("status", "cash_transferred_to_vendor");
 
   if (error) {
     throw new Error(error.message);
@@ -167,8 +169,13 @@ async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
 
   const dueByVendor = new Map<string, number>();
   for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
+    const isSettledByAdmin = row.admin_settled === true;
+    if (isSettledByAdmin) continue;
+
+    const fallbackMarkup = Number(row.total_price ?? 0) - Number(row.subtotal_base_price ?? 0);
+    const markup = Number(row.platform_markup) || fallbackMarkup;
     const current = dueByVendor.get(row.vendor_id) ?? 0;
-    dueByVendor.set(row.vendor_id, current + platformDueFromOrder(row));
+    dueByVendor.set(row.vendor_id, current + (Number.isFinite(markup) ? markup : 0));
   }
 
   for (const vendorId of vendorIds) {
@@ -533,19 +540,23 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
     try {
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, payment_method, platform_markup, platform_profit, delivery_fee")
+        .select("id, payment_method, admin_settled, platform_markup, total_price, subtotal_base_price, platform_profit, delivery_fee")
         .eq("vendor_id", data.vendorId)
-        .eq("status", "cash_transferred_to_vendor")
-        .or("admin_settled.is.null,admin_settled.eq.false");
+        .eq("status", "cash_transferred_to_vendor");
 
       if (pendingError) {
         throw new Error(pendingError.message);
       }
 
       const pendingDuesMad = roundMad(
-        ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_markup?: number | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
+        ((pendingRows ?? []) as Array<{ admin_settled?: boolean | null; platform_markup?: number | null; total_price?: number | null; subtotal_base_price?: number | null }>).reduce(
           (sum, row) => {
-            return sum + platformDueFromOrder(row);
+            const isSettledByAdmin = row.admin_settled === true;
+            if (isSettledByAdmin) return sum;
+
+            const fallbackMarkup = Number(row.total_price ?? 0) - Number(row.subtotal_base_price ?? 0);
+            const markup = Number(row.platform_markup) || fallbackMarkup;
+            return sum + (Number.isFinite(markup) ? markup : 0);
           },
           0,
         ),
