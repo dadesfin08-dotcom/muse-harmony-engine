@@ -144,8 +144,10 @@ import {
   createVendor,
   collectVendorPlatformDues,
   getVendorSalesAnalytics,
+  listPlatformCollectionHistory,
   listVendors,
   type AdminVendorRecord,
+  type PlatformCollectionHistoryItem,
   type VendorSalesAnalytics,
   updateVendorActiveState,
   updateVendorDetails,
@@ -192,7 +194,6 @@ import {
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 import i18n from "@/lib/i18n";
-import { QRCodeSVG } from "qrcode.react";
 
 type AdminTab =
   | "overview"
@@ -365,7 +366,6 @@ const masterProductFormSchema = z.object({
 const platformCollectionQrPayloadSchema = z.object({
   action: z.literal("admin_collection"),
   vendor_id: z.string().uuid(),
-  amount_owed: z.union([z.number(), z.string()]),
 });
 
 const weeklyOrdersChartConfig = {
@@ -420,6 +420,7 @@ function AdminPage() {
   const saveCyclistToDatabase = useServerFn(createCyclist);
   const saveVendorToDatabase = useServerFn(createVendor);
   const collectPlatformDues = useServerFn(collectVendorPlatformDues);
+  const fetchPlatformCollectionHistory = useServerFn(listPlatformCollectionHistory);
   const saveVendorDetails = useServerFn(updateVendorDetails);
   const setVendorActiveState = useServerFn(updateVendorActiveState);
   const fetchVendorSalesAnalytics = useServerFn(getVendorSalesAnalytics);
@@ -548,6 +549,12 @@ function AdminPage() {
     queryFn: () => fetchMarkupRules(),
     staleTime: 60_000,
   });
+  const platformCollectionHistoryQuery = useQuery({
+    queryKey: ["admin", "platform-collections-history"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchPlatformCollectionHistory(),
+    refetchInterval: 10_000,
+  });
 
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
@@ -636,21 +643,14 @@ function AdminPage() {
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
   const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
-  const [platformCollectionVendor, setPlatformCollectionVendor] = useState<AdminVendorRecord | null>(null);
-  const [isPlatformCollectionQrOpen, setIsPlatformCollectionQrOpen] = useState(false);
   const [isPlatformQrScannerOpen, setIsPlatformQrScannerOpen] = useState(false);
+  const [platformCollectionScanTargetVendor, setPlatformCollectionScanTargetVendor] = useState<AdminVendorRecord | null>(null);
   const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
     vendorName: string;
     amountMad: number;
     transactionId: string;
     remainingDuesMad: number;
     collectedAt: string;
-  } | null>(null);
-  const [platformCollectionConfirmation, setPlatformCollectionConfirmation] = useState<{
-    vendorId: string;
-    vendorName: string;
-    amountMad: number;
-    payload: Record<string, unknown>;
   } | null>(null);
   const [pendingArchiveProduct, setPendingArchiveProduct] = useState<MasterProductEntity | null>(null);
 
