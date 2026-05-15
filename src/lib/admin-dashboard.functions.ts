@@ -128,66 +128,326 @@ const uploadSiteLogoInputSchema = z.object({
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
-  const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).toISOString();
+  const todayStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const tomorrowStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const weekStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
 
-  const [ordersTodayRes, activeVendorsRes, revenueRes, weeklyOrdersRes] = await Promise.all([
+  const todayStartIso = todayStartDate.toISOString();
+  const yesterdayStartIso = yesterdayStartDate.toISOString();
+  const tomorrowStartIso = tomorrowStartDate.toISOString();
+  const weekStartIso = weekStartDate.toISOString();
+
+  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayStart)
-      .lt("created_at", tomorrowStart),
-    (supabaseAdmin as any)
-      .from("vendors")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    (supabaseAdmin as any)
-      .from("orders")
-      .select("total_price")
-      .in("status", ["delivered", "cash_transferred_to_vendor"]),
-    (supabaseAdmin as any)
-      .from("orders")
-      .select("created_at")
-      .gte("created_at", sevenDaysAgo)
-      .order("created_at", { ascending: true }),
+      .select(
+        "id, vendor_id, total_price, vendor_revenue, delivery_fee, platform_profit, created_at, delivered_at, neighborhood_id, status, order_items",
+      )
+      .gte("created_at", yesterdayStartIso)
+      .lt("created_at", tomorrowStartIso),
+    (supabaseAdmin as any).from("neighborhoods").select("id, zone_code, name_en"),
+    (supabaseAdmin as any).from("vendors").select("id, store_name"),
+    (supabaseAdmin as any).from("master_products").select("id, category, brand_id"),
+    (supabaseAdmin as any).from("brands").select("id, name_en"),
   ]);
 
-  if (ordersTodayRes.error) throw new Error(ordersTodayRes.error.message);
-  if (activeVendorsRes.error) throw new Error(activeVendorsRes.error.message);
-  if (revenueRes.error) throw new Error(revenueRes.error.message);
-  if (weeklyOrdersRes.error) throw new Error(weeklyOrdersRes.error.message);
+  if (ordersRes.error) throw new Error(ordersRes.error.message);
+  if (neighborhoodsRes.error) throw new Error(neighborhoodsRes.error.message);
+  if (vendorsRes.error) throw new Error(vendorsRes.error.message);
+  if (masterProductsRes.error) throw new Error(masterProductsRes.error.message);
+  if (brandsRes.error) throw new Error(brandsRes.error.message);
 
-  const weeklyCounts = new Map<string, number>();
+  type DashboardOrderRow = {
+    id: string;
+    vendor_id: string | null;
+    total_price: number | null;
+    vendor_revenue: number | null;
+    delivery_fee: number | null;
+    platform_profit: number | null;
+    created_at: string;
+    delivered_at: string | null;
+    neighborhood_id: string | null;
+    status: string;
+    order_items: unknown;
+  };
+
+  const orders = (ordersRes.data ?? []) as DashboardOrderRow[];
+  const neighborhoods = (neighborhoodsRes.data ?? []) as Array<{ id: string; zone_code: string | null; name_en: string | null }>;
+  const vendors = (vendorsRes.data ?? []) as Array<{ id: string; store_name: string | null }>;
+  const products = (masterProductsRes.data ?? []) as Array<{ id: string; category: string | null; brand_id: string | null }>;
+  const brands = (brandsRes.data ?? []) as Array<{ id: string; name_en: string | null }>;
+
+  const neighborhoodById = new Map(
+    neighborhoods.map((neighborhood) => [
+      neighborhood.id,
+      {
+        zoneCode: neighborhood.zone_code?.trim() || "Unassigned",
+        neighborhoodName: neighborhood.name_en?.trim() || "Unknown",
+      },
+    ]),
+  );
+
+  const vendorNameById = new Map(vendors.map((vendor) => [vendor.id, vendor.store_name?.trim() || "Unknown Vendor"]));
+  const brandNameById = new Map(brands.map((brand) => [brand.id, brand.name_en?.trim() || "Unknown Brand"]));
+  const productMetaById = new Map(
+    products.map((product) => [
+      product.id,
+      {
+        category: product.category?.trim() || "Unknown Category",
+        brandName: product.brand_id ? (brandNameById.get(product.brand_id) ?? "Unknown Brand") : "Unknown Brand",
+      },
+    ]),
+  );
+
+  const isInWindow = (createdAt: string, start: Date, end: Date) => {
+    const date = new Date(createdAt);
+    return date >= start && date < end;
+  };
+
+  const sumBy = (rows: DashboardOrderRow[], selector: (row: DashboardOrderRow) => number) =>
+    rows.reduce((sum, row) => sum + selector(row), 0);
+
+  const todayOrders = orders.filter((order) => isInWindow(order.created_at, todayStartDate, tomorrowStartDate));
+  const yesterdayOrders = orders.filter((order) => isInWindow(order.created_at, yesterdayStartDate, todayStartDate));
+  const last7DaysOrders = orders.filter((order) => isInWindow(order.created_at, weekStartDate, tomorrowStartDate));
+
+  const buildKpi = (
+    todayValue: number,
+    previousValue: number,
+    format: "integer" | "currency",
+  ) => {
+    const change = todayValue - previousValue;
+    const changePercentage = previousValue > 0 ? (change / previousValue) * 100 : todayValue > 0 ? 100 : 0;
+
+    return {
+      value: todayValue,
+      previousValue,
+      change,
+      changePercentage,
+      format,
+    };
+  };
+
+  const todayActiveVendorIds = new Set(todayOrders.map((order) => order.vendor_id).filter((vendorId): vendorId is string => !!vendorId));
+  const yesterdayActiveVendorIds = new Set(
+    yesterdayOrders.map((order) => order.vendor_id).filter((vendorId): vendorId is string => !!vendorId),
+  );
+
+  const totalOrdersKpi = buildKpi(todayOrders.length, yesterdayOrders.length, "integer");
+  const activeVendorsKpi = buildKpi(todayActiveVendorIds.size, yesterdayActiveVendorIds.size, "integer");
+  const totalGrossVolumeKpi = buildKpi(
+    sumBy(todayOrders, (order) => Number(order.total_price ?? 0)),
+    sumBy(yesterdayOrders, (order) => Number(order.total_price ?? 0)),
+    "currency",
+  );
+  const vendorsRevenueKpi = buildKpi(
+    sumBy(todayOrders, (order) => Number(order.vendor_revenue ?? 0)),
+    sumBy(yesterdayOrders, (order) => Number(order.vendor_revenue ?? 0)),
+    "currency",
+  );
+  const cyclistsEarningsKpi = buildKpi(
+    sumBy(todayOrders, (order) => Number(order.delivery_fee ?? 0)),
+    sumBy(yesterdayOrders, (order) => Number(order.delivery_fee ?? 0)),
+    "currency",
+  );
+  const platformProfitKpi = buildKpi(
+    sumBy(todayOrders, (order) => Number(order.platform_profit ?? 0)),
+    sumBy(yesterdayOrders, (order) => Number(order.platform_profit ?? 0)),
+    "currency",
+  );
+
+  const dayMap = new Map<string, { day: string; label: string; orders: number; revenue: number }>();
   for (let i = 0; i < 7; i += 1) {
-    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
-    const dayKey = day.toISOString().slice(0, 10);
-    weeklyCounts.set(dayKey, 0);
+    const dayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+    const dayKey = dayDate.toISOString().slice(0, 10);
+    dayMap.set(dayKey, {
+      day: dayKey,
+      label: dayDate.toLocaleDateString("en-US", { weekday: "short" }),
+      orders: 0,
+      revenue: 0,
+    });
   }
 
-  for (const row of (weeklyOrdersRes.data ?? []) as Array<{ created_at: string }>) {
-    const dayKey = row.created_at.slice(0, 10);
-    if (weeklyCounts.has(dayKey)) {
-      weeklyCounts.set(dayKey, (weeklyCounts.get(dayKey) ?? 0) + 1);
+  for (const order of last7DaysOrders) {
+    const dayKey = order.created_at.slice(0, 10);
+    const bucket = dayMap.get(dayKey);
+    if (!bucket) continue;
+    bucket.orders += 1;
+    bucket.revenue += Number(order.total_price ?? 0);
+  }
+  const salesOrdersTrends = Array.from(dayMap.values());
+
+  const zonePerformanceMap = new Map<string, { zone: string; orders: number; revenue: number; vendorIds: Set<string> }>();
+  const zoneSpeedMap = new Map<string, { zone: string; neighborhood: string; totalMinutes: number; deliveries: number }>();
+  const neighborhoodHotspotMap = new Map<string, { neighborhood: string; zone: string; orders: number; revenue: number }>();
+  const brandInsightsMap = new Map<string, { name: string; orders: number; revenue: number; quantity: number }>();
+  const categoryInsightsMap = new Map<string, { name: string; orders: number; revenue: number; quantity: number }>();
+
+  const finalizedStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
+
+  for (const order of last7DaysOrders) {
+    const neighborhoodMeta = order.neighborhood_id ? neighborhoodById.get(order.neighborhood_id) : null;
+    const zoneName = neighborhoodMeta?.zoneCode ?? "Unassigned";
+    const neighborhoodName = neighborhoodMeta?.neighborhoodName ?? "Unknown";
+
+    const zoneBucket = zonePerformanceMap.get(zoneName) ?? {
+      zone: zoneName,
+      orders: 0,
+      revenue: 0,
+      vendorIds: new Set<string>(),
+    };
+    zoneBucket.orders += 1;
+    zoneBucket.revenue += Number(order.total_price ?? 0);
+    if (order.vendor_id) {
+      zoneBucket.vendorIds.add(order.vendor_id);
+    }
+    zonePerformanceMap.set(zoneName, zoneBucket);
+
+    const hotspotBucket = neighborhoodHotspotMap.get(neighborhoodName) ?? {
+      neighborhood: neighborhoodName,
+      zone: zoneName,
+      orders: 0,
+      revenue: 0,
+    };
+    hotspotBucket.orders += 1;
+    hotspotBucket.revenue += Number(order.total_price ?? 0);
+    neighborhoodHotspotMap.set(neighborhoodName, hotspotBucket);
+
+    if (order.delivered_at && finalizedStatuses.has(order.status)) {
+      const createdAtMs = new Date(order.created_at).getTime();
+      const deliveredAtMs = new Date(order.delivered_at).getTime();
+      if (Number.isFinite(createdAtMs) && Number.isFinite(deliveredAtMs) && deliveredAtMs >= createdAtMs) {
+        const durationMinutes = (deliveredAtMs - createdAtMs) / (1000 * 60);
+        const zoneSpeed = zoneSpeedMap.get(zoneName) ?? {
+          zone: zoneName,
+          neighborhood: neighborhoodName,
+          totalMinutes: 0,
+          deliveries: 0,
+        };
+        zoneSpeed.totalMinutes += durationMinutes;
+        zoneSpeed.deliveries += 1;
+        zoneSpeedMap.set(zoneName, zoneSpeed);
+      }
+    }
+
+    const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+    const seenBrandsForOrder = new Set<string>();
+    const seenCategoriesForOrder = new Set<string>();
+
+    for (const rawItem of orderItems) {
+      const item = typeof rawItem === "object" && rawItem !== null ? (rawItem as Record<string, unknown>) : null;
+      if (!item) continue;
+      const quantity = Number(item.quantity ?? 0);
+      const unitPrice = Number(item.unitPriceMad ?? item.unit_price_mad ?? item.price ?? 0);
+      const itemRevenue = (Number.isFinite(quantity) ? quantity : 0) * (Number.isFinite(unitPrice) ? unitPrice : 0);
+      const productId = typeof item.productId === "string" ? item.productId : null;
+
+      const fallbackBrand = typeof item.brandName === "string" && item.brandName.trim().length > 0 ? item.brandName.trim() : "Unknown Brand";
+      const mappedBrand = productId ? productMetaById.get(productId)?.brandName : null;
+      const brandName = mappedBrand ?? fallbackBrand;
+      const brandBucket = brandInsightsMap.get(brandName) ?? { name: brandName, orders: 0, revenue: 0, quantity: 0 };
+      if (!seenBrandsForOrder.has(brandName)) {
+        brandBucket.orders += 1;
+        seenBrandsForOrder.add(brandName);
+      }
+      brandBucket.revenue += itemRevenue;
+      brandBucket.quantity += Number.isFinite(quantity) ? quantity : 0;
+      brandInsightsMap.set(brandName, brandBucket);
+
+      const mappedCategory = productId ? productMetaById.get(productId)?.category : null;
+      const categoryName = mappedCategory ?? "Unknown Category";
+      const categoryBucket = categoryInsightsMap.get(categoryName) ?? {
+        name: categoryName,
+        orders: 0,
+        revenue: 0,
+        quantity: 0,
+      };
+      if (!seenCategoriesForOrder.has(categoryName)) {
+        categoryBucket.orders += 1;
+        seenCategoriesForOrder.add(categoryName);
+      }
+      categoryBucket.revenue += itemRevenue;
+      categoryBucket.quantity += Number.isFinite(quantity) ? quantity : 0;
+      categoryInsightsMap.set(categoryName, categoryBucket);
     }
   }
 
-  const weeklyTrends = Array.from(weeklyCounts.entries()).map(([day, count]) => ({
-    day,
-    label: new Date(day).toLocaleDateString("en-US", { weekday: "short" }),
-    orders: count,
+  const zonePerformance = Array.from(zonePerformanceMap.values())
+    .map((zone) => ({
+      zone: zone.zone,
+      orders: zone.orders,
+      revenue: zone.revenue,
+      activeVendors: zone.vendorIds.size,
+    }))
+    .sort((a, b) => b.orders - a.orders || b.revenue - a.revenue);
+
+  const topZones = zonePerformance.slice(0, 3);
+  const bottomZones = [...zonePerformance].sort((a, b) => a.orders - b.orders || a.revenue - b.revenue).slice(0, 3);
+
+  const deliverySpeedByZone = Array.from(zoneSpeedMap.values())
+    .map((zone) => ({
+      zone: zone.zone,
+      neighborhood: zone.neighborhood,
+      avgMinutes: zone.deliveries > 0 ? zone.totalMinutes / zone.deliveries : 0,
+      deliveries: zone.deliveries,
+    }))
+    .sort((a, b) => a.avgMinutes - b.avgMinutes);
+
+  const fastestZoneNames = new Set(deliverySpeedByZone.slice(0, 2).map((zone) => zone.zone));
+  const slowestZoneNames = new Set([...deliverySpeedByZone].reverse().slice(0, 2).map((zone) => zone.zone));
+
+  const deliverySpeedMetrics: Array<{
+    zone: string;
+    neighborhood: string;
+    avgMinutes: number;
+    deliveries: number;
+    performance: "fast" | "slow" | "normal";
+  }> = deliverySpeedByZone.map((zone) => ({
+    ...zone,
+    performance: fastestZoneNames.has(zone.zone)
+      ? "fast"
+      : slowestZoneNames.has(zone.zone)
+        ? "slow"
+        : "normal",
   }));
 
-  const totalRevenueMad = ((revenueRes.data ?? []) as Array<{ total_price: number | null }>).reduce(
-    (sum, row) => sum + Number(row.total_price ?? 0),
-    0,
-  );
+  const topNeighborhoods = Array.from(neighborhoodHotspotMap.values())
+    .sort((a, b) => b.orders - a.orders || b.revenue - a.revenue)
+    .slice(0, 6);
+
+  const topBrands = Array.from(brandInsightsMap.values())
+    .sort((a, b) => b.revenue - a.revenue || b.orders - a.orders)
+    .slice(0, 6);
+
+  const topCategories = Array.from(categoryInsightsMap.values())
+    .sort((a, b) => b.revenue - a.revenue || b.orders - a.orders)
+    .slice(0, 6);
 
   return {
-    totalOrdersToday: ordersTodayRes.count ?? 0,
-    activeVendors: activeVendorsRes.count ?? 0,
-    totalRevenueMad,
-    weeklyTrends,
+    kpis: {
+      totalOrders: totalOrdersKpi,
+      activeVendors: activeVendorsKpi,
+      totalGrossVolume: totalGrossVolumeKpi,
+      vendorsRevenue: vendorsRevenueKpi,
+      cyclistsEarnings: cyclistsEarningsKpi,
+      platformProfit: platformProfitKpi,
+    },
+    salesOrdersTrends,
+    zonePerformance: {
+      top: topZones,
+      bottom: bottomZones,
+    },
+    deliverySpeedMetrics,
+    marketInsights: {
+      topNeighborhoods,
+      topBrands,
+      topCategories,
+    },
+    metadata: {
+      generatedAt: now.toISOString(),
+      vendorNames: Object.fromEntries(vendorNameById.entries()),
+    },
   };
 });
 
