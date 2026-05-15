@@ -138,8 +138,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const tomorrowStartIso = tomorrowStartDate.toISOString();
   const weekStartIso = weekStartDate.toISOString();
 
-  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes, ledgerTotalRes, ledgerBeforeTodayRes] =
-    await Promise.all([
+  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
       .select(
@@ -151,8 +150,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
     (supabaseAdmin as any).from("master_products").select("id, category, brand_id"),
     (supabaseAdmin as any).from("brands").select("id, name_en"),
-    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()"),
-    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()").lt("created_at", todayStartIso),
   ]);
 
   if (ordersRes.error) throw new Error(ordersRes.error.message);
@@ -160,8 +157,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   if (vendorsRes.error) throw new Error(vendorsRes.error.message);
   if (masterProductsRes.error) throw new Error(masterProductsRes.error.message);
   if (brandsRes.error) throw new Error(brandsRes.error.message);
-  if (ledgerTotalRes.error) throw new Error(ledgerTotalRes.error.message);
-  if (ledgerBeforeTodayRes.error) throw new Error(ledgerBeforeTodayRes.error.message);
 
   type DashboardOrderRow = {
     id: string;
@@ -182,6 +177,45 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const vendors = (vendorsRes.data ?? []) as Array<{ id: string; store_name: string | null }>;
   const products = (masterProductsRes.data ?? []) as Array<{ id: string; category: string | null; brand_id: string | null }>;
   const brands = (brandsRes.data ?? []) as Array<{ id: string; name_en: string | null }>;
+
+  const fetchLedgerTotals = async () => {
+    const pageSize = 1000;
+    let from = 0;
+    let total = 0;
+    let beforeToday = 0;
+
+    while (true) {
+      const to = from + pageSize - 1;
+      const ledgerPageRes = await (supabaseAdmin as any)
+        .from("platform_commission_ledger")
+        .select("amount, created_at")
+        .order("created_at", { ascending: true })
+        .range(from, to);
+
+      if (ledgerPageRes.error) {
+        throw new Error(ledgerPageRes.error.message);
+      }
+
+      const rows = (ledgerPageRes.data ?? []) as Array<{ amount: number | null; created_at: string | null }>;
+      if (rows.length === 0) break;
+
+      for (const row of rows) {
+        const amount = Number(row.amount ?? 0);
+        total += amount;
+
+        if (row.created_at && row.created_at < todayStartIso) {
+          beforeToday += amount;
+        }
+      }
+
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { total, beforeToday };
+  };
+
+  const { total: ledgerGrandTotal, beforeToday: ledgerBeforeToday } = await fetchLedgerTotals();
 
   const neighborhoodById = new Map(
     neighborhoods.map((neighborhood) => [
@@ -242,9 +276,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const finalizedStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
   const todaySuccessfulOrders = todayOrders.filter((order) => finalizedStatuses.has(order.status));
   const yesterdaySuccessfulOrders = yesterdayOrders.filter((order) => finalizedStatuses.has(order.status));
-
-  const ledgerGrandTotal = Number((ledgerTotalRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
-  const ledgerBeforeToday = Number((ledgerBeforeTodayRes.data as Array<{ total: number | null }> | null)?.[0]?.total ?? 0);
 
   const totalOrdersKpi = buildKpi(todayOrders.length, yesterdayOrders.length, "integer");
   const activeVendorsKpi = buildKpi(todayActiveVendorIds.size, yesterdayActiveVendorIds.size, "integer");
