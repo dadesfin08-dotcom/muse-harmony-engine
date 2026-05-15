@@ -959,131 +959,56 @@ function AdminPage() {
   };
 
   const openPlatformCollectionQr = (vendor: AdminVendorRecord) => {
-    const amountMad = Number(vendor.platformDuesMad ?? 0);
-    if (amountMad <= 0) {
-      toast.info("No platform dues pending for this vendor.");
+    const pending = Number(vendor.platformDuesMad ?? 0);
+    if (!Number.isFinite(pending) || pending <= 0) {
+      toast.info("No platform commission pending for this vendor.");
       return;
     }
-
     setPlatformCollectionScanTargetVendor(vendor);
-    setIsPlatformQrScannerOpen(true);
+    setAmountToCollectMad(Number(pending.toFixed(2)));
+    setPlatformCollectionQrPayload(null);
+    setIsInitiateWithdrawalOpen(true);
   };
 
-  const handlePlatformCollectionFromScan = async (vendor: AdminVendorRecord, payload: Record<string, unknown>) => {
-    const amountMad = Number(vendor.platformDuesMad ?? 0);
-    if (!Number.isFinite(amountMad) || amountMad <= 0) {
-      toast.info("No platform dues pending for this vendor.");
+  const handleGenerateWithdrawalQr = () => {
+    const vendor = platformCollectionScanTargetVendor;
+    if (!vendor) return;
+
+    const pending = Number(vendor.platformDuesMad ?? 0);
+    const amount = Number(amountToCollectMad ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > pending) {
+      toast.error(`Amount must be > 0 and ≤ ${pending.toFixed(2)} MAD.`);
       return;
     }
 
-    setIsCollectingPlatformDues(true);
-    try {
-      const result = await collectPlatformDues({
-        data: {
-          vendorId: vendor.id,
-          amount: Number(amountMad.toFixed(2)),
-          qrPayload: payload,
-        },
-      });
+    const payload = platformCommissionPaymentQrPayloadSchema.parse({
+      action: "platform_commission_payment",
+      vendor_id: vendor.id,
+      amount: Number(amount.toFixed(2)),
+      timestamp: new Date().toISOString(),
+    });
 
-      await queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
-
-      setPlatformCollectionReceipt({
-        vendorName: vendor.storeName,
-        amountMad: result.collectedAmountMad,
-        transactionId: result.transactionId,
-        remainingDuesMad: result.remainingDuesMad,
-        collectedAt: new Date().toISOString(),
-      });
-
-      if (typeof window !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(120);
-      }
-
-      if (typeof window !== "undefined") {
-        const audioContext = new window.AudioContext();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(860, audioContext.currentTime);
-        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.1);
-      }
-
-      setPlatformCollectionScanTargetVendor(null);
-      setIsPlatformQrScannerOpen(false);
-      toast.success("Funds successfully collected to Admin Treasury.");
-    } catch (error) {
-      console.error("Platform dues collection failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to collect platform dues.");
-    } finally {
-      setIsCollectingPlatformDues(false);
-    }
+    setPlatformCollectionQrPayload(JSON.stringify(payload));
+    toast.success("Commission payment QR generated.");
   };
 
   useEffect(() => {
-    if (!isPlatformQrScannerOpen || !platformCollectionScanTargetVendor) return;
-
-    let mounted = true;
-    let scanner: any = null;
-
-    const startScanner = async () => {
-      try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (!mounted) return;
-
-        scanner = new Html5Qrcode("admin-platform-dues-qr-reader");
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText: string) => {
-            if (isCollectingPlatformDues) return;
-
-            try {
-              const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
-
-              if (payload.vendor_id !== platformCollectionScanTargetVendor.id) {
-                toast.error("Invalid QR Code. Please scan the correct Vendor's code.");
-                return;
-              }
-
-              void handlePlatformCollectionFromScan(platformCollectionScanTargetVendor, payload);
-            } catch {
-              toast.error("Invalid platform collection QR payload.");
-            }
-          },
-          () => undefined,
-        );
-      } catch (error) {
-        console.error("Admin platform QR scanner failed:", error);
-        toast.error("Unable to open QR scanner.");
-      }
-    };
-
-    void startScanner();
+    const channel = supabase
+      .channel("admin-platform-commission-ledger")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "platform_commission_ledger" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
+          void queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
+        },
+      )
+      .subscribe();
 
     return () => {
-      mounted = false;
-      if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
-      }
+      void supabase.removeChannel(channel);
     };
-  }, [
-    collectPlatformDues,
-    isPlatformQrScannerOpen,
-    platformCollectionScanTargetVendor,
-    queryClient,
-    isCollectingPlatformDues,
-  ]);
+  }, [queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
