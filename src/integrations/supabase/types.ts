@@ -707,6 +707,7 @@ export type Database = {
           neighborhood_id: string | null
           order_items: Json
           payment_method: Database["public"]["Enums"]["payment_method"]
+          platform_markup: number
           platform_profit: number
           status: Database["public"]["Enums"]["order_status"]
           subtotal_base_price: number
@@ -732,6 +733,7 @@ export type Database = {
           neighborhood_id?: string | null
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          platform_markup?: number
           platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_base_price?: number
@@ -757,6 +759,7 @@ export type Database = {
           neighborhood_id?: string | null
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
+          platform_markup?: number
           platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
           subtotal_base_price?: number
