@@ -2614,6 +2614,26 @@ function AdminPage() {
     applyCategoryImageFile(event.target.files?.[0] ?? null);
   };
 
+  const applyPlatformPackImageFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPlatformPackImageFile(file);
+      setPlatformPackImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
+    };
+    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.readAsDataURL(file);
+  };
+
+  const handlePlatformPackImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    applyPlatformPackImageFile(event.target.files?.[0] ?? null);
+  };
+
   const resetCategoryForm = () => {
     setCategoryForm({
       id: "",
@@ -3349,11 +3369,20 @@ function AdminPage() {
       nameFr: "",
       nameAr: "",
       description: "",
-      pricePerUnit: "",
+      basePriceMad: "",
+      billingCycle: "WEEKLY",
       unitType: "Kg",
+      deliveryWindow: "",
+      packItems: [""],
+      packFeatures: [""],
       imageUrl: "",
       isActive: true,
     });
+    setPlatformPackImageFile(null);
+    setPlatformPackImagePreviewUrl(null);
+    if (platformPackImageInputRef.current) {
+      platformPackImageInputRef.current.value = "";
+    }
   };
 
   const editPlatformPack = (pack: {
@@ -3362,8 +3391,12 @@ function AdminPage() {
     nameFr: string | null;
     nameAr: string | null;
     description: string | null;
-    pricePerUnit: number;
+    basePriceMad: number;
+    billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
+    deliveryWindow: string | null;
+    packItems: string[];
+    packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
   }) => {
@@ -3373,15 +3406,21 @@ function AdminPage() {
       nameFr: pack.nameFr ?? "",
       nameAr: pack.nameAr ?? "",
       description: pack.description ?? "",
-      pricePerUnit: String(pack.pricePerUnit),
+      basePriceMad: String(pack.basePriceMad),
+      billingCycle: pack.billingCycle,
       unitType: pack.unitType,
+      deliveryWindow: pack.deliveryWindow ?? "",
+      packItems: pack.packItems.length > 0 ? [...pack.packItems] : [""],
+      packFeatures: pack.packFeatures.length > 0 ? [...pack.packFeatures] : [""],
       imageUrl: pack.imageUrl ?? "",
       isActive: pack.isActive,
     });
+    setPlatformPackImageFile(null);
+    setPlatformPackImagePreviewUrl(pack.imageUrl ?? null);
   };
 
   const savePlatformPack = async () => {
-    const parsedPrice = Number(platformPackForm.pricePerUnit);
+    const parsedPrice = Number(platformPackForm.basePriceMad);
     if (!platformPackForm.nameEn.trim() || !platformPackForm.unitType.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
       toast.error("Please fill valid platform pack fields.");
       return;
@@ -3389,14 +3428,41 @@ function AdminPage() {
 
     try {
       setIsSavingPlatformPack(true);
+      let finalImageUrl = platformPackForm.imageUrl.trim() || null;
+
+      if (platformPackImageFile) {
+        const extension = platformPackImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
+        const sanitizedBaseName = platformPackImageFile.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[^a-zA-Z0-9-_]/g, "-")
+          .slice(0, 60);
+        const fileName = `${crypto.randomUUID()}-${sanitizedBaseName || "platform-pack"}.${extension}`;
+        const filePath = `platform-packs/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("products")
+          .upload(filePath, platformPackImageFile, { cacheControl: "3600", upsert: false });
+
+        if (uploadError || !uploadData?.path) {
+          throw new Error(uploadError?.message || "Pack image upload failed.");
+        }
+
+        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
+        finalImageUrl = publicUrlData.publicUrl;
+      }
+
       const payload = {
         nameEn: platformPackForm.nameEn.trim(),
         nameFr: platformPackForm.nameFr.trim() || null,
         nameAr: platformPackForm.nameAr.trim() || null,
         description: platformPackForm.description.trim() || null,
-        pricePerUnit: parsedPrice,
+        basePriceMad: parsedPrice,
+        billingCycle: platformPackForm.billingCycle,
         unitType: platformPackForm.unitType.trim(),
-        imageUrl: platformPackForm.imageUrl.trim() || null,
+        deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
+        packItems: platformPackForm.packItems.map((item) => item.trim()).filter((item) => item.length > 0),
+        packFeatures: platformPackForm.packFeatures.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
+        imageUrl: finalImageUrl,
         isActive: platformPackForm.isActive,
       };
 
