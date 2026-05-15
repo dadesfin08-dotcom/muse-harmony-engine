@@ -984,11 +984,28 @@ function AdminPage() {
 
   useEffect(() => {
     const channel = supabase
-      .channel("admin-platform-commission-ledger")
+      .channel("admin-platform-commission-ledger-withdrawals")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "platform_commission_ledger" },
-        () => {
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "platform_commission_ledger",
+          filter: "transaction_type=eq.WITHDRAWAL",
+        },
+        (payload) => {
+          const insertedVendorId = (payload.new as { vendor_id?: string } | null)?.vendor_id;
+          const isCurrentQrVendorPayment =
+            isInitiateWithdrawalOpen &&
+            Boolean(platformCollectionScanTargetVendor?.id) &&
+            insertedVendorId === platformCollectionScanTargetVendor?.id;
+
+          if (isCurrentQrVendorPayment) {
+            toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+            setIsInitiateWithdrawalOpen(false);
+            setPlatformCollectionQrPayload(null);
+          }
+
           void queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
           void queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
         },
@@ -998,7 +1015,7 @@ function AdminPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
