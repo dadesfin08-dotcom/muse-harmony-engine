@@ -702,7 +702,7 @@ function AdminPage() {
     queryKey: ["admin", "brand-engine"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchBrandEngineAnalytics(),
-    refetchInterval: 20_000,
+    refetchInterval: isBrandEngineLiveRefreshEnabled ? 20_000 : false,
     placeholderData: (previousData) => previousData,
   });
   const vendors = vendorsQuery.data ?? initialVendors;
@@ -874,6 +874,7 @@ function AdminPage() {
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
   const [isBrandEngineActionLoading, setIsBrandEngineActionLoading] = useState(false);
+  const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
   const [rotationRatios, setRotationRatios] = useState({
     trending: 70,
     midTier: 20,
@@ -3322,8 +3323,11 @@ function AdminPage() {
                 <AIBrandEngineSection
                   analytics={brandEngineAnalytics}
                   isLoading={dbHealthQuery.isLoading || brandEngineQuery.isLoading}
+                  isFetching={brandEngineQuery.isFetching}
                   error={brandEngineQuery.error}
                   isActionLoading={isBrandEngineActionLoading}
+                  liveRefreshEnabled={isBrandEngineLiveRefreshEnabled}
+                  onToggleLiveRefresh={setIsBrandEngineLiveRefreshEnabled}
                   rotationRatios={rotationRatios}
                   onRotationRatioChange={handleRotationRatioChange}
                   onManualBoost={handleBrandEngineManualBoost}
@@ -4809,8 +4813,11 @@ function OverviewSection({
 function AIBrandEngineSection({
   analytics,
   isLoading,
+  isFetching,
   error,
   isActionLoading,
+  liveRefreshEnabled,
+  onToggleLiveRefresh,
   rotationRatios,
   onRotationRatioChange,
   onManualBoost,
@@ -4819,8 +4826,11 @@ function AIBrandEngineSection({
 }: {
   analytics: BrandEngineAnalytics | undefined;
   isLoading: boolean;
+  isFetching: boolean;
   error: Error | null;
   isActionLoading: boolean;
+  liveRefreshEnabled: boolean;
+  onToggleLiveRefresh: (enabled: boolean) => void;
   rotationRatios: { trending: number; midTier: number; discovery: number };
   onRotationRatioChange: (segment: "trending" | "midTier" | "discovery", value: number) => void;
   onManualBoost: (brandId: string) => void;
@@ -4880,6 +4890,19 @@ function AIBrandEngineSection({
 
   return (
     <div className="space-y-5">
+      <section className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/90 px-4 py-3 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur">
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">Live Refresh</p>
+          <p className="text-xs text-muted-foreground">تحديث دوري لبطاقات العدّادات والمخطط والجدول بدون وميض</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {liveRefreshEnabled ? (isFetching ? "Syncing..." : "On") : "Off"}
+          </span>
+          <Switch checked={liveRefreshEnabled} onCheckedChange={onToggleLiveRefresh} />
+        </div>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpiCards.map((card) => (
           <article
