@@ -11,7 +11,7 @@ import {
   type SetStateAction,
 } from "react";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
@@ -67,6 +67,7 @@ import {
   Image as ImageIcon,
   ShieldAlert,
   Sparkles,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -190,6 +191,7 @@ import {
   deletePlatformPack,
   assignSubscriptionOrderCyclist,
   autoDispatchSubscriptionOrder,
+  updateSubscriptionOrderStatus,
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
@@ -378,8 +380,11 @@ const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
   vendorName: string;
+  customerName: string;
   customerPhone: string;
   totalPrice: number;
+  itemCount: number;
+  orderItems: unknown[];
   orderCategory: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
   cyclistId: string | null;
   cyclistName: string | null;
@@ -637,6 +642,7 @@ function AdminPage() {
   const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
   const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
   const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
+  const updateSubscriptionOrderStatusInDatabase = useServerFn(updateSubscriptionOrderStatus);
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
@@ -987,6 +993,11 @@ function AdminPage() {
     "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
   >("all");
   const [ordersCategoryFilter, setOrdersCategoryFilter] = useState<"all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION">("all");
+  const [packOrdersSearchTerm, setPackOrdersSearchTerm] = useState("");
+  const [packOrdersStatusFilter, setPackOrdersStatusFilter] = useState<
+    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled"
+  >("all");
+  const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
     id: "",
@@ -1130,6 +1141,26 @@ function AdminPage() {
       }),
     [adminOrders, ordersStatusFilter, ordersCategoryFilter],
   );
+
+  const packOrders = useMemo(
+    () => adminOrders.filter((order) => order.orderCategory === "PLATFORM_SUBSCRIPTION"),
+    [adminOrders],
+  );
+
+  const filteredPackOrders = useMemo(() => {
+    const search = packOrdersSearchTerm.trim().toLowerCase();
+
+    return packOrders.filter((order) => {
+      const matchesSearch =
+        search.length === 0 ||
+        order.id.toLowerCase().includes(search) ||
+        order.customerName.toLowerCase().includes(search) ||
+        order.customerPhone.toLowerCase().includes(search);
+      const matchesStatus = packOrdersStatusFilter === "all" || order.status === packOrdersStatusFilter;
+      const matchesCyclist = packOrdersCyclistFilter === "all" || order.cyclistId === packOrdersCyclistFilter;
+      return matchesSearch && matchesStatus && matchesCyclist;
+    });
+  }, [packOrders, packOrdersSearchTerm, packOrdersStatusFilter, packOrdersCyclistFilter]);
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
@@ -3526,6 +3557,26 @@ function AdminPage() {
     }
   };
 
+  const updateSubscriptionOrderStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string; status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled" }) =>
+      updateSubscriptionOrderStatusInDatabase({ data: { orderId, status } }),
+    onSuccess: async () => {
+      await adminOrdersQuery.refetch();
+      toast.success("Subscription order status updated.");
+    },
+    onError: (error) => {
+      console.error("Failed to update subscription order status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update subscription order status.");
+    },
+  });
+
+  const updateSubscriptionOrderStatusHandler = async (
+    orderId: string,
+    status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled",
+  ) => {
+    await updateSubscriptionOrderStatusMutation.mutateAsync({ orderId, status });
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
@@ -3620,10 +3671,20 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "platform-packs-orders" ? (
-                <PlaceholderSection
-                  icon={PackageCheck}
-                  title="Pack Orders"
-                  subtitle="Phase 1 placeholder. Orders management for platform packs will be enabled in the next phase."
+                <PackOrdersSection
+                  orders={filteredPackOrders}
+                  cyclists={cyclists}
+                  isLoading={dbHealthQuery.isLoading || adminOrdersQuery.isLoading}
+                  isMutating={isAssigningSubscriptionOrder || updateSubscriptionOrderStatusMutation.isPending}
+                  searchTerm={packOrdersSearchTerm}
+                  onSearchTermChange={setPackOrdersSearchTerm}
+                  statusFilter={packOrdersStatusFilter}
+                  onStatusFilterChange={setPackOrdersStatusFilter}
+                  cyclistFilter={packOrdersCyclistFilter}
+                  onCyclistFilterChange={setPackOrdersCyclistFilter}
+                  onAssignCyclist={assignCyclistToSubscriptionOrder}
+                  onAutoDispatch={autoDispatchSubscriptionOrderHandler}
+                  onUpdateStatus={updateSubscriptionOrderStatusHandler}
                 />
               ) : null}
               {tab === "platform-packs-subscribers" ? (
@@ -7543,6 +7604,285 @@ function PlaceholderSection({
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function PackOrdersSection({
+  orders,
+  cyclists,
+  isLoading,
+  isMutating,
+  searchTerm,
+  onSearchTermChange,
+  statusFilter,
+  onStatusFilterChange,
+  cyclistFilter,
+  onCyclistFilterChange,
+  onAssignCyclist,
+  onAutoDispatch,
+  onUpdateStatus,
+}: {
+  orders: Array<{
+    id: string;
+    createdAt: string;
+    customerName: string;
+    customerPhone: string;
+    totalPrice: number;
+    itemCount: number;
+    orderItems: unknown[];
+    cyclistId: string | null;
+    cyclistName: string | null;
+    status:
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+      | "cancelled";
+  }>;
+  cyclists: AdminCyclistRecord[];
+  isLoading: boolean;
+  isMutating: boolean;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  statusFilter: "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
+  onStatusFilterChange: (value: "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => void;
+  cyclistFilter: "all" | string;
+  onCyclistFilterChange: (value: "all" | string) => void;
+  onAssignCyclist: (orderId: string, cyclistId: string) => Promise<void>;
+  onAutoDispatch: (orderId: string) => Promise<void>;
+  onUpdateStatus: (orderId: string, status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => Promise<void>;
+}) {
+  const statusBadgeClass: Record<string, string> = {
+    new: "bg-chart-4/20 text-chart-4",
+    preparing: "bg-highlight/20 text-highlight-foreground",
+    ready: "bg-chart-2/20 text-chart-2",
+    delivering: "bg-primary/20 text-primary",
+    delivered: "bg-success/20 text-success",
+    cancelled: "bg-destructive/20 text-destructive",
+    delivered_cash_with_cyclist: "bg-muted text-muted-foreground",
+    cash_transferred_to_vendor: "bg-muted text-muted-foreground",
+  };
+
+  const extractPackSnapshot = (order: (typeof orders)[number]) => {
+    const firstItem = Array.isArray(order.orderItems) ? order.orderItems[0] : null;
+    const item = firstItem && typeof firstItem === "object" ? (firstItem as Record<string, unknown>) : null;
+
+    const packName =
+      (typeof item?.packName === "string" && item.packName.trim().length > 0 && item.packName.trim()) ||
+      (typeof item?.name === "string" && item.name.trim().length > 0 && item.name.trim()) ||
+      (typeof item?.title === "string" && item.title.trim().length > 0 && item.title.trim()) ||
+      "Platform Pack";
+
+    const quantity = Number(item?.quantity ?? 0);
+    const unit = typeof item?.unitType === "string" ? item.unitType : typeof item?.measurementUnit === "string" ? item.measurementUnit : null;
+
+    const quantityLabel = Number.isFinite(quantity) && quantity > 0 ? (unit ? `${quantity} ${unit}` : String(quantity)) : order.itemCount > 0 ? `${order.itemCount} items` : "—";
+
+    const cycle =
+      (typeof item?.billingCycle === "string" && item.billingCycle.trim().length > 0 && item.billingCycle.trim()) ||
+      (typeof item?.cycle === "string" && item.cycle.trim().length > 0 && item.cycle.trim()) ||
+      "WEEKLY";
+
+    const schedule =
+      (typeof item?.deliveryWindow === "string" && item.deliveryWindow.trim().length > 0 && item.deliveryWindow.trim()) ||
+      (typeof item?.schedule === "string" && item.schedule.trim().length > 0 && item.schedule.trim()) ||
+      (typeof item?.deliveryDate === "string" && item.deliveryDate.trim().length > 0 && item.deliveryDate.trim()) ||
+      "Not set";
+
+    return {
+      packName,
+      quantityLabel,
+      cycle: cycle.toUpperCase(),
+      schedule,
+    };
+  };
+
+  const resolveStatusForControl = (
+    status: (typeof orders)[number]["status"],
+  ): "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled" => {
+    if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
+      return "delivered";
+    }
+    return status;
+  };
+
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Pack Orders Dispatch Center</h2>
+          <p className="text-sm text-muted-foreground">Operational board for direct platform subscriptions with strict prepaid handling.</p>
+        </div>
+        <Badge className="bg-success/20 text-success">Prepaid · 0.00 MAD</Badge>
+      </div>
+
+      <div className="sticky top-14 z-10 rounded-md border border-border bg-background/95 p-3 backdrop-blur">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+              placeholder="Search customer, phone, or order ID"
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="size-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as typeof statusFilter)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="new">Pending</SelectItem>
+                <SelectItem value="preparing">Approved</SelectItem>
+                <SelectItem value="ready">Ready</SelectItem>
+                <SelectItem value="delivering">Active</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Select value={cyclistFilter} onValueChange={onCyclistFilterChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by cyclist" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All cyclists</SelectItem>
+              {cyclists.map((cyclist) => (
+                <SelectItem key={cyclist.id} value={cyclist.id}>
+                  {cyclist.fullName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <Table className="min-w-[1280px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer Info</TableHead>
+              <TableHead>Pack Details</TableHead>
+              <TableHead>Cycle & Schedule</TableHead>
+              <TableHead>Financials</TableHead>
+              <TableHead>Logistics</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center">
+                  <AppEmptyState title="Loading pack orders..." subtitle="Refreshing direct subscription dispatch queue." className="border-0 bg-transparent py-2" />
+                </TableCell>
+              </TableRow>
+            ) : orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center">
+                  <AppEmptyState title="No pack orders found" subtitle="Try changing filters or wait for new subscription deliveries." className="border-0 bg-transparent py-2" />
+                </TableCell>
+              </TableRow>
+            ) : (
+              orders.map((order) => {
+                const pack = extractPackSnapshot(order);
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-foreground">{order.customerName}</p>
+                        <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                        <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleString()}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-medium text-foreground">{pack.packName}</p>
+                        <p className="text-xs text-muted-foreground">{pack.quantityLabel}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge variant="outline">{pack.cycle}</Badge>
+                        <p className="text-xs text-muted-foreground">{pack.schedule}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge className="bg-success/20 text-success">Prepaid</Badge>
+                        <p className="text-xs font-semibold text-success">0.00 MAD</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[order.status] ?? "bg-muted text-muted-foreground"}`}>
+                          {order.status}
+                        </span>
+                        <p className="text-xs text-muted-foreground">{order.cyclistName ?? "Unassigned cyclist"}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="grid gap-2">
+                        <Select
+                          value={order.cyclistId ?? ""}
+                          onValueChange={(value) => {
+                            if (!value) return;
+                            void onAssignCyclist(order.id, value);
+                          }}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Assign cyclist" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cyclists.map((cyclist) => (
+                              <SelectItem key={cyclist.id} value={cyclist.id}>
+                                {cyclist.fullName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Select
+                          value={resolveStatusForControl(order.status)}
+                          onValueChange={(value) =>
+                            void onUpdateStatus(
+                              order.id,
+                              value as "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Change status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">Pending</SelectItem>
+                            <SelectItem value="preparing">Approved</SelectItem>
+                            <SelectItem value="ready">Ready</SelectItem>
+                            <SelectItem value="delivering">Active</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Button size="sm" variant="outline" disabled={isMutating} onClick={() => void onAutoDispatch(order.id)}>
+                          <Bike className="size-3.5" />
+                          Auto Dispatch
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
       </div>
     </section>
   );
