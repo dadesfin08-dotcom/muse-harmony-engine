@@ -54,6 +54,7 @@ import {
   Trophy,
   TrendingDown,
   CalendarDays,
+  Map,
   Eye,
   Tag,
   Pencil,
@@ -817,7 +818,8 @@ function AdminPage() {
   const [adForm, setAdForm] = useState({
     id: "",
     campaignName: "",
-    zoneId: "global",
+    selectedCommune: "global",
+    selectedDouarIds: [] as string[],
     campaignType: "AD" as "AD" | "PROMO" | "NEWS",
     imageAr: "",
     imageFr: "",
@@ -2477,7 +2479,8 @@ function AdminPage() {
     setAdForm({
       id: "",
       campaignName: "",
-      zoneId: "global",
+      selectedCommune: "global",
+      selectedDouarIds: [],
       campaignType: "AD",
       imageAr: "",
       imageFr: "",
@@ -2520,6 +2523,18 @@ function AdminPage() {
       return;
     }
 
+    const selectedCommune = adForm.selectedCommune;
+    const scopedZones = selectedCommune === "global"
+      ? []
+      : adTargetZones.filter((zone) => zone.communeName === selectedCommune);
+    const scopedZoneIds = scopedZones.map((zone) => zone.id);
+    const selectedDouarIds = adForm.selectedDouarIds.filter((zoneId) => scopedZoneIds.includes(zoneId));
+    const resolvedTargetZoneIds = selectedCommune === "global"
+      ? null
+      : selectedDouarIds.length === 0
+        ? scopedZoneIds
+        : selectedDouarIds;
+
     setIsSavingAd(true);
     try {
       if (adForm.id) {
@@ -2527,7 +2542,7 @@ function AdminPage() {
           data: {
             id: adForm.id,
             campaignName: adForm.campaignName.trim(),
-            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            targetZoneIds: resolvedTargetZoneIds,
             campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
@@ -2543,7 +2558,7 @@ function AdminPage() {
         await createSiteAdInDatabase({
           data: {
             campaignName: adForm.campaignName.trim(),
-            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            targetZoneIds: resolvedTargetZoneIds,
             campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
@@ -2640,7 +2655,7 @@ function AdminPage() {
   const editAd = (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -2651,10 +2666,26 @@ function AdminPage() {
     end_date: string | null;
     is_active: boolean;
   }) => {
+    const targetZoneIds = Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [];
+    const matchingZones = adTargetZones.filter((zone) => targetZoneIds.includes(zone.id));
+    const communeNames = Array.from(new Set(matchingZones.map((zone) => zone.communeName)));
+    const selectedCommune = communeNames.length === 1 ? communeNames[0] : targetZoneIds.length === 0 ? "global" : "global";
+    const communeZoneIds = selectedCommune === "global"
+      ? []
+      : adTargetZones.filter((zone) => zone.communeName === selectedCommune).map((zone) => zone.id);
+    const isWholeCommuneSelection =
+      selectedCommune !== "global" &&
+      communeZoneIds.length > 0 &&
+      communeZoneIds.every((zoneId) => targetZoneIds.includes(zoneId));
+
     setAdForm({
       id: ad.id,
       campaignName: ad.campaign_name ?? "",
-      zoneId: ad.zone_id ?? "global",
+      selectedCommune,
+      selectedDouarIds:
+        selectedCommune === "global" || isWholeCommuneSelection
+          ? []
+          : targetZoneIds.filter((zoneId) => communeZoneIds.includes(zoneId)),
       campaignType: ad.campaign_type ?? "AD",
       imageAr: ad.image_ar ?? "",
       imageFr: ad.image_fr ?? "",
@@ -2683,7 +2714,7 @@ function AdminPage() {
   const toggleAdActive = async (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -2699,7 +2730,7 @@ function AdminPage() {
         data: {
           id: ad.id,
           campaignName: ad.campaign_name,
-          zoneId: ad.zone_id,
+          targetZoneIds: ad.target_zone_ids,
           campaignType: ad.campaign_type,
           imageAr: ad.image_ar,
           imageFr: ad.image_fr,
