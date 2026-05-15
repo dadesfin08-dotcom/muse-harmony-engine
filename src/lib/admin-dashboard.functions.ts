@@ -868,7 +868,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     id: order.id,
     createdAt: order.created_at,
     customerName: order.customer_name?.trim() || "Unknown Customer",
-    customerPhone: order.customer_phone,
+    customerPhone: order.customer_phone ?? "—",
     totalPrice: Number(order.total_price ?? 0),
     itemCount: Number(order.item_count ?? 0),
     orderItems: Array.isArray(order.order_items) ? order.order_items : [],
