@@ -168,7 +168,7 @@ type SiteAdRow = {
   id: string;
   image_url: string;
   link_url: string | null;
-  zone_id?: string | null;
+  target_zone_ids?: string[] | null;
   campaign_type?: "AD" | "PROMO" | "NEWS";
   views_count?: number;
 };
