@@ -222,6 +222,7 @@ import i18n from "@/lib/i18n";
 
 type AdminTab =
   | "overview"
+  | "ai-brand-engine"
   | "orders"
   | "customers"
   | "vendors"
@@ -235,6 +236,7 @@ type AdminTab =
 
 const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
   { label: "admin.nav.overview", tab: "overview", icon: LayoutDashboard },
+  { label: "admin.nav.aiBrandEngine", tab: "ai-brand-engine", icon: Sparkles },
   { label: "admin.nav.orders", tab: "orders", icon: PackageCheck },
   { label: "admin.nav.customers", tab: "customers", icon: Users },
   { label: "admin.nav.vendors", tab: "vendors", icon: Store },
@@ -459,6 +461,7 @@ export const Route = createFileRoute("/admin")({
     if (
       [
         "overview",
+        "ai-brand-engine",
         "orders",
         "customers",
         "vendors",
