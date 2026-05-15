@@ -29,9 +29,13 @@ export type Database = {
           message_ar: string | null
           message_en: string | null
           message_fr: string | null
+          messages_ar: string[]
+          messages_en: string[]
+          messages_fr: string[]
           sort_order: number
           start_date: string | null
           text_color: string | null
+          title: string
           updated_at: string
         }
         Insert: {
@@ -48,9 +52,13 @@ export type Database = {
           message_ar?: string | null
           message_en?: string | null
           message_fr?: string | null
+          messages_ar?: string[]
+          messages_en?: string[]
+          messages_fr?: string[]
           sort_order?: number
           start_date?: string | null
           text_color?: string | null
+          title: string
           updated_at?: string
         }
         Update: {
@@ -67,9 +75,13 @@ export type Database = {
           message_ar?: string | null
           message_en?: string | null
           message_fr?: string | null
+          messages_ar?: string[]
+          messages_en?: string[]
+          messages_fr?: string[]
           sort_order?: number
           start_date?: string | null
           text_color?: string | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
