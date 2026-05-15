@@ -4209,7 +4209,7 @@ function VendorsSection({
                       disabled={Number(vendor.platformDuesMad ?? 0) <= 0}
                     >
                       <CircleDollarSign className="size-3.5" />
-                      Collect {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
+                      Collect Commission {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
                     </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
@@ -4226,8 +4226,8 @@ function VendorsSection({
 
       <div className="mt-6 space-y-3">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Collection History · سجل التحصيلات</h3>
-          <p className="text-sm text-muted-foreground">Chronological log of platform dues collections.</p>
+          <h3 className="text-base font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
+          <p className="text-sm text-muted-foreground">Accrual and withdrawal ledger with running balance.</p>
         </div>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full min-w-[680px] text-left text-sm">
@@ -4235,19 +4235,21 @@ function VendorsSection({
               <tr>
                 <th className="px-4 py-3">Date / Time · تاريخ التحصيل</th>
                 <th className="px-4 py-3">Vendor Name · اسم التاجر</th>
-                <th className="px-4 py-3">Amount Collected · المبلغ المحصل</th>
+                <th className="px-4 py-3">Transaction · نوع الحركة</th>
+                <th className="px-4 py-3">Amount · المبلغ</th>
+                <th className="px-4 py-3">Remaining Balance · الرصيد المتبقي</th>
               </tr>
             </thead>
             <tbody>
               {isCollectionHistoryLoading ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     Loading collection history...
                   </td>
                 </tr>
               ) : collectionHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No collection history yet.
                   </td>
                 </tr>
@@ -4256,7 +4258,9 @@ function VendorsSection({
                   <tr key={row.transactionId} className="border-t border-border bg-card">
                     <td className="px-4 py-3 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
                     <td className="px-4 py-3 font-medium text-foreground">{row.vendorName}</td>
+                    <td className="px-4 py-3 text-foreground">{row.transactionLabel}</td>
                     <td className="px-4 py-3 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
+                    <td className="px-4 py-3 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
                   </tr>
                 ))
               )}
