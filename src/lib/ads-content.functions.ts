@@ -8,6 +8,11 @@ const normalizeOptionalText = (value?: string | null) => {
   return normalized ? normalized : null;
 };
 
+const normalizeOptionalStringArray = (values?: Array<string | null | undefined> | null) => {
+  if (!values) return [] as string[];
+  return values.map((value) => value?.trim() ?? "").filter((value) => value.length > 0);
+};
+
 const parseOptionalDateTime = (value?: string | null) => {
   if (!value || !value.trim()) return null;
   const date = new Date(value);
@@ -60,10 +65,13 @@ const updateAdInputSchema = adBaseSchema.extend({
   },
 );
 
+const announcementMessageSchema = z.string().trim().min(1).max(300);
+
 const announcementBaseSchema = z.object({
-  messageEn: z.string().trim().max(300).optional().nullable(),
-  messageFr: z.string().trim().max(300).optional().nullable(),
-  messageAr: z.string().trim().max(300).optional().nullable(),
+  title: z.string().trim().min(1).max(120),
+  messagesEn: z.array(announcementMessageSchema).max(30).default([]),
+  messagesFr: z.array(announcementMessageSchema).max(30).default([]),
+  messagesAr: z.array(announcementMessageSchema).max(30).default([]),
   isActive: z.boolean().default(true),
   bgColor: z.string().trim().min(4).max(20).default("#deff9a"),
   textColor: z.string().trim().min(4).max(20).default("#000000"),
@@ -71,9 +79,12 @@ const announcementBaseSchema = z.object({
   endDate: z.string().trim().optional().nullable(),
 });
 
-const announcementInputSchema = announcementBaseSchema.refine((input) => Boolean(input.messageAr || input.messageFr || input.messageEn), {
-  message: "At least one localized message is required.",
-  path: ["messageEn"],
+const announcementInputSchema = announcementBaseSchema.refine(
+  (input) => input.messagesAr.length > 0 || input.messagesFr.length > 0 || input.messagesEn.length > 0,
+  {
+    message: "At least one localized message is required.",
+    path: ["messagesEn"],
+  },
 }).refine(
   (input) => {
     if (!input.startDate || !input.endDate) return true;
@@ -87,9 +98,12 @@ const announcementInputSchema = announcementBaseSchema.refine((input) => Boolean
 
 const updateAnnouncementInputSchema = announcementBaseSchema.extend({
   id: z.string().uuid(),
-}).refine((input) => Boolean(input.messageAr || input.messageFr || input.messageEn), {
-  message: "At least one localized message is required.",
-  path: ["messageEn"],
+}).refine(
+  (input) => input.messagesAr.length > 0 || input.messagesFr.length > 0 || input.messagesEn.length > 0,
+  {
+    message: "At least one localized message is required.",
+    path: ["messagesEn"],
+  },
 }).refine(
   (input) => {
     if (!input.startDate || !input.endDate) return true;
