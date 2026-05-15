@@ -10,6 +10,7 @@ import {
 
 export interface AdminVendorRecord {
   id: string;
+  userId: string | null;
   storeName: string;
   ownerName: string;
   phoneNumber: string;
@@ -25,6 +26,7 @@ export interface AdminVendorRecord {
 
 interface VendorRow {
   id: string;
+  user_id: string | null;
   store_name: string;
   owner_name: string;
   phone_number: string;
@@ -83,7 +85,7 @@ const getVendorSalesAnalyticsInputSchema = z.object({
 
 const collectVendorPlatformDuesInputSchema = z.object({
   vendorId: z.string().uuid(),
-  amount: z.number().positive(),
+  amount: z.number().positive().optional(),
   qrPayload: z.record(z.string(), z.any()).nullable().optional(),
 });
 
@@ -110,6 +112,14 @@ export type PlatformDuesCollectionResult = {
   transactionId: string;
   collectedAmountMad: number;
   remainingDuesMad: number;
+};
+
+export type PlatformCollectionHistoryItem = {
+  transactionId: string;
+  vendorId: string;
+  vendorName: string;
+  amountMad: number;
+  collectedAt: string;
 };
 
 type PendingPlatformDuesRow = {
@@ -232,7 +242,7 @@ async function fetchVendorRecord(vendorId: string) {
       (supabaseAdmin as any)
         .from("vendors")
         .select(
-          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+          "id, user_id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
         )
         .eq("id", vendorId)
         .single(),
@@ -263,6 +273,7 @@ async function fetchVendorRecord(vendorId: string) {
 
   return {
     id: row.id,
+    userId: row.user_id,
     storeName: row.store_name,
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
@@ -283,7 +294,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       (supabaseAdmin as any)
         .from("vendors")
         .select(
-          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+          "id, user_id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
         )
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id, vendor_id"),
@@ -318,6 +329,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
 
     return {
       id: vendor.id,
+      userId: vendor.user_id,
       storeName: vendor.store_name,
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
@@ -543,8 +555,12 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
         throw new Error("No platform dues pending for this vendor.");
       }
 
-      const targetAmountMad = roundMad(Number(data.amount ?? 0));
-      if (Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
+      const providedAmountMad =
+        data.amount == null || Number.isNaN(Number(data.amount))
+          ? null
+          : roundMad(Number(data.amount));
+      const targetAmountMad = providedAmountMad ?? pendingDuesMad;
+      if (providedAmountMad != null && Math.abs(targetAmountMad - pendingDuesMad) > 0.01) {
         throw new Error(
           `Collection amount mismatch. Expected ${pendingDuesMad.toFixed(2)} MAD, received ${targetAmountMad.toFixed(2)} MAD.`,
         );
@@ -588,3 +604,54 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Failed to collect platform dues.");
     }
   });
+
+export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("orders")
+    .select("id, vendor_id, platform_markup, platform_profit, delivery_fee, updated_at, vendors(store_name)")
+    .eq("status", "cash_transferred_to_vendor")
+    .eq("admin_settled", true)
+    .order("updated_at", { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    throw new Error(`Failed to load collection history: ${error.message}`);
+  }
+
+  const grouped = new Map<
+    string,
+    { transactionId: string; vendorId: string; vendorName: string; amountMad: number; collectedAt: string }
+  >();
+
+  for (const row of (data ?? []) as Array<{
+    id: string;
+    vendor_id: string;
+    platform_markup: number | null;
+    platform_profit: number | null;
+    delivery_fee: number | null;
+    updated_at: string | null;
+    vendors?: { store_name?: string | null } | null;
+  }>) {
+    const collectedAt = row.updated_at ?? new Date(0).toISOString();
+    const key = `${row.vendor_id}::${collectedAt}`;
+    const existing = grouped.get(key);
+    const dueAmount = platformDueFromOrder(row);
+
+    if (existing) {
+      existing.amountMad = roundMad(existing.amountMad + dueAmount);
+      continue;
+    }
+
+    grouped.set(key, {
+      transactionId: row.id,
+      vendorId: row.vendor_id,
+      vendorName: row.vendors?.store_name?.trim() || "Vendor",
+      amountMad: roundMad(dueAmount),
+      collectedAt,
+    });
+  }
+
+  return Array.from(grouped.values())
+    .sort((a, b) => new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime())
+    .slice(0, 200) satisfies PlatformCollectionHistoryItem[];
+});

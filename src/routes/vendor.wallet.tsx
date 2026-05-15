@@ -24,6 +24,7 @@ export const Route = createFileRoute("/vendor/wallet")({
 function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
   const [isPlatformDuesQrOpen, setIsPlatformDuesQrOpen] = useState(false);
   const vendorPhoneNumber = useMemo(() => {
@@ -94,6 +95,17 @@ function VendorWalletPage() {
     };
   }, [queryClient, vendorId]);
 
+  useEffect(() => {
+    let mounted = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setAuthUserId(data.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
 
   const summary = settlementQuery.data;
   const cashBreakdown = useMemo(() => {
@@ -139,16 +151,15 @@ function VendorWalletPage() {
     .filter((order) => ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(order.status))
     .slice(0, 8);
   const platformCollectionQrPayload = useMemo(() => {
-    if (!vendorId) return null;
+    if (!authUserId) return null;
     const amountMad = Number(cashBreakdown.platformDuesMad ?? 0);
     if (!Number.isFinite(amountMad) || amountMad <= 0) return null;
 
     return JSON.stringify({
       action: "admin_collection",
-      vendor_id: vendorId,
-      amount_owed: amountMad.toFixed(2),
+      vendor_id: authUserId,
     });
-  }, [cashBreakdown.platformDuesMad, vendorId]);
+  }, [authUserId, cashBreakdown.platformDuesMad]);
 
   const vendorHandoverQrPayload = useMemo(() => {
     if (!vendorId) return null;
