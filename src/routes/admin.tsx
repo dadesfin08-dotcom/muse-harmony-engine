@@ -955,6 +955,11 @@ function AdminPage() {
   };
 
   const openPlatformCollectionQr = (vendor: AdminVendorRecord) => {
+    if (!vendor.userId) {
+      toast.error("This vendor has no linked auth account yet.");
+      return;
+    }
+
     const amountMad = Number(vendor.platformDuesMad ?? 0);
     if (amountMad <= 0) {
       toast.info("No platform dues pending for this vendor.");
@@ -966,6 +971,11 @@ function AdminPage() {
   };
 
   const handlePlatformCollectionFromScan = async (vendor: AdminVendorRecord, payload: Record<string, unknown>) => {
+    if (!vendor.userId) {
+      toast.error("This vendor has no linked auth account yet.");
+      return;
+    }
+
     const amountMad = Number(vendor.platformDuesMad ?? 0);
     if (!Number.isFinite(amountMad) || amountMad <= 0) {
       toast.info("No platform dues pending for this vendor.");
@@ -1037,10 +1047,12 @@ function AdminPage() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decodedText: string) => {
+            if (isCollectingPlatformDues) return;
+
             try {
               const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
 
-              if (payload.vendor_id !== platformCollectionScanTargetVendor.id) {
+              if (payload.vendor_id !== platformCollectionScanTargetVendor.userId) {
                 toast.error("Invalid QR Code. Please scan the correct Vendor's code.");
                 return;
               }
@@ -1076,7 +1088,7 @@ function AdminPage() {
     isPlatformQrScannerOpen,
     platformCollectionScanTargetVendor,
     queryClient,
-    vendors,
+    isCollectingPlatformDues,
   ]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
