@@ -126,27 +126,33 @@ export type Database = {
           active_until: string
           base_score: number
           brand_id: string
+          is_blacklisted: boolean
           is_trending: boolean
           last_auto_renewed_at: string | null
           last_updated: string
+          manual_boost_until: string | null
           trending_velocity: number
         }
         Insert: {
           active_until?: string
           base_score?: number
           brand_id: string
+          is_blacklisted?: boolean
           is_trending?: boolean
           last_auto_renewed_at?: string | null
           last_updated?: string
+          manual_boost_until?: string | null
           trending_velocity?: number
         }
         Update: {
           active_until?: string
           base_score?: number
           brand_id?: string
+          is_blacklisted?: boolean
           is_trending?: boolean
           last_auto_renewed_at?: string | null
           last_updated?: string
+          manual_boost_until?: string | null
           trending_velocity?: number
         }
         Relationships: [
