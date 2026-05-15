@@ -274,7 +274,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
     (supabaseAdmin as any)
       .from("site_ads")
       .select(
-        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, start_date, end_date, is_active, created_at",
+        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, zone_id, views_count, start_date, end_date, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
@@ -302,6 +302,9 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
     .map((ad: any) => ({
       id: ad.id,
       campaign_name: ad.campaign_name,
+      campaign_type: ad.campaign_type ?? "AD",
+      zone_id: ad.zone_id ?? null,
+      views_count: Number(ad.views_count ?? 0),
       image_ar: ad.image_ar,
       image_fr: ad.image_fr,
       image_en: ad.image_en,
