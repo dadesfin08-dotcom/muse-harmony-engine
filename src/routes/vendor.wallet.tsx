@@ -126,7 +126,7 @@ function VendorWalletPage() {
       const isSettledByAdmin = order.admin_settled === true;
       if (isSettledByAdmin) return sum;
 
-      const fallbackMarkup = Number(order.total_price ?? 0) - Number((order as { subtotal_base_price?: number }).subtotal_base_price ?? 0);
+      const fallbackMarkup = Number(order.total_price ?? 0) - Number(order.subtotal_base_price ?? 0);
       const markup = Number(order.platform_markup) || fallbackMarkup;
       return sum + (Number.isFinite(markup) ? markup : 0);
     }, 0);
