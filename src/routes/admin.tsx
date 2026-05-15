@@ -895,19 +895,6 @@ function AdminPage() {
 
   const collectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
 
-  const formatCollectionDateTime = (isoDate: string) => {
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return "--";
-    return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-  };
-
   const toggleVendorNeighborhood = (neighborhoodId: string, checked: boolean) => {
     setVendorForm((current) => {
       const currentSet = new Set(current.neighborhoodIds);
