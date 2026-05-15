@@ -27,8 +27,11 @@ type AdminOrderStatus =
 type AdminOrderRow = {
   id: string;
   vendor_id: string | null;
+  customer_name: string | null;
   customer_phone: string;
   total_price: number;
+  item_count?: number;
+  order_items?: unknown;
   status: AdminOrderStatus;
   created_at: string;
   order_category?: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
@@ -99,6 +102,11 @@ const assignSubscriptionOrderCyclistInputSchema = z.object({
 
 const autoDispatchSubscriptionOrderInputSchema = z.object({
   orderId: z.string().uuid(),
+});
+
+const updateSubscriptionOrderStatusInputSchema = z.object({
+  orderId: z.string().uuid(),
+  status: z.enum(["new", "preparing", "ready", "delivering", "delivered", "cancelled"]),
 });
 
 type AdminVendorRow = {
@@ -835,7 +843,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_phone, total_price, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
+        "id, vendor_id, customer_name, customer_phone, total_price, item_count, order_items, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
@@ -859,8 +867,11 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
   return ((ordersRes.data ?? []) as AdminOrderRow[]).map((order) => ({
     id: order.id,
     createdAt: order.created_at,
+    customerName: order.customer_name?.trim() || "Unknown Customer",
     customerPhone: order.customer_phone,
     totalPrice: Number(order.total_price ?? 0),
+    itemCount: Number(order.item_count ?? 0),
+    orderItems: Array.isArray(order.order_items) ? order.order_items : [],
     status: order.status,
     orderCategory: order.order_category ?? "MARKETPLACE",
     cyclistId: order.cyclist_id ?? null,
@@ -1131,6 +1142,24 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
     }
 
     return { ok: true, cyclistId: selectedCyclistId };
+  });
+
+export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
+  .inputValidator((input) => updateSubscriptionOrderStatusInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("orders")
+      .update({ status: data.status })
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .select("id")
+      .single();
+
+    if (error || !updated?.id) {
+      throw new Error(error?.message ?? "Failed to update subscription order status.");
+    }
+
+    return { ok: true };
   });
 
 export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler(async () => {
