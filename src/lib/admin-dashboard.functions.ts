@@ -810,19 +810,29 @@ export const resetBrandEngineScore = createServerFn({ method: "POST" })
   });
 
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(async () => {
-  const [ordersRes, vendorsRes] = await Promise.all([
+  const [ordersRes, vendorsRes, cyclistsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
-      .select("id, vendor_id, customer_phone, total_price, status, created_at")
+      .select(
+        "id, vendor_id, customer_phone, total_price, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
+      )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
+    (supabaseAdmin as any).from("cyclists").select("id, full_name"),
   ]);
 
   if (ordersRes.error) throw new Error(ordersRes.error.message);
   if (vendorsRes.error) throw new Error(vendorsRes.error.message);
+  if (cyclistsRes.error) throw new Error(cyclistsRes.error.message);
 
   const vendorMap = new Map(
     ((vendorsRes.data ?? []) as AdminVendorRow[]).map((vendor) => [vendor.id, vendor.store_name]),
+  );
+  const cyclistMap = new Map(
+    ((cyclistsRes.data ?? []) as Array<{ id: string; full_name: string }>).map((cyclist) => [
+      cyclist.id,
+      cyclist.full_name,
+    ]),
   );
 
   return ((ordersRes.data ?? []) as AdminOrderRow[]).map((order) => ({
@@ -831,6 +841,11 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     customerPhone: order.customer_phone,
     totalPrice: Number(order.total_price ?? 0),
     status: order.status,
+    orderCategory: order.order_category ?? "MARKETPLACE",
+    cyclistId: order.cyclist_id ?? null,
+    cyclistName: order.cyclist_id ? (cyclistMap.get(order.cyclist_id) ?? "Unknown Cyclist") : null,
+    neighborhoodId: order.neighborhood_id ?? null,
+    cashToCollectFromCustomer: Number(order.cash_to_collect_from_customer ?? 0),
     vendorName: order.vendor_id ? (vendorMap.get(order.vendor_id) ?? "Unknown Vendor") : "Platform Direct",
   }));
 });
