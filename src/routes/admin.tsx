@@ -3023,17 +3023,23 @@ function AdminPage() {
                 <AdsContentSection
                   ads={(siteAdsQuery.data ?? []) as Array<{
                     id: string;
-                    image_url: string;
-                    link_url: string | null;
-                    sort_order: number;
+                    campaign_name: string;
+                    image_ar: string | null;
+                    image_fr: string | null;
+                    image_en: string | null;
+                    target_url: string | null;
+                    start_date: string | null;
+                    end_date: string | null;
                     is_active: boolean;
                     created_at: string;
                   }>}
                   announcements={(announcementsQuery.data ?? []) as Array<{
                     id: string;
-                    content: string;
-                    content_fr: string | null;
-                    content_ar: string | null;
+                    message_en: string | null;
+                    message_fr: string | null;
+                    message_ar: string | null;
+                    start_date: string | null;
+                    end_date: string | null;
                     is_active: boolean;
                     bg_color: string;
                     text_color: string;
@@ -3047,16 +3053,15 @@ function AdminPage() {
                   onSaveAd={saveAd}
                   onEditAd={editAd}
                   onDeleteAd={removeAd}
+                  onToggleAdActive={toggleAdActive}
                   onResetAdForm={resetAdForm}
                   isSavingAd={isSavingAd}
-                  adImageInputRef={adImageInputRef}
-                  adImagePreviewUrl={adImagePreviewUrl}
-                  onAdImageChange={handleAdImageChange}
                   announcementForm={announcementForm}
                   onAnnouncementFormChange={setAnnouncementForm}
                   onSaveAnnouncement={saveAnnouncement}
                   onEditAnnouncement={editAnnouncement}
                   onDeleteAnnouncement={removeAnnouncement}
+                  onToggleAnnouncementActive={toggleAnnouncementActive}
                   onResetAnnouncementForm={resetAnnouncementForm}
                   isSavingAnnouncement={isSavingAnnouncement}
                 />
