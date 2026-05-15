@@ -545,6 +545,16 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
     try {
       await ensureVendorProfileExists(data.vendorId);
 
+      const { data: vendorRow, error: vendorError } = await (supabaseAdmin as any)
+        .from("vendors")
+        .select("id")
+        .eq("id", data.vendorId)
+        .single();
+
+      if (vendorError || !vendorRow?.id) {
+        throw new Error(vendorError?.message ?? "Vendor not found.");
+      }
+
       const currentPendingMad = await getVendorPendingCommissionMad(data.vendorId);
       const collectedAmountMad = roundMad(Number(data.amount));
 
@@ -563,7 +573,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
           order_id: null,
           transaction_type: "WITHDRAWAL",
           amount: -collectedAmountMad,
-          created_by: data.createdBy ?? null,
+          created_by: data.createdBy ?? data.vendorId,
         })
         .select("id")
         .single();

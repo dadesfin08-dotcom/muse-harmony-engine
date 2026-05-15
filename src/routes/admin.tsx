@@ -41,7 +41,6 @@ import {
   Download,
   FileUp,
   Search,
-  BadgeCheck,
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -141,7 +140,6 @@ import {
 import { checkAdminDatabaseHealth } from "@/lib/admin-health.functions";
 import {
   createVendor,
-  collectVendorPlatformDues,
   getVendorSalesAnalytics,
   listPlatformCollectionHistory,
   listVendors,
@@ -420,7 +418,6 @@ function AdminPage() {
   const fetchCyclists = useServerFn(listCyclists);
   const saveCyclistToDatabase = useServerFn(createCyclist);
   const saveVendorToDatabase = useServerFn(createVendor);
-  const collectPlatformDues = useServerFn(collectVendorPlatformDues);
   const fetchPlatformCollectionHistory = useServerFn(listPlatformCollectionHistory);
   const saveVendorDetails = useServerFn(updateVendorDetails);
   const setVendorActiveState = useServerFn(updateVendorActiveState);
@@ -642,19 +639,11 @@ function AdminPage() {
   const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
   const [isUpdatingVendorState, setIsUpdatingVendorState] = useState(false);
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
-  const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
   const [isInitiateWithdrawalOpen, setIsInitiateWithdrawalOpen] = useState(false);
   const [platformCollectionScanTargetVendor, setPlatformCollectionScanTargetVendor] = useState<AdminVendorRecord | null>(null);
   const [amountToCollectMad, setAmountToCollectMad] = useState(0);
   const [platformCollectionQrPayload, setPlatformCollectionQrPayload] = useState<string | null>(null);
-  const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
-    vendorName: string;
-    amountMad: number;
-    transactionId: string;
-    remainingDuesMad: number;
-    collectedAt: string;
-  } | null>(null);
   const [pendingArchiveProduct, setPendingArchiveProduct] = useState<MasterProductEntity | null>(null);
 
   const [vendorForm, setVendorForm] = useState({
@@ -3536,24 +3525,6 @@ function AdminPage() {
                 <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin />
               </div>
             ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={Boolean(platformCollectionReceipt)} onOpenChange={(open) => (!open ? setPlatformCollectionReceipt(null) : undefined)}>
-        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-success">
-              <BadgeCheck className="size-5" />
-              Cash Collected Successfully
-            </DialogTitle>
-            <DialogDescription>Collection receipt</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-            <p><span className="text-muted-foreground">Vendor:</span> {platformCollectionReceipt?.vendorName}</p>
-            <p><span className="text-muted-foreground">Collected:</span> {platformCollectionReceipt?.amountMad.toFixed(2)} MAD</p>
-            <p><span className="text-muted-foreground">Remaining Dues:</span> {platformCollectionReceipt?.remainingDuesMad.toFixed(2)} MAD</p>
-            <p><span className="text-muted-foreground">Transaction:</span> {platformCollectionReceipt?.transactionId.slice(0, 8)}</p>
           </div>
         </DialogContent>
       </Dialog>
