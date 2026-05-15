@@ -213,7 +213,7 @@ export const listAnnouncements = createServerFn({ method: "GET" }).handler(async
   const { data, error } = await (supabaseAdmin as any)
     .from("announcements")
     .select(
-      "id, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at",
+      "id, title, messages_en, messages_fr, messages_ar, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -224,26 +224,34 @@ export const listAnnouncements = createServerFn({ method: "GET" }).handler(async
 export const createAnnouncement = createServerFn({ method: "POST" })
   .inputValidator((input) => announcementInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const messageEn = normalizeOptionalText(data.messageEn);
-    const messageFr = normalizeOptionalText(data.messageFr);
-    const messageAr = normalizeOptionalText(data.messageAr);
+    const messagesEn = normalizeOptionalStringArray(data.messagesEn);
+    const messagesFr = normalizeOptionalStringArray(data.messagesFr);
+    const messagesAr = normalizeOptionalStringArray(data.messagesAr);
+
+    const firstMessageEn = messagesEn[0] ?? null;
+    const firstMessageFr = messagesFr[0] ?? null;
+    const firstMessageAr = messagesAr[0] ?? null;
 
     const { data: inserted, error } = await (supabaseAdmin as any)
       .from("announcements")
       .insert({
-        message_en: messageEn,
-        message_fr: messageFr,
-        message_ar: messageAr,
-        content: messageEn ?? messageFr ?? messageAr ?? "",
-        content_fr: messageFr,
-        content_ar: messageAr,
+        title: data.title.trim(),
+        messages_en: messagesEn,
+        messages_fr: messagesFr,
+        messages_ar: messagesAr,
+        message_en: firstMessageEn,
+        message_fr: firstMessageFr,
+        message_ar: firstMessageAr,
+        content: firstMessageEn ?? firstMessageFr ?? firstMessageAr ?? "",
+        content_fr: firstMessageFr,
+        content_ar: firstMessageAr,
         is_active: data.isActive,
         bg_color: data.bgColor,
         text_color: data.textColor,
         start_date: parseOptionalDateTime(data.startDate),
         end_date: parseOptionalDateTime(data.endDate),
       })
-      .select("id, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at")
+      .select("id, title, messages_en, messages_fr, messages_ar, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !inserted) throw new Error(error?.message ?? "Failed to create announcement.");
@@ -253,19 +261,27 @@ export const createAnnouncement = createServerFn({ method: "POST" })
 export const updateAnnouncement = createServerFn({ method: "POST" })
   .inputValidator((input) => updateAnnouncementInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const messageEn = normalizeOptionalText(data.messageEn);
-    const messageFr = normalizeOptionalText(data.messageFr);
-    const messageAr = normalizeOptionalText(data.messageAr);
+    const messagesEn = normalizeOptionalStringArray(data.messagesEn);
+    const messagesFr = normalizeOptionalStringArray(data.messagesFr);
+    const messagesAr = normalizeOptionalStringArray(data.messagesAr);
+
+    const firstMessageEn = messagesEn[0] ?? null;
+    const firstMessageFr = messagesFr[0] ?? null;
+    const firstMessageAr = messagesAr[0] ?? null;
 
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("announcements")
       .update({
-        message_en: messageEn,
-        message_fr: messageFr,
-        message_ar: messageAr,
-        content: messageEn ?? messageFr ?? messageAr ?? "",
-        content_fr: messageFr,
-        content_ar: messageAr,
+        title: data.title.trim(),
+        messages_en: messagesEn,
+        messages_fr: messagesFr,
+        messages_ar: messagesAr,
+        message_en: firstMessageEn,
+        message_fr: firstMessageFr,
+        message_ar: firstMessageAr,
+        content: firstMessageEn ?? firstMessageFr ?? firstMessageAr ?? "",
+        content_fr: firstMessageFr,
+        content_ar: firstMessageAr,
         is_active: data.isActive,
         bg_color: data.bgColor,
         text_color: data.textColor,
@@ -273,7 +289,7 @@ export const updateAnnouncement = createServerFn({ method: "POST" })
         end_date: parseOptionalDateTime(data.endDate),
       })
       .eq("id", data.id)
-      .select("id, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at")
+      .select("id, title, messages_en, messages_fr, messages_ar, message_en, message_fr, message_ar, bg_color, text_color, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !updated) throw new Error(error?.message ?? "Failed to update announcement.");
