@@ -2492,9 +2492,10 @@ function AdminPage() {
   const resetAnnouncementForm = () => {
     setAnnouncementForm({
       id: "",
-      messageEn: "",
-      messageFr: "",
-      messageAr: "",
+      title: "",
+      messagesEn: [""],
+      messagesFr: [""],
+      messagesAr: [""],
       startDate: "",
       endDate: "",
       isActive: true,
@@ -2567,7 +2568,17 @@ function AdminPage() {
   };
 
   const saveAnnouncement = async () => {
-    if (!announcementForm.messageAr.trim() && !announcementForm.messageFr.trim() && !announcementForm.messageEn.trim()) {
+    const normalizedTitle = announcementForm.title.trim();
+    if (!normalizedTitle) {
+      toast.error("Announcement title is required.");
+      return;
+    }
+
+    const normalizedMessagesEn = announcementForm.messagesEn.map((value) => value.trim()).filter(Boolean);
+    const normalizedMessagesFr = announcementForm.messagesFr.map((value) => value.trim()).filter(Boolean);
+    const normalizedMessagesAr = announcementForm.messagesAr.map((value) => value.trim()).filter(Boolean);
+
+    if (normalizedMessagesAr.length === 0 && normalizedMessagesFr.length === 0 && normalizedMessagesEn.length === 0) {
       toast.error("Add at least one localized announcement message.");
       return;
     }
@@ -2587,9 +2598,10 @@ function AdminPage() {
         await updateAnnouncementInDatabase({
           data: {
             id: announcementForm.id,
-            messageEn: announcementForm.messageEn.trim() || null,
-            messageFr: announcementForm.messageFr.trim() || null,
-            messageAr: announcementForm.messageAr.trim() || null,
+            title: normalizedTitle,
+            messagesEn: normalizedMessagesEn,
+            messagesFr: normalizedMessagesFr,
+            messagesAr: normalizedMessagesAr,
             startDate: announcementForm.startDate || null,
             endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
@@ -2601,9 +2613,10 @@ function AdminPage() {
       } else {
         await createAnnouncementInDatabase({
           data: {
-            messageEn: announcementForm.messageEn.trim() || null,
-            messageFr: announcementForm.messageFr.trim() || null,
-            messageAr: announcementForm.messageAr.trim() || null,
+            title: normalizedTitle,
+            messagesEn: normalizedMessagesEn,
+            messagesFr: normalizedMessagesFr,
+            messagesAr: normalizedMessagesAr,
             startDate: announcementForm.startDate || null,
             endDate: announcementForm.endDate || null,
             isActive: announcementForm.isActive,
@@ -2707,9 +2720,10 @@ function AdminPage() {
 
   const editAnnouncement = (announcement: {
     id: string;
-    message_en: string | null;
-    message_fr: string | null;
-    message_ar: string | null;
+    title: string;
+    messages_en: string[] | null;
+    messages_fr: string[] | null;
+    messages_ar: string[] | null;
     start_date: string | null;
     end_date: string | null;
     is_active: boolean;
@@ -2718,9 +2732,10 @@ function AdminPage() {
   }) => {
     setAnnouncementForm({
       id: announcement.id,
-      messageEn: announcement.message_en ?? "",
-      messageFr: announcement.message_fr ?? "",
-      messageAr: announcement.message_ar ?? "",
+      title: announcement.title ?? "",
+      messagesEn: announcement.messages_en && announcement.messages_en.length > 0 ? announcement.messages_en : [""],
+      messagesFr: announcement.messages_fr && announcement.messages_fr.length > 0 ? announcement.messages_fr : [""],
+      messagesAr: announcement.messages_ar && announcement.messages_ar.length > 0 ? announcement.messages_ar : [""],
       startDate: announcement.start_date ? announcement.start_date.slice(0, 16) : "",
       endDate: announcement.end_date ? announcement.end_date.slice(0, 16) : "",
       isActive: announcement.is_active,
@@ -2745,9 +2760,10 @@ function AdminPage() {
 
   const toggleAnnouncementActive = async (announcement: {
     id: string;
-    message_en: string | null;
-    message_fr: string | null;
-    message_ar: string | null;
+    title: string;
+    messages_en: string[] | null;
+    messages_fr: string[] | null;
+    messages_ar: string[] | null;
     start_date: string | null;
     end_date: string | null;
     is_active: boolean;
@@ -2758,9 +2774,10 @@ function AdminPage() {
       await updateAnnouncementInDatabase({
         data: {
           id: announcement.id,
-          messageEn: announcement.message_en,
-          messageFr: announcement.message_fr,
-          messageAr: announcement.message_ar,
+          title: announcement.title,
+          messagesEn: (announcement.messages_en ?? []).filter(Boolean),
+          messagesFr: (announcement.messages_fr ?? []).filter(Boolean),
+          messagesAr: (announcement.messages_ar ?? []).filter(Boolean),
           startDate: announcement.start_date,
           endDate: announcement.end_date,
           isActive: !announcement.is_active,
