@@ -923,7 +923,7 @@ function VendorDashboardPage() {
           settledCarnetNetProfitMad,
       ),
       platformDuesMad: roundMoney(
-        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformProfitMad ?? 0), 0) +
+        transferredCashOrders.reduce((sum, order) => sum + Number(order.platformMarkupMad ?? 0), 0) +
           settledCarnetPlatformDuesMad,
       ),
       cashEarningsMad: roundMoney(transferredCashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0)),

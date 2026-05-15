@@ -114,7 +114,12 @@ function VendorWalletPage() {
       0,
     );
     const platformDuesMad = unsettledTransferredCashOrders.reduce(
-      (sum, order) => sum + Number(order.delivery_fee ?? 0),
+      (sum, order) => {
+        const fixedMarkup = Number.isFinite(Number(order.platform_markup))
+          ? Number(order.platform_markup)
+          : Number(order.platform_profit ?? order.delivery_fee ?? 0);
+        return sum + fixedMarkup;
+      },
       0,
     );
     const settledCarnetPlatformDuesMad = Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0);
