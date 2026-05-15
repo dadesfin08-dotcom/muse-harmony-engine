@@ -1032,10 +1032,10 @@ export type Database = {
           sort_order: number
           start_date: string | null
           target_url: string | null
+          target_zone_ids: string[] | null
           text_color: string | null
           updated_at: string
           views_count: number
-          zone_id: string | null
         }
         Insert: {
           bg_color?: string | null
@@ -1056,10 +1056,10 @@ export type Database = {
           sort_order?: number
           start_date?: string | null
           target_url?: string | null
+          target_zone_ids?: string[] | null
           text_color?: string | null
           updated_at?: string
           views_count?: number
-          zone_id?: string | null
         }
         Update: {
           bg_color?: string | null
@@ -1080,20 +1080,12 @@ export type Database = {
           sort_order?: number
           start_date?: string | null
           target_url?: string | null
+          target_zone_ids?: string[] | null
           text_color?: string | null
           updated_at?: string
           views_count?: number
-          zone_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "site_ads_zone_id_fkey"
-            columns: ["zone_id"]
-            isOneToOne: false
-            referencedRelation: "neighborhoods"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_roles: {
         Row: {
