@@ -831,7 +831,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     customerPhone: order.customer_phone,
     totalPrice: Number(order.total_price ?? 0),
     status: order.status,
-    vendorName: vendorMap.get(order.vendor_id) ?? "Unknown Vendor",
+    vendorName: order.vendor_id ? (vendorMap.get(order.vendor_id) ?? "Unknown Vendor") : "Platform Direct",
   }));
 });
 
