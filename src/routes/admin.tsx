@@ -4161,17 +4161,34 @@ function OverviewSection({
 function VendorsSection({
   vendors,
   isLoading,
+  collectionHistory,
+  isCollectionHistoryLoading,
   onAddVendor,
   onManageVendor,
   onCollectPlatformDues,
 }: {
   vendors: AdminVendorRecord[];
   isLoading: boolean;
+  collectionHistory: PlatformCollectionHistoryItem[];
+  isCollectionHistoryLoading: boolean;
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
   onCollectPlatformDues: (vendor: AdminVendorRecord) => void;
 }) {
   const { t } = useTranslation();
+  const formatCollectionDateTime = (isoDate: string) => {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -4266,6 +4283,47 @@ function VendorsSection({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-6 space-y-3">
+        <div>
+          <h3 className="text-base font-semibold text-foreground">Collection History · سجل التحصيلات</h3>
+          <p className="text-sm text-muted-foreground">Chronological log of platform dues collections.</p>
+        </div>
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full min-w-[680px] text-left text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">Date / Time · تاريخ التحصيل</th>
+                <th className="px-4 py-3">Vendor Name · اسم التاجر</th>
+                <th className="px-4 py-3">Amount Collected · المبلغ المحصل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isCollectionHistoryLoading ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Loading collection history...
+                  </td>
+                </tr>
+              ) : collectionHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    No collection history yet.
+                  </td>
+                </tr>
+              ) : (
+                collectionHistory.map((row) => (
+                  <tr key={row.transactionId} className="border-t border-border bg-card">
+                    <td className="px-4 py-3 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{row.vendorName}</td>
+                    <td className="px-4 py-3 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
