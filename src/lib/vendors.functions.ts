@@ -90,6 +90,14 @@ const collectVendorPlatformDuesInputSchema = z.object({
   createdBy: z.string().uuid().nullable().optional(),
 });
 
+const recordVendorQrPaymentInputSchema = z.object({
+  vendorId: z.string().uuid(),
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  amount: z.number().positive(),
+  timestamp: z.string().optional(),
+  qrPayload: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
 type VendorOrderRow = {
   id: string;
   status: string;
@@ -596,6 +604,60 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("collectVendorPlatformDues failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to collect platform dues.");
+    }
+  });
+
+export const recordVendorQrPayment = createServerFn({ method: "POST" })
+  .inputValidator((input) => recordVendorQrPaymentInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: vendorRow, error: vendorError } = await (supabaseAdmin as any)
+        .from("vendors")
+        .select("id, phone_number, user_id")
+        .eq("id", data.vendorId)
+        .single();
+
+      if (vendorError || !vendorRow?.id) {
+        throw new Error(vendorError?.message ?? "Vendor not found.");
+      }
+
+      const vendorPhone = String(vendorRow.phone_number ?? "").trim();
+      if (vendorPhone !== data.phoneNumber) {
+        throw new Error("Vendor session mismatch.");
+      }
+
+      const normalizedAmount = roundMad(Number(data.amount));
+      if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+        throw new Error("Invalid payment amount.");
+      }
+
+      const { data: insertedLedgerRow, error: ledgerInsertError } = await (supabaseAdmin as any)
+        .from("platform_commission_ledger")
+        .insert({
+          vendor_id: vendorRow.id,
+          transaction_type: "WITHDRAWAL",
+          amount: -Math.abs(normalizedAmount),
+          order_id: null,
+          created_by: vendorRow.user_id ?? null,
+        })
+        .select("id")
+        .single();
+
+      if (ledgerInsertError) {
+        throw new Error(ledgerInsertError.message);
+      }
+
+      if (!insertedLedgerRow?.id) {
+        throw new Error("Failed to record payment.");
+      }
+
+      return {
+        transactionId: String(insertedLedgerRow.id),
+        amountMad: normalizedAmount,
+      };
+    } catch (error) {
+      console.error("recordVendorQrPayment failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to confirm payment.");
     }
   });
 
