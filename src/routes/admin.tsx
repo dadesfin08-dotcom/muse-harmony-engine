@@ -3257,7 +3257,7 @@ function AdminPage() {
                   ads={(siteAdsQuery.data ?? []) as Array<{
                     id: string;
                     campaign_name: string;
-                    zone_id: string | null;
+                    target_zone_ids: string[] | null;
                     campaign_type: "AD" | "PROMO" | "NEWS";
                     views_count: number;
                     image_ar: string | null;
