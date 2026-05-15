@@ -522,7 +522,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
     try {
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, payment_method, platform_profit, delivery_fee")
+        .select("id, payment_method, platform_markup, platform_profit, delivery_fee")
         .eq("vendor_id", data.vendorId)
         .eq("status", "cash_transferred_to_vendor")
         .or("admin_settled.is.null,admin_settled.eq.false");
@@ -532,7 +532,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       }
 
       const pendingDuesMad = roundMad(
-        ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
+        ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_markup?: number | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
           (sum, row) => {
             if (!isCashPaymentMethod(row.payment_method)) return sum;
             return sum + platformDueFromOrder(row);
