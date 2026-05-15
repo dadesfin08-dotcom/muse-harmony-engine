@@ -571,19 +571,53 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
         );
       }
 
-      const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("collect_platform_dues", {
-        p_vendor_id: data.vendorId,
-        p_amount: targetAmountMad,
-        p_qr_payload: data.qrPayload ?? null,
-        p_collected_by_user_id: null,
-      });
+      const { data: vendorRow, error: vendorReadError } = await (supabaseAdmin as any)
+        .from("vendors")
+        .select("platform_dues")
+        .eq("id", data.vendorId)
+        .single();
 
-      if (error) {
-        throw new Error(error.message);
+      if (vendorReadError) {
+        throw new Error(vendorReadError.message);
       }
 
-      const row = Array.isArray(rpcResult) ? rpcResult[0] : null;
-      if (!row?.transaction_id) {
+      const currentVendorDuesMad = Number(vendorRow?.platform_dues ?? 0);
+      if (targetAmountMad > currentVendorDuesMad + 0.01) {
+        throw new Error(
+          `Collection amount exceeds current platform dues (${currentVendorDuesMad.toFixed(2)} MAD).`,
+        );
+      }
+
+      const remainingDuesMad = roundMad(Math.max(0, currentVendorDuesMad - targetAmountMad));
+
+      const { error: vendorUpdateError } = await (supabaseAdmin as any)
+        .from("vendors")
+        .update({
+          platform_dues: remainingDuesMad,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", data.vendorId);
+
+      if (vendorUpdateError) {
+        throw new Error(vendorUpdateError.message);
+      }
+
+      const { data: insertedCollection, error: collectionInsertError } = await (supabaseAdmin as any)
+        .from("platform_collections")
+        .insert({
+          vendor_id: data.vendorId,
+          amount: targetAmountMad,
+          collected_by_user_id: null,
+          qr_payload: data.qrPayload ?? null,
+        })
+        .select("id")
+        .single();
+
+      if (collectionInsertError) {
+        throw new Error(collectionInsertError.message);
+      }
+
+      if (!insertedCollection?.id) {
         throw new Error("Collection failed. Please try again.");
       }
 
@@ -600,9 +634,9 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       }
 
       return {
-        transactionId: String(row.transaction_id),
-        collectedAmountMad: Number(row.collected_amount ?? 0),
-        remainingDuesMad: Number(row.remaining_dues ?? 0),
+        transactionId: String(insertedCollection.id),
+        collectedAmountMad: roundMad(targetAmountMad),
+        remainingDuesMad,
       } satisfies PlatformDuesCollectionResult;
     } catch (error) {
       console.error("collectVendorPlatformDues failed:", error);
