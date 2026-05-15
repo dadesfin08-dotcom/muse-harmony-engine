@@ -5851,7 +5851,7 @@ function AdsContentSection({
       const communeAllZoneIds = adTargetZones.filter((zone) => zone.communeName === communeName).map((zone) => zone.id);
       const isWholeCommune = communeAllZoneIds.length > 0 && communeAllZoneIds.every((zoneId) => ids.includes(zoneId));
 
-      if (isWholeCommune) {
+      if (isWholeCommune || zones.length > 1) {
         return `${communeName} (All Douars)`;
       }
 
