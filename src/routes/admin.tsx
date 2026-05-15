@@ -3602,7 +3602,7 @@ function AdminPage() {
                   onResetScore={handleBrandEngineResetScore}
                 />
               ) : null}
-              {tab === "platform-packs" ? (
+              {tab === "platform-packs-create" ? (
                 <PlatformPacksSection
                   packs={platformPacks}
                   isLoading={dbHealthQuery.isLoading || platformPacksQuery.isLoading}
@@ -3612,7 +3612,32 @@ function AdminPage() {
                   onReset={resetPlatformPackForm}
                   onEdit={editPlatformPack}
                   onDelete={removePlatformPack}
+                  imageFile={platformPackImageFile}
+                  imagePreviewUrl={platformPackImagePreviewUrl}
+                  imageInputRef={platformPackImageInputRef}
+                  onImageChange={handlePlatformPackImageChange}
                   isSaving={isSavingPlatformPack}
+                />
+              ) : null}
+              {tab === "platform-packs-orders" ? (
+                <PlaceholderSection
+                  icon={PackageCheck}
+                  title="Pack Orders"
+                  subtitle="Phase 1 placeholder. Orders management for platform packs will be enabled in the next phase."
+                />
+              ) : null}
+              {tab === "platform-packs-subscribers" ? (
+                <PlaceholderSection
+                  icon={Users}
+                  title="Subscribers"
+                  subtitle="Phase 1 placeholder. Subscriber lifecycle and renewal controls will be enabled in the next phase."
+                />
+              ) : null}
+              {tab === "platform-packs-analytics" ? (
+                <PlaceholderSection
+                  icon={TrendingUp}
+                  title="Pack Analytics"
+                  subtitle="Phase 1 placeholder. Subscription KPIs and cohort analytics will be enabled in the next phase."
                 />
               ) : null}
               {tab === "vendors" ? (
