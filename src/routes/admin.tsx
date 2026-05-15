@@ -5838,8 +5838,6 @@ function AdsContentSection({
       ? []
       : groupedZonesByCommune.find((group) => group.communeName === adForm.selectedCommune)?.zones ?? [];
 
-  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} - ${zone.zoneName}`]));
-
   const formatCampaignTargetLabel = (targetZoneIds: string[] | null) => {
     const ids = Array.isArray(targetZoneIds) ? targetZoneIds : [];
     if (ids.length === 0) return "Global / All Regions";
@@ -5909,7 +5907,10 @@ function AdsContentSection({
             onValueChange={(value) => onAdFormChange((current) => ({ ...current, selectedCommune: value, selectedDouarIds: [] }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Commune (الجماعة)" />
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <MapIcon className="size-3.5" />
+                <SelectValue placeholder="Commune (الجماعة)" />
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="global">Global / All Regions</SelectItem>
@@ -5931,7 +5932,10 @@ function AdsContentSection({
             disabled={adForm.selectedCommune === "global"}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Douar / Sub-zone (الدوار)" />
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="size-3.5" />
+                <SelectValue placeholder="Douar / Sub-zone (الدوار)" />
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-douars">All Douars in selected commune</SelectItem>
