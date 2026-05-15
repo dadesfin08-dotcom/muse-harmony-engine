@@ -5530,6 +5530,7 @@ function AdsContentSection({
   ads,
   announcements,
   isLoading,
+  adTargetZones,
   adForm,
   onAdFormChange,
   onSaveAd,
@@ -5550,6 +5551,9 @@ function AdsContentSection({
   ads: Array<{
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -5572,9 +5576,17 @@ function AdsContentSection({
     created_at: string;
   }>;
   isLoading: boolean;
+  adTargetZones: Array<{
+    id: string;
+    zoneCode: string;
+    communeName: string;
+    zoneName: string;
+  }>;
   adForm: {
     id: string;
     campaignName: string;
+    zoneId: string;
+    campaignType: "AD" | "PROMO" | "NEWS";
     imageAr: string;
     imageFr: string;
     imageEn: string;
@@ -5587,6 +5599,8 @@ function AdsContentSection({
     SetStateAction<{
       id: string;
       campaignName: string;
+      zoneId: string;
+      campaignType: "AD" | "PROMO" | "NEWS";
       imageAr: string;
       imageFr: string;
       imageEn: string;
@@ -5600,6 +5614,9 @@ function AdsContentSection({
   onEditAd: (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -5612,6 +5629,9 @@ function AdsContentSection({
   onToggleAdActive: (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
