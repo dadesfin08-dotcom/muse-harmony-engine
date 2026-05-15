@@ -6045,7 +6045,7 @@ function AdsContentSection({
                     <TableCell>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <MapPin className="size-3" />
-                        {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                        {formatCampaignTargetLabel(ad.target_zone_ids)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -6103,7 +6103,7 @@ function AdsContentSection({
                       <TableCell>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="size-3" />
-                          {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                          {formatCampaignTargetLabel(ad.target_zone_ids)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
