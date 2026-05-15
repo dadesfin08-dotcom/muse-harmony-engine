@@ -119,6 +119,7 @@ type OrderRow = {
   total_price: number;
   vendor_revenue?: number;
   platform_profit?: number;
+  platform_markup?: number;
   item_count: number;
   order_items: Array<{
     name: string;
@@ -500,6 +501,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             delivery_fee: row.deliveryFee,
             subtotal_base_price: roundMoney(row.subtotalBasePrice),
             platform_profit: row.platformProfit,
+            platform_markup: row.platformProfit,
             vendor_revenue: row.vendorRevenue,
             total_price: row.totalPrice,
             item_count: row.itemCount,
@@ -584,7 +586,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, vendor_revenue, platform_profit, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
+        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, vendor_revenue, platform_profit, platform_markup, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
