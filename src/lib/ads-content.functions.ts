@@ -24,7 +24,7 @@ const parseOptionalDateTime = (value?: string | null) => {
 
 const adBaseSchema = z.object({
   campaignName: z.string().trim().min(1).max(120),
-  zoneId: z.string().uuid().optional().nullable(),
+  targetZoneIds: z.array(z.string().uuid()).max(300).optional().nullable(),
   campaignType: z.enum(["AD", "PROMO", "NEWS"]).default("AD"),
   imageAr: z.string().trim().url().max(2000).optional().nullable(),
   imageFr: z.string().trim().url().max(2000).optional().nullable(),
@@ -123,6 +123,12 @@ const activeAdsFilterSchema = z.object({
   zoneId: z.string().uuid().optional().nullable(),
   campaignType: z.enum(["AD", "PROMO", "NEWS"]).optional().nullable(),
 });
+
+const normalizeTargetZoneIds = (ids?: string[] | null) => {
+  if (!ids || ids.length === 0) return null;
+  const unique = Array.from(new Set(ids.map((value) => value.trim()).filter((value) => value.length > 0)));
+  return unique.length > 0 ? unique : null;
+};
 
 export const listSiteAds = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
