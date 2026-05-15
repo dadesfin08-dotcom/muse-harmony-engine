@@ -75,6 +75,7 @@ function VendorWalletPage() {
     enabled: Boolean(vendorId && normalizedVendorPhoneNumber),
     queryFn: () => fetchSettlementSummary({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
     refetchInterval: 4_000,
+    placeholderData: (previousData) => previousData,
   });
 
   useEffect(() => {

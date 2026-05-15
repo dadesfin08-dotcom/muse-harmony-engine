@@ -20,6 +20,7 @@ import {
   subscribeToAuthChanges,
 } from "@/lib/operational-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { useGlobalRealtimeSync } from "@/hooks/use-global-realtime-sync";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -130,6 +131,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const isOperationalPath =
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/admin/") ||
+    location.pathname.startsWith("/vendor") ||
+    location.pathname.startsWith("/cyclist");
+
+  useGlobalRealtimeSync({ enabled: isOperationalPath });
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {
