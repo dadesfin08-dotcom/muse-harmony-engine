@@ -3510,6 +3510,19 @@ function AdminPage() {
                   onResetScore={handleBrandEngineResetScore}
                 />
               ) : null}
+              {tab === "platform-packs" ? (
+                <PlatformPacksSection
+                  packs={platformPacks}
+                  isLoading={dbHealthQuery.isLoading || platformPacksQuery.isLoading}
+                  form={platformPackForm}
+                  onFormChange={setPlatformPackForm}
+                  onSave={savePlatformPack}
+                  onReset={resetPlatformPackForm}
+                  onEdit={editPlatformPack}
+                  onDelete={removePlatformPack}
+                  isSaving={isSavingPlatformPack}
+                />
+              ) : null}
               {tab === "vendors" ? (
                 <VendorsSection
                   vendors={vendors}
@@ -3648,10 +3661,16 @@ function AdminPage() {
               {tab === "orders" ? (
                 <OrdersSection
                   orders={filteredOrders}
+                  cyclists={cyclists}
                   isLoading={dbHealthQuery.isLoading || adminOrdersQuery.isLoading}
                   error={adminOrdersQuery.error}
                   statusFilter={ordersStatusFilter}
                   onStatusFilterChange={setOrdersStatusFilter}
+                  categoryFilter={ordersCategoryFilter}
+                  onCategoryFilterChange={setOrdersCategoryFilter}
+                  onAssignCyclist={assignCyclistToSubscriptionOrder}
+                  onAutoDispatch={autoDispatchSubscriptionOrderHandler}
+                  isAssigning={isAssigningSubscriptionOrder}
                 />
               ) : null}
               {tab === "customers" ? (
