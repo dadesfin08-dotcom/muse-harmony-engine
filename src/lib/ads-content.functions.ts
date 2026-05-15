@@ -38,7 +38,7 @@ const adBaseSchema = z.object({
 const adInputSchema = adBaseSchema.refine((input) => Boolean(input.imageAr || input.imageFr || input.imageEn), {
   message: "At least one localized image is required.",
   path: ["imageEn"],
-).refine(
+}).refine(
   (input) => {
     if (!input.startDate || !input.endDate) return true;
     return new Date(input.endDate).getTime() >= new Date(input.startDate).getTime();
@@ -54,7 +54,7 @@ const updateAdInputSchema = adBaseSchema.extend({
 }).refine((input) => Boolean(input.imageAr || input.imageFr || input.imageEn), {
   message: "At least one localized image is required.",
   path: ["imageEn"],
-).refine(
+}).refine(
   (input) => {
     if (!input.startDate || !input.endDate) return true;
     return new Date(input.endDate).getTime() >= new Date(input.startDate).getTime();
