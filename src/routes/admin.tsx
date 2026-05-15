@@ -4806,6 +4806,325 @@ function OverviewSection({
   );
 }
 
+function AIBrandEngineSection({
+  analytics,
+  isLoading,
+  error,
+  isActionLoading,
+  rotationRatios,
+  onRotationRatioChange,
+  onManualBoost,
+  onToggleBlacklist,
+  onResetScore,
+}: {
+  analytics: BrandEngineAnalytics | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  isActionLoading: boolean;
+  rotationRatios: { trending: number; midTier: number; discovery: number };
+  onRotationRatioChange: (segment: "trending" | "midTier" | "discovery", value: number) => void;
+  onManualBoost: (brandId: string) => void;
+  onToggleBlacklist: (brandId: string, blacklisted: boolean) => void;
+  onResetScore: (brandId: string) => void;
+}) {
+  const formatScore = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
+  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+
+  if (error) {
+    return (
+      <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
+        Failed to load AI Brand Engine analytics.
+      </section>
+    );
+  }
+
+  const rows = [...(analytics?.tableRows ?? [])].sort((a, b) => b.score - a.score);
+  const generatedLabel = analytics?.generatedAt
+    ? new Date(analytics.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    : "--";
+
+  const kpiCards = [
+    {
+      title: "Active Trending Brands",
+      value: analytics?.kpis.activeTrendingBrands ?? 0,
+      sub: `Score > ${analytics?.threshold ?? 0}`,
+      icon: TrendingUp,
+    },
+    {
+      title: "Conversion Velocity",
+      value: analytics?.kpis.conversionVelocity ?? 0,
+      sub: "Average growth of top brands",
+      icon: Zap,
+      formatter: (value: number) => formatPercent(value),
+    },
+    {
+      title: "Expiring Soon",
+      value: analytics?.kpis.expiringSoon ?? 0,
+      sub: "Boost ending in < 6h",
+      icon: AlertCircle,
+    },
+    {
+      title: "Discovery Rate",
+      value: analytics?.kpis.discoveryRate ?? 0,
+      sub: "Share of orders from discovery pool",
+      icon: Sparkles,
+      formatter: (value: number) => formatPercent(value),
+    },
+  ] as const;
+
+  return (
+    <div className="space-y-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kpiCards.map((card) => (
+          <article
+            key={card.title}
+            className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{card.title}</p>
+                <p className="mt-2 text-3xl font-semibold text-foreground">
+                  {isLoading ? "..." : card.formatter ? card.formatter(card.value) : card.value}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{card.sub}</p>
+              </div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-muted/40 text-foreground">
+                <card.icon className="size-4" />
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[2fr_1fr]">
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Top Brands Momentum</h2>
+              <p className="text-xs text-muted-foreground">Live score velocity and search demand</p>
+            </div>
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+              Updated {generatedLabel}
+            </span>
+          </div>
+          {isLoading ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+              Loading trend signal...
+            </div>
+          ) : (
+            <ChartContainer config={brandEngineChartConfig} className="h-72 w-full">
+              <LineChart data={analytics?.chartData ?? []} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="brand" tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" tickLine={false} axisLine={false} width={38} />
+                <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} width={38} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="orderVelocity"
+                  stroke="var(--color-orderVelocity)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="searchVolume"
+                  stroke="var(--color-searchVolume)"
+                  fill="var(--color-searchVolume)"
+                  fillOpacity={0.18}
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Rotation Settings</h2>
+            <Sparkles className="size-4 text-muted-foreground" />
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">Trending Pool</span>
+                <span className="text-muted-foreground">{rotationRatios.trending}%</span>
+              </div>
+              <Slider
+                value={[rotationRatios.trending]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={(value) => onRotationRatioChange("trending", value[0] ?? 0)}
+              />
+            </div>
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">Mid-Tier Pool</span>
+                <span className="text-muted-foreground">{rotationRatios.midTier}%</span>
+              </div>
+              <Slider
+                value={[rotationRatios.midTier]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={(value) => onRotationRatioChange("midTier", value[0] ?? 0)}
+              />
+            </div>
+            <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">Discovery Pool</span>
+                <span className="text-muted-foreground">{rotationRatios.discovery}%</span>
+              </div>
+              <Slider
+                value={[rotationRatios.discovery]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={(value) => onRotationRatioChange("discovery", value[0] ?? 0)}
+              />
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground">
+              Total allocation: {rotationRatios.trending + rotationRatios.midTier + rotationRatios.discovery}%
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">Brand Performance</h2>
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+            <CalendarDays className="size-3.5" />
+            Time decay tracking
+          </span>
+        </div>
+        <div className="overflow-x-auto rounded-xl border border-border/70">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Brand</TableHead>
+                <TableHead>Current Score</TableHead>
+                <TableHead>Active Days</TableHead>
+                <TableHead>Trend Status</TableHead>
+                <TableHead className="min-w-[220px]">Time Decay</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    Loading brand ranking...
+                  </TableCell>
+                </TableRow>
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    No brand score data available yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => {
+                  const trendTone: "green" | "yellow" | "red" = row.isBlacklisted
+                    ? "red"
+                    : row.trendingVelocity > 20 && row.score >= (analytics?.threshold ?? 0)
+                      ? "green"
+                      : row.trendingVelocity > 0
+                        ? "yellow"
+                        : "red";
+
+                  const decayPressure = Math.max(0, Math.min(100, ((3 - Math.min(row.activeDays, 3)) / 3) * 100));
+
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-md border border-border/70 bg-muted/20">
+                            {row.logoUrl ? (
+                              <img src={row.logoUrl} alt={`${row.name} logo`} className="h-full w-full object-cover" loading="lazy" />
+                            ) : (
+                              <Shapes className="size-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="font-medium text-foreground">{row.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold text-foreground">{formatScore(row.score)}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.activeDays.toFixed(1)} d</TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-medium",
+                            trendTone === "green" && "bg-success/15 text-success",
+                            trendTone === "yellow" && "bg-accent/20 text-accent-foreground",
+                            trendTone === "red" && "bg-destructive/15 text-destructive",
+                          )}
+                        >
+                          {trendTone === "green" ? "Healthy" : trendTone === "yellow" ? "Watch" : "Critical"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Decay pressure</span>
+                            <span>{decayPressure.toFixed(0)}%</span>
+                          </div>
+                          <Progress value={decayPressure} className="h-2" />
+                          <p className="text-xs text-muted-foreground">
+                            {row.trendingVelocity < 0 ? `Dropping ${Math.abs(row.trendingVelocity).toFixed(1)} pts/day` : `+${row.trendingVelocity.toFixed(1)} pts/day`}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex flex-wrap justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-md"
+                            onClick={() => onManualBoost(row.id)}
+                            disabled={isActionLoading}
+                          >
+                            <Zap className="size-3.5" />
+                            Manual Boost
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-md"
+                            onClick={() => onToggleBlacklist(row.id, !row.isBlacklisted)}
+                            disabled={isActionLoading}
+                          >
+                            <Ban className="size-3.5" />
+                            {row.isBlacklisted ? "Unblacklist" : "Blacklist"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-md"
+                            onClick={() => onResetScore(row.id)}
+                            disabled={isActionLoading}
+                          >
+                            <AlertCircle className="size-3.5" />
+                            Reset
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function VendorsSection({
   vendors,
   isLoading,
