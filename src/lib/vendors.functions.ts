@@ -532,7 +532,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: settledRows, error: settleError } = await (supabaseAdmin as any)
+      const { error: settleError } = await (supabaseAdmin as any)
         .from("orders")
         .update({ admin_settled: true, updated_at: new Date().toISOString() })
         .eq("vendor_id", data.vendorId)
