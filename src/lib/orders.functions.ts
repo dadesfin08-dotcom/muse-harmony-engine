@@ -887,13 +887,15 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       };
     });
 
+    const platformDuesMad = await getVendorPendingCommissionMad(vendor.id);
+
     return {
       vendor: {
         id: (vendor as VendorRow).id,
         storeName: (vendor as VendorRow).store_name,
         totalCashInHandMad: Number((vendor as VendorRow).total_cash_received ?? 0),
         myNetProfitMad: Number((vendor as VendorRow).vendor_earnings ?? 0),
-        platformDuesMad: Number((vendor as VendorRow).platform_dues ?? 0),
+        platformDuesMad,
       },
       orders: hydratedOrders as Array<OrderRow>,
     };
@@ -1379,10 +1381,12 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
 
       const pendingCyclistCount = new Set(pending.map((row) => row.cyclist_id).filter(Boolean)).size;
 
+      const platformDuesMad = await getVendorPendingCommissionMad(vendor.id);
+
       return {
         totalCashInHandMad: roundMoney(Number((vendor as VendorRow).total_cash_received ?? 0)),
         myNetProfitMad: roundMoney(Number((vendor as VendorRow).vendor_earnings ?? 0)),
-        platformDuesMad: roundMoney(Number((vendor as VendorRow).platform_dues ?? 0)),
+        platformDuesMad,
         unsettledCashWithCyclistsMad,
         owedToCyclistMad,
         totalReceivedTodayMad,
