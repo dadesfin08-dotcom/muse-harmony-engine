@@ -84,7 +84,7 @@ function VendorWalletPage() {
           filter: `vendor_id=eq.${vendorId}`,
         },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId] });
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
           void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
         },
       )
@@ -93,7 +93,7 @@ function VendorWalletPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient, vendorId]);
+  }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
 
   useEffect(() => {
     let mounted = true;
@@ -116,24 +116,20 @@ function VendorWalletPage() {
       const isCash = paymentMethod === "cod" || paymentMethod === "cash";
       return isTransferred && isCash;
     });
-    const unsettledTransferredCashOrders = transferredCashOrders.filter(
-      (order) => !Boolean(order.admin_settled),
-    );
 
     const totalCashInHandMad = transferredCashOrders.reduce((sum, order) => sum + Number(order.total_price ?? 0), 0);
     const myNetProfitMad = transferredCashOrders.reduce(
       (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
       0,
     );
-    const platformDuesMad = unsettledTransferredCashOrders.reduce(
-      (sum, order) => {
-        const fixedMarkup = Number.isFinite(Number(order.platform_markup))
-          ? Number(order.platform_markup)
-          : Number(order.platform_profit ?? order.delivery_fee ?? 0);
-        return sum + fixedMarkup;
-      },
-      0,
-    );
+    const platformDuesMad = transferredCashOrders.reduce((sum, order) => {
+      const isSettledByAdmin = order.admin_settled === true;
+      if (isSettledByAdmin) return sum;
+
+      const fallbackMarkup = Number(order.total_price ?? 0) - Number(order.subtotal_base_price ?? 0);
+      const markup = Number(order.platform_markup) || fallbackMarkup;
+      return sum + (Number.isFinite(markup) ? markup : 0);
+    }, 0);
     const settledCarnetPlatformDuesMad = Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0);
 
     return {
