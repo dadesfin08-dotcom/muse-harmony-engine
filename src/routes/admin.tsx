@@ -533,11 +533,17 @@ const brandEngineChartConfig = {
 export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>) => {
     const tab = typeof search.tab === "string" ? search.tab : "overview";
+    if (tab === "platform-packs") {
+      return { tab: "platform-packs-create" as AdminTab };
+    }
     if (
       [
         "overview",
         "ai-brand-engine",
-        "platform-packs",
+        "platform-packs-create",
+        "platform-packs-orders",
+        "platform-packs-subscribers",
+        "platform-packs-analytics",
         "orders",
         "customers",
         "vendors",
@@ -791,8 +797,12 @@ function AdminPage() {
     nameFr: string | null;
     nameAr: string | null;
     description: string | null;
-    pricePerUnit: number;
+    basePriceMad: number;
+    billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
+    deliveryWindow: string | null;
+    packItems: string[];
+    packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -984,11 +994,18 @@ function AdminPage() {
     nameFr: "",
     nameAr: "",
     description: "",
-    pricePerUnit: "",
+    basePriceMad: "",
+    billingCycle: "WEEKLY" as "DAILY" | "WEEKLY" | "MONTHLY",
     unitType: "Kg",
+    deliveryWindow: "",
+    packItems: [""],
+    packFeatures: [""],
     imageUrl: "",
     isActive: true,
   });
+  const [platformPackImageFile, setPlatformPackImageFile] = useState<File | null>(null);
+  const [platformPackImagePreviewUrl, setPlatformPackImagePreviewUrl] = useState<string | null>(null);
+  const platformPackImageInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingPlatformPack, setIsSavingPlatformPack] = useState(false);
   const [settingsForm, setSettingsForm] = useState({
     id: "",
