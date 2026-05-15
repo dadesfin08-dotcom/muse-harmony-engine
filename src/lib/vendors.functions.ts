@@ -157,7 +157,6 @@ async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
 
   const dueByVendor = new Map<string, number>();
   for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
-    if (!isCashPaymentMethod(row.payment_method)) continue;
     const current = dueByVendor.get(row.vendor_id) ?? 0;
     dueByVendor.set(row.vendor_id, current + platformDueFromOrder(row));
   }
@@ -534,7 +533,6 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
       const pendingDuesMad = roundMad(
         ((pendingRows ?? []) as Array<{ payment_method?: string | null; platform_markup?: number | null; platform_profit?: number | null; delivery_fee?: number | null }>).reduce(
           (sum, row) => {
-            if (!isCashPaymentMethod(row.payment_method)) return sum;
             return sum + platformDueFromOrder(row);
           },
           0,
