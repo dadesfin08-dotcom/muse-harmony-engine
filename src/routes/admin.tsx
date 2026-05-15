@@ -2047,6 +2047,74 @@ function AdminPage() {
     }
   };
 
+  const handleBrandEngineManualBoost = async (brandId: string) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await triggerManualBoost({ data: { brandId } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success("Manual boost applied.");
+    } catch (error) {
+      console.error("Manual boost failed:", error);
+      toast.error("Failed to apply manual boost.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleBrandEngineBlacklist = async (brandId: string, blacklisted: boolean) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await toggleBrandBlacklist({ data: { brandId, blacklisted } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success(blacklisted ? "Brand blacklisted." : "Brand removed from blacklist.");
+    } catch (error) {
+      console.error("Blacklist action failed:", error);
+      toast.error("Failed to update blacklist state.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleBrandEngineResetScore = async (brandId: string) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await triggerScoreReset({ data: { brandId } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success("Brand score reset.");
+    } catch (error) {
+      console.error("Reset score failed:", error);
+      toast.error("Failed to reset brand score.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleRotationRatioChange = (segment: "trending" | "midTier" | "discovery", value: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    const rest = 100 - clamped;
+
+    setRotationRatios((prev) => {
+      if (segment === "trending") {
+        const totalOther = Math.max(prev.midTier + prev.discovery, 1);
+        const midTier = Math.round((prev.midTier / totalOther) * rest);
+        const discovery = rest - midTier;
+        return { trending: clamped, midTier, discovery };
+      }
+
+      if (segment === "midTier") {
+        const totalOther = Math.max(prev.trending + prev.discovery, 1);
+        const trending = Math.round((prev.trending / totalOther) * rest);
+        const discovery = rest - trending;
+        return { trending, midTier: clamped, discovery };
+      }
+
+      const totalOther = Math.max(prev.trending + prev.midTier, 1);
+      const trending = Math.round((prev.trending / totalOther) * rest);
+      const midTier = rest - trending;
+      return { trending, midTier, discovery: clamped };
+    });
+  };
+
   const downloadBrandsCsvTemplate = () => {
     const csvContent = `\uFEFF${BRANDS_CSV_HEADERS.join(";")}\n`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
