@@ -993,15 +993,10 @@ function AdminPage() {
           table: "platform_commission_ledger",
           filter: "transaction_type=eq.WITHDRAWAL",
         },
-        (payload) => {
-          const insertedVendorId = (payload.new as { vendor_id?: string } | null)?.vendor_id;
-          const isCurrentQrVendorPayment =
-            isInitiateWithdrawalOpen &&
-            Boolean(platformCollectionScanTargetVendor?.id) &&
-            insertedVendorId === platformCollectionScanTargetVendor?.id;
+        () => {
+          toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
 
-          if (isCurrentQrVendorPayment) {
-            toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+          if (isInitiateWithdrawalOpen) {
             setIsInitiateWithdrawalOpen(false);
             setPlatformCollectionQrPayload(null);
           }
@@ -1015,7 +1010,7 @@ function AdminPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
+  }, [isInitiateWithdrawalOpen, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
