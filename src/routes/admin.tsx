@@ -2395,6 +2395,8 @@ function AdminPage() {
     setAdForm({
       id: "",
       campaignName: "",
+      zoneId: "global",
+      campaignType: "AD",
       imageAr: "",
       imageFr: "",
       imageEn: "",
@@ -2442,6 +2444,8 @@ function AdminPage() {
           data: {
             id: adForm.id,
             campaignName: adForm.campaignName.trim(),
+            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
             imageEn: adForm.imageEn.trim() || null,
@@ -2456,6 +2460,8 @@ function AdminPage() {
         await createSiteAdInDatabase({
           data: {
             campaignName: adForm.campaignName.trim(),
+            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
             imageEn: adForm.imageEn.trim() || null,
@@ -2539,6 +2545,9 @@ function AdminPage() {
   const editAd = (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -2550,6 +2559,8 @@ function AdminPage() {
     setAdForm({
       id: ad.id,
       campaignName: ad.campaign_name ?? "",
+      zoneId: ad.zone_id ?? "global",
+      campaignType: ad.campaign_type ?? "AD",
       imageAr: ad.image_ar ?? "",
       imageFr: ad.image_fr ?? "",
       imageEn: ad.image_en ?? "",
@@ -2577,6 +2588,9 @@ function AdminPage() {
   const toggleAdActive = async (ad: {
     id: string;
     campaign_name: string;
+    zone_id: string | null;
+    campaign_type: "AD" | "PROMO" | "NEWS";
+    views_count: number;
     image_ar: string | null;
     image_fr: string | null;
     image_en: string | null;
@@ -2590,6 +2604,8 @@ function AdminPage() {
         data: {
           id: ad.id,
           campaignName: ad.campaign_name,
+          zoneId: ad.zone_id,
+          campaignType: ad.campaign_type,
           imageAr: ad.image_ar,
           imageFr: ad.image_fr,
           imageEn: ad.image_en,
