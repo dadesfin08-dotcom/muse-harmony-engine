@@ -380,8 +380,11 @@ const initialAdminOrders: Array<{
   id: string;
   createdAt: string;
   vendorName: string;
+  customerName: string;
   customerPhone: string;
   totalPrice: number;
+  itemCount: number;
+  orderItems: unknown[];
   orderCategory: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
   cyclistId: string | null;
   cyclistName: string | null;
