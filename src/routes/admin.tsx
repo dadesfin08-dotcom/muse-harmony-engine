@@ -4122,33 +4122,17 @@ function OverviewSection({
 function VendorsSection({
   vendors,
   isLoading,
-  collectionHistory,
-  isCollectionHistoryLoading,
   onAddVendor,
   onManageVendor,
   onCollectPlatformDues,
 }: {
   vendors: AdminVendorRecord[];
   isLoading: boolean;
-  collectionHistory: PlatformCollectionHistoryItem[];
-  isCollectionHistoryLoading: boolean;
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
   onCollectPlatformDues: (vendor: AdminVendorRecord) => void;
 }) {
   const { t } = useTranslation();
-  const formatCollectionDateTime = (isoDate: string) => {
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return "--";
-    return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-  };
 
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
