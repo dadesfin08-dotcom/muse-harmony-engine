@@ -98,6 +98,10 @@ const recordVendorQrPaymentInputSchema = z.object({
   qrPayload: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
+const listPlatformCollectionHistoryInputSchema = z.object({
+  vendorId: z.string().uuid(),
+});
+
 type VendorOrderRow = {
   id: string;
   status: string;
@@ -661,10 +665,13 @@ export const recordVendorQrPayment = createServerFn({ method: "POST" })
     }
   });
 
-export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await (supabaseAdmin as any)
+export const listPlatformCollectionHistory = createServerFn({ method: "GET" })
+  .inputValidator((input) => listPlatformCollectionHistoryInputSchema.parse(input))
+  .handler(async ({ data }) => {
+  const { data: ledgerRows, error } = await (supabaseAdmin as any)
     .from("platform_commission_ledger")
     .select("id, vendor_id, transaction_type, amount, created_at")
+    .eq("vendor_id", data.vendorId)
     .order("created_at", { ascending: true })
     .limit(2000);
 
@@ -672,7 +679,7 @@ export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).h
     throw new Error(`Failed to load collection history: ${error.message}`);
   }
 
-  const rows = (data ?? []) as Array<{
+  const rows = (ledgerRows ?? []) as Array<{
     id: string;
     vendor_id: string;
     transaction_type: "ACCRUAL" | "WITHDRAWAL";

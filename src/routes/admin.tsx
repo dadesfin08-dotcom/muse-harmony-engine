@@ -561,14 +561,6 @@ function AdminPage() {
     staleTime: 60_000,
     placeholderData: (previousData) => previousData,
   });
-  const platformCollectionHistoryQuery = useQuery({
-    queryKey: ["admin", "platform-collections-history"],
-    enabled: isAdminDataEnabled,
-    queryFn: () => fetchPlatformCollectionHistory(),
-    refetchInterval: 10_000,
-    placeholderData: (previousData) => previousData,
-  });
-
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -877,6 +869,17 @@ function AdminPage() {
     queryFn: () => fetchVendorSalesAnalytics({ data: { vendorId: selectedVendor!.id } }),
   });
 
+  const platformCollectionHistoryQuery = useQuery({
+    queryKey: ["admin", "platform-collections-history", platformCollectionScanTargetVendor?.id ?? null],
+    enabled: isAdminDataEnabled && isInitiateWithdrawalOpen && Boolean(platformCollectionScanTargetVendor?.id),
+    queryFn: () =>
+      fetchPlatformCollectionHistory({
+        data: { vendorId: platformCollectionScanTargetVendor!.id },
+      }),
+    refetchInterval: isInitiateWithdrawalOpen ? 10_000 : false,
+    placeholderData: (previousData) => previousData,
+  });
+
   const filteredOrders = useMemo(
     () =>
       ordersStatusFilter === "all"
@@ -900,7 +903,20 @@ function AdminPage() {
         (neighborhood) => neighborhood.vendorId == null || neighborhood.vendorId === selectedVendorId,
       ) ?? [];
 
-  const collectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
+  const vendorScopedCollectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
+
+  const formatCollectionDateTime = (isoDate: string) => {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
 
   const toggleVendorNeighborhood = (neighborhoodId: string, checked: boolean) => {
     setVendorForm((current) => {
@@ -975,8 +991,12 @@ function AdminPage() {
     setIsInitiateWithdrawalOpen(true);
   };
 
+  const activeCollectionVendor = platformCollectionScanTargetVendor
+    ? vendors.find((vendor) => vendor.id === platformCollectionScanTargetVendor.id) ?? platformCollectionScanTargetVendor
+    : null;
+
   const handleGenerateWithdrawalQr = () => {
-    const vendor = platformCollectionScanTargetVendor;
+    const vendor = activeCollectionVendor;
     if (!vendor) return;
 
     const pending = Number(vendor.platformDuesMad ?? 0);
@@ -998,6 +1018,10 @@ function AdminPage() {
   };
 
   useEffect(() => {
+    if (!isInitiateWithdrawalOpen) {
+      return;
+    }
+
     const channel = supabase
       .channel("admin-platform-commission-ledger-withdrawals")
       .on(
@@ -1008,16 +1032,22 @@ function AdminPage() {
           table: "platform_commission_ledger",
           filter: "transaction_type=eq.WITHDRAWAL",
         },
-        () => {
-          toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+        (payload) => {
+          const insertedVendorId =
+            payload.new && typeof payload.new === "object" && "vendor_id" in payload.new
+              ? String((payload.new as { vendor_id?: unknown }).vendor_id ?? "")
+              : "";
 
-          if (isInitiateWithdrawalOpen) {
-            setIsInitiateWithdrawalOpen(false);
-            setPlatformCollectionQrPayload(null);
+          if (!insertedVendorId || insertedVendorId !== platformCollectionScanTargetVendor?.id) {
+            return;
           }
 
+          toast.success("Payment received successfully! تم استلام المستحقات بنجاح");
+
           void queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
-          void queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
+          void queryClient.invalidateQueries({
+            queryKey: ["admin", "platform-collections-history", insertedVendorId],
+          });
         },
       )
       .subscribe();
@@ -1025,7 +1055,7 @@ function AdminPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [isInitiateWithdrawalOpen, queryClient]);
+  }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
@@ -2844,8 +2874,6 @@ function AdminPage() {
                 <VendorsSection
                   vendors={vendors}
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
-                  collectionHistory={collectionHistory}
-                  isCollectionHistoryLoading={platformCollectionHistoryQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
                   onCollectPlatformDues={openPlatformCollectionQr}
@@ -3532,8 +3560,8 @@ function AdminPage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {platformCollectionScanTargetVendor
-                ? `Pending commission: ${Number(platformCollectionScanTargetVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
+              {activeCollectionVendor
+                ? `Pending commission: ${Number(activeCollectionVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
                 : "Select a vendor first."}
             </p>
             <Input
@@ -3552,6 +3580,50 @@ function AdminPage() {
                 <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin />
               </div>
             ) : null}
+
+            <div className="space-y-2 pt-2">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
+                <p className="text-xs text-muted-foreground">Vendor-only accrual/withdrawal history.</p>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto rounded-md border border-border">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="sticky top-0 bg-muted/60 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2">Date / Time</th>
+                      <th className="px-3 py-2">Transaction</th>
+                      <th className="px-3 py-2">Amount</th>
+                      <th className="px-3 py-2">Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {platformCollectionHistoryQuery.isLoading ? (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-6 text-center text-xs text-muted-foreground sm:text-sm">
+                          Loading collection history...
+                        </td>
+                      </tr>
+                    ) : vendorScopedCollectionHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-6 text-center text-xs text-muted-foreground sm:text-sm">
+                          No collection history yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      vendorScopedCollectionHistory.map((row) => (
+                        <tr key={row.transactionId} className="border-t border-border bg-card">
+                          <td className="px-3 py-2 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
+                          <td className="px-3 py-2 text-foreground">{row.transactionLabel}</td>
+                          <td className="px-3 py-2 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
+                          <td className="px-3 py-2 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -4098,33 +4170,17 @@ function OverviewSection({
 function VendorsSection({
   vendors,
   isLoading,
-  collectionHistory,
-  isCollectionHistoryLoading,
   onAddVendor,
   onManageVendor,
   onCollectPlatformDues,
 }: {
   vendors: AdminVendorRecord[];
   isLoading: boolean;
-  collectionHistory: PlatformCollectionHistoryItem[];
-  isCollectionHistoryLoading: boolean;
   onAddVendor: () => void;
   onManageVendor: (vendor: AdminVendorRecord) => void;
   onCollectPlatformDues: (vendor: AdminVendorRecord) => void;
 }) {
   const { t } = useTranslation();
-  const formatCollectionDateTime = (isoDate: string) => {
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return "--";
-    return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
-  };
 
   return (
     <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
@@ -4222,50 +4278,6 @@ function VendorsSection({
         </table>
       </div>
 
-      <div className="mt-6 space-y-3">
-        <div>
-          <h3 className="text-base font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
-          <p className="text-sm text-muted-foreground">Accrual and withdrawal ledger with running balance.</p>
-        </div>
-        <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Date / Time · تاريخ التحصيل</th>
-                <th className="px-4 py-3">Vendor Name · اسم التاجر</th>
-                <th className="px-4 py-3">Transaction · نوع الحركة</th>
-                <th className="px-4 py-3">Amount · المبلغ</th>
-                <th className="px-4 py-3">Remaining Balance · الرصيد المتبقي</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isCollectionHistoryLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    Loading collection history...
-                  </td>
-                </tr>
-              ) : collectionHistory.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No collection history yet.
-                  </td>
-                </tr>
-              ) : (
-                collectionHistory.map((row) => (
-                  <tr key={row.transactionId} className="border-t border-border bg-card">
-                    <td className="px-4 py-3 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
-                    <td className="px-4 py-3 font-medium text-foreground">{row.vendorName}</td>
-                    <td className="px-4 py-3 text-foreground">{row.transactionLabel}</td>
-                    <td className="px-4 py-3 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
-                    <td className="px-4 py-3 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
   );
 }
