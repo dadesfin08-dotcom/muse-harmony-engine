@@ -124,7 +124,6 @@ export type PlatformCollectionHistoryItem = {
 
 type PendingPlatformDuesRow = {
   vendor_id: string;
-  payment_method: string | null;
   admin_settled: boolean | null;
   platform_markup: number | null;
   total_price: number | null;
@@ -135,11 +134,6 @@ type PendingPlatformDuesRow = {
 
 function roundMad(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
-}
-
-function isCashPaymentMethod(paymentMethod: string | null | undefined) {
-  const normalized = String(paymentMethod ?? "").trim().toLowerCase();
-  return normalized === "cod" || normalized === "cash";
 }
 
 function platformDueFromOrder(row: {
