@@ -17,7 +17,7 @@ const parseOptionalDateTime = (value?: string | null) => {
   return date.toISOString();
 };
 
-const adInputSchema = z.object({
+const adBaseSchema = z.object({
   campaignName: z.string().trim().min(1).max(120),
   imageAr: z.string().trim().url().max(2000).optional().nullable(),
   imageFr: z.string().trim().url().max(2000).optional().nullable(),
@@ -26,6 +26,24 @@ const adInputSchema = z.object({
   startDate: z.string().trim().optional().nullable(),
   endDate: z.string().trim().optional().nullable(),
   isActive: z.boolean().default(true),
+});
+
+const adInputSchema = adBaseSchema.refine((input) => Boolean(input.imageAr || input.imageFr || input.imageEn), {
+  message: "At least one localized image is required.",
+  path: ["imageEn"],
+}).refine(
+  (input) => {
+    if (!input.startDate || !input.endDate) return true;
+    return new Date(input.endDate).getTime() >= new Date(input.startDate).getTime();
+  },
+  {
+    message: "End date must be greater than or equal to start date.",
+    path: ["endDate"],
+  },
+);
+
+const updateAdInputSchema = adBaseSchema.extend({
+  id: z.string().uuid(),
 }).refine((input) => Boolean(input.imageAr || input.imageFr || input.imageEn), {
   message: "At least one localized image is required.",
   path: ["imageEn"],
@@ -40,11 +58,7 @@ const adInputSchema = z.object({
   },
 );
 
-const updateAdInputSchema = adInputSchema.extend({
-  id: z.string().uuid(),
-});
-
-const announcementInputSchema = z.object({
+const announcementBaseSchema = z.object({
   messageEn: z.string().trim().max(300).optional().nullable(),
   messageFr: z.string().trim().max(300).optional().nullable(),
   messageAr: z.string().trim().max(300).optional().nullable(),
@@ -53,7 +67,9 @@ const announcementInputSchema = z.object({
   textColor: z.string().trim().min(4).max(20).default("#000000"),
   startDate: z.string().trim().optional().nullable(),
   endDate: z.string().trim().optional().nullable(),
-}).refine((input) => Boolean(input.messageAr || input.messageFr || input.messageEn), {
+});
+
+const announcementInputSchema = announcementBaseSchema.refine((input) => Boolean(input.messageAr || input.messageFr || input.messageEn), {
   message: "At least one localized message is required.",
   path: ["messageEn"],
 }).refine(
@@ -67,9 +83,21 @@ const announcementInputSchema = z.object({
   },
 );
 
-const updateAnnouncementInputSchema = announcementInputSchema.extend({
+const updateAnnouncementInputSchema = announcementBaseSchema.extend({
   id: z.string().uuid(),
-});
+}).refine((input) => Boolean(input.messageAr || input.messageFr || input.messageEn), {
+  message: "At least one localized message is required.",
+  path: ["messageEn"],
+}).refine(
+  (input) => {
+    if (!input.startDate || !input.endDate) return true;
+    return new Date(input.endDate).getTime() >= new Date(input.startDate).getTime();
+  },
+  {
+    message: "End date must be greater than or equal to start date.",
+    path: ["endDate"],
+  },
+);
 
 const idInputSchema = z.object({
   id: z.string().uuid(),
