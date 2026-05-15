@@ -85,8 +85,9 @@ const getVendorSalesAnalyticsInputSchema = z.object({
 
 const collectVendorPlatformDuesInputSchema = z.object({
   vendorId: z.string().uuid(),
-  amount: z.number().positive().optional(),
+  amount: z.number().positive(),
   qrPayload: z.record(z.string(), z.any()).nullable().optional(),
+  createdBy: z.string().uuid().nullable().optional(),
 });
 
 type VendorOrderRow = {
@@ -118,58 +119,68 @@ export type PlatformCollectionHistoryItem = {
   transactionId: string;
   vendorId: string;
   vendorName: string;
+  transactionType: "ACCRUAL" | "WITHDRAWAL";
+  transactionLabel: string;
   amountMad: number;
+  remainingBalanceMad: number;
   collectedAt: string;
-};
-
-type PendingPlatformDuesRow = {
-  vendor_id: string;
-  admin_settled: boolean | null;
-  platform_markup: number | null;
-  total_price: number | null;
-  subtotal_base_price: number | null;
-  platform_profit: number | null;
-  delivery_fee: number | null;
 };
 
 function roundMad(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
 }
 
-function platformDueFromOrder(row: {
-  platform_markup?: number | null;
-  platform_profit?: number | null;
-  delivery_fee?: number | null;
-}) {
-  const markup = Number(row.platform_markup ?? Number.NaN);
-  if (Number.isFinite(markup) && markup > 0) return markup;
-  const profit = Number(row.platform_profit ?? Number.NaN);
-  if (Number.isFinite(profit) && profit > 0) return profit;
-  return Number(row.delivery_fee ?? 0);
+async function ensureVendorProfileExists(vendorId: string) {
+  const { error } = await (supabaseAdmin as any).from("profiles").upsert(
+    {
+      id: vendorId,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function getVendorPendingCommissionMad(vendorId: string) {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_commission_ledger")
+    .select("amount")
+    .eq("vendor_id", vendorId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return roundMad(
+    ((data ?? []) as Array<{ amount: number | null }>).reduce(
+      (sum, row) => sum + Number(row.amount ?? 0),
+      0,
+    ),
+  );
 }
 
 async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
   if (vendorIds.length === 0) return new Map<string, number>();
 
   const { data, error } = await (supabaseAdmin as any)
-    .from("orders")
-    .select("vendor_id, payment_method, admin_settled, platform_markup, total_price, subtotal_base_price, platform_profit, delivery_fee")
-    .in("vendor_id", vendorIds)
-    .eq("status", "cash_transferred_to_vendor");
+    .from("platform_commission_ledger")
+    .select("vendor_id, amount")
+    .in("vendor_id", vendorIds);
 
   if (error) {
     throw new Error(error.message);
   }
 
   const dueByVendor = new Map<string, number>();
-  for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
-    const isSettledByAdmin = row.admin_settled === true;
-    if (isSettledByAdmin) continue;
-
-    const fallbackMarkup = Number(row.total_price ?? 0) - Number(row.subtotal_base_price ?? 0);
-    const markup = Number(row.platform_markup) || fallbackMarkup;
+  for (const row of (data ?? []) as Array<{ vendor_id: string; amount: number | null }>) {
     const current = dueByVendor.get(row.vendor_id) ?? 0;
-    dueByVendor.set(row.vendor_id, current + (Number.isFinite(markup) ? markup : 0));
+    dueByVendor.set(row.vendor_id, current + Number(row.amount ?? 0));
   }
 
   for (const vendorId of vendorIds) {
