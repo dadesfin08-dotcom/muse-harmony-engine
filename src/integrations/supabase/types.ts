@@ -799,6 +799,7 @@ export type Database = {
       orders: {
         Row: {
           admin_settled: boolean
+          cash_to_collect_from_customer: number
           created_at: string
           customer_name: string
           customer_phone: string | null
@@ -811,6 +812,7 @@ export type Database = {
           id: string
           item_count: number
           neighborhood_id: string | null
+          order_category: Database["public"]["Enums"]["order_category"]
           order_items: Json
           payment_method: Database["public"]["Enums"]["payment_method"]
           platform_markup: number
@@ -819,12 +821,13 @@ export type Database = {
           subtotal_base_price: number
           total_price: number
           updated_at: string
-          vendor_id: string
+          vendor_id: string | null
           vendor_revenue: number
           vendor_settlement_status: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Insert: {
           admin_settled?: boolean
+          cash_to_collect_from_customer?: number
           created_at?: string
           customer_name: string
           customer_phone?: string | null
@@ -837,6 +840,7 @@ export type Database = {
           id?: string
           item_count?: number
           neighborhood_id?: string | null
+          order_category?: Database["public"]["Enums"]["order_category"]
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           platform_markup?: number
@@ -845,12 +849,13 @@ export type Database = {
           subtotal_base_price?: number
           total_price?: number
           updated_at?: string
-          vendor_id: string
+          vendor_id?: string | null
           vendor_revenue?: number
           vendor_settlement_status?: Database["public"]["Enums"]["vendor_settlement_status"]
         }
         Update: {
           admin_settled?: boolean
+          cash_to_collect_from_customer?: number
           created_at?: string
           customer_name?: string
           customer_phone?: string | null
@@ -863,6 +868,7 @@ export type Database = {
           id?: string
           item_count?: number
           neighborhood_id?: string | null
+          order_category?: Database["public"]["Enums"]["order_category"]
           order_items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           platform_markup?: number
@@ -871,7 +877,7 @@ export type Database = {
           subtotal_base_price?: number
           total_price?: number
           updated_at?: string
-          vendor_id?: string
+          vendor_id?: string | null
           vendor_revenue?: number
           vendor_settlement_status?: Database["public"]["Enums"]["vendor_settlement_status"]
         }
@@ -1013,6 +1019,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_packs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name_ar: string | null
+          name_en: string
+          name_fr: string | null
+          price_per_unit: number
+          unit_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name_ar?: string | null
+          name_en: string
+          name_fr?: string | null
+          price_per_unit?: number
+          unit_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name_ar?: string | null
+          name_en?: string
+          name_fr?: string | null
+          price_per_unit?: number
+          unit_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1553,6 +1601,7 @@ export type Database = {
         | "Bunch"
         | "Tray"
         | "Box"
+      order_category: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION"
       order_status:
         | "new"
         | "preparing"
@@ -1723,6 +1772,7 @@ export const Constants = {
         "Tray",
         "Box",
       ],
+      order_category: ["MARKETPLACE", "PLATFORM_SUBSCRIPTION"],
       order_status: [
         "new",
         "preparing",
