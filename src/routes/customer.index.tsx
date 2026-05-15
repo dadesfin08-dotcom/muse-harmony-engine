@@ -462,7 +462,7 @@ function Index() {
     fetchCustomerCarnetOverview,
   );
   const siteContentQuery = useQuery({
-    queryKey: ["customer", "site-content"],
+    queryKey: ["customer", "site-content", selectedNeighborhoodId ?? null],
     queryFn: () =>
       fetchActiveAdsAndAnnouncements({
         data: {
