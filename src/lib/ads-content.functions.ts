@@ -118,6 +118,7 @@ export const listSiteAds = createServerFn({ method: "GET" }).handler(async () =>
 export const createSiteAd = createServerFn({ method: "POST" })
   .inputValidator((input) => adInputSchema.parse(input))
   .handler(async ({ data }) => {
+    const campaignName = data.campaignName.trim();
     const imageAr = normalizeOptionalText(data.imageAr);
     const imageFr = normalizeOptionalText(data.imageFr);
     const imageEn = normalizeOptionalText(data.imageEn);
@@ -125,7 +126,8 @@ export const createSiteAd = createServerFn({ method: "POST" })
     const { data: inserted, error } = await (supabaseAdmin as any)
       .from("site_ads")
       .insert({
-        campaign_name: data.campaignName.trim(),
+        campaign_name: campaignName,
+        content: campaignName,
         image_ar: imageAr,
         image_fr: imageFr,
         image_en: imageEn,
@@ -146,6 +148,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
 export const updateSiteAd = createServerFn({ method: "POST" })
   .inputValidator((input) => updateAdInputSchema.parse(input))
   .handler(async ({ data }) => {
+    const campaignName = data.campaignName.trim();
     const imageAr = normalizeOptionalText(data.imageAr);
     const imageFr = normalizeOptionalText(data.imageFr);
     const imageEn = normalizeOptionalText(data.imageEn);
@@ -153,7 +156,8 @@ export const updateSiteAd = createServerFn({ method: "POST" })
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("site_ads")
       .update({
-        campaign_name: data.campaignName.trim(),
+        campaign_name: campaignName,
+        content: campaignName,
         image_ar: imageAr,
         image_fr: imageFr,
         image_en: imageEn,
