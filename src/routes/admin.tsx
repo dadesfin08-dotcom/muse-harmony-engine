@@ -963,6 +963,18 @@ function AdminPage() {
   );
 
   const communeOptions = serviceZones;
+  const adTargetZones = useMemo(
+    () =>
+      communeOptions.flatMap((commune) =>
+        commune.neighborhoods.map((zone) => ({
+          id: zone.id,
+          zoneCode: zone.zoneCode,
+          communeName: getLocalizedCommuneName(commune),
+          zoneName: zone.name,
+        })),
+      ),
+    [communeOptions],
+  );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
   const cyclistNeighborhoodOptions =
     communeOptions.find((commune) => commune.id === cyclistForm.communeId)?.neighborhoods ?? [];
@@ -1130,6 +1142,40 @@ function AdminPage() {
       void supabase.removeChannel(channel);
     };
   }, [isInitiateWithdrawalOpen, platformCollectionScanTargetVendor?.id, queryClient]);
+
+  useEffect(() => {
+    if (!isAdminDataEnabled) return;
+
+    const channel = supabase
+      .channel("admin-site-ads-live-views")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "site_ads",
+        },
+        (payload) => {
+          const updated = payload.new as { id?: string; views_count?: number } | null;
+          if (!updated?.id || typeof updated.views_count !== "number") return;
+
+          queryClient.setQueryData(
+            ["admin", "site-ads"],
+            (current:
+              | Array<{ id: string; views_count: number } & Record<string, unknown>>
+              | undefined) =>
+              (current ?? []).map((row) =>
+                row.id === updated.id ? { ...row, views_count: updated.views_count } : row,
+              ),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [isAdminDataEnabled, queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
