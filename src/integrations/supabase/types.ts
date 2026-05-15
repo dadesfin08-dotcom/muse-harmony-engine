@@ -86,6 +86,85 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_analytics_events: {
+        Row: {
+          brand_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_analytics_events_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_scores: {
+        Row: {
+          active_until: string
+          base_score: number
+          brand_id: string
+          is_blacklisted: boolean
+          is_trending: boolean
+          last_auto_renewed_at: string | null
+          last_updated: string
+          manual_boost_until: string | null
+          trending_velocity: number
+        }
+        Insert: {
+          active_until?: string
+          base_score?: number
+          brand_id: string
+          is_blacklisted?: boolean
+          is_trending?: boolean
+          last_auto_renewed_at?: string | null
+          last_updated?: string
+          manual_boost_until?: string | null
+          trending_velocity?: number
+        }
+        Update: {
+          active_until?: string
+          base_score?: number
+          brand_id?: string
+          is_blacklisted?: boolean
+          is_trending?: boolean
+          last_auto_renewed_at?: string | null
+          last_updated?: string
+          manual_boost_until?: string | null
+          trending_velocity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_scores_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: true
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           created_at: string
@@ -1087,6 +1166,35 @@ export type Database = {
         }
         Relationships: []
       }
+      trending_history: {
+        Row: {
+          brand_id: string | null
+          id: number
+          recorded_at: string
+          score: number
+        }
+        Insert: {
+          brand_id?: string | null
+          id?: number
+          recorded_at?: string
+          score?: number
+        }
+        Update: {
+          brand_id?: string | null
+          id?: number
+          recorded_at?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trending_history_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1370,6 +1478,15 @@ export type Database = {
           order_id: string
         }[]
       }
+      compute_brand_score: {
+        Args: {
+          p_cart: number
+          p_orders: number
+          p_search: number
+          p_views: number
+        }
+        Returns: number
+      }
       confirm_cash_transferred_to_vendor: {
         Args: { p_cyclist_id: string; p_vendor_id: string }
         Returns: {
@@ -1388,6 +1505,15 @@ export type Database = {
         Args: { p_customer_phone: string; p_vendor_id: string }
         Returns: number
       }
+      record_brand_event: {
+        Args: {
+          p_brand_id: string
+          p_event_type: string
+          p_metadata?: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
       record_vendor_carnet_payment: {
         Args: {
           p_amount: number
@@ -1397,6 +1523,16 @@ export type Database = {
         Returns: {
           payment_id: string
           remaining_debt: number
+        }[]
+      }
+      refresh_brand_scores: {
+        Args: never
+        Returns: {
+          active_until: string
+          base_score: number
+          brand_id: string
+          is_trending: boolean
+          trending_velocity: number
         }[]
       }
     }

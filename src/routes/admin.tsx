@@ -19,7 +19,7 @@ import Papa from "papaparse";
 import ExcelJS from "exceljs";
 import { QRCodeSVG } from "qrcode.react";
 import { z } from "zod";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
   LayoutDashboard,
   PackageCheck,
@@ -60,6 +60,8 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -111,6 +113,8 @@ import {
   type MasterProductEntity,
 } from "@/lib/entities";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -174,10 +178,14 @@ import {
 } from "@/lib/cyclists.functions";
 import {
   getAdminOverviewAnalytics,
+  getBrandEngineAnalytics,
   getGlobalSettings,
   listAdminCustomers,
   listAdminOrders,
+  manualBoostBrandScore,
   resetFactoryData,
+  resetBrandEngineScore,
+  setBrandBlacklistState,
   uploadSiteLogo,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
@@ -214,6 +222,7 @@ import i18n from "@/lib/i18n";
 
 type AdminTab =
   | "overview"
+  | "ai-brand-engine"
   | "orders"
   | "customers"
   | "vendors"
@@ -227,6 +236,7 @@ type AdminTab =
 
 const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
   { label: "admin.nav.overview", tab: "overview", icon: LayoutDashboard },
+  { label: "admin.nav.aiBrandEngine", tab: "ai-brand-engine", icon: Sparkles },
   { label: "admin.nav.orders", tab: "orders", icon: PackageCheck },
   { label: "admin.nav.customers", tab: "customers", icon: Users },
   { label: "admin.nav.vendors", tab: "vendors", icon: Store },
@@ -423,6 +433,43 @@ type OverviewAnalytics = {
   };
 };
 
+type BrandEngineRow = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  createdAt: string;
+  score: number;
+  activeUntil: string;
+  activeDays: number;
+  isTrending: boolean;
+  isBlacklisted: boolean;
+  manualBoostUntil: string | null;
+  trendingVelocity: number;
+  orders24h: number;
+  cart24h: number;
+  search24h: number;
+  views24h: number;
+  suspiciousClicks24h: number;
+  orderVelocityRatio24h: number;
+};
+
+type BrandEngineAnalytics = {
+  kpis: {
+    activeTrendingBrands: number;
+    conversionVelocity: number;
+    expiringSoon: number;
+    discoveryRate: number;
+  };
+  chartData: Array<{
+    brand: string;
+    orderVelocity: number;
+    searchVolume: number;
+  }>;
+  tableRows: BrandEngineRow[];
+  generatedAt: string;
+  threshold: number;
+};
+
 const salesOrdersChartConfig = {
   orders: {
     label: "Orders",
@@ -445,12 +492,24 @@ const zonePerformanceChartConfig = {
   },
 } satisfies ChartConfig;
 
+const brandEngineChartConfig = {
+  orderVelocity: {
+    label: "Order Velocity",
+    color: "var(--color-chart-1)",
+  },
+  searchVolume: {
+    label: "Search Volume",
+    color: "var(--color-chart-4)",
+  },
+} satisfies ChartConfig;
+
 export const Route = createFileRoute("/admin")({
   validateSearch: (search: Record<string, unknown>) => {
     const tab = typeof search.tab === "string" ? search.tab : "overview";
     if (
       [
         "overview",
+        "ai-brand-engine",
         "orders",
         "customers",
         "vendors",
@@ -537,6 +596,10 @@ function AdminPage() {
   const createMarkupRuleInDatabase = useServerFn(createMarkupRule);
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
+  const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
+  const triggerManualBoost = useServerFn(manualBoostBrandScore);
+  const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
+  const triggerScoreReset = useServerFn(resetBrandEngineScore);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
@@ -632,6 +695,13 @@ function AdminPage() {
     staleTime: 60_000,
     placeholderData: (previousData) => previousData,
   });
+  const brandEngineQuery = useQuery({
+    queryKey: ["admin", "brand-engine"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchBrandEngineAnalytics(),
+    refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -689,6 +759,7 @@ function AdminPage() {
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
+  const brandEngineAnalytics = brandEngineQuery.data as BrandEngineAnalytics | undefined;
   const activeCategories = categories.filter((category) => category.is_active);
   const [catalogSearchTerm, setCatalogSearchTerm] = useState("");
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
@@ -799,6 +870,13 @@ function AdminPage() {
   const [isImportingBrands, setIsImportingBrands] = useState(false);
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
+  const [isBrandEngineActionLoading, setIsBrandEngineActionLoading] = useState(false);
+  const [rotationRatios, setRotationRatios] = useState({
+    trending: 70,
+    midTier: 20,
+    discovery: 10,
+  });
+  const [previewSeedUser, setPreviewSeedUser] = useState("user-demo-001");
   const brandLogoInputRef = useRef<HTMLInputElement | null>(null);
   const brandCsvInputRef = useRef<HTMLInputElement | null>(null);
   const masterProductsCsvInputRef = useRef<HTMLInputElement | null>(null);
@@ -1967,6 +2045,74 @@ function AdminPage() {
       console.error("Failed to delete brand:", error);
       toast.error(t("admin.toast.brandDeleteFailed"));
     }
+  };
+
+  const handleBrandEngineManualBoost = async (brandId: string) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await triggerManualBoost({ data: { brandId } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success("Manual boost applied.");
+    } catch (error) {
+      console.error("Manual boost failed:", error);
+      toast.error("Failed to apply manual boost.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleBrandEngineBlacklist = async (brandId: string, blacklisted: boolean) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await toggleBrandBlacklist({ data: { brandId, blacklisted } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success(blacklisted ? "Brand blacklisted." : "Brand removed from blacklist.");
+    } catch (error) {
+      console.error("Blacklist action failed:", error);
+      toast.error("Failed to update blacklist state.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleBrandEngineResetScore = async (brandId: string) => {
+    try {
+      setIsBrandEngineActionLoading(true);
+      await triggerScoreReset({ data: { brandId } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "brand-engine"] });
+      toast.success("Brand score reset.");
+    } catch (error) {
+      console.error("Reset score failed:", error);
+      toast.error("Failed to reset brand score.");
+    } finally {
+      setIsBrandEngineActionLoading(false);
+    }
+  };
+
+  const handleRotationRatioChange = (segment: "trending" | "midTier" | "discovery", value: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    const rest = 100 - clamped;
+
+    setRotationRatios((prev) => {
+      if (segment === "trending") {
+        const totalOther = Math.max(prev.midTier + prev.discovery, 1);
+        const midTier = Math.round((prev.midTier / totalOther) * rest);
+        const discovery = rest - midTier;
+        return { trending: clamped, midTier, discovery };
+      }
+
+      if (segment === "midTier") {
+        const totalOther = Math.max(prev.trending + prev.discovery, 1);
+        const trending = Math.round((prev.trending / totalOther) * rest);
+        const discovery = rest - trending;
+        return { trending, midTier: clamped, discovery };
+      }
+
+      const totalOther = Math.max(prev.trending + prev.midTier, 1);
+      const trending = Math.round((prev.trending / totalOther) * rest);
+      const midTier = rest - trending;
+      return { trending, midTier, discovery: clamped };
+    });
   };
 
   const downloadBrandsCsvTemplate = () => {

@@ -490,6 +490,278 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   };
 });
 
+type BrandScoreRow = {
+  brand_id: string;
+  base_score: number;
+  trending_velocity: number;
+  active_until: string;
+  is_trending: boolean;
+  is_blacklisted: boolean;
+  manual_boost_until: string | null;
+  last_updated: string;
+};
+
+type BrandCatalogRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  logo_url: string | null;
+  created_at: string;
+};
+
+type BrandEventRow = {
+  brand_id: string;
+  event_type: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+const brandScoreActionInputSchema = z.object({
+  brandId: z.string().uuid(),
+});
+
+const brandBlacklistActionInputSchema = z.object({
+  brandId: z.string().uuid(),
+  blacklisted: z.boolean(),
+});
+
+const BRAND_TRENDING_THRESHOLD = 120;
+
+export const getBrandEngineAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+  await (supabaseAdmin as any).rpc("refresh_brand_scores");
+
+  const now = Date.now();
+  const in24h = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const in48h = new Date(now - 48 * 60 * 60 * 1000).toISOString();
+
+  const [scoresRes, brandsRes, eventsRes] = await Promise.all([
+    (supabaseAdmin as any)
+      .from("brand_scores")
+      .select(
+        "brand_id, base_score, trending_velocity, active_until, is_trending, is_blacklisted, manual_boost_until, last_updated",
+      )
+      .order("base_score", { ascending: false }),
+    (supabaseAdmin as any).from("brands").select("id, name_en, name_fr, name_ar, logo_url, created_at"),
+    (supabaseAdmin as any)
+      .from("brand_analytics_events")
+      .select("brand_id, event_type, metadata, created_at")
+      .gte("created_at", in48h),
+  ]);
+
+  if (scoresRes.error) throw new Error(scoresRes.error.message);
+  if (brandsRes.error) throw new Error(brandsRes.error.message);
+  if (eventsRes.error) throw new Error(eventsRes.error.message);
+
+  const scores = (scoresRes.data ?? []) as BrandScoreRow[];
+  const brands = (brandsRes.data ?? []) as BrandCatalogRow[];
+  const events = (eventsRes.data ?? []) as BrandEventRow[];
+
+  const brandById = new Map(brands.map((brand) => [brand.id, brand]));
+
+  const metricsByBrand = new Map<
+    string,
+    {
+      orders24h: number;
+      ordersPrev24h: number;
+      cart24h: number;
+      search24h: number;
+      views24h: number;
+      suspiciousClicks24h: number;
+    }
+  >();
+
+  for (const event of events) {
+    const eventMs = new Date(event.created_at).getTime();
+    const isIn24h = Number.isFinite(eventMs) && eventMs >= new Date(in24h).getTime();
+    const isInPrev24h = Number.isFinite(eventMs) && eventMs >= new Date(in48h).getTime() && eventMs < new Date(in24h).getTime();
+
+    const current = metricsByBrand.get(event.brand_id) ?? {
+      orders24h: 0,
+      ordersPrev24h: 0,
+      cart24h: 0,
+      search24h: 0,
+      views24h: 0,
+      suspiciousClicks24h: 0,
+    };
+
+    const normalizedType = event.event_type?.toLowerCase();
+    const suspicious = event.metadata && (event.metadata.suspicious === true || event.metadata.rate_limited === true);
+
+    if (isIn24h) {
+      if (normalizedType === "order") current.orders24h += 1;
+      if (normalizedType === "cart") current.cart24h += 1;
+      if (normalizedType === "search") current.search24h += 1;
+      if (normalizedType === "view") {
+        current.views24h += 1;
+        if (suspicious) current.suspiciousClicks24h += 1;
+      }
+    }
+
+    if (isInPrev24h && normalizedType === "order") {
+      current.ordersPrev24h += 1;
+    }
+
+    metricsByBrand.set(event.brand_id, current);
+  }
+
+  const rows = scores
+    .map((score) => {
+      const brand = brandById.get(score.brand_id);
+      if (!brand) return null;
+
+      const metrics = metricsByBrand.get(score.brand_id) ?? {
+        orders24h: 0,
+        ordersPrev24h: 0,
+        cart24h: 0,
+        search24h: 0,
+        views24h: 0,
+        suspiciousClicks24h: 0,
+      };
+
+      const activeMs = new Date(score.active_until).getTime() - now;
+      const activeDays = Math.max(activeMs / (1000 * 60 * 60 * 24), 0);
+      const velocityRatio = metrics.ordersPrev24h > 0
+        ? (metrics.orders24h - metrics.ordersPrev24h) / metrics.ordersPrev24h
+        : metrics.orders24h > 0
+          ? 1
+          : 0;
+
+      return {
+        id: score.brand_id,
+        name: brand.name_en,
+        logoUrl: brand.logo_url,
+        createdAt: brand.created_at,
+        score: Number(score.base_score ?? 0),
+        activeUntil: score.active_until,
+        activeDays,
+        isTrending: Boolean(score.is_trending),
+        isBlacklisted: Boolean(score.is_blacklisted),
+        manualBoostUntil: score.manual_boost_until,
+        trendingVelocity: Number(score.trending_velocity ?? 0),
+        orders24h: metrics.orders24h,
+        cart24h: metrics.cart24h,
+        search24h: metrics.search24h,
+        views24h: metrics.views24h,
+        suspiciousClicks24h: metrics.suspiciousClicks24h,
+        orderVelocityRatio24h: velocityRatio,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+  const top5 = rows
+    .filter((row) => !row.isBlacklisted)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  const discoveryCandidates = rows.filter((row) => {
+    const createdAtMs = new Date(row.createdAt).getTime();
+    const isNewBrand = Number.isFinite(createdAtMs) && createdAtMs >= now - 30 * 24 * 60 * 60 * 1000;
+    return isNewBrand || (!row.isTrending && row.score < BRAND_TRENDING_THRESHOLD);
+  });
+
+  const discoveryOrders = discoveryCandidates.reduce((sum, row) => sum + row.orders24h, 0);
+  const totalOrders = rows.reduce((sum, row) => sum + row.orders24h, 0);
+
+  const activeTrendingBrands = rows.filter(
+    (row) => row.isTrending && row.score > BRAND_TRENDING_THRESHOLD && !row.isBlacklisted,
+  ).length;
+  const conversionVelocity = top5.length > 0
+    ? top5.reduce((sum, row) => sum + row.trendingVelocity, 0) / top5.length
+    : 0;
+  const expiringSoon = rows.filter((row) => {
+    const diff = new Date(row.activeUntil).getTime() - now;
+    return diff > 0 && diff <= 6 * 60 * 60 * 1000;
+  }).length;
+  const discoveryRate = totalOrders > 0 ? (discoveryOrders / totalOrders) * 100 : 0;
+
+  const chartData = top5.map((row) => ({
+    brand: row.name,
+    orderVelocity: Number((row.orderVelocityRatio24h * 100).toFixed(2)),
+    searchVolume: row.search24h,
+  }));
+
+  return {
+    kpis: {
+      activeTrendingBrands,
+      conversionVelocity,
+      expiringSoon,
+      discoveryRate,
+    },
+    chartData,
+    tableRows: rows,
+    generatedAt: new Date().toISOString(),
+    threshold: BRAND_TRENDING_THRESHOLD,
+  };
+});
+
+export const manualBoostBrandScore = createServerFn({ method: "POST" })
+  .inputValidator((input) => brandScoreActionInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("brand_scores")
+      .update({
+        base_score: 50,
+        manual_boost_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        active_until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        last_updated: new Date().toISOString(),
+      })
+      .eq("brand_id", data.brandId)
+      .select("brand_id")
+      .single();
+
+    if (error || !updated) {
+      throw new Error(error?.message ?? "Failed to apply manual boost.");
+    }
+
+    return { ok: true };
+  });
+
+export const setBrandBlacklistState = createServerFn({ method: "POST" })
+  .inputValidator((input) => brandBlacklistActionInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("brand_scores")
+      .update({
+        is_blacklisted: data.blacklisted,
+        last_updated: new Date().toISOString(),
+      })
+      .eq("brand_id", data.brandId)
+      .select("brand_id")
+      .single();
+
+    if (error || !updated) {
+      throw new Error(error?.message ?? "Failed to update blacklist state.");
+    }
+
+    return { ok: true };
+  });
+
+export const resetBrandEngineScore = createServerFn({ method: "POST" })
+  .inputValidator((input) => brandScoreActionInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("brand_scores")
+      .update({
+        base_score: 0,
+        trending_velocity: 0,
+        is_trending: false,
+        is_blacklisted: false,
+        manual_boost_until: null,
+        active_until: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+        last_updated: new Date().toISOString(),
+      })
+      .eq("brand_id", data.brandId)
+      .select("brand_id")
+      .single();
+
+    if (error || !updated) {
+      throw new Error(error?.message ?? "Failed to reset score.");
+    }
+
+    return { ok: true };
+  });
+
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(async () => {
   const [ordersRes, vendorsRes] = await Promise.all([
     (supabaseAdmin as any)
