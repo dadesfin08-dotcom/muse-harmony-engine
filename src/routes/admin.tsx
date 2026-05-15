@@ -477,81 +477,96 @@ function AdminPage() {
     queryKey: ["admin", "vendors"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchVendors(),
+    placeholderData: (previousData) => previousData,
   });
   const serviceZonesQuery = useQuery({
     queryKey: ["admin", "service-zones"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchServiceZones(),
+    placeholderData: (previousData) => previousData,
   });
   const cyclistsQuery = useQuery({
     queryKey: ["admin", "cyclists"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchCyclists(),
+    placeholderData: (previousData) => previousData,
   });
   const masterProductsQuery = useQuery({
     queryKey: ["admin", "master-products"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchMasterProducts(),
+    placeholderData: (previousData) => previousData,
   });
   const brandsQuery = useQuery({
     queryKey: ["admin", "brands"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchBrands(),
+    placeholderData: (previousData) => previousData,
   });
   const siteAdsQuery = useQuery({
     queryKey: ["admin", "site-ads"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchSiteAds(),
+    placeholderData: (previousData) => previousData,
   });
   const categoriesQuery = useQuery({
     queryKey: ["admin", "categories"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchCategories(),
+    placeholderData: (previousData) => previousData,
   });
   const announcementsQuery = useQuery({
     queryKey: ["admin", "announcements"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchAnnouncements(),
+    placeholderData: (previousData) => previousData,
   });
   const overviewAnalyticsQuery = useQuery({
     queryKey: ["admin", "overview-analytics"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchAdminOverviewAnalytics(),
     refetchInterval: 15_000,
+    placeholderData: (previousData) => previousData,
   });
   const adminOrdersQuery = useQuery({
     queryKey: ["admin", "orders-global"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchAdminOrders(),
     refetchInterval: 10_000,
+    placeholderData: (previousData) => previousData,
   });
   const adminCustomersQuery = useQuery({
     queryKey: ["admin", "customers"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchAdminCustomers(),
     refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
   });
   const adminInvoiceSettingsQuery = useQuery({
     queryKey: ["admin", "invoice-settings"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchAdminInvoiceSettings(),
+    placeholderData: (previousData) => previousData,
   });
   const globalSettingsQuery = useQuery({
     queryKey: ["admin", "global-settings"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchGlobalSettings(),
+    placeholderData: (previousData) => previousData,
   });
   const markupRulesQuery = useQuery({
     queryKey: ["admin", "markup-rules"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchMarkupRules(),
     staleTime: 60_000,
+    placeholderData: (previousData) => previousData,
   });
   const platformCollectionHistoryQuery = useQuery({
     queryKey: ["admin", "platform-collections-history"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchPlatformCollectionHistory(),
     refetchInterval: 10_000,
+    placeholderData: (previousData) => previousData,
   });
 
   const vendors = vendorsQuery.data ?? initialVendors;
