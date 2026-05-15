@@ -2570,6 +2570,39 @@ function AdminPage() {
     }
   };
 
+  const toggleAdActive = async (ad: {
+    id: string;
+    campaign_name: string;
+    image_ar: string | null;
+    image_fr: string | null;
+    image_en: string | null;
+    target_url: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+  }) => {
+    try {
+      await updateSiteAdInDatabase({
+        data: {
+          id: ad.id,
+          campaignName: ad.campaign_name,
+          imageAr: ad.image_ar,
+          imageFr: ad.image_fr,
+          imageEn: ad.image_en,
+          targetUrl: ad.target_url,
+          startDate: ad.start_date,
+          endDate: ad.end_date,
+          isActive: !ad.is_active,
+        },
+      });
+      await siteAdsQuery.refetch();
+      toast.success(!ad.is_active ? "Campaign activated." : "Campaign paused.");
+    } catch (error) {
+      console.error("Failed to toggle campaign state:", error);
+      toast.error("Failed to update campaign state.");
+    }
+  };
+
   const editAnnouncement = (announcement: {
     id: string;
     message_en: string | null;
@@ -2605,6 +2638,39 @@ function AdminPage() {
     } catch (error) {
       console.error("Failed to remove announcement:", error);
       toast.error("Failed to remove announcement.");
+    }
+  };
+
+  const toggleAnnouncementActive = async (announcement: {
+    id: string;
+    message_en: string | null;
+    message_fr: string | null;
+    message_ar: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_active: boolean;
+    bg_color: string;
+    text_color: string;
+  }) => {
+    try {
+      await updateAnnouncementInDatabase({
+        data: {
+          id: announcement.id,
+          messageEn: announcement.message_en,
+          messageFr: announcement.message_fr,
+          messageAr: announcement.message_ar,
+          startDate: announcement.start_date,
+          endDate: announcement.end_date,
+          isActive: !announcement.is_active,
+          bgColor: announcement.bg_color,
+          textColor: announcement.text_color,
+        },
+      });
+      await announcementsQuery.refetch();
+      toast.success(!announcement.is_active ? "Announcement activated." : "Announcement paused.");
+    } catch (error) {
+      console.error("Failed to toggle announcement state:", error);
+      toast.error("Failed to update announcement state.");
     }
   };
 
