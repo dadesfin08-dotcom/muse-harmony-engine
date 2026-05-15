@@ -16,6 +16,7 @@ import {
   getVendorDashboardData,
   getVendorSettlementSummary,
 } from "@/lib/orders.functions";
+import { recordVendorQrPayment } from "@/lib/vendors.functions";
 
 export const Route = createFileRoute("/vendor/wallet")({
   component: VendorWalletPage,
@@ -49,6 +50,7 @@ function VendorWalletPage() {
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchCarnet = useServerFn(getVendorCarnetData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
+  const submitVendorQrPayment = useServerFn(recordVendorQrPayment);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
@@ -239,25 +241,9 @@ function VendorWalletPage() {
 
     setIsSubmittingPlatformPayment(true);
     try {
-      const {
-        data: { session },
-        error: authError,
-      } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      if (authError || !userId) {
-        toast.error("Authentication lost. Please refresh or log in again.");
+      if (!vendorId || !normalizedVendorPhoneNumber) {
+        toast.error("Vendor session missing. Please log in again.");
         return;
-      }
-
-      const { data: vendorRow, error: vendorLookupError } = await supabase
-        .from("vendors")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
-
-      if (vendorLookupError || !vendorRow?.id) {
-        throw new Error("Vendor account not found for this authenticated user.");
       }
 
       const normalizedAmount = Number.parseFloat(String(pendingScannedPayment.amount ?? 0));
@@ -265,22 +251,18 @@ function VendorWalletPage() {
         throw new Error("Invalid payment amount.");
       }
 
-      const { error: ledgerInsertError } = await supabase
-        .from("platform_commission_ledger")
-        .insert({
-          vendor_id: vendorRow.id,
-          transaction_type: "WITHDRAWAL",
-          amount: -Math.abs(Number(normalizedAmount.toFixed(2))),
-          created_by: userId,
-          order_id: null,
-        });
-
-      if (ledgerInsertError) {
-        throw ledgerInsertError;
-      }
+      await submitVendorQrPayment({
+        data: {
+          vendorId,
+          phoneNumber: normalizedVendorPhoneNumber,
+          amount: Number(normalizedAmount.toFixed(2)),
+          timestamp: pendingScannedPayment.timestamp,
+          qrPayload: pendingScannedPayment.payload,
+        },
+      });
 
       setPendingScannedPayment(null);
-      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorRow.id, normalizedVendorPhoneNumber] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
       toast.success("Payment confirmed successfully!");
     } catch (error) {
