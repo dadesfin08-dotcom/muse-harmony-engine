@@ -54,7 +54,7 @@ import {
   Trophy,
   TrendingDown,
   CalendarDays,
-  Map,
+  Map as MapIcon,
   Eye,
   Tag,
   Pencil,
@@ -968,15 +968,32 @@ function AdminPage() {
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
-    () =>
-      communeOptions.flatMap((commune) =>
-        commune.neighborhoods.map((zone) => ({
-          id: zone.id,
-          zoneCode: zone.zoneCode,
-          communeName: getLocalizedCommuneName(commune),
-          zoneName: zone.name,
-        })),
-      ),
+    () => {
+      const parseZoneParts = (communeName: string, zoneName: string) => {
+        const raw = `${zoneName ?? ""}`.trim();
+        if (raw.includes("·")) {
+          const [parsedCommune, ...parsedDouarParts] = raw.split("·").map((part) => part.trim());
+          const parsedDouar = parsedDouarParts.join(" · ").trim();
+          if (parsedCommune && parsedDouar) {
+            return { communeName: parsedCommune, douarName: parsedDouar };
+          }
+        }
+        return { communeName, douarName: raw || "Unnamed Douar" };
+      };
+
+      return communeOptions.flatMap((commune) => {
+        const fallbackCommuneName = getLocalizedCommuneName(commune);
+        return commune.neighborhoods.map((zone) => {
+          const parsed = parseZoneParts(fallbackCommuneName, zone.name);
+          return {
+            id: zone.id,
+            zoneCode: zone.zoneCode,
+            communeName: parsed.communeName,
+            zoneName: parsed.douarName,
+          };
+        });
+      });
+    },
     [communeOptions],
   );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
