@@ -26,12 +26,59 @@ type AdminOrderStatus =
 
 type AdminOrderRow = {
   id: string;
-  vendor_id: string;
+  vendor_id: string | null;
   customer_phone: string;
   total_price: number;
   status: AdminOrderStatus;
   created_at: string;
+  order_category?: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
+  cyclist_id?: string | null;
+  neighborhood_id?: string | null;
+  delivery_fee?: number;
+  cash_to_collect_from_customer?: number;
 };
+
+type PlatformPackRow = {
+  id: string;
+  name_en: string;
+  name_fr: string | null;
+  name_ar: string | null;
+  description: string | null;
+  price_per_unit: number;
+  unit_type: string;
+  image_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+const platformPackInputSchema = z.object({
+  nameEn: z.string().trim().min(1).max(160),
+  nameFr: z.string().trim().max(160).nullable().optional(),
+  nameAr: z.string().trim().max(160).nullable().optional(),
+  description: z.string().trim().max(1200).nullable().optional(),
+  pricePerUnit: z.number().min(0).max(1_000_000),
+  unitType: z.string().trim().min(1).max(40),
+  imageUrl: z.string().trim().url().max(2000).nullable().optional(),
+  isActive: z.boolean().default(true),
+});
+
+const updatePlatformPackInputSchema = platformPackInputSchema.extend({
+  id: z.string().uuid(),
+});
+
+const deletePlatformPackInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const assignSubscriptionOrderCyclistInputSchema = z.object({
+  orderId: z.string().uuid(),
+  cyclistId: z.string().uuid(),
+});
+
+const autoDispatchSubscriptionOrderInputSchema = z.object({
+  orderId: z.string().uuid(),
+});
 
 type AdminVendorRow = {
   id: string;
