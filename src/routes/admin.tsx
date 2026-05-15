@@ -16,6 +16,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import Papa from "papaparse";
 import ExcelJS from "exceljs";
+import { QRCodeSVG } from "qrcode.react";
 import { z } from "zod";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -3508,12 +3509,34 @@ function AdminPage() {
         </SheetContent>
       </Sheet>
 
-      <Dialog open={isPlatformQrScannerOpen} onOpenChange={setIsPlatformQrScannerOpen}>
+      <Dialog open={isInitiateWithdrawalOpen} onOpenChange={setIsInitiateWithdrawalOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Platform Collection QR</DialogTitle>
+            <DialogTitle>Initiate Partial Withdrawal</DialogTitle>
           </DialogHeader>
-          <div id="admin-platform-dues-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {platformCollectionScanTargetVendor
+                ? `Pending commission: ${Number(platformCollectionScanTargetVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
+                : "Select a vendor first."}
+            </p>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={Number.isFinite(amountToCollectMad) ? String(amountToCollectMad) : "0"}
+              onChange={(event) => setAmountToCollectMad(Number(event.target.value))}
+              placeholder="Amount to collect (MAD)"
+            />
+            <Button className="w-full" onClick={handleGenerateWithdrawalQr}>
+              Generate QR
+            </Button>
+            {platformCollectionQrPayload ? (
+              <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
+                <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin />
+              </div>
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
