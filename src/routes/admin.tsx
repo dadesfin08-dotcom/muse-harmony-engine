@@ -991,8 +991,12 @@ function AdminPage() {
     setIsInitiateWithdrawalOpen(true);
   };
 
+  const activeCollectionVendor = platformCollectionScanTargetVendor
+    ? vendors.find((vendor) => vendor.id === platformCollectionScanTargetVendor.id) ?? platformCollectionScanTargetVendor
+    : null;
+
   const handleGenerateWithdrawalQr = () => {
-    const vendor = platformCollectionScanTargetVendor;
+    const vendor = activeCollectionVendor;
     if (!vendor) return;
 
     const pending = Number(vendor.platformDuesMad ?? 0);
