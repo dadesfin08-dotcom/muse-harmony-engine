@@ -146,7 +146,6 @@ function VendorWalletPage() {
     return JSON.stringify({
       action: "admin_collection",
       vendor_id: vendorId,
-      amount_owed: amountMad.toFixed(2),
     });
   }, [cashBreakdown.platformDuesMad, vendorId]);
 
