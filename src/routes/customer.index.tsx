@@ -168,7 +168,9 @@ type SiteAdRow = {
   id: string;
   image_url: string;
   link_url: string | null;
-  sort_order: number;
+  zone_id?: string | null;
+  campaign_type?: "AD" | "PROMO" | "NEWS";
+  views_count?: number;
 };
 
 const adSlides: AdSlide[] = [
@@ -460,8 +462,14 @@ function Index() {
     fetchCustomerCarnetOverview,
   );
   const siteContentQuery = useQuery({
-    queryKey: ["customer", "site-content"],
-    queryFn: () => fetchActiveAdsAndAnnouncements(),
+    queryKey: ["customer", "site-content", selectedNeighborhoodId ?? null],
+    queryFn: () =>
+      fetchActiveAdsAndAnnouncements({
+        data: {
+          zoneId: selectedNeighborhoodId ?? null,
+          campaignType: null,
+        },
+      }),
     refetchInterval: 8_000,
   });
   const categoriesQuery = useQuery({
@@ -1498,7 +1506,7 @@ function Index() {
       alt: "Promotional ad banner",
       headline: "Special Offer",
       copy: ad.link_url ? "Tap to discover this promotion" : "Featured promotion",
-      tag: "AD" as const,
+      tag: ad.campaign_type === "NEWS" ? "Featured" : "AD",
     })) || [];
   const displayAdSlides = dynamicAdSlides.length > 0 ? dynamicAdSlides : adSlides;
 

@@ -1146,6 +1146,42 @@ function AdminPage() {
   useEffect(() => {
     if (!isAdminDataEnabled) return;
 
+    const pendingViewsById = new Map<string, number>();
+    let flushTimer: number | null = null;
+
+    const flushViews = () => {
+      flushTimer = null;
+      if (pendingViewsById.size === 0) return;
+
+      const nextViews = new Map(pendingViewsById);
+      pendingViewsById.clear();
+
+      queryClient.setQueryData(
+        ["admin", "site-ads"],
+        (current: Array<{ id: string; views_count: number } & Record<string, unknown>> | undefined) => {
+          if (!current || current.length === 0) return current;
+
+          let hasChanges = false;
+          const updatedRows = current.map((row) => {
+            const nextCount = nextViews.get(row.id);
+            if (typeof nextCount !== "number" || row.views_count === nextCount) {
+              return row;
+            }
+            hasChanges = true;
+            return { ...row, views_count: nextCount };
+          });
+
+          return hasChanges ? updatedRows : current;
+        },
+      );
+    };
+
+    const queueViewUpdate = (id: string, viewsCount: number) => {
+      pendingViewsById.set(id, viewsCount);
+      if (flushTimer !== null) return;
+      flushTimer = window.setTimeout(flushViews, 120);
+    };
+
     const channel = supabase
       .channel("admin-site-ads-live-views")
       .on(
@@ -1157,22 +1193,20 @@ function AdminPage() {
         },
         (payload) => {
           const updated = payload.new as { id?: string; views_count?: number } | null;
+          const previous = payload.old as { views_count?: number } | null;
           if (!updated?.id || typeof updated.views_count !== "number") return;
-
-          queryClient.setQueryData(
-            ["admin", "site-ads"],
-            (current:
-              | Array<{ id: string; views_count: number } & Record<string, unknown>>
-              | undefined) =>
-              (current ?? []).map((row) =>
-                row.id === updated.id ? { ...row, views_count: updated.views_count } : row,
-              ),
-          );
+          if (typeof previous?.views_count === "number" && previous.views_count === updated.views_count) return;
+          queueViewUpdate(updated.id, updated.views_count);
         },
       )
       .subscribe();
 
     return () => {
+      if (flushTimer !== null) {
+        window.clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+      pendingViewsById.clear();
       void supabase.removeChannel(channel);
     };
   }, [isAdminDataEnabled, queryClient]);

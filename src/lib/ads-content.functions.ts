@@ -105,6 +105,11 @@ const idInputSchema = z.object({
   id: z.string().uuid(),
 });
 
+const activeAdsFilterSchema = z.object({
+  zoneId: z.string().uuid().optional().nullable(),
+  campaignType: z.enum(["AD", "PROMO", "NEWS"]).optional().nullable(),
+});
+
 export const listSiteAds = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("site_ads")
@@ -269,7 +274,9 @@ export const deleteAnnouncement = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).handler(async () => {
+export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
+  .inputValidator((input) => activeAdsFilterSchema.parse(input ?? {}))
+  .handler(async ({ data }) => {
   const [adsResponse, announcementsResponse] = await Promise.all([
     (supabaseAdmin as any)
       .from("site_ads")
@@ -294,11 +301,17 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
   const isWithinSchedule = (startDate?: string | null, endDate?: string | null) => {
     const startMs = startDate ? new Date(startDate).getTime() : Number.NEGATIVE_INFINITY;
     const endMs = endDate ? new Date(endDate).getTime() : Number.POSITIVE_INFINITY;
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) return false;
     return nowMs >= startMs && nowMs <= endMs;
   };
 
+  const normalizedZoneId = data.zoneId ?? null;
+  const normalizedCampaignType = data.campaignType ?? null;
+
   const ads = (adsResponse.data ?? [])
     .filter((ad: any) => isWithinSchedule(ad.start_date, ad.end_date))
+    .filter((ad: any) => normalizedZoneId === null || ad.zone_id === null || ad.zone_id === normalizedZoneId)
+    .filter((ad: any) => normalizedCampaignType === null || ad.campaign_type === normalizedCampaignType)
     .map((ad: any) => ({
       id: ad.id,
       campaign_name: ad.campaign_name,
@@ -310,6 +323,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" }).ha
       image_en: ad.image_en,
       image_url: ad.image_en ?? ad.image_fr ?? ad.image_ar ?? ad.image_url,
       target_url: ad.target_url ?? ad.link_url,
+      link_url: ad.target_url ?? ad.link_url,
       start_date: ad.start_date,
       end_date: ad.end_date,
     }));
