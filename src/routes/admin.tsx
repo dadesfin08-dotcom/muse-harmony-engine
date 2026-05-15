@@ -3530,24 +3530,6 @@ function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(platformCollectionReceipt)} onOpenChange={(open) => (!open ? setPlatformCollectionReceipt(null) : undefined)}>
-        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-success">
-              <BadgeCheck className="size-5" />
-              Cash Collected Successfully
-            </DialogTitle>
-            <DialogDescription>Collection receipt</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-            <p><span className="text-muted-foreground">Vendor:</span> {platformCollectionReceipt?.vendorName}</p>
-            <p><span className="text-muted-foreground">Collected:</span> {platformCollectionReceipt?.amountMad.toFixed(2)} MAD</p>
-            <p><span className="text-muted-foreground">Remaining Dues:</span> {platformCollectionReceipt?.remainingDuesMad.toFixed(2)} MAD</p>
-            <p><span className="text-muted-foreground">Transaction:</span> {platformCollectionReceipt?.transactionId.slice(0, 8)}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Dialog
         open={isProductModalOpen}
         onOpenChange={(open) => {
