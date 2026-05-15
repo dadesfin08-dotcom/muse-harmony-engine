@@ -603,6 +603,7 @@ function AdminPage() {
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
+  const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
@@ -874,7 +875,6 @@ function AdminPage() {
   const [isImportingMasterProducts, setIsImportingMasterProducts] = useState(false);
   const [isImportingServiceZones, setIsImportingServiceZones] = useState(false);
   const [isBrandEngineActionLoading, setIsBrandEngineActionLoading] = useState(false);
-  const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
   const [rotationRatios, setRotationRatios] = useState({
     trending: 70,
     midTier: 20,
