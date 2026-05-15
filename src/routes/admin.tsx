@@ -829,9 +829,10 @@ function AdminPage() {
   });
   const [announcementForm, setAnnouncementForm] = useState({
     id: "",
-    messageEn: "",
-    messageFr: "",
-    messageAr: "",
+    title: "",
+    messagesEn: [""],
+    messagesFr: [""],
+    messagesAr: [""],
     startDate: "",
     endDate: "",
     isActive: true,
