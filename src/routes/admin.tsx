@@ -7055,12 +7055,208 @@ function AdsContentSection({
   );
 }
 
+function PlatformPacksSection({
+  packs,
+  isLoading,
+  form,
+  onFormChange,
+  onSave,
+  onReset,
+  onEdit,
+  onDelete,
+  isSaving,
+}: {
+  packs: Array<{
+    id: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
+    description: string | null;
+    pricePerUnit: number;
+    unitType: string;
+    imageUrl: string | null;
+    isActive: boolean;
+    createdAt: string;
+  }>;
+  isLoading: boolean;
+  form: {
+    id: string;
+    nameEn: string;
+    nameFr: string;
+    nameAr: string;
+    description: string;
+    pricePerUnit: string;
+    unitType: string;
+    imageUrl: string;
+    isActive: boolean;
+  };
+  onFormChange: Dispatch<
+    SetStateAction<{
+      id: string;
+      nameEn: string;
+      nameFr: string;
+      nameAr: string;
+      description: string;
+      pricePerUnit: string;
+      unitType: string;
+      imageUrl: string;
+      isActive: boolean;
+    }>
+  >;
+  onSave: () => Promise<void>;
+  onReset: () => void;
+  onEdit: (pack: {
+    id: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
+    description: string | null;
+    pricePerUnit: number;
+    unitType: string;
+    imageUrl: string | null;
+    isActive: boolean;
+  }) => void;
+  onDelete: (id: string) => Promise<void>;
+  isSaving: boolean;
+}) {
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Platform Packs / باكات المنصة</h2>
+          <p className="text-sm text-muted-foreground">Direct platform pack catalog isolated from marketplace vendor flow.</p>
+        </div>
+        <Badge variant="outline" className="inline-flex items-center gap-1">
+          <Leaf className="size-3.5" />
+          Direct Sales
+        </Badge>
+      </div>
+
+      <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-3 md:grid-cols-2">
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Name (EN)</label>
+          <Input value={form.nameEn} onChange={(event) => onFormChange((current) => ({ ...current, nameEn: event.target.value }))} placeholder="Vegetable Box" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Name (FR)</label>
+          <Input value={form.nameFr} onChange={(event) => onFormChange((current) => ({ ...current, nameFr: event.target.value }))} placeholder="Boîte légumes" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Name (AR)</label>
+          <Input value={form.nameAr} onChange={(event) => onFormChange((current) => ({ ...current, nameAr: event.target.value }))} placeholder="باقة خضر" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Unit Type</label>
+          <Input value={form.unitType} onChange={(event) => onFormChange((current) => ({ ...current, unitType: event.target.value }))} placeholder="Kg / Box / Pack" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Price per Unit (MAD)</label>
+          <Input
+            type="number"
+            min={0}
+            value={form.pricePerUnit}
+            onChange={(event) => onFormChange((current) => ({ ...current, pricePerUnit: event.target.value }))}
+            placeholder="0.00"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Image URL</label>
+          <Input value={form.imageUrl} onChange={(event) => onFormChange((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="https://..." />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Description</label>
+          <Textarea
+            value={form.description}
+            onChange={(event) => onFormChange((current) => ({ ...current, description: event.target.value }))}
+            placeholder="Pack description"
+          />
+        </div>
+        <div className="flex items-center gap-2 md:col-span-2">
+          <Switch checked={form.isActive} onCheckedChange={(checked) => onFormChange((current) => ({ ...current, isActive: checked }))} />
+          <span className="text-sm text-foreground">Active</span>
+        </div>
+        <div className="flex flex-wrap gap-2 md:col-span-2">
+          <Button onClick={() => void onSave()} disabled={isSaving}>
+            <Package className="size-4" />
+            {isSaving ? "Saving..." : form.id ? "Update Pack" : "Create Pack"}
+          </Button>
+          <Button variant="outline" onClick={onReset} disabled={isSaving}>
+            Reset
+          </Button>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[980px] text-left text-sm">
+          <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3">Pack</th>
+              <th className="px-4 py-3">Description</th>
+              <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">Unit</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  <AppEmptyState title="Loading platform packs..." subtitle="Syncing direct subscriptions catalog." className="border-0 bg-transparent py-2" />
+                </td>
+              </tr>
+            ) : packs.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  <AppEmptyState title="No packs yet" subtitle="Create your first direct platform pack." className="border-0 bg-transparent py-2" />
+                </td>
+              </tr>
+            ) : (
+              packs.map((pack) => (
+                <tr key={pack.id} className="border-t border-border bg-card">
+                  <td className="px-4 py-3 font-medium text-foreground">{pack.nameEn}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{pack.description || "—"}</td>
+                  <td className="px-4 py-3 text-foreground">{pack.pricePerUnit.toFixed(2)} MAD</td>
+                  <td className="px-4 py-3 text-muted-foreground">{pack.unitType}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline">{pack.isActive ? "Active" : "Inactive"}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{new Date(pack.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => onEdit(pack)}>
+                        <Pencil className="size-3" />
+                        Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => void onDelete(pack.id)}>
+                        <Trash2 className="size-3" />
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function OrdersSection({
   orders,
+  cyclists,
   isLoading,
   error,
   statusFilter,
   onStatusFilterChange,
+  categoryFilter,
+  onCategoryFilterChange,
+  onAssignCyclist,
+  onAutoDispatch,
+  isAssigning,
 }: {
   orders: Array<{
     id: string;
@@ -7068,6 +7264,11 @@ function OrdersSection({
     vendorName: string;
     customerPhone: string;
     totalPrice: number;
+    orderCategory: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
+    cyclistId: string | null;
+    cyclistName: string | null;
+    neighborhoodId: string | null;
+    cashToCollectFromCustomer: number;
     status:
       | "new"
       | "preparing"
@@ -7078,6 +7279,7 @@ function OrdersSection({
       | "cash_transferred_to_vendor"
       | "cancelled";
   }>;
+  cyclists: AdminCyclistRecord[];
   isLoading: boolean;
   error: Error | null;
   statusFilter:
@@ -7101,6 +7303,11 @@ function OrdersSection({
       | "cash_transferred_to_vendor"
     >
   >;
+  categoryFilter: "all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
+  onCategoryFilterChange: Dispatch<SetStateAction<"all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION">>;
+  onAssignCyclist: (orderId: string, cyclistId: string) => Promise<void>;
+  onAutoDispatch: (orderId: string) => Promise<void>;
+  isAssigning: boolean;
 }) {
   const statusBadgeClass: Record<string, string> = {
     new: "bg-chart-4/15 text-chart-4",
@@ -7152,30 +7359,43 @@ function OrdersSection({
           <option value="delivered_cash_with_cyclist">Delivered (Cash with Cyclist)</option>
           <option value="cash_transferred_to_vendor">Cash Transferred to Vendor</option>
         </select>
+        <select
+          value={categoryFilter}
+          onChange={(event) => onCategoryFilterChange(event.target.value as "all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION")}
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+        >
+          <option value="all">All categories</option>
+          <option value="MARKETPLACE">Marketplace</option>
+          <option value="PLATFORM_SUBSCRIPTION">Platform Subscription</option>
+        </select>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full min-w-[860px] text-left text-sm">
+        <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Order ID</th>
               <th className="px-4 py-3">Date & Time</th>
+              <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Vendor</th>
               <th className="px-4 py-3">Customer Phone</th>
               <th className="px-4 py-3">Total Price</th>
+              <th className="px-4 py-3">Cash to Collect</th>
+              <th className="px-4 py-3">Cyclist</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   <AppEmptyState title="Loading orders..." subtitle="Fetching order history for selected filters." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   <AppEmptyState
                     title="No orders found for the selected filter."
                     subtitle="Try switching period or order status."
@@ -7188,15 +7408,56 @@ function OrdersSection({
                 <tr key={order.id} className="border-t border-border bg-card">
                   <td className="px-4 py-3 font-medium text-foreground">#{order.id.slice(0, 8)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline">{order.orderCategory === "PLATFORM_SUBSCRIPTION" ? "Platform Subscription" : "Marketplace"}</Badge>
+                  </td>
                   <td className="px-4 py-3 text-foreground">{order.vendorName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{order.customerPhone}</td>
                   <td className="px-4 py-3 font-medium text-foreground">{Math.round(order.totalPrice)} MAD</td>
+                  <td className="px-4 py-3">
+                    {order.orderCategory === "PLATFORM_SUBSCRIPTION" ? (
+                      <span className="font-medium text-success">0.00 MAD</span>
+                    ) : (
+                      <span className="text-muted-foreground">{Number(order.cashToCollectFromCustomer ?? 0).toFixed(2)} MAD</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{order.cyclistName ?? "Unassigned"}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[order.status] ?? "bg-muted text-muted-foreground"}`}
                     >
                       {order.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {order.orderCategory === "PLATFORM_SUBSCRIPTION" ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={order.cyclistId ?? ""}
+                          onValueChange={(value) => {
+                            if (!value) return;
+                            void onAssignCyclist(order.id, value);
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-[180px] text-xs">
+                            <SelectValue placeholder="Assign cyclist" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cyclists.map((cyclist) => (
+                              <SelectItem key={cyclist.id} value={cyclist.id}>
+                                {cyclist.fullName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" variant="outline" disabled={isAssigning} onClick={() => void onAutoDispatch(order.id)}>
+                          <Bike className="size-3.5" />
+                          Auto Dispatch
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Marketplace flow intact</span>
+                    )}
                   </td>
                 </tr>
               ))
