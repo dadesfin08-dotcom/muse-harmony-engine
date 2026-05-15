@@ -642,6 +642,7 @@ function AdminPage() {
   const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
   const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
   const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
+  const updateSubscriptionOrderStatusInDatabase = useServerFn(updateSubscriptionOrderStatus);
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
@@ -992,6 +993,11 @@ function AdminPage() {
     "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
   >("all");
   const [ordersCategoryFilter, setOrdersCategoryFilter] = useState<"all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION">("all");
+  const [packOrdersSearchTerm, setPackOrdersSearchTerm] = useState("");
+  const [packOrdersStatusFilter, setPackOrdersStatusFilter] = useState<
+    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled"
+  >("all");
+  const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
     id: "",
@@ -1135,6 +1141,26 @@ function AdminPage() {
       }),
     [adminOrders, ordersStatusFilter, ordersCategoryFilter],
   );
+
+  const packOrders = useMemo(
+    () => adminOrders.filter((order) => order.orderCategory === "PLATFORM_SUBSCRIPTION"),
+    [adminOrders],
+  );
+
+  const filteredPackOrders = useMemo(() => {
+    const search = packOrdersSearchTerm.trim().toLowerCase();
+
+    return packOrders.filter((order) => {
+      const matchesSearch =
+        search.length === 0 ||
+        order.id.toLowerCase().includes(search) ||
+        order.customerName.toLowerCase().includes(search) ||
+        order.customerPhone.toLowerCase().includes(search);
+      const matchesStatus = packOrdersStatusFilter === "all" || order.status === packOrdersStatusFilter;
+      const matchesCyclist = packOrdersCyclistFilter === "all" || order.cyclistId === packOrdersCyclistFilter;
+      return matchesSearch && matchesStatus && matchesCyclist;
+    });
+  }, [packOrders, packOrdersSearchTerm, packOrdersStatusFilter, packOrdersCyclistFilter]);
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
