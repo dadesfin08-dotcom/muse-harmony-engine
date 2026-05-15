@@ -54,6 +54,7 @@ import {
   Trophy,
   TrendingDown,
   CalendarDays,
+  Map as MapIcon,
   Eye,
   Tag,
   Pencil,
@@ -817,7 +818,8 @@ function AdminPage() {
   const [adForm, setAdForm] = useState({
     id: "",
     campaignName: "",
-    zoneId: "global",
+    selectedCommune: "global",
+    selectedDouarIds: [] as string[],
     campaignType: "AD" as "AD" | "PROMO" | "NEWS",
     imageAr: "",
     imageFr: "",
@@ -966,15 +968,32 @@ function AdminPage() {
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
-    () =>
-      communeOptions.flatMap((commune) =>
-        commune.neighborhoods.map((zone) => ({
-          id: zone.id,
-          zoneCode: zone.zoneCode,
-          communeName: getLocalizedCommuneName(commune),
-          zoneName: zone.name,
-        })),
-      ),
+    () => {
+      const parseZoneParts = (communeName: string, zoneName: string) => {
+        const raw = `${zoneName ?? ""}`.trim();
+        if (raw.includes("·")) {
+          const [parsedCommune, ...parsedDouarParts] = raw.split("·").map((part) => part.trim());
+          const parsedDouar = parsedDouarParts.join(" · ").trim();
+          if (parsedCommune && parsedDouar) {
+            return { communeName: parsedCommune, douarName: parsedDouar };
+          }
+        }
+        return { communeName, douarName: raw || "Unnamed Douar" };
+      };
+
+      return communeOptions.flatMap((commune) => {
+        const fallbackCommuneName = getLocalizedCommuneName(commune);
+        return commune.neighborhoods.map((zone) => {
+          const parsed = parseZoneParts(fallbackCommuneName, zone.name);
+          return {
+            id: zone.id,
+            zoneCode: zone.zoneCode,
+            communeName: parsed.communeName,
+            zoneName: parsed.douarName,
+          };
+        });
+      });
+    },
     [communeOptions],
   );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
@@ -2477,7 +2496,8 @@ function AdminPage() {
     setAdForm({
       id: "",
       campaignName: "",
-      zoneId: "global",
+      selectedCommune: "global",
+      selectedDouarIds: [],
       campaignType: "AD",
       imageAr: "",
       imageFr: "",
@@ -2520,6 +2540,18 @@ function AdminPage() {
       return;
     }
 
+    const selectedCommune = adForm.selectedCommune;
+    const scopedZones = selectedCommune === "global"
+      ? []
+      : adTargetZones.filter((zone) => zone.communeName === selectedCommune);
+    const scopedZoneIds = scopedZones.map((zone) => zone.id);
+    const selectedDouarIds = adForm.selectedDouarIds.filter((zoneId) => scopedZoneIds.includes(zoneId));
+    const resolvedTargetZoneIds = selectedCommune === "global"
+      ? null
+      : selectedDouarIds.length === 0
+        ? scopedZoneIds
+        : selectedDouarIds;
+
     setIsSavingAd(true);
     try {
       if (adForm.id) {
@@ -2527,7 +2559,7 @@ function AdminPage() {
           data: {
             id: adForm.id,
             campaignName: adForm.campaignName.trim(),
-            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            targetZoneIds: resolvedTargetZoneIds,
             campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
@@ -2543,7 +2575,7 @@ function AdminPage() {
         await createSiteAdInDatabase({
           data: {
             campaignName: adForm.campaignName.trim(),
-            zoneId: adForm.zoneId === "global" ? null : adForm.zoneId,
+            targetZoneIds: resolvedTargetZoneIds,
             campaignType: adForm.campaignType,
             imageAr: adForm.imageAr.trim() || null,
             imageFr: adForm.imageFr.trim() || null,
@@ -2640,7 +2672,7 @@ function AdminPage() {
   const editAd = (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -2651,10 +2683,26 @@ function AdminPage() {
     end_date: string | null;
     is_active: boolean;
   }) => {
+    const targetZoneIds = Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [];
+    const matchingZones = adTargetZones.filter((zone) => targetZoneIds.includes(zone.id));
+    const communeNames = Array.from(new Set(matchingZones.map((zone) => zone.communeName)));
+    const selectedCommune = communeNames.length === 1 ? communeNames[0] : targetZoneIds.length === 0 ? "global" : "global";
+    const communeZoneIds = selectedCommune === "global"
+      ? []
+      : adTargetZones.filter((zone) => zone.communeName === selectedCommune).map((zone) => zone.id);
+    const isWholeCommuneSelection =
+      selectedCommune !== "global" &&
+      communeZoneIds.length > 0 &&
+      communeZoneIds.every((zoneId) => targetZoneIds.includes(zoneId));
+
     setAdForm({
       id: ad.id,
       campaignName: ad.campaign_name ?? "",
-      zoneId: ad.zone_id ?? "global",
+      selectedCommune,
+      selectedDouarIds:
+        selectedCommune === "global" || isWholeCommuneSelection
+          ? []
+          : targetZoneIds.filter((zoneId) => communeZoneIds.includes(zoneId)),
       campaignType: ad.campaign_type ?? "AD",
       imageAr: ad.image_ar ?? "",
       imageFr: ad.image_fr ?? "",
@@ -2683,7 +2731,7 @@ function AdminPage() {
   const toggleAdActive = async (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -2699,7 +2747,7 @@ function AdminPage() {
         data: {
           id: ad.id,
           campaignName: ad.campaign_name,
-          zoneId: ad.zone_id,
+          targetZoneIds: ad.target_zone_ids,
           campaignType: ad.campaign_type,
           imageAr: ad.image_ar,
           imageFr: ad.image_fr,
@@ -3209,7 +3257,7 @@ function AdminPage() {
                   ads={(siteAdsQuery.data ?? []) as Array<{
                     id: string;
                     campaign_name: string;
-                    zone_id: string | null;
+                    target_zone_ids: string[] | null;
                     campaign_type: "AD" | "PROMO" | "NEWS";
                     views_count: number;
                     image_ar: string | null;
@@ -5605,7 +5653,7 @@ function AdsContentSection({
   ads: Array<{
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -5640,7 +5688,8 @@ function AdsContentSection({
   adForm: {
     id: string;
     campaignName: string;
-    zoneId: string;
+    selectedCommune: string;
+    selectedDouarIds: string[];
     campaignType: "AD" | "PROMO" | "NEWS";
     imageAr: string;
     imageFr: string;
@@ -5654,7 +5703,8 @@ function AdsContentSection({
     SetStateAction<{
       id: string;
       campaignName: string;
-      zoneId: string;
+      selectedCommune: string;
+      selectedDouarIds: string[];
       campaignType: "AD" | "PROMO" | "NEWS";
       imageAr: string;
       imageFr: string;
@@ -5669,7 +5719,7 @@ function AdsContentSection({
   onEditAd: (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -5684,7 +5734,7 @@ function AdsContentSection({
   onToggleAdActive: (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -5771,7 +5821,47 @@ function AdsContentSection({
     return date.toLocaleString();
   };
 
-  const zoneLabelById = new Map(adTargetZones.map((zone) => [zone.id, `${zone.communeName} · ${zone.zoneName}`]));
+  const groupedZonesByCommune = useMemo(() => {
+    const groups = new Map<string, Array<{ id: string; zoneCode: string; zoneName: string }>>();
+    adTargetZones.forEach((zone) => {
+      const current = groups.get(zone.communeName) ?? [];
+      current.push({ id: zone.id, zoneCode: zone.zoneCode, zoneName: zone.zoneName });
+      groups.set(zone.communeName, current);
+    });
+    return Array.from(groups.entries())
+      .map(([communeName, zones]) => ({ communeName, zones }))
+      .sort((a, b) => a.communeName.localeCompare(b.communeName));
+  }, [adTargetZones]);
+
+  const selectedCommuneZones =
+    adForm.selectedCommune === "global"
+      ? []
+      : groupedZonesByCommune.find((group) => group.communeName === adForm.selectedCommune)?.zones ?? [];
+
+  const formatCampaignTargetLabel = (targetZoneIds: string[] | null) => {
+    const ids = Array.isArray(targetZoneIds) ? targetZoneIds : [];
+    if (ids.length === 0) return "Global / All Regions";
+
+    const zones = ids.map((zoneId) => adTargetZones.find((zone) => zone.id === zoneId)).filter(Boolean) as typeof adTargetZones;
+    if (zones.length === 0) return "Global / All Regions";
+
+    const communeNames = Array.from(new Set(zones.map((zone) => zone.communeName)));
+    if (communeNames.length === 1) {
+      const communeName = communeNames[0];
+      const communeAllZoneIds = adTargetZones.filter((zone) => zone.communeName === communeName).map((zone) => zone.id);
+      const isWholeCommune = communeAllZoneIds.length > 0 && communeAllZoneIds.every((zoneId) => ids.includes(zoneId));
+
+      if (isWholeCommune || zones.length > 1) {
+        return `${communeName} (All Douars)`;
+      }
+
+      if (zones.length === 1) {
+        return `${communeName} - ${zones[0].zoneName}`;
+      }
+    }
+
+    return zones.map((zone) => `${zone.communeName} - ${zone.zoneName}`).join(", ");
+  };
 
   const getCampaignTypeBadgeClass = (campaignType: "AD" | "PROMO" | "NEWS") => {
     if (campaignType === "NEWS") return "border-transparent bg-primary/15 text-primary";
@@ -5813,17 +5903,45 @@ function AdsContentSection({
             </SelectContent>
           </Select>
           <Select
-            value={adForm.zoneId}
-            onValueChange={(value) => onAdFormChange((current) => ({ ...current, zoneId: value }))}
+            value={adForm.selectedCommune}
+            onValueChange={(value) => onAdFormChange((current) => ({ ...current, selectedCommune: value, selectedDouarIds: [] }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Target zone" />
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <MapIcon className="size-3.5" />
+                <SelectValue placeholder="Commune (الجماعة)" />
+              </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="global">Global / All Zones</SelectItem>
-              {adTargetZones.map((zone) => (
+              <SelectItem value="global">Global / All Regions</SelectItem>
+              {groupedZonesByCommune.map((group) => (
+                <SelectItem key={group.communeName} value={group.communeName}>
+                  {group.communeName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={adForm.selectedDouarIds[0] ?? "all-douars"}
+            onValueChange={(value) =>
+              onAdFormChange((current) => ({
+                ...current,
+                selectedDouarIds: value === "all-douars" ? [] : [value],
+              }))
+            }
+            disabled={adForm.selectedCommune === "global"}
+          >
+            <SelectTrigger>
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="size-3.5" />
+                <SelectValue placeholder="Douar / Sub-zone (الدوار)" />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-douars">All Douars in selected commune</SelectItem>
+              {selectedCommuneZones.map((zone) => (
                 <SelectItem key={zone.id} value={zone.id}>
-                  {zone.communeName} · {zone.zoneName} ({zone.zoneCode})
+                  {zone.zoneName} ({zone.zoneCode})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -5931,7 +6049,7 @@ function AdsContentSection({
                     <TableCell>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <MapPin className="size-3" />
-                        {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                        {formatCampaignTargetLabel(ad.target_zone_ids)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -5989,7 +6107,7 @@ function AdsContentSection({
                       <TableCell>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="size-3" />
-                          {ad.zone_id ? (zoneLabelById.get(ad.zone_id) ?? "Unknown zone") : "Global / All Zones"}
+                          {formatCampaignTargetLabel(ad.target_zone_ids)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">

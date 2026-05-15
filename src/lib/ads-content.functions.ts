@@ -24,7 +24,7 @@ const parseOptionalDateTime = (value?: string | null) => {
 
 const adBaseSchema = z.object({
   campaignName: z.string().trim().min(1).max(120),
-  zoneId: z.string().uuid().optional().nullable(),
+  targetZoneIds: z.array(z.string().uuid()).max(300).optional().nullable(),
   campaignType: z.enum(["AD", "PROMO", "NEWS"]).default("AD"),
   imageAr: z.string().trim().url().max(2000).optional().nullable(),
   imageFr: z.string().trim().url().max(2000).optional().nullable(),
@@ -124,11 +124,17 @@ const activeAdsFilterSchema = z.object({
   campaignType: z.enum(["AD", "PROMO", "NEWS"]).optional().nullable(),
 });
 
+const normalizeTargetZoneIds = (ids?: string[] | null) => {
+  if (!ids || ids.length === 0) return null;
+  const unique = Array.from(new Set(ids.map((value) => value.trim()).filter((value) => value.length > 0)));
+  return unique.length > 0 ? unique : null;
+};
+
 export const listSiteAds = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("site_ads")
     .select(
-      "id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
+      "id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at",
     )
     .order("created_at", { ascending: false });
 
@@ -149,7 +155,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
       .insert({
         campaign_name: campaignName,
         content: campaignName,
-        zone_id: data.zoneId ?? null,
+        target_zone_ids: normalizeTargetZoneIds(data.targetZoneIds),
         campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
@@ -161,7 +167,7 @@ export const createSiteAd = createServerFn({ method: "POST" })
         end_date: parseOptionalDateTime(data.endDate),
         is_active: data.isActive,
       })
-      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !inserted) throw new Error(error?.message ?? "Failed to create ad.");
@@ -181,7 +187,7 @@ export const updateSiteAd = createServerFn({ method: "POST" })
       .update({
         campaign_name: campaignName,
         content: campaignName,
-        zone_id: data.zoneId ?? null,
+        target_zone_ids: normalizeTargetZoneIds(data.targetZoneIds),
         campaign_type: data.campaignType,
         image_ar: imageAr,
         image_fr: imageFr,
@@ -194,7 +200,7 @@ export const updateSiteAd = createServerFn({ method: "POST" })
         is_active: data.isActive,
       })
       .eq("id", data.id)
-      .select("id, campaign_name, zone_id, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
+      .select("id, campaign_name, target_zone_ids, campaign_type, views_count, image_ar, image_fr, image_en, target_url, start_date, end_date, is_active, created_at")
       .single();
 
     if (error || !updated) throw new Error(error?.message ?? "Failed to update ad.");
@@ -311,7 +317,7 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
     (supabaseAdmin as any)
       .from("site_ads")
       .select(
-        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, zone_id, views_count, start_date, end_date, is_active, created_at",
+        "id, image_ar, image_fr, image_en, image_url, target_url, link_url, campaign_name, campaign_type, target_zone_ids, views_count, start_date, end_date, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
@@ -340,13 +346,17 @@ export const getActiveAdsAndAnnouncements = createServerFn({ method: "GET" })
 
   const ads = (adsResponse.data ?? [])
     .filter((ad: any) => isWithinSchedule(ad.start_date, ad.end_date))
-    .filter((ad: any) => normalizedZoneId === null || ad.zone_id === null || ad.zone_id === normalizedZoneId)
+    .filter((ad: any) => {
+      if (normalizedZoneId === null) return true;
+      const zones = Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [];
+      return zones.length === 0 || zones.includes(normalizedZoneId);
+    })
     .filter((ad: any) => normalizedCampaignType === null || ad.campaign_type === normalizedCampaignType)
     .map((ad: any) => ({
       id: ad.id,
       campaign_name: ad.campaign_name,
       campaign_type: ad.campaign_type ?? "AD",
-      zone_id: ad.zone_id ?? null,
+      target_zone_ids: Array.isArray(ad.target_zone_ids) ? ad.target_zone_ids : [],
       views_count: Number(ad.views_count ?? 0),
       image_ar: ad.image_ar,
       image_fr: ad.image_fr,
