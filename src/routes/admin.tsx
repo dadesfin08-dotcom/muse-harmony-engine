@@ -2911,6 +2911,8 @@ function AdminPage() {
                 <VendorsSection
                   vendors={vendors}
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
+                  collectionHistory={collectionHistory}
+                  isCollectionHistoryLoading={platformCollectionHistoryQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
                   onCollectPlatformDues={openPlatformCollectionQr}
@@ -3590,69 +3592,12 @@ function AdminPage() {
         </SheetContent>
       </Sheet>
 
-      <Dialog open={isPlatformCollectionQrOpen} onOpenChange={setIsPlatformCollectionQrOpen}>
-        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <QrCode className="size-4" />
-              Vendor Dues QR
-            </DialogTitle>
-            <DialogDescription>
-              Show this QR for vendor <span className="font-medium text-foreground">{platformCollectionVendor?.storeName ?? "-"}</span> then scan it to confirm collection.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 text-center">
-            <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">Amount to Collect</p>
-              <p className="text-xl font-semibold">{Number(platformCollectionVendor?.platformDuesMad ?? 0).toFixed(2)} MAD</p>
-            </div>
-            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
-              {platformCollectionQrPayload ? <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin /> : null}
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => {
-                setIsPlatformCollectionQrOpen(false);
-                setIsPlatformQrScannerOpen(true);
-              }}
-            >
-              <ScanLine className="size-4" />
-              Scan & Confirm Collection
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={isPlatformQrScannerOpen} onOpenChange={setIsPlatformQrScannerOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Scan Platform Collection QR</DialogTitle>
           </DialogHeader>
           <div id="admin-platform-dues-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={Boolean(platformCollectionConfirmation)}
-        onOpenChange={(open) => {
-          if (!open) setPlatformCollectionConfirmation(null);
-        }}
-      >
-        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Confirm Cash Collection</DialogTitle>
-            <DialogDescription>
-              Confirm collection of {platformCollectionConfirmation?.amountMad.toFixed(2)} MAD from {platformCollectionConfirmation?.vendorName}?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlatformCollectionConfirmation(null)} disabled={isCollectingPlatformDues}>
-              Cancel
-            </Button>
-            <Button onClick={handlePlatformCollectionConfirm} disabled={isCollectingPlatformDues || !platformCollectionConfirmation}>
-              {isCollectingPlatformDues ? "Collecting..." : "Confirm Collection"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
