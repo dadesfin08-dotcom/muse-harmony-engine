@@ -5653,7 +5653,7 @@ function AdsContentSection({
   ads: Array<{
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -5688,7 +5688,8 @@ function AdsContentSection({
   adForm: {
     id: string;
     campaignName: string;
-    zoneId: string;
+    selectedCommune: string;
+    selectedDouarIds: string[];
     campaignType: "AD" | "PROMO" | "NEWS";
     imageAr: string;
     imageFr: string;
@@ -5702,7 +5703,8 @@ function AdsContentSection({
     SetStateAction<{
       id: string;
       campaignName: string;
-      zoneId: string;
+      selectedCommune: string;
+      selectedDouarIds: string[];
       campaignType: "AD" | "PROMO" | "NEWS";
       imageAr: string;
       imageFr: string;
@@ -5717,7 +5719,7 @@ function AdsContentSection({
   onEditAd: (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
@@ -5732,7 +5734,7 @@ function AdsContentSection({
   onToggleAdActive: (ad: {
     id: string;
     campaign_name: string;
-    zone_id: string | null;
+    target_zone_ids: string[] | null;
     campaign_type: "AD" | "PROMO" | "NEWS";
     views_count: number;
     image_ar: string | null;
