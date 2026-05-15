@@ -810,19 +810,29 @@ export const resetBrandEngineScore = createServerFn({ method: "POST" })
   });
 
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(async () => {
-  const [ordersRes, vendorsRes] = await Promise.all([
+  const [ordersRes, vendorsRes, cyclistsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
-      .select("id, vendor_id, customer_phone, total_price, status, created_at")
+      .select(
+        "id, vendor_id, customer_phone, total_price, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
+      )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
+    (supabaseAdmin as any).from("cyclists").select("id, full_name"),
   ]);
 
   if (ordersRes.error) throw new Error(ordersRes.error.message);
   if (vendorsRes.error) throw new Error(vendorsRes.error.message);
+  if (cyclistsRes.error) throw new Error(cyclistsRes.error.message);
 
   const vendorMap = new Map(
     ((vendorsRes.data ?? []) as AdminVendorRow[]).map((vendor) => [vendor.id, vendor.store_name]),
+  );
+  const cyclistMap = new Map(
+    ((cyclistsRes.data ?? []) as Array<{ id: string; full_name: string }>).map((cyclist) => [
+      cyclist.id,
+      cyclist.full_name,
+    ]),
   );
 
   return ((ordersRes.data ?? []) as AdminOrderRow[]).map((order) => ({
@@ -831,9 +841,185 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     customerPhone: order.customer_phone,
     totalPrice: Number(order.total_price ?? 0),
     status: order.status,
+    orderCategory: order.order_category ?? "MARKETPLACE",
+    cyclistId: order.cyclist_id ?? null,
+    cyclistName: order.cyclist_id ? (cyclistMap.get(order.cyclist_id) ?? "Unknown Cyclist") : null,
+    neighborhoodId: order.neighborhood_id ?? null,
+    cashToCollectFromCustomer: Number(order.cash_to_collect_from_customer ?? 0),
     vendorName: order.vendor_id ? (vendorMap.get(order.vendor_id) ?? "Unknown Vendor") : "Platform Direct",
   }));
 });
+
+export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_packs")
+    .select("id, name_en, name_fr, name_ar, description, price_per_unit, unit_type, image_url, is_active, created_at, updated_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message ?? "Failed to load platform packs.");
+
+  return ((data ?? []) as PlatformPackRow[]).map((row) => ({
+    id: row.id,
+    nameEn: row.name_en,
+    nameFr: row.name_fr,
+    nameAr: row.name_ar,
+    description: row.description,
+    pricePerUnit: Number(row.price_per_unit ?? 0),
+    unitType: row.unit_type,
+    imageUrl: row.image_url,
+    isActive: Boolean(row.is_active),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+});
+
+export const createPlatformPack = createServerFn({ method: "POST" })
+  .inputValidator((input) => platformPackInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: inserted, error } = await (supabaseAdmin as any)
+      .from("platform_packs")
+      .insert({
+        name_en: data.nameEn,
+        name_fr: data.nameFr ?? null,
+        name_ar: data.nameAr ?? null,
+        description: data.description ?? null,
+        price_per_unit: data.pricePerUnit,
+        unit_type: data.unitType,
+        image_url: data.imageUrl ?? null,
+        is_active: data.isActive,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted?.id) {
+      throw new Error(error?.message ?? "Failed to create platform pack.");
+    }
+
+    return { ok: true, id: inserted.id };
+  });
+
+export const updatePlatformPack = createServerFn({ method: "POST" })
+  .inputValidator((input) => updatePlatformPackInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("platform_packs")
+      .update({
+        name_en: data.nameEn,
+        name_fr: data.nameFr ?? null,
+        name_ar: data.nameAr ?? null,
+        description: data.description ?? null,
+        price_per_unit: data.pricePerUnit,
+        unit_type: data.unitType,
+        image_url: data.imageUrl ?? null,
+        is_active: data.isActive,
+      })
+      .eq("id", data.id)
+      .select("id")
+      .single();
+
+    if (error || !updated?.id) {
+      throw new Error(error?.message ?? "Failed to update platform pack.");
+    }
+
+    return { ok: true };
+  });
+
+export const deletePlatformPack = createServerFn({ method: "POST" })
+  .inputValidator((input) => deletePlatformPackInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { error } = await (supabaseAdmin as any).from("platform_packs").delete().eq("id", data.id);
+
+    if (error) {
+      throw new Error(error.message ?? "Failed to delete platform pack.");
+    }
+
+    return { ok: true };
+  });
+
+export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
+  .inputValidator((input) => assignSubscriptionOrderCyclistInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("orders")
+      .update({ cyclist_id: data.cyclistId, status: "delivering" })
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .select("id")
+      .single();
+
+    if (error || !updated?.id) {
+      throw new Error(error?.message ?? "Failed to assign cyclist to subscription order.");
+    }
+
+    return { ok: true };
+  });
+
+export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
+  .inputValidator((input) => autoDispatchSubscriptionOrderInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: order, error: orderError } = await (supabaseAdmin as any)
+      .from("orders")
+      .select("id, neighborhood_id")
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .single();
+
+    if (orderError || !order?.id) {
+      throw new Error(orderError?.message ?? "Subscription order not found.");
+    }
+
+    const neighborhoodId = order.neighborhood_id as string | null;
+    if (!neighborhoodId) {
+      throw new Error("Order has no neighborhood assigned.");
+    }
+
+    const { data: coverageRows, error: coverageError } = await (supabaseAdmin as any)
+      .from("cyclist_coverage")
+      .select("cyclist_id")
+      .eq("neighborhood_id", neighborhoodId);
+
+    if (coverageError) {
+      throw new Error(coverageError.message);
+    }
+
+    const candidateCyclistIds = Array.from(
+      new Set(((coverageRows ?? []) as Array<{ cyclist_id: string }>).map((row) => row.cyclist_id)),
+    );
+
+    if (candidateCyclistIds.length === 0) {
+      throw new Error("No cyclist coverage available for this neighborhood.");
+    }
+
+    const { data: cyclistRows, error: cyclistsError } = await (supabaseAdmin as any)
+      .from("cyclists")
+      .select("id")
+      .eq("is_active", true)
+      .in("id", candidateCyclistIds)
+      .limit(1);
+
+    if (cyclistsError) {
+      throw new Error(cyclistsError.message);
+    }
+
+    const selectedCyclistId = (cyclistRows?.[0]?.id as string | undefined) ?? null;
+    if (!selectedCyclistId) {
+      throw new Error("No active cyclist available for this neighborhood.");
+    }
+
+    const { data: updated, error: updateError } = await (supabaseAdmin as any)
+      .from("orders")
+      .update({ cyclist_id: selectedCyclistId, status: "delivering" })
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .select("id")
+      .single();
+
+    if (updateError || !updated?.id) {
+      throw new Error(updateError?.message ?? "Failed to auto-dispatch subscription order.");
+    }
+
+    return { ok: true, cyclistId: selectedCyclistId };
+  });
 
 export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
