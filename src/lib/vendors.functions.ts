@@ -85,8 +85,9 @@ const getVendorSalesAnalyticsInputSchema = z.object({
 
 const collectVendorPlatformDuesInputSchema = z.object({
   vendorId: z.string().uuid(),
-  amount: z.number().positive().optional(),
+  amount: z.number().positive(),
   qrPayload: z.record(z.string(), z.any()).nullable().optional(),
+  createdBy: z.string().uuid().nullable().optional(),
 });
 
 type VendorOrderRow = {
@@ -118,58 +119,68 @@ export type PlatformCollectionHistoryItem = {
   transactionId: string;
   vendorId: string;
   vendorName: string;
+  transactionType: "ACCRUAL" | "WITHDRAWAL";
+  transactionLabel: string;
   amountMad: number;
+  remainingBalanceMad: number;
   collectedAt: string;
-};
-
-type PendingPlatformDuesRow = {
-  vendor_id: string;
-  admin_settled: boolean | null;
-  platform_markup: number | null;
-  total_price: number | null;
-  subtotal_base_price: number | null;
-  platform_profit: number | null;
-  delivery_fee: number | null;
 };
 
 function roundMad(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
 }
 
-function platformDueFromOrder(row: {
-  platform_markup?: number | null;
-  platform_profit?: number | null;
-  delivery_fee?: number | null;
-}) {
-  const markup = Number(row.platform_markup ?? Number.NaN);
-  if (Number.isFinite(markup) && markup > 0) return markup;
-  const profit = Number(row.platform_profit ?? Number.NaN);
-  if (Number.isFinite(profit) && profit > 0) return profit;
-  return Number(row.delivery_fee ?? 0);
+async function ensureVendorProfileExists(vendorId: string) {
+  const { error } = await (supabaseAdmin as any).from("profiles").upsert(
+    {
+      id: vendorId,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function getVendorPendingCommissionMad(vendorId: string) {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_commission_ledger")
+    .select("amount")
+    .eq("vendor_id", vendorId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return roundMad(
+    ((data ?? []) as Array<{ amount: number | null }>).reduce(
+      (sum, row) => sum + Number(row.amount ?? 0),
+      0,
+    ),
+  );
 }
 
 async function getPendingPlatformDuesByVendorIds(vendorIds: string[]) {
   if (vendorIds.length === 0) return new Map<string, number>();
 
   const { data, error } = await (supabaseAdmin as any)
-    .from("orders")
-    .select("vendor_id, payment_method, admin_settled, platform_markup, total_price, subtotal_base_price, platform_profit, delivery_fee")
-    .in("vendor_id", vendorIds)
-    .eq("status", "cash_transferred_to_vendor");
+    .from("platform_commission_ledger")
+    .select("vendor_id, amount")
+    .in("vendor_id", vendorIds);
 
   if (error) {
     throw new Error(error.message);
   }
 
   const dueByVendor = new Map<string, number>();
-  for (const row of (data ?? []) as PendingPlatformDuesRow[]) {
-    const isSettledByAdmin = row.admin_settled === true;
-    if (isSettledByAdmin) continue;
-
-    const fallbackMarkup = Number(row.total_price ?? 0) - Number(row.subtotal_base_price ?? 0);
-    const markup = Number(row.platform_markup) || fallbackMarkup;
+  for (const row of (data ?? []) as Array<{ vendor_id: string; amount: number | null }>) {
     const current = dueByVendor.get(row.vendor_id) ?? 0;
-    dueByVendor.set(row.vendor_id, current + (Number.isFinite(markup) ? markup : 0));
+    dueByVendor.set(row.vendor_id, current + Number(row.amount ?? 0));
   }
 
   for (const vendorId of vendorIds) {
@@ -532,45 +543,45 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { error: settleError } = await (supabaseAdmin as any)
-        .from("orders")
-        .update({ admin_settled: true, updated_at: new Date().toISOString() })
-        .eq("vendor_id", data.vendorId)
-        .not("admin_settled", "is", true)
-        .gt("platform_markup", 0)
-        .select("id");
+      await ensureVendorProfileExists(data.vendorId);
 
-      if (settleError) {
-        throw new Error(settleError.message);
+      const currentPendingMad = await getVendorPendingCommissionMad(data.vendorId);
+      const collectedAmountMad = roundMad(Number(data.amount));
+
+      if (!Number.isFinite(collectedAmountMad) || collectedAmountMad <= 0) {
+        throw new Error("Collection amount must be greater than zero.");
       }
 
-      const collectedAmountMad = roundMad(
-        data.amount == null || Number.isNaN(Number(data.amount)) ? 0 : Number(data.amount),
-      );
+      if (collectedAmountMad > currentPendingMad + 0.01) {
+        throw new Error(`Collection amount exceeds current platform dues (${currentPendingMad.toFixed(2)} MAD).`);
+      }
 
-      const { data: insertedCollection, error: collectionInsertError } = await (supabaseAdmin as any)
-        .from("platform_collections")
+      const { data: insertedLedgerRow, error: ledgerInsertError } = await (supabaseAdmin as any)
+        .from("platform_commission_ledger")
         .insert({
           vendor_id: data.vendorId,
-          amount: collectedAmountMad,
-          collected_by_user_id: null,
-          qr_payload: data.qrPayload ?? null,
+          order_id: null,
+          transaction_type: "WITHDRAWAL",
+          amount: -collectedAmountMad,
+          created_by: data.createdBy ?? null,
         })
         .select("id")
         .single();
 
-      if (collectionInsertError) {
-        throw new Error(collectionInsertError.message);
+      if (ledgerInsertError) {
+        throw new Error(ledgerInsertError.message);
       }
 
-      if (!insertedCollection?.id) {
+      if (!insertedLedgerRow?.id) {
         throw new Error("Collection failed. Please try again.");
       }
 
+      const remainingDuesMad = roundMad(Math.max(currentPendingMad - collectedAmountMad, 0));
+
       return {
-        transactionId: String(insertedCollection.id),
+        transactionId: String(insertedLedgerRow.id),
         collectedAmountMad,
-        remainingDuesMad: 0,
+        remainingDuesMad,
       } satisfies PlatformDuesCollectionResult;
     } catch (error) {
       console.error("collectVendorPlatformDues failed:", error);
@@ -580,51 +591,63 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
 
 export const listPlatformCollectionHistory = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
-    .from("orders")
-    .select("id, vendor_id, platform_markup, platform_profit, delivery_fee, updated_at, vendors(store_name)")
-    .eq("status", "cash_transferred_to_vendor")
-    .eq("admin_settled", true)
-    .order("updated_at", { ascending: false })
-    .limit(1000);
+    .from("platform_commission_ledger")
+    .select("id, vendor_id, transaction_type, amount, created_at")
+    .order("created_at", { ascending: true })
+    .limit(2000);
 
   if (error) {
     throw new Error(`Failed to load collection history: ${error.message}`);
   }
 
-  const grouped = new Map<
-    string,
-    { transactionId: string; vendorId: string; vendorName: string; amountMad: number; collectedAt: string }
-  >();
-
-  for (const row of (data ?? []) as Array<{
+  const rows = (data ?? []) as Array<{
     id: string;
     vendor_id: string;
-    platform_markup: number | null;
-    platform_profit: number | null;
-    delivery_fee: number | null;
-    updated_at: string | null;
-    vendors?: { store_name?: string | null } | null;
-  }>) {
-    const collectedAt = row.updated_at ?? new Date(0).toISOString();
-    const key = `${row.vendor_id}::${collectedAt}`;
-    const existing = grouped.get(key);
-    const dueAmount = platformDueFromOrder(row);
+    transaction_type: "ACCRUAL" | "WITHDRAWAL";
+    amount: number | null;
+    created_at: string | null;
+  }>;
 
-    if (existing) {
-      existing.amountMad = roundMad(existing.amountMad + dueAmount);
-      continue;
+  const vendorIds = Array.from(new Set(rows.map((row) => row.vendor_id).filter(Boolean)));
+  const vendorNamesById = new Map<string, string>();
+
+  if (vendorIds.length > 0) {
+    const { data: vendorRows, error: vendorsError } = await (supabaseAdmin as any)
+      .from("vendors")
+      .select("id, store_name")
+      .in("id", vendorIds);
+
+    if (vendorsError) {
+      throw new Error(`Failed to load vendor names: ${vendorsError.message}`);
     }
 
-    grouped.set(key, {
-      transactionId: row.id,
-      vendorId: row.vendor_id,
-      vendorName: row.vendors?.store_name?.trim() || "Vendor",
-      amountMad: roundMad(dueAmount),
-      collectedAt,
-    });
+    for (const vendorRow of (vendorRows ?? []) as Array<{ id: string; store_name: string | null }>) {
+      vendorNamesById.set(vendorRow.id, String(vendorRow.store_name ?? "Vendor").trim() || "Vendor");
+    }
   }
 
-  return Array.from(grouped.values())
+  const runningBalanceByVendor = new Map<string, number>();
+  const history = rows.map((row) => {
+    const amountMad = roundMad(Number(row.amount ?? 0));
+    const nextBalance = roundMad((runningBalanceByVendor.get(row.vendor_id) ?? 0) + amountMad);
+    runningBalanceByVendor.set(row.vendor_id, nextBalance);
+
+    return {
+      transactionId: row.id,
+      vendorId: row.vendor_id,
+      vendorName: vendorNamesById.get(row.vendor_id) ?? "Vendor",
+      transactionType: row.transaction_type,
+      transactionLabel:
+        row.transaction_type === "ACCRUAL"
+          ? "🟢 Added from Order"
+          : "🔴 Admin Withdrawal",
+      amountMad,
+      remainingBalanceMad: nextBalance,
+      collectedAt: row.created_at ?? new Date(0).toISOString(),
+    } satisfies PlatformCollectionHistoryItem;
+  });
+
+  return history
     .sort((a, b) => new Date(b.collectedAt).getTime() - new Date(a.collectedAt).getTime())
-    .slice(0, 200) satisfies PlatformCollectionHistoryItem[];
+    .slice(0, 500) satisfies PlatformCollectionHistoryItem[];
 });

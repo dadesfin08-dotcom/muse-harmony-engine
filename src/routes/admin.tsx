@@ -16,6 +16,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import Papa from "papaparse";
 import ExcelJS from "exceljs";
+import { QRCodeSVG } from "qrcode.react";
 import { z } from "zod";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -361,9 +362,11 @@ const masterProductFormSchema = z.object({
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
 
-const platformCollectionQrPayloadSchema = z.object({
-  action: z.literal("admin_collection"),
+const platformCommissionPaymentQrPayloadSchema = z.object({
+  action: z.literal("platform_commission_payment"),
   vendor_id: z.string().uuid(),
+  amount: z.number().positive(),
+  timestamp: z.string(),
 });
 
 const weeklyOrdersChartConfig = {
@@ -641,8 +644,10 @@ function AdminPage() {
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
   const [isCollectingPlatformDues, setIsCollectingPlatformDues] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
-  const [isPlatformQrScannerOpen, setIsPlatformQrScannerOpen] = useState(false);
+  const [isInitiateWithdrawalOpen, setIsInitiateWithdrawalOpen] = useState(false);
   const [platformCollectionScanTargetVendor, setPlatformCollectionScanTargetVendor] = useState<AdminVendorRecord | null>(null);
+  const [amountToCollectMad, setAmountToCollectMad] = useState(0);
+  const [platformCollectionQrPayload, setPlatformCollectionQrPayload] = useState<string | null>(null);
   const [platformCollectionReceipt, setPlatformCollectionReceipt] = useState<{
     vendorName: string;
     amountMad: number;
@@ -955,131 +960,56 @@ function AdminPage() {
   };
 
   const openPlatformCollectionQr = (vendor: AdminVendorRecord) => {
-    const amountMad = Number(vendor.platformDuesMad ?? 0);
-    if (amountMad <= 0) {
-      toast.info("No platform dues pending for this vendor.");
+    const pending = Number(vendor.platformDuesMad ?? 0);
+    if (!Number.isFinite(pending) || pending <= 0) {
+      toast.info("No platform commission pending for this vendor.");
       return;
     }
-
     setPlatformCollectionScanTargetVendor(vendor);
-    setIsPlatformQrScannerOpen(true);
+    setAmountToCollectMad(Number(pending.toFixed(2)));
+    setPlatformCollectionQrPayload(null);
+    setIsInitiateWithdrawalOpen(true);
   };
 
-  const handlePlatformCollectionFromScan = async (vendor: AdminVendorRecord, payload: Record<string, unknown>) => {
-    const amountMad = Number(vendor.platformDuesMad ?? 0);
-    if (!Number.isFinite(amountMad) || amountMad <= 0) {
-      toast.info("No platform dues pending for this vendor.");
+  const handleGenerateWithdrawalQr = () => {
+    const vendor = platformCollectionScanTargetVendor;
+    if (!vendor) return;
+
+    const pending = Number(vendor.platformDuesMad ?? 0);
+    const amount = Number(amountToCollectMad ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > pending) {
+      toast.error(`Amount must be > 0 and ≤ ${pending.toFixed(2)} MAD.`);
       return;
     }
 
-    setIsCollectingPlatformDues(true);
-    try {
-      const result = await collectPlatformDues({
-        data: {
-          vendorId: vendor.id,
-          amount: Number(amountMad.toFixed(2)),
-          qrPayload: payload,
-        },
-      });
+    const payload = platformCommissionPaymentQrPayloadSchema.parse({
+      action: "platform_commission_payment",
+      vendor_id: vendor.id,
+      amount: Number(amount.toFixed(2)),
+      timestamp: new Date().toISOString(),
+    });
 
-      await queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
-      await queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
-
-      setPlatformCollectionReceipt({
-        vendorName: vendor.storeName,
-        amountMad: result.collectedAmountMad,
-        transactionId: result.transactionId,
-        remainingDuesMad: result.remainingDuesMad,
-        collectedAt: new Date().toISOString(),
-      });
-
-      if (typeof window !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(120);
-      }
-
-      if (typeof window !== "undefined") {
-        const audioContext = new window.AudioContext();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(860, audioContext.currentTime);
-        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.1);
-      }
-
-      setPlatformCollectionScanTargetVendor(null);
-      setIsPlatformQrScannerOpen(false);
-      toast.success("Funds successfully collected to Admin Treasury.");
-    } catch (error) {
-      console.error("Platform dues collection failed:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to collect platform dues.");
-    } finally {
-      setIsCollectingPlatformDues(false);
-    }
+    setPlatformCollectionQrPayload(JSON.stringify(payload));
+    toast.success("Commission payment QR generated.");
   };
 
   useEffect(() => {
-    if (!isPlatformQrScannerOpen || !platformCollectionScanTargetVendor) return;
-
-    let mounted = true;
-    let scanner: any = null;
-
-    const startScanner = async () => {
-      try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (!mounted) return;
-
-        scanner = new Html5Qrcode("admin-platform-dues-qr-reader");
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText: string) => {
-            if (isCollectingPlatformDues) return;
-
-            try {
-              const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
-
-              if (payload.vendor_id !== platformCollectionScanTargetVendor.id) {
-                toast.error("Invalid QR Code. Please scan the correct Vendor's code.");
-                return;
-              }
-
-              void handlePlatformCollectionFromScan(platformCollectionScanTargetVendor, payload);
-            } catch {
-              toast.error("Invalid platform collection QR payload.");
-            }
-          },
-          () => undefined,
-        );
-      } catch (error) {
-        console.error("Admin platform QR scanner failed:", error);
-        toast.error("Unable to open QR scanner.");
-      }
-    };
-
-    void startScanner();
+    const channel = supabase
+      .channel("admin-platform-commission-ledger")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "platform_commission_ledger" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
+          void queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
+        },
+      )
+      .subscribe();
 
     return () => {
-      mounted = false;
-      if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
-      }
+      void supabase.removeChannel(channel);
     };
-  }, [
-    collectPlatformDues,
-    isPlatformQrScannerOpen,
-    platformCollectionScanTargetVendor,
-    queryClient,
-    isCollectingPlatformDues,
-  ]);
+  }, [queryClient]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
@@ -3579,12 +3509,34 @@ function AdminPage() {
         </SheetContent>
       </Sheet>
 
-      <Dialog open={isPlatformQrScannerOpen} onOpenChange={setIsPlatformQrScannerOpen}>
+      <Dialog open={isInitiateWithdrawalOpen} onOpenChange={setIsInitiateWithdrawalOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Platform Collection QR</DialogTitle>
+            <DialogTitle>Initiate Partial Withdrawal</DialogTitle>
           </DialogHeader>
-          <div id="admin-platform-dues-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {platformCollectionScanTargetVendor
+                ? `Pending commission: ${Number(platformCollectionScanTargetVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
+                : "Select a vendor first."}
+            </p>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={Number.isFinite(amountToCollectMad) ? String(amountToCollectMad) : "0"}
+              onChange={(event) => setAmountToCollectMad(Number(event.target.value))}
+              placeholder="Amount to collect (MAD)"
+            />
+            <Button className="w-full" onClick={handleGenerateWithdrawalQr}>
+              Generate QR
+            </Button>
+            {platformCollectionQrPayload ? (
+              <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
+                <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin />
+              </div>
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -4257,7 +4209,7 @@ function VendorsSection({
                       disabled={Number(vendor.platformDuesMad ?? 0) <= 0}
                     >
                       <CircleDollarSign className="size-3.5" />
-                      Collect {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
+                      Collect Commission {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
                     </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
@@ -4274,8 +4226,8 @@ function VendorsSection({
 
       <div className="mt-6 space-y-3">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Collection History · سجل التحصيلات</h3>
-          <p className="text-sm text-muted-foreground">Chronological log of platform dues collections.</p>
+          <h3 className="text-base font-semibold text-foreground">Commission Ledger History · سجل دفتر العمولة</h3>
+          <p className="text-sm text-muted-foreground">Accrual and withdrawal ledger with running balance.</p>
         </div>
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="w-full min-w-[680px] text-left text-sm">
@@ -4283,19 +4235,21 @@ function VendorsSection({
               <tr>
                 <th className="px-4 py-3">Date / Time · تاريخ التحصيل</th>
                 <th className="px-4 py-3">Vendor Name · اسم التاجر</th>
-                <th className="px-4 py-3">Amount Collected · المبلغ المحصل</th>
+                <th className="px-4 py-3">Transaction · نوع الحركة</th>
+                <th className="px-4 py-3">Amount · المبلغ</th>
+                <th className="px-4 py-3">Remaining Balance · الرصيد المتبقي</th>
               </tr>
             </thead>
             <tbody>
               {isCollectionHistoryLoading ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     Loading collection history...
                   </td>
                 </tr>
               ) : collectionHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No collection history yet.
                   </td>
                 </tr>
@@ -4304,7 +4258,9 @@ function VendorsSection({
                   <tr key={row.transactionId} className="border-t border-border bg-card">
                     <td className="px-4 py-3 text-muted-foreground">{formatCollectionDateTime(row.collectedAt)}</td>
                     <td className="px-4 py-3 font-medium text-foreground">{row.vendorName}</td>
+                    <td className="px-4 py-3 text-foreground">{row.transactionLabel}</td>
                     <td className="px-4 py-3 text-foreground">{Number(row.amountMad ?? 0).toFixed(2)} MAD</td>
+                    <td className="px-4 py-3 text-foreground">{Number(row.remainingBalanceMad ?? 0).toFixed(2)} MAD</td>
                   </tr>
                 ))
               )}

@@ -88,7 +88,6 @@ type VendorRow = {
   phone_number?: string;
   total_cash_received?: number | null;
   vendor_earnings?: number | null;
-  platform_dues?: number | null;
 };
 
 type OrderRow = {
@@ -139,7 +138,6 @@ type OrderRow = {
     avatarUrl?: string | null;
   } | null;
   vendor_settlement_status?: "pending" | "settled";
-  admin_settled?: boolean;
   created_at: string;
 };
 
@@ -158,6 +156,24 @@ export type VendorSettlementSummary = {
 
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+async function getVendorPendingCommissionMad(vendorId: string) {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("platform_commission_ledger")
+    .select("amount")
+    .eq("vendor_id", vendorId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return roundMoney(
+    ((data ?? []) as Array<{ amount: number | null }>).reduce(
+      (sum, row) => sum + Number(row.amount ?? 0),
+      0,
+    ),
+  );
 }
 
 export type VendorOrderDetails = {
@@ -587,7 +603,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, subtotal_base_price, vendor_revenue, platform_profit, platform_markup, item_count, order_items, vendor_settlement_status, admin_settled, created_at",
+        "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, subtotal_base_price, vendor_revenue, platform_profit, platform_markup, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
       .order("created_at", { ascending: false });
@@ -866,9 +882,10 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
             : null,
         platform_markup: Number(order?.platform_markup ?? order?.platform_profit ?? 0),
         subtotal_base_price: Number(order?.subtotal_base_price ?? 0),
-        admin_settled: order?.admin_settled === true,
       };
     });
+
+    const platformDuesMad = await getVendorPendingCommissionMad(vendor.id);
 
     return {
       vendor: {
@@ -876,7 +893,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         storeName: (vendor as VendorRow).store_name,
         totalCashInHandMad: Number((vendor as VendorRow).total_cash_received ?? 0),
         myNetProfitMad: Number((vendor as VendorRow).vendor_earnings ?? 0),
-        platformDuesMad: Number((vendor as VendorRow).platform_dues ?? 0),
+        platformDuesMad,
       },
       orders: hydratedOrders as Array<OrderRow>,
     };
@@ -1362,10 +1379,12 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
 
       const pendingCyclistCount = new Set(pending.map((row) => row.cyclist_id).filter(Boolean)).size;
 
+      const platformDuesMad = await getVendorPendingCommissionMad(vendor.id);
+
       return {
         totalCashInHandMad: roundMoney(Number((vendor as VendorRow).total_cash_received ?? 0)),
         myNetProfitMad: roundMoney(Number((vendor as VendorRow).vendor_earnings ?? 0)),
-        platformDuesMad: roundMoney(Number((vendor as VendorRow).platform_dues ?? 0)),
+        platformDuesMad,
         unsettledCashWithCyclistsMad,
         owedToCyclistMad,
         totalReceivedTodayMad,

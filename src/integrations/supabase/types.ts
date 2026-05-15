@@ -863,6 +863,51 @@ export type Database = {
           },
         ]
       }
+      platform_commission_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          order_id: string | null
+          transaction_type: Database["public"]["Enums"]["platform_commission_transaction_type"]
+          vendor_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          transaction_type: Database["public"]["Enums"]["platform_commission_transaction_type"]
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          transaction_type?: Database["public"]["Enums"]["platform_commission_transaction_type"]
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_commission_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_commission_ledger_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -1320,6 +1365,7 @@ export type Database = {
         | "delivered_cash_with_cyclist"
         | "cash_transferred_to_vendor"
       payment_method: "COD" | "Carnet"
+      platform_commission_transaction_type: "ACCRUAL" | "WITHDRAWAL"
       product_category:
         | "Vegetables"
         | "Fruits"
@@ -1489,6 +1535,7 @@ export const Constants = {
         "cash_transferred_to_vendor",
       ],
       payment_method: ["COD", "Carnet"],
+      platform_commission_transaction_type: ["ACCRUAL", "WITHDRAWAL"],
       product_category: [
         "Vegetables",
         "Fruits",

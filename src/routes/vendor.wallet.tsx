@@ -16,6 +16,7 @@ import {
   getVendorDashboardData,
   getVendorSettlementSummary,
 } from "@/lib/orders.functions";
+import { collectVendorPlatformDues } from "@/lib/vendors.functions";
 
 export const Route = createFileRoute("/vendor/wallet")({
   component: VendorWalletPage,
@@ -25,7 +26,13 @@ function VendorWalletPage() {
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
-  const [isPlatformDuesQrOpen, setIsPlatformDuesQrOpen] = useState(false);
+  const [isPlatformScannerOpen, setIsPlatformScannerOpen] = useState(false);
+  const [isSubmittingPlatformPayment, setIsSubmittingPlatformPayment] = useState(false);
+  const [pendingScannedPayment, setPendingScannedPayment] = useState<{
+    amount: number;
+    timestamp: string;
+    payload: Record<string, unknown>;
+  } | null>(null);
   const vendorPhoneNumber = useMemo(() => {
     if (typeof window === "undefined") return "";
     try {
@@ -43,6 +50,7 @@ function VendorWalletPage() {
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchCarnet = useServerFn(getVendorCarnetData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
+  const submitPlatformPayment = useServerFn(collectVendorPlatformDues);
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
@@ -94,6 +102,31 @@ function VendorWalletPage() {
     };
   }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
 
+  useEffect(() => {
+    if (!vendorId) return;
+
+    const channel = supabase
+      .channel(`vendor-ledger-${vendorId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "platform_commission_ledger",
+          filter: `vendor_id=eq.${vendorId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
+
   const summary = settlementQuery.data;
   const cashBreakdown = useMemo(() => {
     const dashboardOrders = dashboardQuery.data?.orders ?? [];
@@ -109,22 +142,14 @@ function VendorWalletPage() {
       (sum, order) => sum + Math.max(Number(order.total_price ?? 0) - Number(order.delivery_fee ?? 0), 0),
       0,
     );
-    const platformDuesMad = transferredCashOrders.reduce((sum, order) => {
-      const isSettledByAdmin = order.admin_settled === true;
-      if (isSettledByAdmin) return sum;
-
-      const fallbackMarkup = Number(order.total_price ?? 0) - Number(order.subtotal_base_price ?? 0);
-      const markup = Number(order.platform_markup) || fallbackMarkup;
-      return sum + (Number.isFinite(markup) ? markup : 0);
-    }, 0);
-    const settledCarnetPlatformDuesMad = Number(carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad ?? 0);
+    const platformDuesMad = Number(dashboardQuery.data?.vendor?.platformDuesMad ?? 0);
 
     return {
       totalCashInHandMad: Math.round(totalCashInHandMad * 100) / 100,
       myNetProfitMad: Math.round(myNetProfitMad * 100) / 100,
-      platformDuesMad: Math.round((platformDuesMad + settledCarnetPlatformDuesMad) * 100) / 100,
+      platformDuesMad: Math.round(platformDuesMad * 100) / 100,
     };
-  }, [dashboardQuery.data?.orders, carnetQuery.data?.kpis?.settledCarnetPlatformDuesMad]);
+  }, [dashboardQuery.data?.orders, dashboardQuery.data?.vendor?.platformDuesMad]);
   const hasSummary = Boolean(summary);
   const hasCashBreakdown = Boolean(dashboardQuery.data);
   const formatMad = (value: number | undefined) => (hasSummary ? `${(value ?? 0).toFixed(2)} MAD` : "--");
@@ -133,19 +158,108 @@ function VendorWalletPage() {
   const deliveredOrders = (dashboardQuery.data?.orders ?? [])
     .filter((order) => ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(order.status))
     .slice(0, 8);
-  const platformCollectionQrPayload = useMemo(() => {
-    if (!vendorId) return null;
-
-    return JSON.stringify({
-      action: "admin_collection",
-      vendor_id: vendorId,
-    });
-  }, [vendorId]);
-
   const vendorHandoverQrPayload = useMemo(() => {
     if (!vendorId) return null;
     return JSON.stringify({ action: "vendor_handover", vendor_id: vendorId });
   }, [vendorId]);
+
+  useEffect(() => {
+    if (!isPlatformScannerOpen || !vendorId) return;
+
+    let mounted = true;
+    let scanner: any = null;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        scanner = new Html5Qrcode("vendor-platform-payment-qr-reader");
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            try {
+              const raw = JSON.parse(decodedText) as {
+                action?: string;
+                vendor_id?: string;
+                amount?: number;
+                timestamp?: string;
+              };
+
+              if (raw.action !== "platform_commission_payment") {
+                toast.error("Invalid QR action.");
+                return;
+              }
+
+              if (raw.vendor_id !== vendorId) {
+                toast.error("This QR is not assigned to your vendor account.");
+                return;
+              }
+
+              const amount = Number(raw.amount ?? 0);
+              if (!Number.isFinite(amount) || amount <= 0) {
+                toast.error("Invalid payment amount in QR payload.");
+                return;
+              }
+
+              setPendingScannedPayment({
+                amount,
+                timestamp: String(raw.timestamp ?? new Date().toISOString()),
+                payload: raw as Record<string, unknown>,
+              });
+              setIsPlatformScannerOpen(false);
+            } catch {
+              toast.error("Invalid payment QR payload.");
+            }
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        console.error("Vendor platform scanner failed:", error);
+        toast.error("Unable to open QR scanner.");
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [isPlatformScannerOpen, vendorId]);
+
+  const handleConfirmPlatformPayment = async () => {
+    if (!pendingScannedPayment || !vendorId) return;
+
+    setIsSubmittingPlatformPayment(true);
+    try {
+      await submitPlatformPayment({
+        data: {
+          vendorId,
+          amount: Number(pendingScannedPayment.amount.toFixed(2)),
+          qrPayload: pendingScannedPayment.payload,
+          createdBy: vendorId,
+        },
+      });
+
+      setPendingScannedPayment(null);
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
+      await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+      toast.success("Platform commission payment recorded.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to record payment.");
+    } finally {
+      setIsSubmittingPlatformPayment(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-muted/20 px-4 py-4">
@@ -205,8 +319,7 @@ function VendorWalletPage() {
                   toast.info("No platform dues pending right now.");
                   return;
                 }
-                if (!platformCollectionQrPayload) return;
-                setIsPlatformDuesQrOpen(true);
+                setIsPlatformScannerOpen(true);
               }}
             >
               <QrCode className="size-4" />
@@ -291,16 +404,28 @@ function VendorWalletPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isPlatformDuesQrOpen} onOpenChange={setIsPlatformDuesQrOpen}>
+      <Dialog open={isPlatformScannerOpen} onOpenChange={setIsPlatformScannerOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Platform Dues QR · رمز أداء المستحقات</DialogTitle>
+            <DialogTitle>Scan Admin QR · مسح رمز مسؤول المنصة</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 text-center">
-            <p className="text-sm text-muted-foreground">Show this QR to Super-Admin to confirm your dues collection.</p>
-            <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
-              {platformCollectionQrPayload ? <QRCodeSVG value={platformCollectionQrPayload} size={220} includeMargin /> : null}
-            </div>
+          <div id="vendor-platform-payment-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(pendingScannedPayment)} onOpenChange={(open) => (!open ? setPendingScannedPayment(null) : undefined)}>
+        <DialogContent className="w-[95vw] max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm Payment · تأكيد الدفع</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Pay <span className="font-semibold">{Number(pendingScannedPayment?.amount ?? 0).toFixed(2)} MAD</span> to Platform Admin?
+            </p>
+            <p className="text-muted-foreground">Timestamp: {pendingScannedPayment?.timestamp ?? "--"}</p>
+            <Button className="w-full" onClick={() => void handleConfirmPlatformPayment()} disabled={isSubmittingPlatformPayment}>
+              {isSubmittingPlatformPayment ? "Processing..." : "Confirm Payment"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
