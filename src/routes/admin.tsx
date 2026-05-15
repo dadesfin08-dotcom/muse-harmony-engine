@@ -371,6 +371,11 @@ const initialAdminOrders: Array<{
   vendorName: string;
   customerPhone: string;
   totalPrice: number;
+  orderCategory: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
+  cyclistId: string | null;
+  cyclistName: string | null;
+  neighborhoodId: string | null;
+  cashToCollectFromCustomer: number;
   status:
     | "new"
     | "preparing"
@@ -611,6 +616,12 @@ function AdminPage() {
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
   const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
+  const fetchPlatformPacks = useServerFn(listPlatformPacks);
+  const createPlatformPackInDatabase = useServerFn(createPlatformPack);
+  const updatePlatformPackInDatabase = useServerFn(updatePlatformPack);
+  const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
+  const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
+  const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
@@ -717,6 +728,12 @@ function AdminPage() {
     refetchInterval: isBrandEngineLiveRefreshEnabled ? 20_000 : false,
     placeholderData: (previousData) => previousData,
   });
+  const platformPacksQuery = useQuery({
+    queryKey: ["admin", "platform-packs"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchPlatformPacks(),
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -759,6 +776,19 @@ function AdminPage() {
       }),
     ) ?? initialMasterProducts;
   const adminOrders = adminOrdersQuery.data ?? initialAdminOrders;
+  const platformPacks = (platformPacksQuery.data ?? []) as Array<{
+    id: string;
+    nameEn: string;
+    nameFr: string | null;
+    nameAr: string | null;
+    description: string | null;
+    pricePerUnit: number;
+    unitType: string;
+    imageUrl: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
   const adminCustomers =
     (adminCustomersQuery.data as
       | Array<{
@@ -937,6 +967,20 @@ function AdminPage() {
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
     "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
   >("all");
+  const [ordersCategoryFilter, setOrdersCategoryFilter] = useState<"all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION">("all");
+  const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
+  const [platformPackForm, setPlatformPackForm] = useState({
+    id: "",
+    nameEn: "",
+    nameFr: "",
+    nameAr: "",
+    description: "",
+    pricePerUnit: "",
+    unitType: "Kg",
+    imageUrl: "",
+    isActive: true,
+  });
+  const [isSavingPlatformPack, setIsSavingPlatformPack] = useState(false);
   const [settingsForm, setSettingsForm] = useState({
     id: "",
     deliveryFeeMad: "10",
@@ -1053,10 +1097,12 @@ function AdminPage() {
 
   const filteredOrders = useMemo(
     () =>
-      ordersStatusFilter === "all"
-        ? adminOrders
-        : adminOrders.filter((order) => order.status === ordersStatusFilter),
-    [adminOrders, ordersStatusFilter],
+      adminOrders.filter((order) => {
+        const matchesStatus = ordersStatusFilter === "all" || order.status === ordersStatusFilter;
+        const matchesCategory = ordersCategoryFilter === "all" || order.orderCategory === ordersCategoryFilter;
+        return matchesStatus && matchesCategory;
+      }),
+    [adminOrders, ordersStatusFilter, ordersCategoryFilter],
   );
 
   const communeOptions = serviceZones;
