@@ -10,6 +10,7 @@ import {
 
 export interface AdminVendorRecord {
   id: string;
+  userId: string | null;
   storeName: string;
   ownerName: string;
   phoneNumber: string;
@@ -25,6 +26,7 @@ export interface AdminVendorRecord {
 
 interface VendorRow {
   id: string;
+  user_id: string | null;
   store_name: string;
   owner_name: string;
   phone_number: string;
@@ -240,7 +242,7 @@ async function fetchVendorRecord(vendorId: string) {
       (supabaseAdmin as any)
         .from("vendors")
         .select(
-          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+          "id, user_id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
         )
         .eq("id", vendorId)
         .single(),
@@ -271,6 +273,7 @@ async function fetchVendorRecord(vendorId: string) {
 
   return {
     id: row.id,
+    userId: row.user_id,
     storeName: row.store_name,
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
@@ -291,7 +294,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       (supabaseAdmin as any)
         .from("vendors")
         .select(
-          "id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
+          "id, user_id, store_name, owner_name, phone_number, vendor_earnings, platform_dues, vendor_type, assigned_categories, is_active, created_at",
         )
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name_en, name_fr, name_ar, commune_id, vendor_id"),
@@ -326,6 +329,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
 
     return {
       id: vendor.id,
+      userId: vendor.user_id,
       storeName: vendor.store_name,
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
