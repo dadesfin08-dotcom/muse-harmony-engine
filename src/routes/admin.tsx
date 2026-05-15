@@ -52,6 +52,10 @@ import {
   Clock3,
   Trophy,
   TrendingDown,
+  CalendarDays,
+  Pencil,
+  Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
