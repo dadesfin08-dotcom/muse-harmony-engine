@@ -7202,6 +7202,10 @@ function PlatformPacksSection({
   onReset,
   onEdit,
   onDelete,
+  imageFile,
+  imagePreviewUrl,
+  imageInputRef,
+  onImageChange,
   isSaving,
 }: {
   packs: Array<{
@@ -7210,8 +7214,12 @@ function PlatformPacksSection({
     nameFr: string | null;
     nameAr: string | null;
     description: string | null;
-    pricePerUnit: number;
+    basePriceMad: number;
+    billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
+    deliveryWindow: string | null;
+    packItems: string[];
+    packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -7223,8 +7231,12 @@ function PlatformPacksSection({
     nameFr: string;
     nameAr: string;
     description: string;
-    pricePerUnit: string;
+    basePriceMad: string;
+    billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
+    deliveryWindow: string;
+    packItems: string[];
+    packFeatures: string[];
     imageUrl: string;
     isActive: boolean;
   };
@@ -7235,8 +7247,12 @@ function PlatformPacksSection({
       nameFr: string;
       nameAr: string;
       description: string;
-      pricePerUnit: string;
+      basePriceMad: string;
+      billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
       unitType: string;
+      deliveryWindow: string;
+      packItems: string[];
+      packFeatures: string[];
       imageUrl: string;
       isActive: boolean;
     }>
@@ -7249,28 +7265,78 @@ function PlatformPacksSection({
     nameFr: string | null;
     nameAr: string | null;
     description: string | null;
-    pricePerUnit: number;
+    basePriceMad: number;
+    billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
+    deliveryWindow: string | null;
+    packItems: string[];
+    packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
   }) => void;
   onDelete: (id: string) => Promise<void>;
+  imageFile: File | null;
+  imagePreviewUrl: string | null;
+  imageInputRef: RefObject<HTMLInputElement | null>;
+  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   isSaving: boolean;
 }) {
+  const updatePackItemAt = (index: number, value: string) => {
+    onFormChange((current) => {
+      const next = [...current.packItems];
+      next[index] = value;
+      return { ...current, packItems: next };
+    });
+  };
+
+  const addPackItem = () => {
+    onFormChange((current) => ({ ...current, packItems: [...current.packItems, ""] }));
+  };
+
+  const removePackItem = (index: number) => {
+    onFormChange((current) => {
+      if (current.packItems.length <= 1) {
+        return { ...current, packItems: [""] };
+      }
+      return { ...current, packItems: current.packItems.filter((_, itemIndex) => itemIndex !== index) };
+    });
+  };
+
+  const updateFeatureAt = (index: number, value: string) => {
+    onFormChange((current) => {
+      const next = [...current.packFeatures];
+      next[index] = value;
+      return { ...current, packFeatures: next };
+    });
+  };
+
+  const addFeature = () => {
+    onFormChange((current) => ({ ...current, packFeatures: [...current.packFeatures, ""] }));
+  };
+
+  const removeFeature = (index: number) => {
+    onFormChange((current) => {
+      if (current.packFeatures.length <= 1) {
+        return { ...current, packFeatures: [""] };
+      }
+      return { ...current, packFeatures: current.packFeatures.filter((_, featureIndex) => featureIndex !== index) };
+    });
+  };
+
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+    <section className="space-y-4 rounded-lg border border-border/70 bg-card/95 p-4 shadow-sm backdrop-blur md:p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Platform Packs / باكات المنصة</h2>
-          <p className="text-sm text-muted-foreground">Direct platform pack catalog isolated from marketplace vendor flow.</p>
+          <h2 className="text-base font-semibold text-foreground">Create Packs</h2>
+          <p className="text-sm text-muted-foreground">Build prepaid platform subscription packs with strict financial isolation from marketplace flow.</p>
         </div>
-        <Badge variant="outline" className="inline-flex items-center gap-1">
+        <Badge variant="outline" className="inline-flex items-center gap-1 border-emerald-500/30 text-emerald-500">
           <Leaf className="size-3.5" />
-          Direct Sales
+          Platform Direct
         </Badge>
       </div>
 
-      <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-3 md:grid-cols-2">
+      <div className="grid gap-3 rounded-md border border-border/70 bg-muted/10 p-3 md:grid-cols-2">
         <div className="space-y-2">
           <label className="text-xs font-medium text-muted-foreground">Name (EN)</label>
           <Input value={form.nameEn} onChange={(event) => onFormChange((current) => ({ ...current, nameEn: event.target.value }))} placeholder="Vegetable Box" />
@@ -7284,22 +7350,57 @@ function PlatformPacksSection({
           <Input value={form.nameAr} onChange={(event) => onFormChange((current) => ({ ...current, nameAr: event.target.value }))} placeholder="باقة خضر" />
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">Unit Type</label>
-          <Input value={form.unitType} onChange={(event) => onFormChange((current) => ({ ...current, unitType: event.target.value }))} placeholder="Kg / Box / Pack" />
+          <label className="text-xs font-medium text-muted-foreground">Billing Cycle</label>
+          <Select value={form.billingCycle} onValueChange={(value) => onFormChange((current) => ({ ...current, billingCycle: value as "DAILY" | "WEEKLY" | "MONTHLY" }))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select billing cycle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DAILY">Daily</SelectItem>
+              <SelectItem value="WEEKLY">Weekly</SelectItem>
+              <SelectItem value="MONTHLY">Monthly</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-muted-foreground">Price per Unit (MAD)</label>
+          <label className="text-xs font-medium text-muted-foreground">Base Price (MAD)</label>
           <Input
             type="number"
             min={0}
-            value={form.pricePerUnit}
-            onChange={(event) => onFormChange((current) => ({ ...current, pricePerUnit: event.target.value }))}
+            value={form.basePriceMad}
+            onChange={(event) => onFormChange((current) => ({ ...current, basePriceMad: event.target.value }))}
             placeholder="0.00"
           />
         </div>
         <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Unit Type</label>
+          <Input value={form.unitType} onChange={(event) => onFormChange((current) => ({ ...current, unitType: event.target.value }))} placeholder="Kg / Box / Pack" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Delivery Window</label>
+          <Input value={form.deliveryWindow} onChange={(event) => onFormChange((current) => ({ ...current, deliveryWindow: event.target.value }))} placeholder="e.g. 08:00 - 12:00" />
+        </div>
+        <div className="space-y-2 md:col-span-2">
           <label className="text-xs font-medium text-muted-foreground">Image URL</label>
           <Input value={form.imageUrl} onChange={(event) => onFormChange((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="https://..." />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-xs font-medium text-muted-foreground">Image Upload</label>
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={onImageChange} />
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border/70 bg-background/50 p-3">
+            <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()}>
+              <ImagePlus className="size-4" />
+              Upload Image
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {imageFile ? imageFile.name : "Optional. Upload will override Image URL when you save."}
+            </p>
+          </div>
+          {imagePreviewUrl ? (
+            <div className="overflow-hidden rounded-md border border-border/70 bg-background/40 p-2">
+              <img src={imagePreviewUrl} alt="Pack preview" className="h-36 w-full rounded object-cover" loading="lazy" />
+            </div>
+          ) : null}
         </div>
         <div className="space-y-2 md:col-span-2">
           <label className="text-xs font-medium text-muted-foreground">Description</label>
@@ -7308,6 +7409,44 @@ function PlatformPacksSection({
             onChange={(event) => onFormChange((current) => ({ ...current, description: event.target.value }))}
             placeholder="Pack description"
           />
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-muted-foreground">Pack Items</label>
+            <Button type="button" size="sm" variant="outline" onClick={addPackItem}>
+              <Plus className="size-3.5" />
+              Add Item
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {form.packItems.map((item, index) => (
+              <div key={`pack-item-${index}`} className="flex items-center gap-2">
+                <Input value={item} onChange={(event) => updatePackItemAt(index, event.target.value)} placeholder={`Item ${index + 1}`} />
+                <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-muted-foreground">Pack Features</label>
+            <Button type="button" size="sm" variant="outline" onClick={addFeature}>
+              <Plus className="size-3.5" />
+              Add Feature
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {form.packFeatures.map((feature, index) => (
+              <div key={`pack-feature-${index}`} className="flex items-center gap-2">
+                <Input value={feature} onChange={(event) => updateFeatureAt(index, event.target.value)} placeholder={`Feature ${index + 1}`} />
+                <Button type="button" size="icon" variant="outline" onClick={() => removeFeature(index)}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2 md:col-span-2">
           <Switch checked={form.isActive} onCheckedChange={(checked) => onFormChange((current) => ({ ...current, isActive: checked }))} />
@@ -7330,7 +7469,8 @@ function PlatformPacksSection({
             <tr>
               <th className="px-4 py-3">Pack</th>
               <th className="px-4 py-3">Description</th>
-              <th className="px-4 py-3">Price</th>
+              <th className="px-4 py-3">Base Price</th>
+              <th className="px-4 py-3">Cycle</th>
               <th className="px-4 py-3">Unit</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Created</th>
@@ -7340,13 +7480,13 @@ function PlatformPacksSection({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   <AppEmptyState title="Loading platform packs..." subtitle="Syncing direct subscriptions catalog." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : packs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   <AppEmptyState title="No packs yet" subtitle="Create your first direct platform pack." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
@@ -7355,7 +7495,8 @@ function PlatformPacksSection({
                 <tr key={pack.id} className="border-t border-border bg-card">
                   <td className="px-4 py-3 font-medium text-foreground">{pack.nameEn}</td>
                   <td className="px-4 py-3 text-muted-foreground">{pack.description || "—"}</td>
-                  <td className="px-4 py-3 text-foreground">{pack.pricePerUnit.toFixed(2)} MAD</td>
+                  <td className="px-4 py-3 text-foreground">{pack.basePriceMad.toFixed(2)} MAD</td>
+                  <td className="px-4 py-3 text-muted-foreground">{pack.billingCycle}</td>
                   <td className="px-4 py-3 text-muted-foreground">{pack.unitType}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline">{pack.isActive ? "Active" : "Inactive"}</Badge>
