@@ -668,7 +668,7 @@ export const recordVendorQrPayment = createServerFn({ method: "POST" })
 export const listPlatformCollectionHistory = createServerFn({ method: "GET" })
   .inputValidator((input) => listPlatformCollectionHistoryInputSchema.parse(input))
   .handler(async ({ data }) => {
-  const { data, error } = await (supabaseAdmin as any)
+  const { data: ledgerRows, error } = await (supabaseAdmin as any)
     .from("platform_commission_ledger")
     .select("id, vendor_id, transaction_type, amount, created_at")
     .eq("vendor_id", data.vendorId)
@@ -679,7 +679,7 @@ export const listPlatformCollectionHistory = createServerFn({ method: "GET" })
     throw new Error(`Failed to load collection history: ${error.message}`);
   }
 
-  const rows = (data ?? []) as Array<{
+  const rows = (ledgerRows ?? []) as Array<{
     id: string;
     vendor_id: string;
     transaction_type: "ACCRUAL" | "WITHDRAWAL";
