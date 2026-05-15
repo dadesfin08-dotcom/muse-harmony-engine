@@ -5619,9 +5619,10 @@ function AdsContentSection({
   }>;
   announcements: Array<{
     id: string;
-    message_en: string | null;
-    message_fr: string | null;
-    message_ar: string | null;
+    title: string;
+    messages_en: string[] | null;
+    messages_fr: string[] | null;
+    messages_ar: string[] | null;
     start_date: string | null;
     end_date: string | null;
     is_active: boolean;
@@ -5698,9 +5699,10 @@ function AdsContentSection({
   isSavingAd: boolean;
   announcementForm: {
     id: string;
-    messageEn: string;
-    messageFr: string;
-    messageAr: string;
+    title: string;
+    messagesEn: string[];
+    messagesFr: string[];
+    messagesAr: string[];
     startDate: string;
     endDate: string;
     isActive: boolean;
@@ -5710,9 +5712,10 @@ function AdsContentSection({
   onAnnouncementFormChange: Dispatch<
     SetStateAction<{
       id: string;
-      messageEn: string;
-      messageFr: string;
-      messageAr: string;
+      title: string;
+      messagesEn: string[];
+      messagesFr: string[];
+      messagesAr: string[];
       startDate: string;
       endDate: string;
       isActive: boolean;
@@ -5723,9 +5726,10 @@ function AdsContentSection({
   onSaveAnnouncement: () => void;
   onEditAnnouncement: (announcement: {
     id: string;
-    message_en: string | null;
-    message_fr: string | null;
-    message_ar: string | null;
+    title: string;
+    messages_en: string[] | null;
+    messages_fr: string[] | null;
+    messages_ar: string[] | null;
     start_date: string | null;
     end_date: string | null;
     is_active: boolean;
@@ -5735,9 +5739,10 @@ function AdsContentSection({
   onDeleteAnnouncement: (id: string) => void;
   onToggleAnnouncementActive: (announcement: {
     id: string;
-    message_en: string | null;
-    message_fr: string | null;
-    message_ar: string | null;
+    title: string;
+    messages_en: string[] | null;
+    messages_fr: string[] | null;
+    messages_ar: string[] | null;
     start_date: string | null;
     end_date: string | null;
     is_active: boolean;
