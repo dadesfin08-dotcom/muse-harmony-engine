@@ -433,6 +433,43 @@ type OverviewAnalytics = {
   };
 };
 
+type BrandEngineRow = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  createdAt: string;
+  score: number;
+  activeUntil: string;
+  activeDays: number;
+  isTrending: boolean;
+  isBlacklisted: boolean;
+  manualBoostUntil: string | null;
+  trendingVelocity: number;
+  orders24h: number;
+  cart24h: number;
+  search24h: number;
+  views24h: number;
+  suspiciousClicks24h: number;
+  orderVelocityRatio24h: number;
+};
+
+type BrandEngineAnalytics = {
+  kpis: {
+    activeTrendingBrands: number;
+    conversionVelocity: number;
+    expiringSoon: number;
+    discoveryRate: number;
+  };
+  chartData: Array<{
+    brand: string;
+    orderVelocity: number;
+    searchVolume: number;
+  }>;
+  tableRows: BrandEngineRow[];
+  generatedAt: string;
+  threshold: number;
+};
+
 const salesOrdersChartConfig = {
   orders: {
     label: "Orders",
@@ -452,6 +489,17 @@ const zonePerformanceChartConfig = {
   bottomOrders: {
     label: "Bottom zones",
     color: "oklch(0.73 0.15 72)",
+  },
+} satisfies ChartConfig;
+
+const brandEngineChartConfig = {
+  orderVelocity: {
+    label: "Order Velocity",
+    color: "var(--color-chart-1)",
+  },
+  searchVolume: {
+    label: "Search Volume",
+    color: "var(--color-chart-4)",
   },
 } satisfies ChartConfig;
 
