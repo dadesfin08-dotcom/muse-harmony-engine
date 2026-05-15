@@ -4151,80 +4151,240 @@ function OverviewSection({
   isLoading,
   error,
 }: {
-  analytics:
-    | {
-        totalOrdersToday: number;
-        activeVendors: number;
-        totalRevenueMad: number;
-        weeklyTrends: Array<{ day: string; label: string; orders: number }>;
-      }
-    | undefined;
+  analytics: OverviewAnalytics | undefined;
   isLoading: boolean;
   error: Error | null;
 }) {
-  const { t } = useTranslation();
+  const formatNumber = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+  const formatMad = (value: number) => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)} MAD`;
+  const formatDelta = (value: number, format: "integer" | "currency") => {
+    const abs = Math.abs(value);
+    return format === "currency" ? `${formatMad(abs)}` : formatNumber(abs);
+  };
+
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        {t("admin.overview.loadFailed")}
+        Failed to load dashboard analytics.
       </section>
     );
   }
 
-  const metrics = [
-    { label: t("admin.overview.metrics.totalOrdersToday"), value: String(analytics?.totalOrdersToday ?? 0), icon: PackageCheck },
-    { label: t("admin.overview.metrics.activeVendors"), value: String(analytics?.activeVendors ?? 0), icon: Store },
+  const metrics: Array<{
+    label: string;
+    metric: OverviewKpiMetric;
+    icon: ComponentType<{ className?: string }>;
+    tone: "indigo" | "emerald" | "violet" | "amber";
+  }> = [
+    { label: "Total Orders", metric: analytics?.kpis.totalOrders ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: PackageCheck, tone: "indigo" },
+    { label: "Active Vendors", metric: analytics?.kpis.activeVendors ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: Store, tone: "emerald" },
     {
-      label: t("admin.overview.metrics.totalRevenue"),
-      value: `${Math.round(analytics?.totalRevenueMad ?? 0)} MAD`,
-      icon: CircleDollarSign,
+      label: "Total Gross Volume",
+      metric: analytics?.kpis.totalGrossVolume ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" },
+      icon: Wallet,
+      tone: "violet",
     },
+    { label: "Vendors Revenue", metric: analytics?.kpis.vendorsRevenue ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: CircleDollarSign, tone: "emerald" },
+    { label: "Cyclists Earnings", metric: analytics?.kpis.cyclistsEarnings ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: BikeIcon, tone: "amber" },
+    { label: "Platform Profit", metric: analytics?.kpis.platformProfit ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: Landmark, tone: "indigo" },
   ];
 
+  const toneClasses = {
+    indigo: "bg-[oklch(0.95_0.03_275)] text-[oklch(0.5_0.18_275)]",
+    emerald: "bg-[oklch(0.95_0.03_160)] text-[oklch(0.53_0.15_160)]",
+    violet: "bg-[oklch(0.95_0.03_300)] text-[oklch(0.53_0.16_300)]",
+    amber: "bg-[oklch(0.96_0.03_80)] text-[oklch(0.63_0.15_80)]",
+  };
+
+  const zoneChartData = useMemo(() => {
+    const top = analytics?.zonePerformance.top ?? [];
+    const bottom = analytics?.zonePerformance.bottom ?? [];
+    const zones = Array.from(new Set([...top.map((item) => item.zone), ...bottom.map((item) => item.zone)]));
+
+    return zones.map((zone) => {
+      const topRow = top.find((item) => item.zone === zone);
+      const bottomRow = bottom.find((item) => item.zone === zone);
+      return {
+        zone,
+        topOrders: topRow?.orders ?? 0,
+        bottomOrders: bottomRow?.orders ?? 0,
+      };
+    });
+  }, [analytics?.zonePerformance.bottom, analytics?.zonePerformance.top]);
+
   return (
-    <>
-      <section className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {metrics.map((metric) => (
-          <article key={metric.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
-            <div className="flex items-start justify-between">
-              <p className="text-sm text-muted-foreground">{metric.label}</p>
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <article
+            key={metric.label}
+            className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{metric.label}</p>
+                <p className="mt-2 text-3xl font-semibold text-foreground">
+                  {isLoading
+                    ? "..."
+                    : metric.metric.format === "currency"
+                      ? formatMad(metric.metric.value)
+                      : formatNumber(metric.metric.value)}
+                </p>
+              </div>
+              <span className={cn("inline-flex h-10 w-10 items-center justify-center rounded-xl", toneClasses[metric.tone])}>
                 <metric.icon className="size-4" />
               </span>
             </div>
-            <p className="mt-3 text-2xl font-semibold text-foreground">
-               {isLoading ? <span className="text-base text-muted-foreground">{t("admin.common.loading")}</span> : metric.value}
-            </p>
+            <div className="mt-4 flex items-center gap-2 text-xs font-medium">
+              {metric.metric.change >= 0 ? (
+                <ArrowUpRight className="size-3.5 text-[oklch(0.62_0.16_160)]" />
+              ) : (
+                <ArrowDownRight className="size-3.5 text-[oklch(0.62_0.16_30)]" />
+              )}
+              <span className={metric.metric.change >= 0 ? "text-[oklch(0.52_0.14_160)]" : "text-[oklch(0.59_0.18_30)]"}>
+                {formatDelta(metric.metric.change, metric.metric.format)} ({Math.abs(metric.metric.changePercentage).toFixed(1)}%)
+              </span>
+              <span className="text-muted-foreground">vs yesterday</span>
+            </div>
           </article>
         ))}
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">{t("admin.overview.weeklyOrderTrends")}</h2>
-          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-            <TrendingUp className="size-3.5" />
-            {t("admin.overview.last7Days")}
-          </span>
-        </div>
-
-        {isLoading ? (
-          <div className="flex h-64 items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
-            {t("admin.overview.loadingTrends")}
+      <section className="grid gap-5 xl:grid-cols-[2fr_1fr]">
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Sales & Orders Trends</h2>
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+              <TrendingUp className="size-3.5" />
+              Last 7 days
+            </span>
           </div>
-        ) : (
-          <ChartContainer config={weeklyOrdersChartConfig} className="h-64 w-full">
-            <BarChart data={analytics?.weeklyTrends ?? []} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+          {isLoading ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+              Loading trends...
+            </div>
+          ) : (
+            <ChartContainer config={salesOrdersChartConfig} className="h-72 w-full">
+              <AreaChart data={analytics?.salesOrdersTrends ?? []} margin={{ left: 4, right: 4, top: 6, bottom: 6 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" allowDecimals={false} tickLine={false} axisLine={false} width={34} />
+                <YAxis yAxisId="right" orientation="right" allowDecimals={false} tickLine={false} axisLine={false} width={42} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Area yAxisId="left" type="monotone" dataKey="orders" stroke="var(--color-orders)" fill="var(--color-orders)" fillOpacity={0.2} strokeWidth={2.2} />
+                <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="var(--color-revenue)" fill="var(--color-revenue)" fillOpacity={0.14} strokeWidth={2.2} />
+              </AreaChart>
+            </ChartContainer>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Delivery Speed by Zone</h2>
+            <Gauge className="size-4 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            {(analytics?.deliverySpeedMetrics ?? []).slice(0, 6).map((zone) => (
+              <div key={zone.zone} className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{zone.zone}</p>
+                  <p className="text-xs text-muted-foreground">{zone.deliveries} deliveries</p>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
+                    zone.performance === "fast" && "bg-[oklch(0.94_0.03_160)] text-[oklch(0.5_0.14_160)]",
+                    zone.performance === "slow" && "bg-[oklch(0.95_0.03_50)] text-[oklch(0.58_0.16_50)]",
+                    zone.performance === "normal" && "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {zone.avgMinutes.toFixed(0)} min
+                </span>
+              </div>
+            ))}
+            {!isLoading && (analytics?.deliverySpeedMetrics ?? []).length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
+                Not enough completed deliveries yet.
+              </p>
+            ) : null}
+          </div>
+        </article>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr_1fr]">
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Zone Performance</h2>
+            <Building2 className="size-4 text-muted-foreground" />
+          </div>
+          <ChartContainer config={zonePerformanceChartConfig} className="h-72 w-full">
+            <BarChart data={zoneChartData} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} />
-              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} />
+              <XAxis dataKey="zone" tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={34} />
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Bar dataKey="orders" fill="var(--color-orders)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="topOrders" fill="var(--color-topOrders)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="bottomOrders" fill="var(--color-bottomOrders)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ChartContainer>
-        )}
+        </article>
+
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Top Neighborhoods</h2>
+            <MapPin className="size-4 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            {(analytics?.marketInsights.topNeighborhoods ?? []).map((item, index) => (
+              <div key={`${item.neighborhood}-${index}`} className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{item.neighborhood}</p>
+                  <p className="text-xs text-muted-foreground">{item.zone}</p>
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">{item.orders} orders</span>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Top Brands & Categories</h2>
+            <Trophy className="size-4 text-muted-foreground" />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clock3 className="size-3.5" />
+                Brands
+              </p>
+              <div className="space-y-2">
+                {(analytics?.marketInsights.topBrands ?? []).slice(0, 3).map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                    <span className="text-xs text-muted-foreground">{formatMad(item.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <TrendingDown className="size-3.5" />
+                Categories
+              </p>
+              <div className="space-y-2">
+                {(analytics?.marketInsights.topCategories ?? []).slice(0, 3).map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                    <span className="text-xs text-muted-foreground">{item.orders} orders</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </article>
       </section>
-    </>
+    </div>
   );
 }
 
