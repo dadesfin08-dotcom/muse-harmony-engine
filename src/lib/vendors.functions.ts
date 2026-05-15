@@ -130,6 +130,23 @@ function roundMad(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
 }
 
+async function ensureVendorProfileExists(vendorId: string) {
+  const { error } = await (supabaseAdmin as any).from("profiles").upsert(
+    {
+      id: vendorId,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 async function getVendorPendingCommissionMad(vendorId: string) {
   const { data, error } = await (supabaseAdmin as any)
     .from("platform_commission_ledger")
@@ -526,6 +543,8 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      await ensureVendorProfileExists(data.vendorId);
+
       const { data: vendorRow, error: vendorError } = await (supabaseAdmin as any)
         .from("vendors")
         .select("id")
