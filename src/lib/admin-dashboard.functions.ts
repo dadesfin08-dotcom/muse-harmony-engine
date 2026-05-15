@@ -138,8 +138,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const tomorrowStartIso = tomorrowStartDate.toISOString();
   const weekStartIso = weekStartDate.toISOString();
 
-  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes, ledgerTotalRes, ledgerBeforeTodayRes] =
-    await Promise.all([
+  const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("orders")
       .select(
@@ -151,8 +150,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
     (supabaseAdmin as any).from("master_products").select("id, category, brand_id"),
     (supabaseAdmin as any).from("brands").select("id, name_en"),
-    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()"),
-    (supabaseAdmin as any).from("platform_commission_ledger").select("total:amount.sum()").lt("created_at", todayStartIso),
   ]);
 
   if (ordersRes.error) throw new Error(ordersRes.error.message);
@@ -160,8 +157,6 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   if (vendorsRes.error) throw new Error(vendorsRes.error.message);
   if (masterProductsRes.error) throw new Error(masterProductsRes.error.message);
   if (brandsRes.error) throw new Error(brandsRes.error.message);
-  if (ledgerTotalRes.error) throw new Error(ledgerTotalRes.error.message);
-  if (ledgerBeforeTodayRes.error) throw new Error(ledgerBeforeTodayRes.error.message);
 
   type DashboardOrderRow = {
     id: string;
