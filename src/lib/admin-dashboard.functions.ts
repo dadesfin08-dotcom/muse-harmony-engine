@@ -137,6 +137,7 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
   const yesterdayStartIso = yesterdayStartDate.toISOString();
   const tomorrowStartIso = tomorrowStartDate.toISOString();
   const weekStartIso = weekStartDate.toISOString();
+  const todayStartMs = todayStartDate.getTime();
 
   const [ordersRes, neighborhoodsRes, vendorsRes, masterProductsRes, brandsRes] = await Promise.all([
     (supabaseAdmin as any)
@@ -203,7 +204,8 @@ export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handl
         const amount = Number(row.amount ?? 0);
         total += amount;
 
-        if (row.created_at && row.created_at < todayStartIso) {
+        const createdAtMs = row.created_at ? new Date(row.created_at).getTime() : Number.NaN;
+        if (Number.isFinite(createdAtMs) && createdAtMs < todayStartMs) {
           beforeToday += amount;
         }
       }
