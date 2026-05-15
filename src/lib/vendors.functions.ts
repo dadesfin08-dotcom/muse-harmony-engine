@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   formatMoroccoPhoneForPayload,
@@ -524,32 +523,17 @@ export const getVendorSalesAnalytics = createServerFn({ method: "POST" })
   });
 
 export const collectVendorPlatformDues = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input) => collectVendorPlatformDuesInputSchema.parse(input))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     try {
-      const actorUserId = context.userId;
-
-      const [{ data: vendorRow, error: vendorError }, { data: actorRoles, error: roleError }] = await Promise.all([
-        (supabaseAdmin as any).from("vendors").select("id, user_id").eq("id", data.vendorId).single(),
-        (supabaseAdmin as any).from("user_roles").select("role").eq("user_id", actorUserId),
-      ]);
+      const { data: vendorRow, error: vendorError } = await (supabaseAdmin as any)
+        .from("vendors")
+        .select("id")
+        .eq("id", data.vendorId)
+        .single();
 
       if (vendorError || !vendorRow?.id) {
         throw new Error(vendorError?.message ?? "Vendor not found.");
-      }
-      if (roleError) {
-        throw new Error(roleError.message);
-      }
-
-      const normalizedRoles = ((actorRoles ?? []) as Array<{ role: string | null }>)
-        .map((row) => String(row.role ?? "").trim().toLowerCase())
-        .filter(Boolean);
-      const isAdminActor = normalizedRoles.some((role) => role === "admin" || role === "super_admin" || role === "superadmin");
-      const isVendorOwnerActor = String(vendorRow.user_id ?? "") === actorUserId;
-
-      if (!isAdminActor && !isVendorOwnerActor) {
-        throw new Error("You are not authorized to record this platform commission payment.");
       }
 
       const currentPendingMad = await getVendorPendingCommissionMad(data.vendorId);
@@ -570,7 +554,7 @@ export const collectVendorPlatformDues = createServerFn({ method: "POST" })
           order_id: null,
           transaction_type: "WITHDRAWAL",
           amount: -collectedAmountMad,
-          created_by: actorUserId,
+          created_by: data.createdBy ?? data.vendorId,
         })
         .select("id")
         .single();
