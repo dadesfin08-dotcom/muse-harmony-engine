@@ -893,14 +893,20 @@ function AdminPage() {
         (neighborhood) => neighborhood.vendorId == null || neighborhood.vendorId === selectedVendorId,
       ) ?? [];
 
-  const platformCollectionQrPayload = useMemo(() => {
-    if (!platformCollectionVendor) return "";
-    return JSON.stringify({
-      action: "admin_collection",
-      vendor_id: platformCollectionVendor.id,
-      amount_owed: Number(platformCollectionVendor.platformDuesMad ?? 0).toFixed(2),
-    });
-  }, [platformCollectionVendor]);
+  const collectionHistory = (platformCollectionHistoryQuery.data ?? []) as PlatformCollectionHistoryItem[];
+
+  const formatCollectionDateTime = (isoDate: string) => {
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return "--";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
 
   const toggleVendorNeighborhood = (neighborhoodId: string, checked: boolean) => {
     setVendorForm((current) => {
@@ -970,42 +976,56 @@ function AdminPage() {
       return;
     }
 
-    setPlatformCollectionConfirmation({
-      vendorId: vendor.id,
-      vendorName: vendor.storeName,
-      amountMad,
-      payload: {
-        action: "admin_collection",
-        vendor_id: vendor.id,
-        amount_owed: amountMad.toFixed(2),
-      },
-    });
+    setPlatformCollectionScanTargetVendor(vendor);
+    setIsPlatformQrScannerOpen(true);
   };
 
-  const handlePlatformCollectionConfirm = async () => {
-    if (!platformCollectionConfirmation) return;
+  const handlePlatformCollectionFromScan = async (vendor: AdminVendorRecord, payload: Record<string, unknown>) => {
+    const amountMad = Number(vendor.platformDuesMad ?? 0);
+    if (!Number.isFinite(amountMad) || amountMad <= 0) {
+      toast.info("No platform dues pending for this vendor.");
+      return;
+    }
 
     setIsCollectingPlatformDues(true);
     try {
       const result = await collectPlatformDues({
         data: {
-          vendorId: platformCollectionConfirmation.vendorId,
-          amount: Number(platformCollectionConfirmation.amountMad.toFixed(2)),
-          qrPayload: platformCollectionConfirmation.payload,
+          vendorId: vendor.id,
+          amount: Number(amountMad.toFixed(2)),
+          qrPayload: payload,
         },
       });
 
-      await vendorsQuery.refetch();
       await queryClient.invalidateQueries({ queryKey: ["admin", "vendors"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "platform-collections-history"] });
 
       setPlatformCollectionReceipt({
-        vendorName: platformCollectionConfirmation.vendorName,
+        vendorName: vendor.storeName,
         amountMad: result.collectedAmountMad,
         transactionId: result.transactionId,
         remainingDuesMad: result.remainingDuesMad,
         collectedAt: new Date().toISOString(),
       });
-      setPlatformCollectionConfirmation(null);
+
+      if (typeof window !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(120);
+      }
+
+      if (typeof window !== "undefined") {
+        const audioContext = new window.AudioContext();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(860, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.1);
+      }
+
+      setPlatformCollectionScanTargetVendor(null);
       setIsPlatformQrScannerOpen(false);
       toast.success("Funds successfully collected to Admin Treasury.");
     } catch (error) {
@@ -1017,7 +1037,7 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    if (!isPlatformQrScannerOpen) return;
+    if (!isPlatformQrScannerOpen || !platformCollectionScanTargetVendor) return;
 
     let mounted = true;
     let scanner: any = null;
@@ -1034,20 +1054,13 @@ function AdminPage() {
           (decodedText: string) => {
             try {
               const payload = platformCollectionQrPayloadSchema.parse(JSON.parse(decodedText));
-              const amountMad = Number(payload.amount_owed);
-              if (!Number.isFinite(amountMad) || amountMad <= 0) {
-                throw new Error("Invalid collection amount");
+
+              if (payload.vendor_id !== platformCollectionScanTargetVendor.id) {
+                toast.error("Invalid QR Code. Please scan the correct Vendor's code.");
+                return;
               }
 
-              const matchedVendor = vendors.find((vendor) => vendor.id === payload.vendor_id);
-
-              setPlatformCollectionConfirmation({
-                vendorId: payload.vendor_id,
-                vendorName: matchedVendor?.storeName ?? "Vendor",
-                amountMad,
-                payload,
-              });
-              setIsPlatformQrScannerOpen(false);
+              void handlePlatformCollectionFromScan(platformCollectionScanTargetVendor, payload);
             } catch {
               toast.error("Invalid platform collection QR payload.");
             }
@@ -1073,7 +1086,13 @@ function AdminPage() {
           });
       }
     };
-  }, [isPlatformQrScannerOpen]);
+  }, [
+    collectPlatformDues,
+    isPlatformQrScannerOpen,
+    platformCollectionScanTargetVendor,
+    queryClient,
+    vendors,
+  ]);
 
   const handleVendorActiveStateToggle = async (isActive: boolean) => {
     if (!manageVendorForm.vendorId) {
