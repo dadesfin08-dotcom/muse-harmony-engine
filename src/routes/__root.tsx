@@ -131,7 +131,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  useGlobalRealtimeSync();
+  const location = useLocation();
+  const isOperationalPath =
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/admin/") ||
+    location.pathname.startsWith("/vendor") ||
+    location.pathname.startsWith("/cyclist");
+
+  useGlobalRealtimeSync({ enabled: isOperationalPath });
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {
