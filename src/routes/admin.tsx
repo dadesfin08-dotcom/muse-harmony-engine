@@ -3770,10 +3770,18 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "platform-packs-subscribers" ? (
-                <PlaceholderSection
-                  icon={Users}
-                  title="Subscribers"
-                  subtitle="Phase 1 placeholder. Subscriber lifecycle and renewal controls will be enabled in the next phase."
+                <SubscribersSection
+                  subscribers={filteredPlatformSubscribers}
+                  isLoading={dbHealthQuery.isLoading || platformSubscribersQuery.isLoading}
+                  isMutating={updatePlatformSubscriberStatusMutation.isPending}
+                  searchTerm={subscriberSearchTerm}
+                  onSearchTermChange={setSubscriberSearchTerm}
+                  statusFilter={subscriberStatusFilter}
+                  onStatusFilterChange={setSubscriberStatusFilter}
+                  onPause={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
+                  onResume={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
+                  onCancel={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
+                  onViewHistory={(subscriptionId, customerName) => setSelectedSubscriberForHistory({ id: subscriptionId, customerName })}
                 />
               ) : null}
               {tab === "platform-packs-analytics" ? (
