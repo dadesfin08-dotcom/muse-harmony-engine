@@ -1092,7 +1092,7 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
     (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, item_data, sort_order").order("sort_order", { ascending: true }),
     (supabaseAdmin as any)
       .from("pack_features")
-      .select("id, pack_id, feature_label, sort_order")
+      .select("id, pack_id, feature_label, feature_data, sort_order")
       .order("sort_order", { ascending: true }),
   ]);
 
@@ -1107,10 +1107,10 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
     itemMap.set(row.pack_id, current);
   }
 
-  const featureMap = new Map<string, string[]>();
+  const featureMap = new Map<string, PlatformPackFeatureValue[]>();
   for (const row of (featuresRes.data ?? []) as PlatformPackFeatureRow[]) {
     const current = featureMap.get(row.pack_id) ?? [];
-    current.push(row.feature_label);
+    current.push(normalizePlatformPackFeature(row));
     featureMap.set(row.pack_id, current);
   }
 
@@ -1162,7 +1162,7 @@ export const createPlatformPack = createServerFn({ method: "POST" })
       const { error: packItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: inserted.id,
-          item_label: item.name,
+          item_label: item.nameEn,
           item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
@@ -1175,7 +1175,8 @@ export const createPlatformPack = createServerFn({ method: "POST" })
       const { error: packFeaturesError } = await (supabaseAdmin as any).from("pack_features").insert(
         data.packFeatures.map((feature, index) => ({
           pack_id: inserted.id,
-          feature_label: feature,
+          feature_label: feature.textEn,
+          feature_data: serializePlatformPackFeature(feature),
           sort_order: index,
         })),
       );
@@ -1224,7 +1225,7 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
       const { error: insertItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: data.id,
-          item_label: item.name,
+          item_label: item.nameEn,
           item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
@@ -1237,7 +1238,8 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
       const { error: insertFeaturesError } = await (supabaseAdmin as any).from("pack_features").insert(
         data.packFeatures.map((feature, index) => ({
           pack_id: data.id,
-          feature_label: feature,
+          feature_label: feature.textEn,
+          feature_data: serializePlatformPackFeature(feature),
           sort_order: index,
         })),
       );
