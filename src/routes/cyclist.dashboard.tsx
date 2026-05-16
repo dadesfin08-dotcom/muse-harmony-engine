@@ -471,14 +471,14 @@ function CyclistDashboardPage() {
       </header>
 
       <section className="mx-auto w-full max-w-lg px-4 pt-4">
-        <div className="mb-4 inline-flex w-full items-center rounded-xl border border-border bg-card p-1 shadow-sm">
+        <div className="mb-4 inline-flex w-full items-center rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.availableRunsTab")}
@@ -486,10 +486,10 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.activeDeliveriesTab")}
@@ -497,10 +497,10 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("platformPacks")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "platformPacks"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.platformPacksTab")}
@@ -512,13 +512,13 @@ function CyclistDashboardPage() {
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
 
-        <section className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <section className="mb-4 rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
             <Wallet className="size-4 text-primary" />
-            <p className="text-sm font-semibold text-foreground">Pending Settlements · تصفية الحسابات</p>
+            <p className="text-sm font-semibold text-foreground">{t("cyclist.pendingSettlementsTitle")}</p>
           </div>
           {pendingSettlements.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No pending cash handover settlements. · لا توجد تصفية معلقة حالياً.</p>
+            <p className="text-xs text-muted-foreground">{t("cyclist.noPendingSettlements")}</p>
           ) : (
             <div className="space-y-2">
               {pendingSettlements.map((settlement) => (
@@ -526,89 +526,123 @@ function CyclistDashboardPage() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{settlement.vendorName}</p>
-                      <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("cyclist.settlementOrdersCount", { count: settlement.ordersCount })} · {settlement.cashToHandoverMad.toFixed(2)} MAD
+                      </p>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Scan vendor wallet QR ({'{"action":"vendor_handover","vendor_id":"..."}'}) from the scanner to settle.
+                    {t("cyclist.settlementScannerHint")}
                   </p>
                 </div>
               ))}
-              <Button className="w-full" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+              <Button className="w-full active:scale-95" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
                 <Camera className="size-4" />
-                Open Universal Scanner · فتح الماسح الشامل
+                {t("cyclist.openUniversalScanner")}
               </Button>
             </div>
           )}
         </section>
 
-        {activeView === "available" ? (
-          <div className="space-y-3">
+        <AnimatePresence mode="wait" initial={false}>
+          {activeView === "available" ? (
+            <motion.div
+              key="cyclist-view-available"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {hasActiveDeliveryLock ? (
               <AppEmptyState
                 title={t("cyclist.lockTitle")}
                 subtitle={t("cyclist.lockSubtitle")}
                 icon={Lock}
-                className="bg-card"
+                  className="border-border/70 bg-card"
               />
             ) : availableMarketplaceRuns.length === 0 ? (
               <EmptyState label={t("cyclist.noReadyDeliveries")} />
             ) : (
               availableMarketplaceRuns.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isActiveDelivery={false}
-                  actionLabel={t("cyclist.acceptPickup")}
-                  actionTone="primary"
-                  actionIcon={Truck}
-                  isBusy={isUpdatingOrderId === order.id}
-                  onAction={() => handleAcceptDelivery(order)}
-                />
+                  <motion.div key={order.id} variants={listItemVariants}>
+                    <OrderCard
+                      order={order}
+                      isActiveDelivery={false}
+                      actionLabel={t("cyclist.acceptPickup")}
+                      actionTone="primary"
+                      actionIcon={Truck}
+                      isBusy={isUpdatingOrderId === order.id}
+                      onAction={() => handleAcceptDelivery(order)}
+                    />
+                  </motion.div>
               ))
             )}
-          </div>
-        ) : activeView === "active" ? (
-          <div className="space-y-3">
+              </motion.div>
+            </motion.div>
+          ) : activeView === "active" ? (
+            <motion.div
+              key="cyclist-view-active"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {activeMarketplaceDeliveries.length === 0 ? (
               <EmptyState label={t("cyclist.noActiveDeliveries")} />
             ) : (
               activeMarketplaceDeliveries.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isActiveDelivery
-                  actionLabel={t("cyclist.scanToDeliver")}
-                  actionTone="success"
-                  actionIcon={Camera}
-                  isBusy={isUpdatingOrderId === order.id}
-                  onOpenDetails={() => setDetailsOrder(order)}
-                  onAction={() => openScanner()}
-                />
+                <motion.div key={order.id} variants={listItemVariants}>
+                  <OrderCard
+                    order={order}
+                    isActiveDelivery
+                    actionLabel={t("cyclist.scanToDeliver")}
+                    actionTone="success"
+                    actionIcon={Camera}
+                    isBusy={isUpdatingOrderId === order.id}
+                    onOpenDetails={() => setDetailsOrder(order)}
+                    onAction={() => openScanner()}
+                  />
+                </motion.div>
               ))
             )}
-          </div>
-        ) : (
-          <div className="space-y-3">
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cyclist-view-platform-packs"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {platformPackDeliveries.length === 0 ? (
               <EmptyState label={t("cyclist.noPlatformPackTasks")} />
             ) : (
               platformPackDeliveries.map((order) => {
                 const isActiveTask = activeDeliveryIds.has(order.id);
                 return (
-                  <PlatformPackOrderCard
-                    key={order.id}
-                    order={order}
-                    isActiveDelivery={isActiveTask}
-                    isBusy={isUpdatingOrderId === order.id}
-                    onAccept={() => handleAcceptDelivery(order)}
-                    onDeliver={() => openScanner()}
-                  />
+                  <motion.div key={order.id} variants={listItemVariants}>
+                    <PlatformPackOrderCard
+                      order={order}
+                      isActiveDelivery={isActiveTask}
+                      isBusy={isUpdatingOrderId === order.id}
+                      onAccept={() => handleAcceptDelivery(order)}
+                      onDeliver={() => openScanner()}
+                    />
+                  </motion.div>
                 );
               })
             )}
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
