@@ -1653,7 +1653,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
 
       const { data: packItemsRows, error: packItemsError } = await (supabaseAdmin as any)
         .from("pack_items")
-        .select("item_label, sort_order")
+        .select("item_label, item_data, sort_order")
         .eq("pack_id", subscriptionRes.data.pack_id)
         .order("sort_order", { ascending: true });
 
@@ -1661,20 +1661,27 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
         throw new Error(packItemsError.message ?? "Failed to prepare first delivery order.");
       }
 
-      const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).length
-        ? ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) => ({
-            name: item.item_label,
-            quantity: 1,
-            unitPriceMad: 0,
-            selectedVariant: null,
-            brandName: null,
-            measurementValue: null,
-            measurementUnit: null,
-          }))
+      const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).length
+        ? ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).map((item) => {
+            const normalized = normalizePlatformPackItem(item);
+            return {
+              name: normalized.name || item.item_label,
+              quantity: normalized.quantity ?? 1,
+              unit: normalized.unit ?? null,
+              imageUrl: normalized.imageUrl ?? null,
+              unitPriceMad: 0,
+              selectedVariant: null,
+              brandName: null,
+              measurementValue: null,
+              measurementUnit: null,
+            };
+          })
         : [
             {
               name: "Subscription Pack Delivery",
               quantity: 1,
+              unit: "Pack",
+              imageUrl: null,
               unitPriceMad: 0,
               selectedVariant: null,
               brandName: null,
