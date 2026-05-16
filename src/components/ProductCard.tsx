@@ -108,7 +108,7 @@ export function ProductCard({
           </select>
         ) : null}
 
-        <div className="mb-2 flex w-full flex-row items-center justify-between gap-1.5">
+        <div className="flex flex-row justify-between items-center w-full mb-2">
           <span className="inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
             {brand || "—"}
           </span>
@@ -121,10 +121,7 @@ export function ProductCard({
         </div>
 
         <Link to="/customer/product/$id" params={{ id }} className="block w-full min-w-0">
-          <h2
-            title={name}
-            className="h-11 w-full overflow-hidden text-ellipsis text-sm font-semibold leading-5 text-gray-900 line-clamp-2"
-          >
+          <h2 title={name} className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem]">
             {name}
           </h2>
         </Link>

@@ -2135,24 +2135,25 @@ function Index() {
                 </button>
 
                 <div className="p-3">
-                  <span className="mb-2 inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                    {getLocalizedText({
-                      en: product.brandNameEn || product.brand || "",
-                      fr: product.brandNameFr || product.brandNameEn || product.brand || "",
-                      ar: product.brandNameAr || product.brandNameEn || product.brand || "",
-                    }) || "—"}
-                  </span>
+                  <div className="flex flex-row justify-between items-center w-full mb-2">
+                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                      {getLocalizedText({
+                        en: product.brandNameEn || product.brand || "",
+                        fr: product.brandNameFr || product.brandNameEn || product.brand || "",
+                        ar: product.brandNameAr || product.brandNameEn || product.brand || "",
+                      }) || "—"}
+                    </span>
 
-                  <div className="flex items-start justify-between gap-2">
-                    <Link to="/customer/product/$id" params={{ id: product.id }} className="min-w-0 flex-1">
-                      <h3 className="line-clamp-2 text-lg font-bold text-gray-900">{product.name}</h3>
-                    </Link>
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm text-gray-700">
                       <Package className="size-3.5" />
                       {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                       {product.measurementUnit}
                     </span>
                   </div>
+
+                  <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
+                    <h3 className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem]">{product.name}</h3>
+                  </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="text-3xl font-extrabold text-[#2A7543]">
