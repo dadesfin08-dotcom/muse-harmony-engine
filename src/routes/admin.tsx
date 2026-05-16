@@ -879,7 +879,12 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: Array<{
+      name: string;
+      imageUrl: string | null;
+      quantity: number | null;
+      unit: string | null;
+    }>;
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -1101,7 +1106,7 @@ function AdminPage() {
     billingCycle: "WEEKLY" as "DAILY" | "WEEKLY" | "MONTHLY",
     unitType: "Kg",
     deliveryWindow: "",
-    packItems: [""],
+    packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
     packFeatures: [""],
     imageUrl: "",
     isActive: true,
