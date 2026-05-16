@@ -1581,6 +1581,16 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
     }
 
     if (!firstOrderExists) {
+      const { data: profileRow, error: profileError } = await (supabaseAdmin as any)
+        .from("profiles")
+        .select("neighborhood_id")
+        .eq("id", subscriptionRes.data.customer_user_id)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error(profileError.message ?? "Failed to resolve delivery neighborhood for subscription.");
+      }
+
       const { data: packItemsRows, error: packItemsError } = await (supabaseAdmin as any)
         .from("pack_items")
         .select("item_label, sort_order")
@@ -1639,7 +1649,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
           order_items: orderItems,
           order_category: "PLATFORM_SUBSCRIPTION",
           cash_to_collect_from_customer: 0,
-          neighborhood_id: null,
+          neighborhood_id: profileRow?.neighborhood_id ?? null,
         })
         .select("id")
         .single();
