@@ -891,7 +891,7 @@ function OrderCard({
 
   if (isActiveDelivery) {
     return (
-      <article className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md">
+      <article className="flex flex-col rounded-2xl border border-success/25 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
         {order.paymentMethod === "Carnet" ? (
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
@@ -901,11 +901,11 @@ function OrderCard({
           </div>
         ) : null}
 
-        <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
+        <div className="mb-3 flex items-start justify-between border-b border-border pb-3">
           <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-foreground" onClick={() => onOpenDetails?.()}>
             {shortOrderId}
           </button>
-          <p className="text-xl font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
+          <p className="text-xl font-bold text-success">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
         <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-sm">
@@ -993,7 +993,7 @@ function OrderCard({
           </div>
         </div>
 
-        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
+        <Button className={`mt-3 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
@@ -1002,7 +1002,7 @@ function OrderCard({
   }
 
   return (
-    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
+    <article className="rounded-2xl border border-border/70 bg-card p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="space-y-2">
         {order.paymentMethod === "Carnet" ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
@@ -1026,7 +1026,7 @@ function OrderCard({
         <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || t("cyclist.emptyValue")}</p>
       </div>
 
-      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
+      <Button className={`mt-3 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
@@ -1051,9 +1051,10 @@ function PlatformPackOrderCard({
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
 
   return (
-    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
-      <div className="mb-3 rounded-xl border border-highlight/40 bg-highlight/10 p-2.5">
-        <p className="text-[12px] font-bold text-highlight-foreground">
+    <article className="rounded-2xl border border-success/25 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
+      <div className="mb-3 rounded-xl border border-success/45 bg-success/12 p-2.5">
+        <p className="inline-flex items-center gap-2 text-[12px] font-extrabold tracking-wide text-success">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
           {t("cyclist.prepaidZeroBadge")}
         </p>
       </div>
