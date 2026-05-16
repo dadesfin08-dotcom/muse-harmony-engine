@@ -854,6 +854,27 @@ function AdminPage() {
     deliveryCompletionPercent: number;
     createdAt: string;
   }>;
+  const selectedSubscriberHistory = (platformSubscriberHistoryQuery.data ?? []) as Array<{
+    id: string;
+    createdAt: string;
+    deliveredAt: string | null;
+    status:
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+      | "cancelled";
+    cyclistName: string;
+    customerName: string;
+    customerPhone: string;
+    itemCount: number;
+    totalPriceMad: number;
+    cashToCollectMad: number;
+    packSnapshotName: string | null;
+  }>;
   const adminCustomers =
     (adminCustomersQuery.data as
       | Array<{
