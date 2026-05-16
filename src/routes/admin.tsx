@@ -7499,17 +7499,33 @@ function AdsContentSection({
 }
 
 type PackItemFormValue = {
-  name: string;
+  nameEn: string;
+  nameFr: string;
+  nameAr: string;
   imageUrl: string;
   quantity: string;
   unit: string;
 };
 
 type PackItemValue = {
-  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   imageUrl: string | null;
   quantity: number | null;
   unit: string | null;
+};
+
+type PackFeatureFormValue = {
+  textEn: string;
+  textFr: string;
+  textAr: string;
+};
+
+type PackFeatureValue = {
+  textEn: string;
+  textFr: string | null;
+  textAr: string | null;
 };
 
 function PlatformPacksSection({
@@ -7538,7 +7554,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string | null;
     packItems: PackItemValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureValue[];
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -7555,7 +7571,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string;
     packItems: PackItemFormValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureFormValue[];
     imageUrl: string;
     isActive: boolean;
   };
@@ -7571,7 +7587,7 @@ function PlatformPacksSection({
       unitType: string;
       deliveryWindow: string;
       packItems: PackItemFormValue[];
-      packFeatures: string[];
+      packFeatures: PackFeatureFormValue[];
       imageUrl: string;
       isActive: boolean;
     }>
@@ -7589,7 +7605,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string | null;
     packItems: PackItemValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureValue[];
     imageUrl: string | null;
     isActive: boolean;
   }) => void;
@@ -7621,22 +7637,47 @@ function PlatformPacksSection({
     });
   };
 
-  const updateFeatureAt = (index: number, value: string) => {
+  const itemImageInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const applyPackItemImageFile = (index: number, file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onFormChange((current) => {
+        const next = [...current.packItems];
+        next[index] = { ...next[index], imageUrl: typeof reader.result === "string" ? reader.result : next[index].imageUrl };
+        return { ...current, packItems: next };
+      });
+    };
+    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.readAsDataURL(file);
+  };
+
+  const handlePackItemImageChange = (index: number, event: ChangeEvent<HTMLInputElement>) => {
+    applyPackItemImageFile(index, event.target.files?.[0] ?? null);
+  };
+
+  const updateFeatureAt = (index: number, field: keyof PackFeatureFormValue, value: string) => {
     onFormChange((current) => {
       const next = [...current.packFeatures];
-      next[index] = value;
+      next[index] = { ...next[index], [field]: value };
       return { ...current, packFeatures: next };
     });
   };
 
   const addFeature = () => {
-    onFormChange((current) => ({ ...current, packFeatures: [...current.packFeatures, ""] }));
+    onFormChange((current) => ({ ...current, packFeatures: [...current.packFeatures, { textEn: "", textFr: "", textAr: "" }] }));
   };
 
   const removeFeature = (index: number) => {
     onFormChange((current) => {
       if (current.packFeatures.length <= 1) {
-        return { ...current, packFeatures: [""] };
+        return { ...current, packFeatures: [{ textEn: "", textFr: "", textAr: "" }] };
       }
       return { ...current, packFeatures: current.packFeatures.filter((_, featureIndex) => featureIndex !== index) };
     });
