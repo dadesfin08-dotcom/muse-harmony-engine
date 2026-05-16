@@ -1203,6 +1203,127 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler(async () => {
+  const [subscriptionsRes, packsRes] = await Promise.all([
+    (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select(
+        "id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, deliveries_completed, deliveries_expected, created_at",
+      )
+      .order("created_at", { ascending: false }),
+    (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
+  ]);
+
+  if (subscriptionsRes.error) {
+    throw new Error(subscriptionsRes.error.message ?? "Failed to load platform subscribers.");
+  }
+  if (packsRes.error) {
+    throw new Error(packsRes.error.message ?? "Failed to load platform packs.");
+  }
+
+  const packNameById = new Map(
+    ((packsRes.data ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>).map((pack) => [
+      pack.id,
+      (pack.name_en?.trim() || pack.name_fr?.trim() || pack.name_ar?.trim() || "Unknown Pack"),
+    ]),
+  );
+
+  return ((subscriptionsRes.data ?? []) as PlatformSubscriptionRow[]).map((row) => {
+    const deliveriesCompleted = Number(row.deliveries_completed ?? 0);
+    const deliveriesExpected = Number(row.deliveries_expected ?? 0);
+    const completionPct =
+      deliveriesExpected > 0
+        ? Math.max(0, Math.min(100, Math.round((deliveriesCompleted / deliveriesExpected) * 100)))
+        : 0;
+
+    return {
+      id: row.id,
+      customerUserId: row.customer_user_id,
+      customerName: row.customer_name?.trim() || "Unknown Subscriber",
+      customerPhone: row.customer_phone?.trim() || "—",
+      packId: row.pack_id,
+      packName: packNameById.get(row.pack_id) ?? "Unknown Pack",
+      status: row.status,
+      startDate: row.start_date,
+      expirationDate: row.expiration_date,
+      nextScheduledDeliveryDate: row.next_scheduled_delivery_date,
+      lifetimeRevenueMad: Number(row.lifetime_revenue_mad ?? 0),
+      deliveriesCompleted,
+      deliveriesExpected,
+      deliveryCompletionPercent: completionPct,
+      createdAt: row.created_at,
+    };
+  });
+});
+
+export const updatePlatformSubscriberStatus = createServerFn({ method: "POST" })
+  .inputValidator((input) => updatePlatformSubscriberStatusInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .update({ status: data.status })
+      .eq("id", data.subscriptionId)
+      .select("id")
+      .single();
+
+    if (error || !updated?.id) {
+      throw new Error(error?.message ?? "Failed to update subscriber status.");
+    }
+
+    return { ok: true };
+  });
+
+export const getPlatformSubscriberHistory = createServerFn({ method: "POST" })
+  .inputValidator((input) => getPlatformSubscriberHistoryInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const [ordersRes, cyclistsRes] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("orders")
+        .select(
+          "id, created_at, delivered_at, status, cyclist_id, customer_name, customer_phone, item_count, total_price, cash_to_collect_from_customer, order_items",
+        )
+        .eq("subscription_id", data.subscriptionId)
+        .eq("order_category", "PLATFORM_SUBSCRIPTION")
+        .order("created_at", { ascending: false }),
+      (supabaseAdmin as any).from("cyclists").select("id, full_name"),
+    ]);
+
+    if (ordersRes.error) {
+      throw new Error(ordersRes.error.message ?? "Failed to load subscriber delivery history.");
+    }
+    if (cyclistsRes.error) {
+      throw new Error(cyclistsRes.error.message ?? "Failed to load cyclist history metadata.");
+    }
+
+    const cyclistNameById = new Map(
+      ((cyclistsRes.data ?? []) as Array<{ id: string; full_name: string }>).map((cyclist) => [cyclist.id, cyclist.full_name]),
+    );
+
+    return ((ordersRes.data ?? []) as PlatformSubscriptionOrderHistoryRow[]).map((row) => {
+      const firstItem = Array.isArray(row.order_items) ? row.order_items[0] : null;
+      const item = firstItem && typeof firstItem === "object" ? (firstItem as Record<string, unknown>) : null;
+      const snapshotName =
+        (typeof item?.packName === "string" && item.packName.trim().length > 0 && item.packName.trim()) ||
+        (typeof item?.name === "string" && item.name.trim().length > 0 && item.name.trim()) ||
+        (typeof item?.title === "string" && item.title.trim().length > 0 && item.title.trim()) ||
+        null;
+
+      return {
+        id: row.id,
+        createdAt: row.created_at,
+        deliveredAt: row.delivered_at,
+        status: row.status,
+        cyclistName: row.cyclist_id ? (cyclistNameById.get(row.cyclist_id) ?? "Unknown Cyclist") : "Unassigned",
+        customerName: row.customer_name?.trim() || "Unknown Subscriber",
+        customerPhone: row.customer_phone?.trim() || "—",
+        itemCount: Number(row.item_count ?? 0),
+        totalPriceMad: Number(row.total_price ?? 0),
+        cashToCollectMad: Number(row.cash_to_collect_from_customer ?? 0),
+        packSnapshotName: snapshotName,
+      };
+    });
+  });
+
 export const getAdminInvoiceSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("invoice_settings")
