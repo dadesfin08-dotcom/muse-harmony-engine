@@ -7625,13 +7625,16 @@ function PlatformPacksSection({
   };
 
   const addPackItem = () => {
-    onFormChange((current) => ({ ...current, packItems: [...current.packItems, { name: "", imageUrl: "", quantity: "", unit: "" }] }));
+    onFormChange((current) => ({
+      ...current,
+      packItems: [...current.packItems, { nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+    }));
   };
 
   const removePackItem = (index: number) => {
     onFormChange((current) => {
       if (current.packItems.length <= 1) {
-        return { ...current, packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }] };
+        return { ...current, packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }] };
       }
       return { ...current, packItems: current.packItems.filter((_, itemIndex) => itemIndex !== index) };
     });
@@ -7780,37 +7783,36 @@ function PlatformPacksSection({
           </div>
           <div className="space-y-2.5">
             {form.packItems.map((item, index) => (
-              <div key={`pack-item-${index}`} className="grid gap-2 rounded-md border border-border/60 bg-background/40 p-2 md:grid-cols-[1.3fr_1.2fr_0.8fr_0.7fr_auto] md:items-center">
-                <Input
-                  value={item.name}
-                  onChange={(event) => updatePackItemAt(index, "name", event.target.value)}
-                  placeholder="Item name"
-                  className="h-9"
-                />
-                <Input
-                  value={item.imageUrl}
-                  onChange={(event) => updatePackItemAt(index, "imageUrl", event.target.value)}
-                  placeholder="Image URL"
-                  className="h-9"
-                />
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.quantity}
-                  onChange={(event) => updatePackItemAt(index, "quantity", event.target.value)}
-                  placeholder="Qty"
-                  className="h-9"
-                />
-                <Input
-                  value={item.unit}
-                  onChange={(event) => updatePackItemAt(index, "unit", event.target.value)}
-                  placeholder="Unit"
-                  className="h-9"
-                />
-                <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
-                  <Trash2 className="size-3.5" />
-                </Button>
+              <div key={`pack-item-${index}`} className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Input value={item.nameEn} onChange={(event) => updatePackItemAt(index, "nameEn", event.target.value)} placeholder="Name (EN)" className="h-9" />
+                  <Input value={item.nameFr} onChange={(event) => updatePackItemAt(index, "nameFr", event.target.value)} placeholder="Name (FR)" className="h-9" />
+                  <Input value={item.nameAr} onChange={(event) => updatePackItemAt(index, "nameAr", event.target.value)} placeholder="Name (AR)" className="h-9" />
+                </div>
+                <div className="grid gap-2 md:grid-cols-[1fr_0.8fr_0.7fr_auto] md:items-center">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={(element) => {
+                        itemImageInputRefs.current[index] = element;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => handlePackItemImageChange(index, event)}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={() => itemImageInputRefs.current[index]?.click()}>
+                      <ImagePlus className="size-3.5" />
+                      Upload Item Image
+                    </Button>
+                    <Input value={item.imageUrl} onChange={(event) => updatePackItemAt(index, "imageUrl", event.target.value)} placeholder="Image URL" className="h-9" />
+                  </div>
+                  <Input type="number" min={0} step="0.01" value={item.quantity} onChange={(event) => updatePackItemAt(index, "quantity", event.target.value)} placeholder="Qty" className="h-9" />
+                  <Input value={item.unit} onChange={(event) => updatePackItemAt(index, "unit", event.target.value)} placeholder="Unit" className="h-9" />
+                  <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+                {item.imageUrl ? <img src={item.imageUrl} alt={item.nameEn || "Pack item"} className="h-16 w-16 rounded-md object-cover" loading="lazy" /> : null}
               </div>
             ))}
           </div>
@@ -7825,8 +7827,10 @@ function PlatformPacksSection({
           </div>
           <div className="space-y-2">
             {form.packFeatures.map((feature, index) => (
-              <div key={`pack-feature-${index}`} className="flex items-center gap-2">
-                <Input value={feature} onChange={(event) => updateFeatureAt(index, event.target.value)} placeholder={`Feature ${index + 1}`} />
+              <div key={`pack-feature-${index}`} className="grid gap-2 rounded-md border border-border/60 bg-background/40 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
+                <Input value={feature.textEn} onChange={(event) => updateFeatureAt(index, "textEn", event.target.value)} placeholder={`Feature ${index + 1} (EN)`} />
+                <Input value={feature.textFr} onChange={(event) => updateFeatureAt(index, "textFr", event.target.value)} placeholder={`Feature ${index + 1} (FR)`} />
+                <Input value={feature.textAr} onChange={(event) => updateFeatureAt(index, "textAr", event.target.value)} placeholder={`Feature ${index + 1} (AR)`} />
                 <Button type="button" size="icon" variant="outline" onClick={() => removeFeature(index)}>
                   <Trash2 className="size-3.5" />
                 </Button>
