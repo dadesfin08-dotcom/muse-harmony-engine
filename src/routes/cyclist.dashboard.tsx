@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -24,6 +24,7 @@ import {
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import appI18n from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -47,6 +48,28 @@ export const Route = createFileRoute("/cyclist/dashboard")({
   }),
   component: CyclistDashboardPage,
 });
+
+const tabPanelVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 6 },
+};
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.04,
+    },
+  },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 },
+};
 
 function CyclistDashboardPage() {
   const { t, i18n: runtimeI18n } = useTranslation();
