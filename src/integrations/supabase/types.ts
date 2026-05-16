@@ -1161,18 +1161,21 @@ export type Database = {
         Row: {
           agreed_price: number | null
           completed_deliveries: number
+          contact_phone: string | null
           created_at: string
           customer_name: string
           customer_phone: string | null
           customer_user_id: string
           deliveries_completed: number
           deliveries_expected: number
+          delivery_address: string | null
           expiration_date: string | null
           id: string
           lifetime_revenue_mad: number
           next_scheduled_delivery_date: string | null
           notes: string | null
           pack_id: string
+          pack_quantity: number
           start_date: string
           status: Database["public"]["Enums"]["platform_subscription_status"]
           total_deliveries: number | null
@@ -1181,18 +1184,21 @@ export type Database = {
         Insert: {
           agreed_price?: number | null
           completed_deliveries?: number
+          contact_phone?: string | null
           created_at?: string
           customer_name: string
           customer_phone?: string | null
           customer_user_id: string
           deliveries_completed?: number
           deliveries_expected?: number
+          delivery_address?: string | null
           expiration_date?: string | null
           id?: string
           lifetime_revenue_mad?: number
           next_scheduled_delivery_date?: string | null
           notes?: string | null
           pack_id: string
+          pack_quantity?: number
           start_date?: string
           status?: Database["public"]["Enums"]["platform_subscription_status"]
           total_deliveries?: number | null
@@ -1201,18 +1207,21 @@ export type Database = {
         Update: {
           agreed_price?: number | null
           completed_deliveries?: number
+          contact_phone?: string | null
           created_at?: string
           customer_name?: string
           customer_phone?: string | null
           customer_user_id?: string
           deliveries_completed?: number
           deliveries_expected?: number
+          delivery_address?: string | null
           expiration_date?: string | null
           id?: string
           lifetime_revenue_mad?: number
           next_scheduled_delivery_date?: string | null
           notes?: string | null
           pack_id?: string
+          pack_quantity?: number
           start_date?: string
           status?: Database["public"]["Enums"]["platform_subscription_status"]
           total_deliveries?: number | null
