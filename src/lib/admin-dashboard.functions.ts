@@ -208,6 +208,9 @@ type PlatformSubscriptionRow = {
   customer_user_id: string;
   customer_name: string;
   customer_phone: string | null;
+  contact_phone: string | null;
+  delivery_address: string | null;
+  pack_quantity: number | null;
   pack_id: string;
   status: PlatformSubscriptionStatus;
   start_date: string;
@@ -1537,7 +1540,7 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
     (supabaseAdmin as any)
       .from("platform_subscriptions")
       .select(
-        "id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, agreed_price, total_deliveries, completed_deliveries, deliveries_completed, deliveries_expected, created_at",
+        "id, customer_user_id, customer_name, customer_phone, contact_phone, delivery_address, pack_quantity, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, agreed_price, total_deliveries, completed_deliveries, deliveries_completed, deliveries_expected, created_at",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
@@ -1570,6 +1573,9 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
       customerUserId: row.customer_user_id,
       customerName: row.customer_name?.trim() || "Unknown Subscriber",
       customerPhone: row.customer_phone?.trim() || "—",
+      contactPhone: row.contact_phone?.trim() || row.customer_phone?.trim() || "—",
+      deliveryAddress: row.delivery_address?.trim() || "—",
+      packQuantity: Math.max(1, Number(row.pack_quantity ?? 1)),
       packId: row.pack_id,
       packName: packNameById.get(row.pack_id) ?? "Unknown Pack",
       status: row.status,
