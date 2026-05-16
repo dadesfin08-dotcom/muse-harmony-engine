@@ -89,7 +89,17 @@ const platformPackItemInputSchema = z.object({
   nameEn: z.string().trim().min(1).max(200),
   nameFr: z.string().trim().max(200).nullable().optional(),
   nameAr: z.string().trim().max(200).nullable().optional(),
-  imageUrl: z.string().trim().url().max(2000).nullable().optional(),
+  imageUrl: z
+    .string()
+    .trim()
+    .max(3_000_000)
+    .refine((value) => {
+      if (!value) return true;
+      if (value.startsWith("data:image/")) return true;
+      return z.string().url().max(2000).safeParse(value).success;
+    }, "Must be a valid URL or image data URL.")
+    .nullable()
+    .optional(),
   quantity: z.number().min(0).max(100_000).nullable().optional(),
   unit: z.string().trim().max(40).nullable().optional(),
 });
