@@ -76,6 +76,12 @@ const getCustomerSubscriptionsInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
+const updateCustomerSubscriptionStatusInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+  subscriptionId: z.string().uuid(),
+  status: z.enum(["active", "paused"]),
+});
+
 const vendorSettlementSummaryInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
@@ -1849,5 +1855,32 @@ export const getCustomerSubscriptions = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getCustomerSubscriptions failed:", error);
       throw new Error("Failed to load customer subscriptions.");
+    }
+  });
+
+export const updateCustomerSubscriptionStatus = createServerFn({ method: "POST" })
+  .inputValidator((input) => updateCustomerSubscriptionStatusInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: updatedRow, error } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .update({ status: data.status })
+        .eq("id", data.subscriptionId)
+        .eq("customer_phone", data.phoneNumber)
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!updatedRow?.id) {
+        throw new Error("Subscription not found for this customer.");
+      }
+
+      return { ok: true };
+    } catch (error) {
+      console.error("updateCustomerSubscriptionStatus failed:", error);
+      throw new Error("Failed to update subscription status.");
     }
   });
