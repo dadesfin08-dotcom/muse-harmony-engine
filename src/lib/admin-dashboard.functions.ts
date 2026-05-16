@@ -1309,14 +1309,44 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
-      .select("id")
+      .select("id, status")
       .single();
 
     if (error || !updated?.id) {
       throw new Error(error?.message ?? "Failed to update subscription order status.");
     }
 
-    return { ok: true };
+    if (data.status === "delivered") {
+      const { data: subscriptionRow, error: progressError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .select("id, total_deliveries, completed_deliveries")
+        .eq("id", currentOrder.subscription_id)
+        .single();
+
+      if (progressError) {
+        throw new Error(progressError.message ?? "Failed to sync subscription progress.");
+      }
+
+      const totalDeliveries = Number(subscriptionRow?.total_deliveries ?? 0);
+      const completedDeliveries = Number(subscriptionRow?.completed_deliveries ?? 0);
+      const nextCompleted = completedDeliveries + 1;
+      const isCycleComplete = totalDeliveries > 0 && nextCompleted >= totalDeliveries;
+
+      const { error: subscriptionUpdateError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .update({
+          completed_deliveries: nextCompleted,
+          deliveries_completed: nextCompleted,
+          status: isCycleComplete ? "completed" : "active",
+        })
+        .eq("id", currentOrder.subscription_id);
+
+      if (subscriptionUpdateError) {
+        throw new Error(subscriptionUpdateError.message ?? "Failed to update subscription completion progress.");
+      }
+    }
+
+    return { ok: true, status: updated.status };
   });
 
 export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler(async () => {
