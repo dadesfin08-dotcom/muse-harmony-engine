@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -36,6 +36,13 @@ type CyclistSession = {
   fullName: string;
 };
 
+type CyclistDashboardTab = {
+  key: CyclistView | "wallet";
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+};
+
 export const Route = createFileRoute("/cyclist/dashboard")({
   head: () => ({
     meta: [
@@ -48,12 +55,6 @@ export const Route = createFileRoute("/cyclist/dashboard")({
   }),
   component: CyclistDashboardPage,
 });
-
-const tabPanelVariants = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 6 },
-};
 
 const listVariants = {
   hidden: { opacity: 0 },
@@ -69,6 +70,12 @@ const listVariants = {
 const listItemVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0 },
+};
+
+const tabPanelVariants = {
+  initial: { opacity: 0, x: 18 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -18 },
 };
 
 function CyclistDashboardPage() {
@@ -221,6 +228,45 @@ function CyclistDashboardPage() {
     activeMarketplaceDeliveries.length,
     t,
   ]);
+
+  const dashboardTabs = useMemo<CyclistDashboardTab[]>(
+    () => [
+      {
+        key: "available" as const,
+        label: t("cyclist.availableRunsTab"),
+        icon: LayoutGrid,
+        onClick: () => {
+          setActiveView("available");
+        },
+      },
+      {
+        key: "active" as const,
+        label: t("cyclist.activeDeliveriesTab"),
+        icon: Navigation,
+        onClick: () => {
+          setActiveView("active");
+        },
+      },
+      {
+        key: "platformPacks" as const,
+        label: t("cyclist.platformPacksTab"),
+        icon: PackageCheck,
+        onClick: () => {
+          setActiveView("platformPacks");
+        },
+      },
+      {
+        key: "wallet" as const,
+        label: t("cyclist.earningsTab"),
+        icon: Wallet,
+        onClick: () => void navigate({ to: "/cyclist/wallet" }),
+      },
+    ],
+    [navigate, t],
+  );
+
+  const orderedDashboardTabs = isArabic ? [...dashboardTabs].reverse() : dashboardTabs;
+  const activeTabIndex = orderedDashboardTabs.findIndex((tab) => tab.key === activeView);
 
   const updateOnlineState = async (isOnline: boolean) => {
     if (!cyclist?.id) {
@@ -464,49 +510,21 @@ function CyclistDashboardPage() {
           </div>
         </div>
 
-        <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}</span>
+        <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur">
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <span
+              className={cn(
+                "h-2.5 w-2.5 rounded-full",
+                cyclist?.isActive ? "animate-pulse bg-success" : "bg-muted-foreground/40",
+              )}
+            />
+            {cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}
+          </span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
 
       <section className="mx-auto w-full max-w-lg px-4 pt-4">
-        <div className="mb-4 inline-flex w-full items-center rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur">
-          <button
-            type="button"
-            onClick={() => setActiveView("available")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "available"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.availableRunsTab")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView("active")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "active"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.activeDeliveriesTab")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView("platformPacks")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "platformPacks"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.platformPacksTab")}
-          </button>
-        </div>
-
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
@@ -673,52 +691,42 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-background/95 px-3 py-2 pb-safe backdrop-blur">
-        <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveView("available")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "available"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.availableRunsTab")}
-          </button>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
+        <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
+          <div className="relative grid grid-cols-4 gap-1" dir={isArabic ? "rtl" : "ltr"}>
+            {activeTabIndex >= 0 ? (
+              <motion.span
+                layout
+                transition={{ type: "spring", stiffness: 360, damping: 30 }}
+                className="absolute inset-y-1 z-0 rounded-2xl bg-primary/12"
+                style={{
+                  width: "calc(25% - 0.375rem)",
+                  [isArabic ? "right" : "left"]: `calc(${activeTabIndex} * 25% + 0.1875rem)`,
+                }}
+              />
+            ) : null}
 
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/cyclist/wallet" })}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition-all duration-200 hover:bg-muted active:scale-95"
-            aria-label={t("cyclist.walletAria")}
-          >
-            <Wallet className="size-5" />
-          </button>
+            {orderedDashboardTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              const isTabActive = activeView === tab.key;
 
-          <button
-            type="button"
-            onClick={() => setActiveView("active")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "active"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.activeDeliveriesTab")}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveView("platformPacks")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "platformPacks"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.platformPacksTab")}
-          </button>
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={tab.onClick}
+                  aria-label={tab.label}
+                  className={cn(
+                    "relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition-all duration-200 active:scale-95",
+                    isTabActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <TabIcon className="size-[18px]" />
+                  <span className="line-clamp-1 max-w-full text-[10px] leading-none">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
@@ -883,7 +891,7 @@ function OrderCard({
 
   if (isActiveDelivery) {
     return (
-      <article className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md">
+      <article className="flex flex-col rounded-2xl border border-success/25 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
         {order.paymentMethod === "Carnet" ? (
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
@@ -893,11 +901,11 @@ function OrderCard({
           </div>
         ) : null}
 
-        <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
+        <div className="mb-3 flex items-start justify-between border-b border-border pb-3">
           <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-foreground" onClick={() => onOpenDetails?.()}>
             {shortOrderId}
           </button>
-          <p className="text-xl font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
+          <p className="text-xl font-bold text-success">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
         <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-sm">
@@ -985,7 +993,7 @@ function OrderCard({
           </div>
         </div>
 
-        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
+        <Button className={`mt-3 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
@@ -994,7 +1002,7 @@ function OrderCard({
   }
 
   return (
-    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
+    <article className="rounded-2xl border border-border/70 bg-card p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="space-y-2">
         {order.paymentMethod === "Carnet" ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
@@ -1018,7 +1026,7 @@ function OrderCard({
         <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || t("cyclist.emptyValue")}</p>
       </div>
 
-      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
+      <Button className={`mt-3 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
@@ -1043,9 +1051,10 @@ function PlatformPackOrderCard({
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
 
   return (
-    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
-      <div className="mb-3 rounded-xl border border-highlight/40 bg-highlight/10 p-2.5">
-        <p className="text-[12px] font-bold text-highlight-foreground">
+    <article className="rounded-2xl border border-success/25 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
+      <div className="mb-3 rounded-xl border border-success/45 bg-success/12 p-2.5">
+        <p className="inline-flex items-center gap-2 text-[12px] font-extrabold tracking-wide text-success">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
           {t("cyclist.prepaidZeroBadge")}
         </p>
       </div>
