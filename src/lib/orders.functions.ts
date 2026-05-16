@@ -1806,7 +1806,7 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
       const { data: orders, error } = await (supabaseAdmin as any)
         .from("orders")
         .select(
-          "id, vendor_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, created_at",
+          "id, vendor_id, subscription_id, order_category, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, item_count, order_items, created_at",
         )
         .eq("customer_phone", data.phoneNumber)
         .order("created_at", { ascending: false });
@@ -1815,7 +1815,38 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
-      return (orders ?? []) as Array<CustomerOrderRow>;
+      const rows = (orders ?? []) as Array<CustomerOrderRow & { subscription_id?: string | null; order_category?: string | null }>;
+      const subscriptionIds = Array.from(
+        new Set(
+          rows
+            .map((row) => row.subscription_id)
+            .filter((value): value is string => typeof value === "string" && value.length > 0),
+        ),
+      );
+
+      const subscriptionStatusById = new Map<string, string>();
+      if (subscriptionIds.length > 0) {
+        const { data: subscriptions, error: subscriptionsError } = await (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .select("id, status")
+          .in("id", subscriptionIds);
+
+        if (subscriptionsError) {
+          throw new Error(subscriptionsError.message);
+        }
+
+        for (const row of (subscriptions ?? []) as Array<{ id: string; status: string }>) {
+          subscriptionStatusById.set(row.id, row.status);
+        }
+      }
+
+      return rows.map((row) => ({
+        ...row,
+        subscription_status:
+          typeof row.subscription_id === "string" && row.subscription_id.length > 0
+            ? (subscriptionStatusById.get(row.subscription_id) ?? null)
+            : null,
+      })) as Array<CustomerOrderRow>;
     } catch (error) {
       console.error("getCustomerOrders failed:", error);
       throw new Error("Failed to load customer orders.");
