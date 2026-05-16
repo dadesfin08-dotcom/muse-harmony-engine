@@ -68,21 +68,27 @@ type PlatformPackItemRow = {
 };
 
 type PlatformPackItemInput = {
-  name: string;
+  nameEn: string;
+  nameFr?: string | null;
+  nameAr?: string | null;
   imageUrl?: string | null;
   quantity?: number | null;
   unit?: string | null;
 };
 
 type PlatformPackItemValue = {
-  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   imageUrl: string | null;
   quantity: number | null;
   unit: string | null;
 };
 
 const platformPackItemInputSchema = z.object({
-  name: z.string().trim().min(1).max(200),
+  nameEn: z.string().trim().min(1).max(200),
+  nameFr: z.string().trim().max(200).nullable().optional(),
+  nameAr: z.string().trim().max(200).nullable().optional(),
   imageUrl: z.string().trim().url().max(2000).nullable().optional(),
   quantity: z.number().min(0).max(100_000).nullable().optional(),
   unit: z.string().trim().max(40).nullable().optional(),
@@ -93,13 +99,19 @@ function normalizePlatformPackItem(row: { item_label: string; item_data?: unknow
     ? (row.item_data as Record<string, unknown>)
     : null;
 
-  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameEnFromData = typeof data?.name_en === "string"
+    ? data.name_en.trim()
+    : typeof data?.name === "string"
+      ? data.name.trim()
+      : "";
+  const nameFrFromData = typeof data?.name_fr === "string" ? data.name_fr.trim() : "";
+  const nameArFromData = typeof data?.name_ar === "string" ? data.name_ar.trim() : "";
   const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
 
   const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
   const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
 
-  const quantitySource = data?.quantity;
+  const quantitySource = data?.qty ?? data?.quantity;
   const quantityParsed =
     typeof quantitySource === "number"
       ? quantitySource
@@ -108,7 +120,9 @@ function normalizePlatformPackItem(row: { item_label: string; item_data?: unknow
         : Number.NaN;
 
   return {
-    name: nameFromData || nameFromLabel,
+    nameEn: nameEnFromData || nameFromLabel,
+    nameFr: nameFrFromData || null,
+    nameAr: nameArFromData || null,
     imageUrl: imageUrlRaw || null,
     quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
     unit: unitRaw || null,
@@ -117,9 +131,11 @@ function normalizePlatformPackItem(row: { item_label: string; item_data?: unknow
 
 function serializePlatformPackItem(item: PlatformPackItemInput) {
   return {
-    name: item.name,
+    name_en: item.nameEn,
+    name_fr: item.nameFr ?? null,
+    name_ar: item.nameAr ?? null,
     image_url: item.imageUrl ?? null,
-    quantity: item.quantity ?? null,
+    qty: item.quantity ?? null,
     unit: item.unit ?? null,
   };
 }
@@ -128,8 +144,52 @@ type PlatformPackFeatureRow = {
   id: string;
   pack_id: string;
   feature_label: string;
+  feature_data?: unknown;
   sort_order: number;
 };
+
+type PlatformPackFeatureInput = {
+  textEn: string;
+  textFr?: string | null;
+  textAr?: string | null;
+};
+
+type PlatformPackFeatureValue = {
+  textEn: string;
+  textFr: string | null;
+  textAr: string | null;
+};
+
+const platformPackFeatureInputSchema = z.object({
+  textEn: z.string().trim().min(1).max(200),
+  textFr: z.string().trim().max(200).nullable().optional(),
+  textAr: z.string().trim().max(200).nullable().optional(),
+});
+
+function normalizePlatformPackFeature(row: { feature_label: string; feature_data?: unknown }): PlatformPackFeatureValue {
+  const data = row.feature_data && typeof row.feature_data === "object" && !Array.isArray(row.feature_data)
+    ? (row.feature_data as Record<string, unknown>)
+    : null;
+
+  const textEnFromData = typeof data?.text_en === "string" ? data.text_en.trim() : "";
+  const textFrFromData = typeof data?.text_fr === "string" ? data.text_fr.trim() : "";
+  const textArFromData = typeof data?.text_ar === "string" ? data.text_ar.trim() : "";
+  const textFromLabel = typeof row.feature_label === "string" ? row.feature_label.trim() : "";
+
+  return {
+    textEn: textEnFromData || textFromLabel,
+    textFr: textFrFromData || null,
+    textAr: textArFromData || null,
+  };
+}
+
+function serializePlatformPackFeature(feature: PlatformPackFeatureInput) {
+  return {
+    text_en: feature.textEn,
+    text_fr: feature.textFr ?? null,
+    text_ar: feature.textAr ?? null,
+  };
+}
 
 type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
 
@@ -176,7 +236,7 @@ const platformPackInputSchema = z.object({
   unitType: z.string().trim().min(1).max(40),
   deliveryWindow: z.string().trim().max(120).nullable().optional(),
   packItems: z.array(platformPackItemInputSchema).max(80).default([]),
-  packFeatures: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
+  packFeatures: z.array(platformPackFeatureInputSchema).max(80).default([]),
   imageUrl: z.string().trim().url().max(2000).nullable().optional(),
   isActive: z.boolean().default(true),
 });
