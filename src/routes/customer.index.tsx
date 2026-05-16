@@ -438,6 +438,7 @@ function Index() {
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
   const submitPlatformSubscriptionOrder = useServerFn(createPlatformSubscriptionOrder);
+  const submitCustomerSubscriptionStatus = useServerFn(updateCustomerSubscriptionStatus);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -567,6 +568,24 @@ function Index() {
       setIsSubscriptionCheckoutOpen(false);
       setSelectedPack(null);
       setSubscriptionNotes("");
+    },
+  });
+  const subscriptionStatusMutation = useMutation({
+    mutationFn: (payload: { subscriptionId: string; status: "active" | "paused" }) =>
+      submitCustomerSubscriptionStatus({
+        data: {
+          phoneNumber: customerSession!.phoneNumber,
+          subscriptionId: payload.subscriptionId,
+          status: payload.status,
+        },
+      }),
+    onSuccess: async (_result, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null] });
+      const actionLabel = variables.status === "paused" ? "Subscription paused." : "Subscription resumed.";
+      toast.success(actionLabel);
+    },
+    onError: () => {
+      toast.error("Failed to update subscription status.");
     },
   });
 
@@ -1408,20 +1427,27 @@ function Index() {
     const map = new Map<
       string,
       {
-        status: "pending" | "active";
+        id: string;
+        status: "pending" | "active" | "paused";
         completedDeliveries: number;
         totalDeliveries: number;
       }
     >();
 
     for (const subscription of customerSubscriptions) {
-      if (subscription.status !== "pending" && subscription.status !== "active") {
+      if (subscription.status !== "pending" && subscription.status !== "active" && subscription.status !== "paused") {
         continue;
       }
 
       const existing = map.get(subscription.packId);
-      if (!existing || (existing.status === "pending" && subscription.status === "active")) {
+      const shouldReplace =
+        !existing ||
+        (existing.status === "pending" && (subscription.status === "active" || subscription.status === "paused")) ||
+        (existing.status === "paused" && subscription.status === "active");
+
+      if (shouldReplace) {
         map.set(subscription.packId, {
+          id: subscription.id,
           status: subscription.status,
           completedDeliveries: Math.max(0, Number(subscription.completedDeliveries ?? 0)),
           totalDeliveries: Math.max(0, Number(subscription.totalDeliveries ?? 0)),
