@@ -598,26 +598,17 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
   .inputValidator((input) => createPlatformSubscriptionOrderInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const [packResult, packItemsResult] = await Promise.all([
+      const [packResult] = await Promise.all([
         (supabaseAdmin as any)
           .from("platform_packs")
           .select("id, name_en, name_fr, name_ar, base_price_mad, billing_cycle, is_active")
           .eq("id", data.packId)
           .eq("is_active", true)
           .maybeSingle(),
-        (supabaseAdmin as any)
-          .from("pack_items")
-          .select("item_label, sort_order")
-          .eq("pack_id", data.packId)
-          .order("sort_order", { ascending: true }),
       ]);
 
       if (packResult.error) {
         throw new Error(packResult.error.message);
-      }
-
-      if (packItemsResult.error) {
-        throw new Error(packItemsResult.error.message);
       }
 
       const pack = packResult.data as {
@@ -633,10 +624,6 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
       if (!pack?.id || !pack.is_active) {
         throw new Error("Selected subscription pack is not available.");
       }
-
-      const packItems = ((packItemsResult.data ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) =>
-        item.item_label,
-      );
 
       const { data: existingProfile, error: profileLookupError } = await (supabaseAdmin as any)
         .from("profiles")
