@@ -3824,6 +3824,7 @@ function AdminPage() {
                   onSearchTermChange={setSubscriberSearchTerm}
                   statusFilter={subscriberStatusFilter}
                   onStatusFilterChange={setSubscriberStatusFilter}
+                  onApprove={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
                   onPause={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
                   onResume={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
                   onCancel={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
@@ -8089,7 +8090,7 @@ function SubscribersSection({
   isMutating: boolean;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
-  statusFilter: "all" | "active" | "paused" | "expired" | "cancelled";
+  statusFilter: "all" | "pending" | "active" | "paused" | "expired" | "cancelled";
   onStatusFilterChange: (value: "all" | "pending" | "active" | "paused" | "expired" | "cancelled") => void;
   onApprove: (subscriptionId: string) => void;
   onPause: (subscriptionId: string) => void;
