@@ -870,6 +870,9 @@ function OrderCard({
 }) {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+  const infoAlignClass = isArabic ? "items-start text-right" : "items-end text-left";
+  const infoTextAlignClass = isArabic ? "text-right" : "text-left";
+  const addressJustifyClass = isArabic ? "justify-start text-right" : "justify-end text-left";
   const actionClass =
     actionTone === "success"
       ? "bg-success text-success-foreground hover:bg-success/90"
@@ -880,7 +883,7 @@ function OrderCard({
 
   if (isActiveDelivery) {
     return (
-      <article className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <article className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md">
         {order.paymentMethod === "Carnet" ? (
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
@@ -891,34 +894,34 @@ function OrderCard({
         ) : null}
 
         <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
-          <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
+          <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-foreground" onClick={() => onOpenDetails?.()}>
             {shortOrderId}
           </button>
-          <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+          <p className="text-xl font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <User className="h-4 w-4 text-slate-400" />
+        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-sm">
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <User className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.fullName")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.customerName}</div>
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>{order.customerName}</div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <Phone className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <Phone className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.phoneNumber")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
-              <span dir="ltr" className="font-mono text-sm tracking-wide text-slate-700">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
+              <span dir="ltr" className="font-mono text-sm tracking-wide text-foreground">
                 {order.customerPhone}
               </span>
-              <div className="mt-1.5 flex flex-row items-center gap-2">
+              <div className={cn("mt-1.5 flex flex-row items-center gap-2", isArabic ? "self-start" : "self-end")}>
                 <a
                   href={`tel:${order.customerPhone}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
                   aria-label={t("cyclist.callCustomerAria")}
                 >
                   <PhoneCall className="size-4" />
@@ -927,7 +930,7 @@ function OrderCard({
                   href={`https://wa.me/${whatsappPhone}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors hover:bg-emerald-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-success/30 bg-success/10 text-success transition-colors hover:bg-success/20"
                   onClick={(e) => e.stopPropagation()}
                   aria-label={t("cyclist.whatsappAria")}
                 >
@@ -937,25 +940,25 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <Map className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <Map className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.area")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.deliveryZone}</div>
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>{order.deliveryZone}</div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <MapPin className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.address")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex max-w-full items-center justify-end gap-1 whitespace-normal text-right leading-tight text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                className={cn("inline-flex max-w-full items-center gap-1 whitespace-normal leading-tight text-sm font-bold text-primary hover:opacity-85", addressJustifyClass)}
               >
                 <MapPin className="h-4 w-4" />
                 {order.deliveryAddress}
@@ -963,18 +966,18 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <CreditCard className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.payment")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
               {order.paymentMethod === "COD" ? (
-                <span className="rounded-md border border-orange-200/50 bg-orange-50 px-2.5 py-1 text-[12px] font-semibold text-orange-700">
+                <span className={cn("rounded-md border border-highlight/40 bg-highlight/10 px-2.5 py-1 text-[12px] font-semibold text-highlight-foreground", infoTextAlignClass)}>
                   {t("cyclist.codBadge")}
                 </span>
               ) : (
-                <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
+                <span className={cn("rounded-md border border-success/30 bg-success/10 px-2.5 py-1 text-[12px] font-semibold text-success", infoTextAlignClass)}>
                   {t("cyclist.carnetBadge")}
                 </span>
               )}
@@ -982,7 +985,7 @@ function OrderCard({
           </div>
         </div>
 
-        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
@@ -991,7 +994,7 @@ function OrderCard({
   }
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="space-y-2">
         {order.paymentMethod === "Carnet" ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
@@ -1011,11 +1014,11 @@ function OrderCard({
         </a>
         <p className="text-sm text-muted-foreground">{t("cyclist.douar")}: {order.douar}</p>
         <p className="text-sm font-medium text-foreground">{t("cyclist.total")}: {order.totalMad.toFixed(2)} MAD</p>
-        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || "—"}</p>
-        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || "—"}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || t("cyclist.emptyValue")}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || t("cyclist.emptyValue")}</p>
       </div>
 
-      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
@@ -1036,13 +1039,14 @@ function PlatformPackOrderCard({
   onAccept: () => void;
   onDeliver: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 rounded-xl border border-highlight/60 bg-highlight/10 p-2.5">
+    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
+      <div className="mb-3 rounded-xl border border-highlight/40 bg-highlight/10 p-2.5">
         <p className="text-[12px] font-bold text-highlight-foreground">
-          PREPAID - COLLECT 0.00 MAD / باقة مسبقة الدفع - 0 درهم
+          {t("cyclist.prepaidZeroBadge")}
         </p>
       </div>
 
@@ -1050,7 +1054,7 @@ function PlatformPackOrderCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{order.customerName}</p>
-            <p className="text-xs text-muted-foreground">{order.contactPhone}</p>
+            <p className="text-xs text-muted-foreground">{order.contactPhone || t("cyclist.emptyValue")}</p>
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -1092,7 +1096,7 @@ function PlatformPackOrderCard({
             ) : (
               order.items.map((item, index) => (
                 <p key={`${order.id}-platform-pack-item-${index}`} className="text-xs text-foreground">
-                  • {item.name} × {item.quantity}
+                  • {item.name} {t("cyclist.times", { count: item.quantity })}
                 </p>
               ))
             )}
@@ -1101,7 +1105,7 @@ function PlatformPackOrderCard({
       </div>
 
       <Button
-        className="mt-4 h-11 w-full rounded-xl text-base font-semibold"
+        className="mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95"
         onClick={isActiveDelivery ? onDeliver : onAccept}
         disabled={isBusy}
       >
@@ -1119,8 +1123,8 @@ function EmptyState({ label }: { label: string }) {
     <AppEmptyState
       title={label}
       subtitle={t("cyclist.autoAppearSubtitle")}
-      icon={PackageSearch}
-      className="bg-card"
+      icon={PackageOpen}
+      className="rounded-2xl border-border/70 bg-card [&_span]:h-14 [&_span]:w-14 [&_span]:bg-muted [&_span]:text-muted-foreground"
     />
   );
 }
