@@ -67,6 +67,7 @@ import {
 import {
   createCustomerOrder,
   createPlatformSubscriptionOrder,
+  getCustomerSubscriptions,
   getCustomerOrders,
   upsertCustomerProfile,
 } from "@/lib/orders.functions";
@@ -415,6 +416,7 @@ function Index() {
   };
   const submitOrder = useServerFn(createCustomerOrder);
   const fetchCustomerOrders = useServerFn(getCustomerOrders);
+  const fetchCustomerSubscriptions = useServerFn(getCustomerSubscriptions);
   const saveCustomerProfile = useServerFn(upsertCustomerProfile);
   const fetchCommuneSearchResults = useServerFn(searchCommunes);
   const fetchNeighborhoodSearchResults = useServerFn(searchNeighborhoodsByCommune);
@@ -490,6 +492,12 @@ function Index() {
     enabled: !!customerSession?.phoneNumber,
     refetchInterval: customerSession?.phoneNumber ? 7_000 : false,
   });
+  const customerSubscriptionsQuery = useQuery({
+    queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null],
+    queryFn: () => fetchCustomerSubscriptions({ data: { phoneNumber: customerSession!.phoneNumber } }),
+    enabled: !!customerSession?.phoneNumber,
+    refetchInterval: customerSession?.phoneNumber ? 7_000 : false,
+  });
   const customerCarnetQuery = useCustomerCarnet(
     customerSession?.phoneNumber ?? null,
     fetchCustomerCarnetOverview,
@@ -550,7 +558,8 @@ function Index() {
     }) => submitPlatformSubscriptionOrder({ data: payload }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession?.phoneNumber ?? null] });
-      toast.success("Subscription activated successfully.");
+      void queryClient.invalidateQueries({ queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null] });
+      toast.success("Subscription request sent for admin review.");
       setIsSubscriptionCheckoutOpen(false);
       setSelectedPack(null);
       setSubscriptionNotes("");
@@ -618,6 +627,17 @@ function Index() {
       )
       .subscribe();
 
+    const subscriptionsChannel = supabase
+      .channel(`customer-subscriptions-${customerSession.phoneNumber}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "platform_subscriptions", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["customer", "subscriptions", customerSession.phoneNumber] });
+        },
+      )
+      .subscribe();
+
     const carnetLedgerChannel = supabase
       .channel(`customer-carnet-ledger-${customerSession.phoneNumber}`)
       .on(
@@ -642,6 +662,7 @@ function Index() {
 
     return () => {
       void supabase.removeChannel(ordersChannel);
+      void supabase.removeChannel(subscriptionsChannel);
       void supabase.removeChannel(carnetLedgerChannel);
       void supabase.removeChannel(carnetBalanceChannel);
     };
