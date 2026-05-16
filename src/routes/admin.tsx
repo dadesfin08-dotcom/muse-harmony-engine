@@ -1038,6 +1038,8 @@ function AdminPage() {
     "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled"
   >("all");
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
+  const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "active" | "paused" | "expired" | "cancelled">("all");
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
     id: "",
@@ -1201,6 +1203,22 @@ function AdminPage() {
       return matchesSearch && matchesStatus && matchesCyclist;
     });
   }, [packOrders, packOrdersSearchTerm, packOrdersStatusFilter, packOrdersCyclistFilter]);
+
+  const filteredPlatformSubscribers = useMemo(() => {
+    const search = subscriberSearchTerm.trim().toLowerCase();
+
+    return platformSubscribers.filter((subscriber) => {
+      const matchesSearch =
+        search.length === 0 ||
+        subscriber.customerName.toLowerCase().includes(search) ||
+        subscriber.customerPhone.toLowerCase().includes(search) ||
+        subscriber.packName.toLowerCase().includes(search) ||
+        subscriber.id.toLowerCase().includes(search);
+
+      const matchesStatus = subscriberStatusFilter === "all" || subscriber.status === subscriberStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [platformSubscribers, subscriberSearchTerm, subscriberStatusFilter]);
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
