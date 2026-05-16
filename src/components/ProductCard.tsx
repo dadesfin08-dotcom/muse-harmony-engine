@@ -75,13 +75,13 @@ export function ProductCard({
   const resolvedVariant = normalizedVariants.length > 0 ? variantValue || normalizedVariants[0] : null;
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-      <Link to="/customer/product/$id" params={{ id }} className="block">
-        <div className="relative h-28 w-full bg-gray-50">
+    <article className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+      <Link to="/customer/product/$id" params={{ id }} className="block px-3 pt-3">
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gray-50">
           <img
             src={imageUrl || fallbackProductImage}
             alt={name}
-            className="h-full w-full object-contain object-center p-2"
+            className="h-full w-full object-contain object-center p-2.5"
             loading="lazy"
           />
           {isFlashDeal && discountPercent > 0 ? (
@@ -92,7 +92,7 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col space-y-1.5 p-3">
+      <div className="flex flex-1 flex-col space-y-1.5 p-3 pt-2">
         {normalizedVariants.length > 0 ? (
           <select
             value={resolvedVariant ?? ""}
@@ -108,7 +108,7 @@ export function ProductCard({
           </select>
         ) : null}
 
-        <div className="flex flex-row justify-between items-center w-full mb-2">
+        <div className="mb-1 flex w-full flex-row items-center justify-between">
           <span className="inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
             {brand || "—"}
           </span>
@@ -126,7 +126,7 @@ export function ProductCard({
           </h2>
         </Link>
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-0">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
           <div className={cn("flex items-center gap-1.5", isFlashDeal && "flex flex-wrap")}>
             <p className={cn("text-xl font-extrabold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
               {Number(price ?? 0)}{" "}
