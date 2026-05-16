@@ -3651,24 +3651,26 @@ function AdminPage() {
       let finalImageUrl = platformPackForm.imageUrl.trim() || null;
 
       if (platformPackImageFile) {
-        const extension = platformPackImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-        const sanitizedBaseName = platformPackImageFile.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[^a-zA-Z0-9-_]/g, "-")
-          .slice(0, 60);
-        const fileName = `${crypto.randomUUID()}-${sanitizedBaseName || "platform-pack"}.${extension}`;
-        const filePath = `platform-packs/${fileName}`;
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Failed to read pack image."));
+          };
+          reader.onerror = () => reject(new Error("Failed to read pack image."));
+          reader.readAsDataURL(platformPackImageFile);
+        });
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("products")
-          .upload(filePath, platformPackImageFile, { cacheControl: "3600", upsert: false });
+        const uploaded = await uploadPlatformPackAssetToStorage({
+          data: {
+            fileName: platformPackImageFile.name,
+            contentType: platformPackImageFile.type || "image/jpeg",
+            dataUrl: imageDataUrl,
+            folder: "platform-packs",
+          },
+        });
 
-        if (uploadError || !uploadData?.path) {
-          throw new Error(uploadError?.message || "Pack image upload failed.");
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
-        finalImageUrl = publicUrlData.publicUrl;
+        finalImageUrl = uploaded.publicUrl;
       }
 
       const uploadPackItemImageIfNeeded = async (imageUrl: string, index: number) => {
@@ -3678,24 +3680,19 @@ function AdminPage() {
           return normalized;
         }
 
-        const response = await fetch(normalized);
-        const blob = await response.blob();
-        const mimeSubtype = blob.type.split("/")[1] || "jpg";
-        const extension = mimeSubtype.split("+")[0] || "jpg";
-        const filePath = `platform-packs/items/${crypto.randomUUID()}-${index}.${extension}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage.from("products").upload(filePath, blob, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: blob.type || undefined,
+        const mimeMatch = normalized.match(/^data:(image\/[\w.+-]+);base64,/i);
+        const mimeType = mimeMatch?.[1] ?? "image/jpeg";
+        const extension = mimeType.split("/")[1]?.split("+")[0] || "jpg";
+        const uploaded = await uploadPlatformPackAssetToStorage({
+          data: {
+            fileName: `pack-item-${index + 1}.${extension}`,
+            contentType: mimeType,
+            dataUrl: normalized,
+            folder: "platform-packs/items",
+          },
         });
 
-        if (uploadError || !uploadData?.path) {
-          throw new Error(uploadError?.message || `Pack item image ${index + 1} upload failed.`);
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
-        return publicUrlData.publicUrl;
+        return uploaded.publicUrl;
       };
 
       const resolvedPackItems = await Promise.all(
