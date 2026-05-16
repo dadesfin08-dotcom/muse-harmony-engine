@@ -69,7 +69,6 @@ import {
   getCustomerSubscriptions,
   getCustomerOrders,
   upsertCustomerProfile,
-  updateCustomerSubscriptionStatus,
 } from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
@@ -429,7 +428,6 @@ function Index() {
   const fetchActivePlatformPacks = useServerFn(listActivePlatformPacks);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
-  const submitCustomerSubscriptionStatus = useServerFn(updateCustomerSubscriptionStatus);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -542,24 +540,6 @@ function Index() {
     staleTime: 8_000,
   });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
-  const subscriptionStatusMutation = useMutation({
-    mutationFn: (payload: { subscriptionId: string; status: "active" | "paused" }) =>
-      submitCustomerSubscriptionStatus({
-        data: {
-          phoneNumber: customerSession!.phoneNumber,
-          subscriptionId: payload.subscriptionId,
-          status: payload.status,
-        },
-      }),
-    onSuccess: async (_result, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null] });
-      const actionLabel = variables.status === "paused" ? "Subscription paused." : "Subscription resumed.";
-      toast.success(actionLabel);
-    },
-    onError: () => {
-      toast.error("Failed to update subscription status.");
-    },
-  });
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
