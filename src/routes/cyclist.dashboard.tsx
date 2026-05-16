@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -34,6 +34,13 @@ type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
   fullName: string;
+};
+
+type CyclistDashboardTab = {
+  key: CyclistView | "wallet";
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
 };
 
 export const Route = createFileRoute("/cyclist/dashboard")({
@@ -222,25 +229,31 @@ function CyclistDashboardPage() {
     t,
   ]);
 
-  const dashboardTabs = useMemo(
+  const dashboardTabs = useMemo<CyclistDashboardTab[]>(
     () => [
       {
         key: "available" as const,
         label: t("cyclist.availableRunsTab"),
         icon: LayoutGrid,
-        onClick: () => setActiveView("available" as CyclistView),
+        onClick: () => {
+          setActiveView("available");
+        },
       },
       {
         key: "active" as const,
         label: t("cyclist.activeDeliveriesTab"),
         icon: Navigation,
-        onClick: () => setActiveView("active" as CyclistView),
+        onClick: () => {
+          setActiveView("active");
+        },
       },
       {
         key: "platformPacks" as const,
         label: t("cyclist.platformPacksTab"),
         icon: PackageCheck,
-        onClick: () => setActiveView("platformPacks" as CyclistView),
+        onClick: () => {
+          setActiveView("platformPacks");
+        },
       },
       {
         key: "wallet" as const,
