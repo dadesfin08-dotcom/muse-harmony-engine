@@ -982,6 +982,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          item_data: Json | null
           item_label: string
           pack_id: string
           sort_order: number
@@ -990,6 +991,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          item_data?: Json | null
           item_label: string
           pack_id: string
           sort_order?: number
@@ -998,6 +1000,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          item_data?: Json | null
           item_label?: string
           pack_id?: string
           sort_order?: number
