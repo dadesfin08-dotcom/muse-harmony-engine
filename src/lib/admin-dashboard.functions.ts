@@ -1263,9 +1263,9 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
 export const deletePlatformPack = createServerFn({ method: "POST" })
   .inputValidator((input) => deletePlatformPackInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const { count: linkedSubscriptionsCount, error: linkedSubscriptionsError } = await (supabaseAdmin as any)
+    const { data: linkedSubscriptions, count: linkedSubscriptionsCount, error: linkedSubscriptionsError } = await (supabaseAdmin as any)
       .from("platform_subscriptions")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("pack_id", data.id);
 
     if (linkedSubscriptionsError) {
@@ -1273,16 +1273,38 @@ export const deletePlatformPack = createServerFn({ method: "POST" })
     }
 
     if ((linkedSubscriptionsCount ?? 0) > 0) {
-      const { error: archiveError } = await (supabaseAdmin as any)
-        .from("platform_packs")
-        .update({ is_active: false })
-        .eq("id", data.id);
+      const linkedSubscriptionIds = (linkedSubscriptions ?? []).map((row: { id: string }) => row.id);
 
-      if (archiveError) {
-        throw new Error(archiveError.message ?? "Failed to archive platform pack.");
+      const { error: deleteOrdersError } = await (supabaseAdmin as any)
+        .from("orders")
+        .delete()
+        .in("subscription_id", linkedSubscriptionIds);
+
+      if (deleteOrdersError) {
+        throw new Error(deleteOrdersError.message ?? "Failed to delete linked subscription orders.");
       }
 
-      return { ok: true, archived: true, linkedSubscriptionsCount: linkedSubscriptionsCount ?? 0 };
+      const { error: deleteSubscriptionsError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .delete()
+        .eq("pack_id", data.id);
+
+      if (deleteSubscriptionsError) {
+        throw new Error(deleteSubscriptionsError.message ?? "Failed to delete linked subscriptions.");
+      }
+    }
+
+    const [{ error: deleteItemsError }, { error: deleteFeaturesError }] = await Promise.all([
+      (supabaseAdmin as any).from("pack_items").delete().eq("pack_id", data.id),
+      (supabaseAdmin as any).from("pack_features").delete().eq("pack_id", data.id),
+    ]);
+
+    if (deleteItemsError) {
+      throw new Error(deleteItemsError.message ?? "Failed to delete linked pack items.");
+    }
+
+    if (deleteFeaturesError) {
+      throw new Error(deleteFeaturesError.message ?? "Failed to delete linked pack features.");
     }
 
     const { error } = await (supabaseAdmin as any).from("platform_packs").delete().eq("id", data.id);
@@ -1291,7 +1313,7 @@ export const deletePlatformPack = createServerFn({ method: "POST" })
       throw new Error(error.message ?? "Failed to delete platform pack.");
     }
 
-    return { ok: true, archived: false, linkedSubscriptionsCount: 0 };
+    return { ok: true, archived: false, linkedSubscriptionsCount: linkedSubscriptionsCount ?? 0 };
   });
 
 export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
