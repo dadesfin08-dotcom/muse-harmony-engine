@@ -381,6 +381,13 @@ const uploadSiteLogoInputSchema = z.object({
   dataUrl: z.string().trim().min(1).max(10_000_000),
 });
 
+const uploadPlatformPackAssetInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1).max(12_000_000),
+  folder: z.enum(["platform-packs", "platform-packs/items"]),
+});
+
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
   const todayStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -2232,6 +2239,48 @@ export const uploadSiteLogo = createServerFn({ method: "POST" })
     }
 
     const { data: publicUrlData } = (supabaseAdmin as any).storage.from("public-assets").getPublicUrl(uploadData.path);
+
+    return {
+      path: uploadData.path,
+      publicUrl: publicUrlData.publicUrl,
+    };
+  });
+
+export const uploadPlatformPackAsset = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadPlatformPackAssetInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (!data.contentType.startsWith("image/")) {
+      throw new Error("Only image uploads are allowed.");
+    }
+
+    const commaIndex = data.dataUrl.indexOf(",");
+    if (commaIndex === -1) {
+      throw new Error("Invalid image payload.");
+    }
+
+    const base64Payload = data.dataUrl.slice(commaIndex + 1);
+    const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+    const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "png";
+    const safeBaseName = data.fileName
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .slice(0, 60);
+    const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "asset"}.${extensionFromName}`;
+    const path = `${data.folder}/${generatedFileName}`;
+
+    const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+      .from("products")
+      .upload(path, bytes, {
+        contentType: data.contentType,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError || !uploadData?.path) {
+      throw new Error(uploadError?.message ?? "Image upload failed.");
+    }
+
+    const { data: publicUrlData } = (supabaseAdmin as any).storage.from("products").getPublicUrl(uploadData.path);
 
     return {
       path: uploadData.path,
