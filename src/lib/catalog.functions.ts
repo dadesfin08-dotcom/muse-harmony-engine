@@ -1461,7 +1461,7 @@ export const listActivePlatformPacks = createServerFn({ method: "POST" })
             .order("sort_order", { ascending: true }),
           (supabaseAdmin as any)
             .from("pack_features")
-            .select("pack_id, feature_label, sort_order")
+            .select("pack_id, feature_label, feature_data, sort_order")
             .in("pack_id", packIds)
             .order("sort_order", { ascending: true }),
         ]);
@@ -1481,10 +1481,10 @@ export const listActivePlatformPacks = createServerFn({ method: "POST" })
         itemMap.set(row.pack_id, current);
       }
 
-      const featureMap = new Map<string, string[]>();
-      for (const row of (packFeaturesData ?? []) as Array<{ pack_id: string; feature_label: string; sort_order: number }>) {
+      const featureMap = new Map<string, PlatformPackFeature[]>();
+      for (const row of (packFeaturesData ?? []) as Array<{ pack_id: string; feature_label: string; feature_data?: unknown; sort_order: number }>) {
         const current = featureMap.get(row.pack_id) ?? [];
-        current.push(row.feature_label);
+        current.push(normalizePlatformPackFeature(row));
         featureMap.set(row.pack_id, current);
       }
 
@@ -1541,7 +1541,7 @@ export const getPlatformPackDetails = createServerFn({ method: "POST" })
           .order("sort_order", { ascending: true }),
         (supabaseAdmin as any)
           .from("pack_features")
-          .select("feature_label, sort_order")
+          .select("feature_label, feature_data, sort_order")
           .eq("pack_id", data.packId)
           .order("sort_order", { ascending: true }),
       ]);
@@ -1580,7 +1580,7 @@ export const getPlatformPackDetails = createServerFn({ method: "POST" })
         deliveryWindow: pack.delivery_window,
         imageUrl: pack.image_url,
         packItems: ((itemRows ?? []) as Array<{ item_label: string; item_data?: unknown }>).map((row) => normalizePlatformPackItem(row)),
-        packFeatures: ((featureRows ?? []) as Array<{ feature_label: string }>).map((row) => row.feature_label),
+        packFeatures: ((featureRows ?? []) as Array<{ feature_label: string; feature_data?: unknown }>).map((row) => normalizePlatformPackFeature(row)),
       };
     } catch (error) {
       console.error("getPlatformPackDetails failed:", error);
