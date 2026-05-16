@@ -650,9 +650,12 @@ function AdminPage() {
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
   const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
   const fetchPlatformPacks = useServerFn(listPlatformPacks);
+  const fetchPlatformSubscribers = useServerFn(listPlatformSubscribers);
   const createPlatformPackInDatabase = useServerFn(createPlatformPack);
   const updatePlatformPackInDatabase = useServerFn(updatePlatformPack);
   const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
+  const updatePlatformSubscriberStatusInDatabase = useServerFn(updatePlatformSubscriberStatus);
+  const fetchPlatformSubscriberHistory = useServerFn(getPlatformSubscriberHistory);
   const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
   const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
   const updateSubscriptionOrderStatusInDatabase = useServerFn(updateSubscriptionOrderStatus);
@@ -768,6 +771,13 @@ function AdminPage() {
     queryFn: () => fetchPlatformPacks(),
     placeholderData: (previousData) => previousData,
   });
+  const platformSubscribersQuery = useQuery({
+    queryKey: ["admin", "platform-subscribers"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchPlatformSubscribers(),
+    refetchInterval: 15_000,
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -826,6 +836,23 @@ function AdminPage() {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+  }>;
+  const platformSubscribers = (platformSubscribersQuery.data ?? []) as Array<{
+    id: string;
+    customerUserId: string;
+    customerName: string;
+    customerPhone: string;
+    packId: string;
+    packName: string;
+    status: "active" | "paused" | "expired" | "cancelled";
+    startDate: string;
+    expirationDate: string | null;
+    nextScheduledDeliveryDate: string | null;
+    lifetimeRevenueMad: number;
+    deliveriesCompleted: number;
+    deliveriesExpected: number;
+    deliveryCompletionPercent: number;
+    createdAt: string;
   }>;
   const adminCustomers =
     (adminCustomersQuery.data as
