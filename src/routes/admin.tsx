@@ -1040,6 +1040,7 @@ function AdminPage() {
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
   const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "active" | "paused" | "expired" | "cancelled">("all");
+  const [selectedSubscriberForHistory, setSelectedSubscriberForHistory] = useState<null | { id: string; customerName: string }>(null);
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
     id: "",
