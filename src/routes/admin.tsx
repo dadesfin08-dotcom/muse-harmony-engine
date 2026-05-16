@@ -232,6 +232,7 @@ import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -8290,7 +8291,7 @@ function SubscribersSection({
                   <TableCell>
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-foreground">{subscriber.lifetimeRevenueMad.toFixed(2)} MAD</p>
-                      {subscriber.status === "active" || subscriber.status === "completed" ? (
+                      {subscriber.status === "active" ? (
                         <>
                           <Progress value={subscriber.deliveryCompletionPercent} className="h-2 bg-muted/70" indicatorClassName="bg-success" />
                           <p className="text-xs text-muted-foreground">{subscriber.deliveryCompletionPercent}% complete</p>
