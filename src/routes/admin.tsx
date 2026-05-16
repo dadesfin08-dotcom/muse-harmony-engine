@@ -8114,7 +8114,7 @@ function SubscribersSection({
   onSearchTermChange: (value: string) => void;
   statusFilter: "all" | "pending" | "active" | "paused" | "expired" | "cancelled";
   onStatusFilterChange: (value: "all" | "pending" | "active" | "paused" | "expired" | "cancelled") => void;
-  onApprove: (subscriptionId: string) => void;
+  onApprove: (input: { subscriptionId: string; agreedPriceMad: number; totalDeliveries: number }) => void;
   onPause: (subscriptionId: string) => void;
   onResume: (subscriptionId: string) => void;
   onCancel: (subscriptionId: string) => void;
@@ -8143,6 +8143,15 @@ function SubscribersSection({
   }>;
   historyLoading: boolean;
 }) {
+  const [approvalModalTarget, setApprovalModalTarget] = useState<null | {
+    subscriptionId: string;
+    customerName: string;
+    packName: string;
+  }>(null);
+  const [approvalForm, setApprovalForm] = useState({
+    agreedPriceMad: "",
+    totalDeliveries: "4",
+  });
   const statusBadgeClass: Record<"pending" | "active" | "paused" | "expired" | "cancelled", string> = {
     pending: "bg-chart-4/20 text-chart-4",
     active: "bg-success/20 text-success",
@@ -8156,6 +8165,35 @@ function SubscribersSection({
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return "—";
     return parsed.toLocaleDateString();
+  };
+
+  const closeApprovalModal = () => {
+    setApprovalModalTarget(null);
+    setApprovalForm({ agreedPriceMad: "", totalDeliveries: "4" });
+  };
+
+  const confirmApproval = () => {
+    if (!approvalModalTarget) return;
+
+    const agreedPriceMad = Number(approvalForm.agreedPriceMad);
+    const totalDeliveries = Number(approvalForm.totalDeliveries);
+
+    if (!Number.isFinite(agreedPriceMad) || agreedPriceMad <= 0) {
+      toast.error("Please enter a valid agreed price.");
+      return;
+    }
+
+    if (!Number.isInteger(totalDeliveries) || totalDeliveries <= 0) {
+      toast.error("Please enter a valid total deliveries count.");
+      return;
+    }
+
+    onApprove({
+      subscriptionId: approvalModalTarget.subscriptionId,
+      agreedPriceMad,
+      totalDeliveries,
+    });
+    closeApprovalModal();
   };
 
   return (
@@ -8252,8 +8290,14 @@ function SubscribersSection({
                   <TableCell>
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-foreground">{subscriber.lifetimeRevenueMad.toFixed(2)} MAD</p>
-                      <Progress value={subscriber.deliveryCompletionPercent} className="h-1.5" indicatorClassName="bg-success" />
-                      <p className="text-xs text-muted-foreground">Delivery completion: {subscriber.deliveryCompletionPercent}%</p>
+                      {subscriber.status === "active" || subscriber.status === "completed" ? (
+                        <>
+                          <Progress value={subscriber.deliveryCompletionPercent} className="h-2 bg-muted/70" indicatorClassName="bg-success" />
+                          <p className="text-xs text-muted-foreground">{subscriber.deliveryCompletionPercent}% complete</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Awaiting activation milestones</p>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -8266,7 +8310,19 @@ function SubscribersSection({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         {subscriber.status === "pending" ? (
-                          <DropdownMenuItem onClick={() => onApprove(subscriber.id)}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setApprovalModalTarget({
+                                subscriptionId: subscriber.id,
+                                customerName: subscriber.customerName,
+                                packName: subscriber.packName,
+                              });
+                              setApprovalForm({
+                                agreedPriceMad: String(Math.max(0, Number(subscriber.lifetimeRevenueMad ?? 0)).toFixed(2)),
+                                totalDeliveries: "4",
+                              });
+                            }}
+                          >
                             <PlayCircle className="size-4" />
                             Approve
                           </DropdownMenuItem>
@@ -8302,6 +8358,69 @@ function SubscribersSection({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={Boolean(approvalModalTarget)} onOpenChange={(open) => (!open ? closeApprovalModal() : null)}>
+        <DialogContent className="w-[95vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve Subscription Contract</DialogTitle>
+            <DialogDescription>
+              Set final contract terms before activation and first delivery generation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-md border border-border bg-muted/20 p-3">
+              <p className="text-sm font-medium text-foreground">{approvalModalTarget?.customerName ?? "Subscriber"}</p>
+              <p className="text-xs text-muted-foreground">{approvalModalTarget?.packName ?? "Pack"}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="approval-agreed-price">Agreed Price (MAD)</Label>
+              <Input
+                id="approval-agreed-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={approvalForm.agreedPriceMad}
+                onChange={(event) =>
+                  setApprovalForm((current) => ({
+                    ...current,
+                    agreedPriceMad: event.target.value,
+                  }))
+                }
+                placeholder="e.g. 399.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="approval-total-deliveries">Total Deliveries in Cycle</Label>
+              <Input
+                id="approval-total-deliveries"
+                type="number"
+                min="1"
+                step="1"
+                value={approvalForm.totalDeliveries}
+                onChange={(event) =>
+                  setApprovalForm((current) => ({
+                    ...current,
+                    totalDeliveries: event.target.value,
+                  }))
+                }
+                placeholder="e.g. 4"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeApprovalModal} disabled={isMutating}>
+              Cancel
+            </Button>
+            <Button onClick={confirmApproval} disabled={isMutating} className="bg-success text-success-foreground hover:bg-success/90">
+              Confirm & Activate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={historyOpen} onOpenChange={onHistoryOpenChange}>
         <DialogContent className="w-[95vw] max-w-3xl">
