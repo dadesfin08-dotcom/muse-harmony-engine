@@ -1770,6 +1770,7 @@ export type Database = {
         | "paused"
         | "expired"
         | "cancelled"
+        | "pending"
       product_category:
         | "Vegetables"
         | "Fruits"
@@ -1948,6 +1949,7 @@ export const Constants = {
         "paused",
         "expired",
         "cancelled",
+        "pending",
       ],
       product_category: [
         "Vegetables",
