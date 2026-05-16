@@ -1153,6 +1153,8 @@ export type Database = {
       }
       platform_subscriptions: {
         Row: {
+          agreed_price: number | null
+          completed_deliveries: number
           created_at: string
           customer_name: string
           customer_phone: string | null
@@ -1167,9 +1169,12 @@ export type Database = {
           pack_id: string
           start_date: string
           status: Database["public"]["Enums"]["platform_subscription_status"]
+          total_deliveries: number | null
           updated_at: string
         }
         Insert: {
+          agreed_price?: number | null
+          completed_deliveries?: number
           created_at?: string
           customer_name: string
           customer_phone?: string | null
@@ -1184,9 +1189,12 @@ export type Database = {
           pack_id: string
           start_date?: string
           status?: Database["public"]["Enums"]["platform_subscription_status"]
+          total_deliveries?: number | null
           updated_at?: string
         }
         Update: {
+          agreed_price?: number | null
+          completed_deliveries?: number
           created_at?: string
           customer_name?: string
           customer_phone?: string | null
@@ -1201,6 +1209,7 @@ export type Database = {
           pack_id?: string
           start_date?: string
           status?: Database["public"]["Enums"]["platform_subscription_status"]
+          total_deliveries?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1771,6 +1780,7 @@ export type Database = {
         | "expired"
         | "cancelled"
         | "pending"
+        | "completed"
       product_category:
         | "Vegetables"
         | "Fruits"
@@ -1950,6 +1960,7 @@ export const Constants = {
         "expired",
         "cancelled",
         "pending",
+        "completed",
       ],
       product_category: [
         "Vegetables",
