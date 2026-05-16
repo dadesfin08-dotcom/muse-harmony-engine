@@ -2382,7 +2382,7 @@ function Index() {
                     </div>
 
                     {packSubscriptionState?.status === "pending" ? (
-                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-warning">
+                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
                         Pending Review / قيد المراجعة
                       </div>
                     ) : packSubscriptionState?.status === "active" ? (
