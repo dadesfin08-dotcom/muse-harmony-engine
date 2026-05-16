@@ -1588,6 +1588,15 @@ function Index() {
     void navigate({ to: "/customer", replace: true });
   }, [cartItems.length, location.hash, navigate, openCheckout]);
 
+  useEffect(() => {
+    if (location.hash !== "auth") {
+      return;
+    }
+
+    setIsCustomerAuthModalOpen(true);
+    void navigate({ to: "/customer", replace: true });
+  }, [location.hash, navigate, setIsCustomerAuthModalOpen]);
+
   const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
 
   const canConfirmOrder =
