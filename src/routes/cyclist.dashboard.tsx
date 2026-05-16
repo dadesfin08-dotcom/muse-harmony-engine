@@ -296,7 +296,7 @@ function CyclistDashboardPage() {
     try {
       payload = JSON.parse(rawValue);
     } catch {
-      toast.error("Invalid QR Code recognized.");
+      toast.error(t("cyclist.invalidQr"));
       return;
     }
 
@@ -310,27 +310,27 @@ function CyclistDashboardPage() {
       if (action === "customer_delivery") {
         const orderId = String(parsed.order_id ?? "").trim();
         if (!orderId) {
-          throw new Error("Invalid QR Code recognized.");
+          throw new Error(t("cyclist.invalidQr"));
         }
 
         setIsUpdatingOrderId(orderId);
         const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
         toast.success(
           completionResult.nextStatus === "delivered_cash_with_cyclist"
-            ? "Order delivered. Cash kept with cyclist."
-            : "Order delivered successfully.",
+            ? t("cyclist.deliveryCompletedCash")
+            : t("cyclist.deliveryCompleted"),
         );
       } else if (action === "vendor_handover") {
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
-          throw new Error("Invalid QR Code recognized.");
+          throw new Error(t("cyclist.invalidQr"));
         }
 
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
-        toast.success("Cash handed over. Settlement complete.");
+        toast.success(t("cyclist.settlementCompleted"));
       } else {
-        throw new Error("Invalid QR Code recognized.");
+        throw new Error(t("cyclist.invalidQr"));
       }
 
       setIsScannerSuccess(true);
@@ -346,7 +346,7 @@ function CyclistDashboardPage() {
       console.error("Cyclist scanner state-machine failed:", error);
       await dashboardQuery.refetch();
       setScannerStatus(t("cyclist.scannerFailed"));
-      toast.error(error instanceof Error ? error.message : "Invalid QR Code recognized.");
+      toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
