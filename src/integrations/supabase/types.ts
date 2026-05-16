@@ -946,6 +946,7 @@ export type Database = {
       pack_features: {
         Row: {
           created_at: string
+          feature_data: Json | null
           feature_label: string
           id: string
           pack_id: string
@@ -954,6 +955,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          feature_data?: Json | null
           feature_label: string
           id?: string
           pack_id: string
@@ -962,6 +964,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          feature_data?: Json | null
           feature_label?: string
           id?: string
           pack_id?: string
