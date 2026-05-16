@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -24,6 +24,7 @@ import {
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import appI18n from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -47,6 +48,28 @@ export const Route = createFileRoute("/cyclist/dashboard")({
   }),
   component: CyclistDashboardPage,
 });
+
+const tabPanelVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 6 },
+};
+
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.04,
+    },
+  },
+};
+
+const listItemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 },
+};
 
 function CyclistDashboardPage() {
   const { t, i18n: runtimeI18n } = useTranslation();
@@ -273,7 +296,7 @@ function CyclistDashboardPage() {
     try {
       payload = JSON.parse(rawValue);
     } catch {
-      toast.error("Invalid QR Code recognized.");
+      toast.error(t("cyclist.invalidQr"));
       return;
     }
 
@@ -287,27 +310,27 @@ function CyclistDashboardPage() {
       if (action === "customer_delivery") {
         const orderId = String(parsed.order_id ?? "").trim();
         if (!orderId) {
-          throw new Error("Invalid QR Code recognized.");
+          throw new Error(t("cyclist.invalidQr"));
         }
 
         setIsUpdatingOrderId(orderId);
         const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
         toast.success(
           completionResult.nextStatus === "delivered_cash_with_cyclist"
-            ? "Order delivered. Cash kept with cyclist."
-            : "Order delivered successfully.",
+            ? t("cyclist.deliveryCompletedCash")
+            : t("cyclist.deliveryCompleted"),
         );
       } else if (action === "vendor_handover") {
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
-          throw new Error("Invalid QR Code recognized.");
+          throw new Error(t("cyclist.invalidQr"));
         }
 
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
-        toast.success("Cash handed over. Settlement complete.");
+        toast.success(t("cyclist.settlementCompleted"));
       } else {
-        throw new Error("Invalid QR Code recognized.");
+        throw new Error(t("cyclist.invalidQr"));
       }
 
       setIsScannerSuccess(true);
@@ -323,7 +346,7 @@ function CyclistDashboardPage() {
       console.error("Cyclist scanner state-machine failed:", error);
       await dashboardQuery.refetch();
       setScannerStatus(t("cyclist.scannerFailed"));
-      toast.error(error instanceof Error ? error.message : "Invalid QR Code recognized.");
+      toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
       isVerifyingCodeRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
@@ -448,14 +471,14 @@ function CyclistDashboardPage() {
       </header>
 
       <section className="mx-auto w-full max-w-lg px-4 pt-4">
-        <div className="mb-4 inline-flex w-full items-center rounded-xl border border-border bg-card p-1 shadow-sm">
+        <div className="mb-4 inline-flex w-full items-center rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.availableRunsTab")}
@@ -463,10 +486,10 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.activeDeliveriesTab")}
@@ -474,10 +497,10 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("platformPacks")}
-            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
               activeView === "platformPacks"
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted"
+                : "text-muted-foreground hover:bg-muted/70"
             }`}
           >
             {t("cyclist.platformPacksTab")}
@@ -489,13 +512,13 @@ function CyclistDashboardPage() {
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
         </div>
 
-        <section className="mb-4 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <section className="mb-4 rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
             <Wallet className="size-4 text-primary" />
-            <p className="text-sm font-semibold text-foreground">Pending Settlements · تصفية الحسابات</p>
+            <p className="text-sm font-semibold text-foreground">{t("cyclist.pendingSettlementsTitle")}</p>
           </div>
           {pendingSettlements.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No pending cash handover settlements. · لا توجد تصفية معلقة حالياً.</p>
+            <p className="text-xs text-muted-foreground">{t("cyclist.noPendingSettlements")}</p>
           ) : (
             <div className="space-y-2">
               {pendingSettlements.map((settlement) => (
@@ -503,89 +526,123 @@ function CyclistDashboardPage() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{settlement.vendorName}</p>
-                      <p className="text-xs text-muted-foreground">{settlement.ordersCount} orders · {settlement.cashToHandoverMad.toFixed(2)} MAD</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("cyclist.settlementOrdersCount", { count: settlement.ordersCount })} · {settlement.cashToHandoverMad.toFixed(2)} MAD
+                      </p>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Scan vendor wallet QR ({'{"action":"vendor_handover","vendor_id":"..."}'}) from the scanner to settle.
+                    {t("cyclist.settlementScannerHint")}
                   </p>
                 </div>
               ))}
-              <Button className="w-full" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+              <Button className="w-full active:scale-95" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
                 <Camera className="size-4" />
-                Open Universal Scanner · فتح الماسح الشامل
+                {t("cyclist.openUniversalScanner")}
               </Button>
             </div>
           )}
         </section>
 
-        {activeView === "available" ? (
-          <div className="space-y-3">
+        <AnimatePresence mode="wait" initial={false}>
+          {activeView === "available" ? (
+            <motion.div
+              key="cyclist-view-available"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {hasActiveDeliveryLock ? (
               <AppEmptyState
                 title={t("cyclist.lockTitle")}
                 subtitle={t("cyclist.lockSubtitle")}
                 icon={Lock}
-                className="bg-card"
+                  className="border-border/70 bg-card"
               />
             ) : availableMarketplaceRuns.length === 0 ? (
               <EmptyState label={t("cyclist.noReadyDeliveries")} />
             ) : (
               availableMarketplaceRuns.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isActiveDelivery={false}
-                  actionLabel={t("cyclist.acceptPickup")}
-                  actionTone="primary"
-                  actionIcon={Truck}
-                  isBusy={isUpdatingOrderId === order.id}
-                  onAction={() => handleAcceptDelivery(order)}
-                />
+                  <motion.div key={order.id} variants={listItemVariants}>
+                    <OrderCard
+                      order={order}
+                      isActiveDelivery={false}
+                      actionLabel={t("cyclist.acceptPickup")}
+                      actionTone="primary"
+                      actionIcon={Truck}
+                      isBusy={isUpdatingOrderId === order.id}
+                      onAction={() => handleAcceptDelivery(order)}
+                    />
+                  </motion.div>
               ))
             )}
-          </div>
-        ) : activeView === "active" ? (
-          <div className="space-y-3">
+              </motion.div>
+            </motion.div>
+          ) : activeView === "active" ? (
+            <motion.div
+              key="cyclist-view-active"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {activeMarketplaceDeliveries.length === 0 ? (
               <EmptyState label={t("cyclist.noActiveDeliveries")} />
             ) : (
               activeMarketplaceDeliveries.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isActiveDelivery
-                  actionLabel={t("cyclist.scanToDeliver")}
-                  actionTone="success"
-                  actionIcon={Camera}
-                  isBusy={isUpdatingOrderId === order.id}
-                  onOpenDetails={() => setDetailsOrder(order)}
-                  onAction={() => openScanner()}
-                />
+                <motion.div key={order.id} variants={listItemVariants}>
+                  <OrderCard
+                    order={order}
+                    isActiveDelivery
+                    actionLabel={t("cyclist.scanToDeliver")}
+                    actionTone="success"
+                    actionIcon={Camera}
+                    isBusy={isUpdatingOrderId === order.id}
+                    onOpenDetails={() => setDetailsOrder(order)}
+                    onAction={() => openScanner()}
+                  />
+                </motion.div>
               ))
             )}
-          </div>
-        ) : (
-          <div className="space-y-3">
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cyclist-view-platform-packs"
+              variants={tabPanelVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <motion.div className="space-y-3" variants={listVariants} initial="hidden" animate="visible">
             {platformPackDeliveries.length === 0 ? (
               <EmptyState label={t("cyclist.noPlatformPackTasks")} />
             ) : (
               platformPackDeliveries.map((order) => {
                 const isActiveTask = activeDeliveryIds.has(order.id);
                 return (
-                  <PlatformPackOrderCard
-                    key={order.id}
-                    order={order}
-                    isActiveDelivery={isActiveTask}
-                    isBusy={isUpdatingOrderId === order.id}
-                    onAccept={() => handleAcceptDelivery(order)}
-                    onDeliver={() => openScanner()}
-                  />
+                  <motion.div key={order.id} variants={listItemVariants}>
+                    <PlatformPackOrderCard
+                      order={order}
+                      isActiveDelivery={isActiveTask}
+                      isBusy={isUpdatingOrderId === order.id}
+                      onAccept={() => handleAcceptDelivery(order)}
+                      onDeliver={() => openScanner()}
+                    />
+                  </motion.div>
                 );
               })
             )}
-          </div>
-        )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
@@ -616,12 +673,12 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white px-3 py-2 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-background/95 px-3 py-2 pb-safe backdrop-blur">
         <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -633,7 +690,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition-all duration-200 hover:bg-muted active:scale-95"
             aria-label={t("cyclist.walletAria")}
           >
             <Wallet className="size-5" />
@@ -642,7 +699,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -654,7 +711,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("platformPacks")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "platformPacks"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -690,21 +747,21 @@ function CyclistDashboardPage() {
                 </div>
 
                 {detailsOrder.deliveryInstructions?.trim() ? (
-                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
+                  <div className="mb-4 rounded-xl border border-border bg-background p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                     <div className="flex items-center gap-2">
-                      <MessageSquareText className="h-5 w-5 text-amber-500" />
-                      <span className="font-bold text-slate-800">{t("cyclist.deliveryInstructions")}</span>
+                      <MessageSquareText className="h-5 w-5 text-highlight" />
+                      <span className="font-bold text-foreground">{t("cyclist.deliveryInstructions")}</span>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsOrder.deliveryInstructions.trim()}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground">{detailsOrder.deliveryInstructions.trim()}</p>
                   </div>
                 ) : null}
 
                 <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
-                  <PackageSearch className="h-5 w-5 text-slate-600" />
-                  <p className="text-sm font-bold text-slate-800">{t("cyclist.productsList")}</p>
+                  <PackageSearch className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-bold text-foreground">{t("cyclist.productsList")}</p>
                 </div>
 
-                <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" dir="rtl">
+                <div className="space-y-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                   {detailsOrder.items.length > 0 ? (
                     detailsOrder.items.map((item, index) => (
                       <div
@@ -813,6 +870,9 @@ function OrderCard({
 }) {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+  const infoAlignClass = isArabic ? "items-start text-right" : "items-end text-left";
+  const infoTextAlignClass = isArabic ? "text-right" : "text-left";
+  const addressJustifyClass = isArabic ? "justify-start text-right" : "justify-end text-left";
   const actionClass =
     actionTone === "success"
       ? "bg-success text-success-foreground hover:bg-success/90"
@@ -823,7 +883,7 @@ function OrderCard({
 
   if (isActiveDelivery) {
     return (
-      <article className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <article className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:shadow-md">
         {order.paymentMethod === "Carnet" ? (
           <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/15 p-3">
             <p className="inline-flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-destructive">
@@ -834,34 +894,34 @@ function OrderCard({
         ) : null}
 
         <div className="mb-4 flex items-start justify-between border-b border-border pb-3">
-          <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-gray-900" onClick={() => onOpenDetails?.()}>
+          <button type="button" className="font-(family-name:var(--font-headline)) text-2xl font-black text-foreground" onClick={() => onOpenDetails?.()}>
             {shortOrderId}
           </button>
-          <p className="text-xl font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+          <p className="text-xl font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
         </div>
 
-        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-sm">
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <User className="h-4 w-4 text-slate-400" />
+        <div dir={isArabic ? "rtl" : "ltr"} className="mt-4 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-sm">
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <User className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.fullName")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.customerName}</div>
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>{order.customerName}</div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <Phone className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <Phone className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.phoneNumber")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
-              <span dir="ltr" className="font-mono text-sm tracking-wide text-slate-700">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
+              <span dir="ltr" className="font-mono text-sm tracking-wide text-foreground">
                 {order.customerPhone}
               </span>
-              <div className="mt-1.5 flex flex-row items-center gap-2">
+              <div className={cn("mt-1.5 flex flex-row items-center gap-2", isArabic ? "self-start" : "self-end")}>
                 <a
                   href={`tel:${order.customerPhone}`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
                   aria-label={t("cyclist.callCustomerAria")}
                 >
                   <PhoneCall className="size-4" />
@@ -870,7 +930,7 @@ function OrderCard({
                   href={`https://wa.me/${whatsappPhone}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 transition-colors hover:bg-emerald-200"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-success/30 bg-success/10 text-success transition-colors hover:bg-success/20"
                   onClick={(e) => e.stopPropagation()}
                   aria-label={t("cyclist.whatsappAria")}
                 >
@@ -880,25 +940,25 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <Map className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <Map className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.area")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">{order.deliveryZone}</div>
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>{order.deliveryZone}</div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <MapPin className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.address")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
               <a
                 href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex max-w-full items-center justify-end gap-1 whitespace-normal text-right leading-tight text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                className={cn("inline-flex max-w-full items-center gap-1 whitespace-normal leading-tight text-sm font-bold text-primary hover:opacity-85", addressJustifyClass)}
               >
                 <MapPin className="h-4 w-4" />
                 {order.deliveryAddress}
@@ -906,18 +966,18 @@ function OrderCard({
             </div>
           </div>
 
-          <div className="flex w-full flex-row items-start justify-between border-b border-slate-100 p-3.5 transition-colors hover:bg-slate-50 last:border-0">
-            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-slate-400">
-              <CreditCard className="h-4 w-4 text-slate-400" />
+          <div className="flex w-full flex-row items-start justify-between border-b border-border p-3.5 transition-colors hover:bg-muted/40 last:border-0">
+            <div className="flex w-1/3 shrink-0 items-center gap-2 text-[13px] font-medium text-muted-foreground">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
               {t("cyclist.payment")}
             </div>
-            <div className="flex w-2/3 flex-col items-end justify-center text-left text-sm font-bold text-slate-800">
+            <div className={cn("flex w-2/3 flex-col justify-center text-sm font-bold text-foreground", infoAlignClass)}>
               {order.paymentMethod === "COD" ? (
-                <span className="rounded-md border border-orange-200/50 bg-orange-50 px-2.5 py-1 text-[12px] font-semibold text-orange-700">
+                <span className={cn("rounded-md border border-highlight/40 bg-highlight/10 px-2.5 py-1 text-[12px] font-semibold text-highlight-foreground", infoTextAlignClass)}>
                   {t("cyclist.codBadge")}
                 </span>
               ) : (
-                <span className="rounded-md border border-emerald-200/50 bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-700">
+                <span className={cn("rounded-md border border-success/30 bg-success/10 px-2.5 py-1 text-[12px] font-semibold text-success", infoTextAlignClass)}>
                   {t("cyclist.carnetBadge")}
                 </span>
               )}
@@ -925,7 +985,7 @@ function OrderCard({
           </div>
         </div>
 
-        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+        <Button className={`mt-4 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
         </Button>
@@ -934,7 +994,7 @@ function OrderCard({
   }
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="space-y-2">
         {order.paymentMethod === "Carnet" ? (
           <div className="rounded-xl border border-destructive/40 bg-destructive/15 p-3">
@@ -954,11 +1014,11 @@ function OrderCard({
         </a>
         <p className="text-sm text-muted-foreground">{t("cyclist.douar")}: {order.douar}</p>
         <p className="text-sm font-medium text-foreground">{t("cyclist.total")}: {order.totalMad.toFixed(2)} MAD</p>
-        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || "—"}</p>
-        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || "—"}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.deliveryNotes")}: {order.deliveryNotes || t("cyclist.emptyValue")}</p>
+        <p className="text-xs text-muted-foreground">{t("cyclist.savedInstructions")}: {order.savedInstructions || t("cyclist.emptyValue")}</p>
       </div>
 
-      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
+      <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
       </Button>
@@ -979,13 +1039,14 @@ function PlatformPackOrderCard({
   onAccept: () => void;
   onDeliver: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <div className="mb-3 rounded-xl border border-highlight/60 bg-highlight/10 p-2.5">
+    <article className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200 hover:shadow-md" dir={isArabic ? "rtl" : "ltr"}>
+      <div className="mb-3 rounded-xl border border-highlight/40 bg-highlight/10 p-2.5">
         <p className="text-[12px] font-bold text-highlight-foreground">
-          PREPAID - COLLECT 0.00 MAD / باقة مسبقة الدفع - 0 درهم
+          {t("cyclist.prepaidZeroBadge")}
         </p>
       </div>
 
@@ -993,7 +1054,7 @@ function PlatformPackOrderCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{order.customerName}</p>
-            <p className="text-xs text-muted-foreground">{order.contactPhone}</p>
+            <p className="text-xs text-muted-foreground">{order.contactPhone || t("cyclist.emptyValue")}</p>
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -1035,7 +1096,7 @@ function PlatformPackOrderCard({
             ) : (
               order.items.map((item, index) => (
                 <p key={`${order.id}-platform-pack-item-${index}`} className="text-xs text-foreground">
-                  • {item.name} × {item.quantity}
+                  • {item.name} {t("cyclist.times", { count: item.quantity })}
                 </p>
               ))
             )}
@@ -1044,7 +1105,7 @@ function PlatformPackOrderCard({
       </div>
 
       <Button
-        className="mt-4 h-11 w-full rounded-xl text-base font-semibold"
+        className="mt-4 h-11 w-full rounded-xl text-base font-semibold active:scale-95"
         onClick={isActiveDelivery ? onDeliver : onAccept}
         disabled={isBusy}
       >
@@ -1062,8 +1123,8 @@ function EmptyState({ label }: { label: string }) {
     <AppEmptyState
       title={label}
       subtitle={t("cyclist.autoAppearSubtitle")}
-      icon={PackageSearch}
-      className="bg-card"
+      icon={PackageOpen}
+      className="rounded-2xl border-border/70 bg-card [&_span]:h-14 [&_span]:w-14 [&_span]:bg-muted [&_span]:text-muted-foreground"
     />
   );
 }
