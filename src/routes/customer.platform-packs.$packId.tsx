@@ -148,7 +148,7 @@ function PlatformPackDetailsPage() {
 
       await saveCustomerProfile({
         data: {
-          phoneNumber: customerSession.phoneNumber,
+          phoneNumber: contactPhone.trim(),
           fullName: fullName.trim(),
           address: deliveryAddress.trim(),
           savedInstructions: "",
