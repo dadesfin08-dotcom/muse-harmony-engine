@@ -880,12 +880,18 @@ function AdminPage() {
     unitType: string;
     deliveryWindow: string | null;
     packItems: Array<{
-      name: string;
+      nameEn: string;
+      nameFr: string | null;
+      nameAr: string | null;
       imageUrl: string | null;
       quantity: number | null;
       unit: string | null;
     }>;
-    packFeatures: string[];
+    packFeatures: Array<{
+      textEn: string;
+      textFr: string | null;
+      textAr: string | null;
+    }>;
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -1106,8 +1112,8 @@ function AdminPage() {
     billingCycle: "WEEKLY" as "DAILY" | "WEEKLY" | "MONTHLY",
     unitType: "Kg",
     deliveryWindow: "",
-    packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-    packFeatures: [""],
+    packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+    packFeatures: [{ textEn: "", textFr: "", textAr: "" }],
     imageUrl: "",
     isActive: true,
   });
@@ -3557,8 +3563,8 @@ function AdminPage() {
       billingCycle: "WEEKLY",
       unitType: "Kg",
       deliveryWindow: "",
-      packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-      packFeatures: [""],
+      packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+      packFeatures: [{ textEn: "", textFr: "", textAr: "" }],
       imageUrl: "",
       isActive: true,
     });
@@ -3579,8 +3585,19 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: Array<{ name: string; imageUrl: string | null; quantity: number | null; unit: string | null }>;
-    packFeatures: string[];
+    packItems: Array<{
+      nameEn: string;
+      nameFr: string | null;
+      nameAr: string | null;
+      imageUrl: string | null;
+      quantity: number | null;
+      unit: string | null;
+    }>;
+    packFeatures: Array<{
+      textEn: string;
+      textFr: string | null;
+      textAr: string | null;
+    }>;
     imageUrl: string | null;
     isActive: boolean;
   }) => {
@@ -3597,13 +3614,22 @@ function AdminPage() {
       packItems:
         pack.packItems.length > 0
           ? pack.packItems.map((item) => ({
-              name: item.name ?? "",
+              nameEn: item.nameEn ?? "",
+              nameFr: item.nameFr ?? "",
+              nameAr: item.nameAr ?? "",
               imageUrl: item.imageUrl ?? "",
               quantity: item.quantity != null ? String(item.quantity) : "",
               unit: item.unit ?? "",
             }))
-          : [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-      packFeatures: pack.packFeatures.length > 0 ? [...pack.packFeatures] : [""],
+          : [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+      packFeatures:
+        pack.packFeatures.length > 0
+          ? pack.packFeatures.map((feature) => ({
+              textEn: feature.textEn ?? "",
+              textFr: feature.textFr ?? "",
+              textAr: feature.textAr ?? "",
+            }))
+          : [{ textEn: "", textFr: "", textAr: "" }],
       imageUrl: pack.imageUrl ?? "",
       isActive: pack.isActive,
     });
@@ -3654,13 +3680,21 @@ function AdminPage() {
         deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
         packItems: platformPackForm.packItems
           .map((item) => ({
-            name: item.name.trim(),
+            nameEn: item.nameEn.trim(),
+            nameFr: item.nameFr.trim() || null,
+            nameAr: item.nameAr.trim() || null,
             imageUrl: item.imageUrl.trim() || null,
             quantity: item.quantity === "" ? null : Number(item.quantity),
             unit: item.unit.trim() || null,
           }))
-          .filter((item) => item.name.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
-        packFeatures: platformPackForm.packFeatures.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
+          .filter((item) => item.nameEn.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
+        packFeatures: platformPackForm.packFeatures
+          .map((feature) => ({
+            textEn: feature.textEn.trim(),
+            textFr: feature.textFr.trim() || null,
+            textAr: feature.textAr.trim() || null,
+          }))
+          .filter((feature) => feature.textEn.length > 0),
         imageUrl: finalImageUrl,
         isActive: platformPackForm.isActive,
       };
@@ -7465,17 +7499,33 @@ function AdsContentSection({
 }
 
 type PackItemFormValue = {
-  name: string;
+  nameEn: string;
+  nameFr: string;
+  nameAr: string;
   imageUrl: string;
   quantity: string;
   unit: string;
 };
 
 type PackItemValue = {
-  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   imageUrl: string | null;
   quantity: number | null;
   unit: string | null;
+};
+
+type PackFeatureFormValue = {
+  textEn: string;
+  textFr: string;
+  textAr: string;
+};
+
+type PackFeatureValue = {
+  textEn: string;
+  textFr: string | null;
+  textAr: string | null;
 };
 
 function PlatformPacksSection({
@@ -7504,7 +7554,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string | null;
     packItems: PackItemValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureValue[];
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -7521,7 +7571,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string;
     packItems: PackItemFormValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureFormValue[];
     imageUrl: string;
     isActive: boolean;
   };
@@ -7537,7 +7587,7 @@ function PlatformPacksSection({
       unitType: string;
       deliveryWindow: string;
       packItems: PackItemFormValue[];
-      packFeatures: string[];
+      packFeatures: PackFeatureFormValue[];
       imageUrl: string;
       isActive: boolean;
     }>
@@ -7555,7 +7605,7 @@ function PlatformPacksSection({
     unitType: string;
     deliveryWindow: string | null;
     packItems: PackItemValue[];
-    packFeatures: string[];
+    packFeatures: PackFeatureValue[];
     imageUrl: string | null;
     isActive: boolean;
   }) => void;
@@ -7575,34 +7625,62 @@ function PlatformPacksSection({
   };
 
   const addPackItem = () => {
-    onFormChange((current) => ({ ...current, packItems: [...current.packItems, { name: "", imageUrl: "", quantity: "", unit: "" }] }));
+    onFormChange((current) => ({
+      ...current,
+      packItems: [...current.packItems, { nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+    }));
   };
 
   const removePackItem = (index: number) => {
     onFormChange((current) => {
       if (current.packItems.length <= 1) {
-        return { ...current, packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }] };
+        return { ...current, packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }] };
       }
       return { ...current, packItems: current.packItems.filter((_, itemIndex) => itemIndex !== index) };
     });
   };
 
-  const updateFeatureAt = (index: number, value: string) => {
+  const itemImageInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const applyPackItemImageFile = (index: number, file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onFormChange((current) => {
+        const next = [...current.packItems];
+        next[index] = { ...next[index], imageUrl: typeof reader.result === "string" ? reader.result : next[index].imageUrl };
+        return { ...current, packItems: next };
+      });
+    };
+    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.readAsDataURL(file);
+  };
+
+  const handlePackItemImageChange = (index: number, event: ChangeEvent<HTMLInputElement>) => {
+    applyPackItemImageFile(index, event.target.files?.[0] ?? null);
+  };
+
+  const updateFeatureAt = (index: number, field: keyof PackFeatureFormValue, value: string) => {
     onFormChange((current) => {
       const next = [...current.packFeatures];
-      next[index] = value;
+      next[index] = { ...next[index], [field]: value };
       return { ...current, packFeatures: next };
     });
   };
 
   const addFeature = () => {
-    onFormChange((current) => ({ ...current, packFeatures: [...current.packFeatures, ""] }));
+    onFormChange((current) => ({ ...current, packFeatures: [...current.packFeatures, { textEn: "", textFr: "", textAr: "" }] }));
   };
 
   const removeFeature = (index: number) => {
     onFormChange((current) => {
       if (current.packFeatures.length <= 1) {
-        return { ...current, packFeatures: [""] };
+        return { ...current, packFeatures: [{ textEn: "", textFr: "", textAr: "" }] };
       }
       return { ...current, packFeatures: current.packFeatures.filter((_, featureIndex) => featureIndex !== index) };
     });
@@ -7705,37 +7783,36 @@ function PlatformPacksSection({
           </div>
           <div className="space-y-2.5">
             {form.packItems.map((item, index) => (
-              <div key={`pack-item-${index}`} className="grid gap-2 rounded-md border border-border/60 bg-background/40 p-2 md:grid-cols-[1.3fr_1.2fr_0.8fr_0.7fr_auto] md:items-center">
-                <Input
-                  value={item.name}
-                  onChange={(event) => updatePackItemAt(index, "name", event.target.value)}
-                  placeholder="Item name"
-                  className="h-9"
-                />
-                <Input
-                  value={item.imageUrl}
-                  onChange={(event) => updatePackItemAt(index, "imageUrl", event.target.value)}
-                  placeholder="Image URL"
-                  className="h-9"
-                />
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.quantity}
-                  onChange={(event) => updatePackItemAt(index, "quantity", event.target.value)}
-                  placeholder="Qty"
-                  className="h-9"
-                />
-                <Input
-                  value={item.unit}
-                  onChange={(event) => updatePackItemAt(index, "unit", event.target.value)}
-                  placeholder="Unit"
-                  className="h-9"
-                />
-                <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
-                  <Trash2 className="size-3.5" />
-                </Button>
+              <div key={`pack-item-${index}`} className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Input value={item.nameEn} onChange={(event) => updatePackItemAt(index, "nameEn", event.target.value)} placeholder="Name (EN)" className="h-9" />
+                  <Input value={item.nameFr} onChange={(event) => updatePackItemAt(index, "nameFr", event.target.value)} placeholder="Name (FR)" className="h-9" />
+                  <Input value={item.nameAr} onChange={(event) => updatePackItemAt(index, "nameAr", event.target.value)} placeholder="Name (AR)" className="h-9" />
+                </div>
+                <div className="grid gap-2 md:grid-cols-[1fr_0.8fr_0.7fr_auto] md:items-center">
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={(element) => {
+                        itemImageInputRefs.current[index] = element;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => handlePackItemImageChange(index, event)}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={() => itemImageInputRefs.current[index]?.click()}>
+                      <ImagePlus className="size-3.5" />
+                      Upload Item Image
+                    </Button>
+                    <Input value={item.imageUrl} onChange={(event) => updatePackItemAt(index, "imageUrl", event.target.value)} placeholder="Image URL" className="h-9" />
+                  </div>
+                  <Input type="number" min={0} step="0.01" value={item.quantity} onChange={(event) => updatePackItemAt(index, "quantity", event.target.value)} placeholder="Qty" className="h-9" />
+                  <Input value={item.unit} onChange={(event) => updatePackItemAt(index, "unit", event.target.value)} placeholder="Unit" className="h-9" />
+                  <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+                {item.imageUrl ? <img src={item.imageUrl} alt={item.nameEn || "Pack item"} className="h-16 w-16 rounded-md object-cover" loading="lazy" /> : null}
               </div>
             ))}
           </div>
@@ -7750,8 +7827,10 @@ function PlatformPacksSection({
           </div>
           <div className="space-y-2">
             {form.packFeatures.map((feature, index) => (
-              <div key={`pack-feature-${index}`} className="flex items-center gap-2">
-                <Input value={feature} onChange={(event) => updateFeatureAt(index, event.target.value)} placeholder={`Feature ${index + 1}`} />
+              <div key={`pack-feature-${index}`} className="grid gap-2 rounded-md border border-border/60 bg-background/40 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-center">
+                <Input value={feature.textEn} onChange={(event) => updateFeatureAt(index, "textEn", event.target.value)} placeholder={`Feature ${index + 1} (EN)`} />
+                <Input value={feature.textFr} onChange={(event) => updateFeatureAt(index, "textFr", event.target.value)} placeholder={`Feature ${index + 1} (FR)`} />
+                <Input value={feature.textAr} onChange={(event) => updateFeatureAt(index, "textAr", event.target.value)} placeholder={`Feature ${index + 1} (AR)`} />
                 <Button type="button" size="icon" variant="outline" onClick={() => removeFeature(index)}>
                   <Trash2 className="size-3.5" />
                 </Button>

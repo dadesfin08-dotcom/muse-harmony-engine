@@ -301,7 +301,11 @@ function PlatformPackDetailsPage() {
               {packDetailsQuery.data.packItems.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {packDetailsQuery.data.packItems.map((item, index) => {
-                    const itemName = (item?.name ?? "").trim() || "Pack item";
+                    const itemName = (
+                      (language === "ar" ? item?.nameAr : language === "fr" ? item?.nameFr : item?.nameEn) ??
+                      item?.nameEn ??
+                      ""
+                    ).trim() || "Pack item";
                     const itemImageUrl = (item?.imageUrl ?? "").trim();
                     const quantityText = item?.quantity != null && Number.isFinite(item.quantity) ? String(item.quantity) : "";
                     const unitText = (item?.unit ?? "").trim();
@@ -340,12 +344,20 @@ function PlatformPackDetailsPage() {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pack Features</h2>
               {packDetailsQuery.data.packFeatures.length > 0 ? (
                 <ul className="space-y-2">
-                  {packDetailsQuery.data.packFeatures.map((feature) => (
-                    <li key={`pack-feature-${feature}`} className="inline-flex items-center gap-2 text-sm text-foreground">
+                  {packDetailsQuery.data.packFeatures.map((feature, index) => {
+                    const featureText = (
+                      (language === "ar" ? feature.textAr : language === "fr" ? feature.textFr : feature.textEn) ??
+                      feature.textEn ??
+                      ""
+                    ).trim();
+
+                    return (
+                    <li key={`pack-feature-${index}-${featureText}`} className="inline-flex items-center gap-2 text-sm text-foreground">
                       <Check className="size-4 text-primary" />
-                      <span>{feature}</span>
+                      <span>{featureText || "Feature"}</span>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-sm text-muted-foreground">No features defined yet.</p>
