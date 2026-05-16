@@ -717,7 +717,7 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
           customer_name: data.customerName,
           customer_phone: data.customerPhone,
           pack_id: pack.id,
-          status: "active",
+          status: "pending",
           start_date: data.preferredStartDate,
           next_scheduled_delivery_date: data.preferredStartDate,
           deliveries_expected: deliveriesExpected,
