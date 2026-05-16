@@ -1024,6 +1024,7 @@ function PlatformPackOrderCard({
               {t("cyclist.quantity")}: {order.packQuantity}
             </span>
           </div>
+          <p className="mb-2 text-[11px] text-muted-foreground">{t("cyclist.platformWarehouseHint")}</p>
           <div className="space-y-1">
             {order.items.length === 0 ? (
               <p className="text-xs text-muted-foreground">{t("cyclist.noOrderItems")}</p>
