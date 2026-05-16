@@ -144,7 +144,7 @@ const updateSubscriptionOrderStatusInputSchema = z.object({
 
 const updatePlatformSubscriberStatusInputSchema = z.object({
   subscriptionId: z.string().uuid(),
-  status: z.enum(["active", "paused", "expired", "cancelled"]),
+  status: z.enum(["pending", "active", "paused", "expired", "cancelled"]),
 });
 
 const getPlatformSubscriberHistoryInputSchema = z.object({
