@@ -8293,7 +8293,7 @@ function SubscribersSection({
                   <TableCell>
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-foreground">{subscriber.lifetimeRevenueMad.toFixed(2)} MAD</p>
-                      {subscriber.status === "active" ? (
+                      {subscriber.status === "active" || subscriber.status === "completed" ? (
                         <>
                           <Progress value={subscriber.deliveryCompletionPercent} className="h-2 bg-muted/70" indicatorClassName="bg-success" />
                           <p className="text-xs text-muted-foreground">{subscriber.deliveryCompletionPercent}% complete</p>
