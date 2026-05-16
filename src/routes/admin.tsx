@@ -3669,6 +3669,44 @@ function AdminPage() {
         finalImageUrl = publicUrlData.publicUrl;
       }
 
+      const uploadPackItemImageIfNeeded = async (imageUrl: string, index: number) => {
+        const normalized = imageUrl.trim();
+        if (!normalized) return null;
+        if (!normalized.startsWith("data:image/")) {
+          return normalized;
+        }
+
+        const response = await fetch(normalized);
+        const blob = await response.blob();
+        const mimeSubtype = blob.type.split("/")[1] || "jpg";
+        const extension = mimeSubtype.split("+")[0] || "jpg";
+        const filePath = `platform-packs/items/${crypto.randomUUID()}-${index}.${extension}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage.from("products").upload(filePath, blob, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: blob.type || undefined,
+        });
+
+        if (uploadError || !uploadData?.path) {
+          throw new Error(uploadError?.message || `Pack item image ${index + 1} upload failed.`);
+        }
+
+        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
+        return publicUrlData.publicUrl;
+      };
+
+      const resolvedPackItems = await Promise.all(
+        platformPackForm.packItems.map(async (item, index) => ({
+          nameEn: item.nameEn.trim(),
+          nameFr: item.nameFr.trim() || null,
+          nameAr: item.nameAr.trim() || null,
+          imageUrl: await uploadPackItemImageIfNeeded(item.imageUrl, index),
+          quantity: item.quantity === "" ? null : Number(item.quantity),
+          unit: item.unit.trim() || null,
+        })),
+      );
+
       const payload = {
         nameEn: platformPackForm.nameEn.trim(),
         nameFr: platformPackForm.nameFr.trim() || null,
@@ -3678,15 +3716,7 @@ function AdminPage() {
         billingCycle: platformPackForm.billingCycle,
         unitType: platformPackForm.unitType.trim(),
         deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
-        packItems: platformPackForm.packItems
-          .map((item) => ({
-            nameEn: item.nameEn.trim(),
-            nameFr: item.nameFr.trim() || null,
-            nameAr: item.nameAr.trim() || null,
-            imageUrl: item.imageUrl.trim() || null,
-            quantity: item.quantity === "" ? null : Number(item.quantity),
-            unit: item.unit.trim() || null,
-          }))
+        packItems: resolvedPackItems
           .filter((item) => item.nameEn.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
         packFeatures: platformPackForm.packFeatures
           .map((feature) => ({
