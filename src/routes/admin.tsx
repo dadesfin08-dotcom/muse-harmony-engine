@@ -7464,6 +7464,20 @@ function AdsContentSection({
   );
 }
 
+type PackItemFormValue = {
+  name: string;
+  imageUrl: string;
+  quantity: string;
+  unit: string;
+};
+
+type PackItemValue = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
 function PlatformPacksSection({
   packs,
   isLoading,
@@ -7479,20 +7493,6 @@ function PlatformPacksSection({
   onImageChange,
   isSaving,
 }: {
-  type PackItemFormValue = {
-    name: string;
-    imageUrl: string;
-    quantity: string;
-    unit: string;
-  };
-
-  type PackItemValue = {
-    name: string;
-    imageUrl: string | null;
-    quantity: number | null;
-    unit: string | null;
-  };
-
   packs: Array<{
     id: string;
     nameEn: string;
