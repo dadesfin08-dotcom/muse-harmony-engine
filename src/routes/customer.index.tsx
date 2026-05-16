@@ -496,6 +496,7 @@ function Index() {
     queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null],
     queryFn: () => fetchCustomerSubscriptions({ data: { phoneNumber: customerSession!.phoneNumber } }),
     enabled: !!customerSession?.phoneNumber,
+    placeholderData: (previousData) => previousData,
     refetchInterval: customerSession?.phoneNumber ? 7_000 : false,
   });
   const customerCarnetQuery = useCustomerCarnet(
@@ -1381,6 +1382,7 @@ function Index() {
     (customerSubscriptionsQuery.data ?? []) as Array<{
       id: string;
       packName: string;
+      packId: string;
       status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
       completionPercent: number;
       completedDeliveries: number;
@@ -1388,6 +1390,33 @@ function Index() {
       agreedPriceMad: number;
       createdAt: string;
     }>;
+  const activeOrPendingSubscriptionByPackId = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        status: "pending" | "active";
+        completedDeliveries: number;
+        totalDeliveries: number;
+      }
+    >();
+
+    for (const subscription of customerSubscriptions) {
+      if (subscription.status !== "pending" && subscription.status !== "active") {
+        continue;
+      }
+
+      const existing = map.get(subscription.packId);
+      if (!existing || (existing.status === "pending" && subscription.status === "active")) {
+        map.set(subscription.packId, {
+          status: subscription.status,
+          completedDeliveries: Math.max(0, Number(subscription.completedDeliveries ?? 0)),
+          totalDeliveries: Math.max(0, Number(subscription.totalDeliveries ?? 0)),
+        });
+      }
+    }
+
+    return map;
+  }, [customerSubscriptions]);
   const hasCustomerSubscriptions = customerSubscriptions.length > 0;
   const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
     if (status === "pending") return "Pending Admin Review / قيد المراجعة";
