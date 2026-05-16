@@ -981,8 +981,13 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         throw new Error("Order is not an active delivery for this cyclist.");
       }
 
+      const isPlatformSubscriptionOrder =
+        String(order.order_category ?? "").trim().toUpperCase() === "PLATFORM_SUBSCRIPTION";
       const normalizedMethod = String(order.payment_method ?? "").trim().toLowerCase();
-      const nextStatus = normalizedMethod === "cod" || normalizedMethod === "cash" ? "delivered_cash_with_cyclist" : "delivered";
+      const nextStatus =
+        isPlatformSubscriptionOrder || (!(normalizedMethod === "cod" || normalizedMethod === "cash"))
+          ? "delivered"
+          : "delivered_cash_with_cyclist";
 
       const { error } = await (supabaseAdmin as any)
         .from("orders")
@@ -1000,15 +1005,44 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         throw new Error(error.message);
       }
 
-      const isPlatformSubscriptionOrder =
-        String(order.order_category ?? "").trim().toUpperCase() === "PLATFORM_SUBSCRIPTION";
-
       if (isPlatformSubscriptionOrder && typeof order.subscription_id === "string" && order.subscription_id.length > 0) {
+        const { data: subscriptionRow, error: progressError } = await (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .select("id, total_deliveries, completed_deliveries")
+          .eq("id", order.subscription_id)
+          .single();
+
+        if (progressError) {
+          throw new Error(progressError.message ?? "Failed to sync subscription progress.");
+        }
+
+        const totalDeliveries = Number(subscriptionRow?.total_deliveries ?? 0);
+        const completedDeliveries = Number(subscriptionRow?.completed_deliveries ?? 0);
+        const nextCompleted = completedDeliveries + 1;
+        const isCycleComplete = totalDeliveries > 0 && nextCompleted >= totalDeliveries;
+
         const { error: subscriptionProgressError } = await (supabaseAdmin as any)
           .from("platform_subscriptions")
           .update({
-            completed_deliveries: (supabaseAdmin as any).rpc ? undefined : undefined,
+            completed_deliveries: nextCompleted,
+            deliveries_completed: nextCompleted,
+            status: isCycleComplete ? "completed" : "active",
           });
+          
+        if (!subscriptionProgressError) {
+          const { error: scopedUpdateError } = await (supabaseAdmin as any)
+            .from("platform_subscriptions")
+            .update({
+              completed_deliveries: nextCompleted,
+              deliveries_completed: nextCompleted,
+              status: isCycleComplete ? "completed" : "active",
+            })
+            .eq("id", order.subscription_id);
+
+          if (scopedUpdateError) {
+            throw new Error(scopedUpdateError.message ?? "Failed to update subscription completion progress.");
+          }
+        }
 
         if (subscriptionProgressError) {
           throw new Error(subscriptionProgressError.message);
