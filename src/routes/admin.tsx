@@ -1175,6 +1175,29 @@ function AdminPage() {
     placeholderData: (previousData) => previousData,
   });
 
+  const platformSubscriberHistoryQuery = useQuery({
+    queryKey: ["admin", "platform-subscriber-history", selectedSubscriberForHistory?.id ?? null],
+    enabled: isAdminDataEnabled && Boolean(selectedSubscriberForHistory?.id),
+    queryFn: () =>
+      fetchPlatformSubscriberHistory({
+        data: { subscriptionId: selectedSubscriberForHistory!.id },
+      }),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const updatePlatformSubscriberStatusMutation = useMutation({
+    mutationFn: ({ subscriptionId, status }: { subscriptionId: string; status: "active" | "paused" | "expired" | "cancelled" }) =>
+      updatePlatformSubscriberStatusInDatabase({ data: { subscriptionId, status } }),
+    onSuccess: async () => {
+      await platformSubscribersQuery.refetch();
+      toast.success("Subscriber status updated.");
+    },
+    onError: (error) => {
+      console.error("Failed to update subscriber status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update subscriber status.");
+    },
+  });
+
   const filteredOrders = useMemo(
     () =>
       adminOrders.filter((order) => {
