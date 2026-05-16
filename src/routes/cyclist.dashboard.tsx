@@ -65,6 +65,12 @@ const listItemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+const tabPanelVariants = {
+  initial: { opacity: 0, x: 18 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -18 },
+};
+
 function CyclistDashboardPage() {
   const { t, i18n: runtimeI18n } = useTranslation();
   const isArabic = (runtimeI18n.resolvedLanguage || runtimeI18n.language || "en") === "ar";
@@ -215,6 +221,39 @@ function CyclistDashboardPage() {
     activeMarketplaceDeliveries.length,
     t,
   ]);
+
+  const dashboardTabs = useMemo(
+    () => [
+      {
+        key: "available" as const,
+        label: t("cyclist.availableRunsTab"),
+        icon: LayoutGrid,
+        onClick: () => setActiveView("available" as CyclistView),
+      },
+      {
+        key: "active" as const,
+        label: t("cyclist.activeDeliveriesTab"),
+        icon: Navigation,
+        onClick: () => setActiveView("active" as CyclistView),
+      },
+      {
+        key: "platformPacks" as const,
+        label: t("cyclist.platformPacksTab"),
+        icon: PackageCheck,
+        onClick: () => setActiveView("platformPacks" as CyclistView),
+      },
+      {
+        key: "wallet" as const,
+        label: t("cyclist.earningsTab"),
+        icon: Wallet,
+        onClick: () => void navigate({ to: "/cyclist/wallet" }),
+      },
+    ],
+    [navigate, t],
+  );
+
+  const orderedDashboardTabs = isArabic ? [...dashboardTabs].reverse() : dashboardTabs;
+  const activeTabIndex = orderedDashboardTabs.findIndex((tab) => tab.key === activeView);
 
   const updateOnlineState = async (isOnline: boolean) => {
     if (!cyclist?.id) {
@@ -458,47 +497,54 @@ function CyclistDashboardPage() {
           </div>
         </div>
 
-        <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <span className="text-sm text-muted-foreground">{cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}</span>
+        <div className="mx-auto mt-3 flex w-full max-w-lg items-center justify-between rounded-xl border border-border bg-card/95 px-3 py-2 shadow-sm backdrop-blur">
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <span
+              className={cn(
+                "h-2.5 w-2.5 rounded-full",
+                cyclist?.isActive ? "animate-pulse bg-success" : "bg-muted-foreground/40",
+              )}
+            />
+            {cyclist?.isActive ? t("cyclist.online") : t("cyclist.offline")}
+          </span>
           <Switch checked={Boolean(cyclist?.isActive)} onCheckedChange={updateOnlineState} />
         </div>
       </header>
 
       <section className="mx-auto w-full max-w-lg px-4 pt-4">
-        <div className="mb-4 inline-flex w-full items-center rounded-2xl border border-border/70 bg-card/90 p-1 shadow-sm backdrop-blur">
-          <button
-            type="button"
-            onClick={() => setActiveView("available")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "available"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.availableRunsTab")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView("active")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "active"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.activeDeliveriesTab")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView("platformPacks")}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 ${
-              activeView === "platformPacks"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {t("cyclist.platformPacksTab")}
-          </button>
+        <div className="mb-4 inline-flex w-full items-center justify-center rounded-2xl border border-border/70 bg-card/95 p-1 shadow-sm backdrop-blur">
+          <div className="grid w-full grid-cols-3 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveView("available")}
+              className={cn(
+                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
+                activeView === "available" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
+              )}
+            >
+              {t("cyclist.availableRunsTab")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView("active")}
+              className={cn(
+                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
+                activeView === "active" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
+              )}
+            >
+              {t("cyclist.activeDeliveriesTab")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView("platformPacks")}
+              className={cn(
+                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
+                activeView === "platformPacks" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
+              )}
+            >
+              {t("cyclist.platformPacksTab")}
+            </button>
+          </div>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
@@ -667,52 +713,42 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-background/95 px-3 py-2 pb-safe backdrop-blur">
-        <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveView("available")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "available"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.availableRunsTab")}
-          </button>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
+        <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
+          <div className="relative grid grid-cols-4 gap-1" dir={isArabic ? "rtl" : "ltr"}>
+            {activeTabIndex >= 0 ? (
+              <motion.span
+                layout
+                transition={{ type: "spring", stiffness: 360, damping: 30 }}
+                className="absolute inset-y-1 z-0 rounded-2xl bg-primary/12"
+                style={{
+                  width: "calc(25% - 0.375rem)",
+                  [isArabic ? "right" : "left"]: `calc(${activeTabIndex} * 25% + 0.1875rem)`,
+                }}
+              />
+            ) : null}
 
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/cyclist/wallet" })}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition-all duration-200 hover:bg-muted active:scale-95"
-            aria-label={t("cyclist.walletAria")}
-          >
-            <Wallet className="size-5" />
-          </button>
+            {orderedDashboardTabs.map((tab) => {
+              const TabIcon = tab.icon;
+              const isTabActive = activeView === tab.key;
 
-          <button
-            type="button"
-            onClick={() => setActiveView("active")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "active"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.activeDeliveriesTab")}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveView("platformPacks")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
-              activeView === "platformPacks"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {t("cyclist.platformPacksTab")}
-          </button>
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={tab.onClick}
+                  aria-label={tab.label}
+                  className={cn(
+                    "relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition-all duration-200 active:scale-95",
+                    isTabActive ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <TabIcon className="size-[18px]" />
+                  <span className="line-clamp-1 max-w-full text-[10px] leading-none">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
