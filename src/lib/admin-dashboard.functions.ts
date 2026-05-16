@@ -1263,13 +1263,35 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
 export const deletePlatformPack = createServerFn({ method: "POST" })
   .inputValidator((input) => deletePlatformPackInputSchema.parse(input))
   .handler(async ({ data }) => {
+    const { count: linkedSubscriptionsCount, error: linkedSubscriptionsError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("pack_id", data.id);
+
+    if (linkedSubscriptionsError) {
+      throw new Error(linkedSubscriptionsError.message ?? "Failed to inspect linked subscriptions.");
+    }
+
+    if ((linkedSubscriptionsCount ?? 0) > 0) {
+      const { error: archiveError } = await (supabaseAdmin as any)
+        .from("platform_packs")
+        .update({ is_active: false })
+        .eq("id", data.id);
+
+      if (archiveError) {
+        throw new Error(archiveError.message ?? "Failed to archive platform pack.");
+      }
+
+      return { ok: true, archived: true, linkedSubscriptionsCount: linkedSubscriptionsCount ?? 0 };
+    }
+
     const { error } = await (supabaseAdmin as any).from("platform_packs").delete().eq("id", data.id);
 
     if (error) {
       throw new Error(error.message ?? "Failed to delete platform pack.");
     }
 
-    return { ok: true };
+    return { ok: true, archived: false, linkedSubscriptionsCount: 0 };
   });
 
 export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
