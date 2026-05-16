@@ -63,8 +63,66 @@ type PlatformPackItemRow = {
   id: string;
   pack_id: string;
   item_label: string;
+  item_data?: unknown;
   sort_order: number;
 };
+
+type PlatformPackItemInput = {
+  name: string;
+  imageUrl?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+};
+
+type PlatformPackItemValue = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
+const platformPackItemInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  imageUrl: z.string().trim().url().max(2000).nullable().optional(),
+  quantity: z.number().min(0).max(100_000).nullable().optional(),
+  unit: z.string().trim().max(40).nullable().optional(),
+});
+
+function normalizePlatformPackItem(row: { item_label: string; item_data?: unknown }): PlatformPackItemValue {
+  const data = row.item_data && typeof row.item_data === "object" && !Array.isArray(row.item_data)
+    ? (row.item_data as Record<string, unknown>)
+    : null;
+
+  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
+
+  const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
+  const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
+
+  const quantitySource = data?.quantity;
+  const quantityParsed =
+    typeof quantitySource === "number"
+      ? quantitySource
+      : typeof quantitySource === "string"
+        ? Number(quantitySource)
+        : Number.NaN;
+
+  return {
+    name: nameFromData || nameFromLabel,
+    imageUrl: imageUrlRaw || null,
+    quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
+    unit: unitRaw || null,
+  };
+}
+
+function serializePlatformPackItem(item: PlatformPackItemInput) {
+  return {
+    name: item.name,
+    image_url: item.imageUrl ?? null,
+    quantity: item.quantity ?? null,
+    unit: item.unit ?? null,
+  };
+}
 
 type PlatformPackFeatureRow = {
   id: string;
@@ -117,7 +175,7 @@ const platformPackInputSchema = z.object({
   billingCycle: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
   unitType: z.string().trim().min(1).max(40),
   deliveryWindow: z.string().trim().max(120).nullable().optional(),
-  packItems: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
+  packItems: z.array(platformPackItemInputSchema).max(80).default([]),
   packFeatures: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
   imageUrl: z.string().trim().url().max(2000).nullable().optional(),
   isActive: z.boolean().default(true),
