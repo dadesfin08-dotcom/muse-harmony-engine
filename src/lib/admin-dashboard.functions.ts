@@ -27,6 +27,7 @@ type AdminOrderStatus =
 type AdminOrderRow = {
   id: string;
   vendor_id: string | null;
+  subscription_id?: string | null;
   customer_name: string | null;
   customer_phone: string;
   total_price: number;
@@ -72,7 +73,7 @@ type PlatformPackFeatureRow = {
   sort_order: number;
 };
 
-type PlatformSubscriptionStatus = "active" | "paused" | "expired" | "cancelled";
+type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled";
 
 type PlatformSubscriptionRow = {
   id: string;
