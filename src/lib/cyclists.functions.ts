@@ -85,8 +85,11 @@ type CommuneRow = {
 type OrderRow = {
   id: string;
   customer_user_id?: string | null;
+  subscription_id?: string | null;
+  order_category?: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION" | string | null;
   customer_name: string;
   customer_phone: string;
+  cash_to_collect_from_customer?: number | null;
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
   delivery_fee: number;
@@ -136,15 +139,20 @@ export type AdminCyclistRecord = {
 
 export type CyclistOrderCard = {
   id: string;
+  subscriptionId: string | null;
+  orderCategory: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
   customerName: string;
   customerPhone: string;
+  contactPhone: string;
   deliveryAddress: string;
   deliveryInstructions: string;
   deliveryZone: string;
   douar: string;
   deliveryFeeMad: number;
   totalMad: number;
+  cashToCollectMad: number;
   paymentMethod: "COD" | "Carnet";
+  packQuantity: number;
   items: Array<{
     name: string;
     quantity: number;
@@ -421,7 +429,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           ? (supabaseAdmin as any)
               .from("orders")
               .select(
-                "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
+                "id, customer_user_id, subscription_id, order_category, customer_name, customer_phone, cash_to_collect_from_customer, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
               )
               .eq("status", "ready")
               .in("neighborhood_id", coverageNeighborhoodIds)
@@ -431,7 +439,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select(
-            "id, customer_user_id, customer_name, customer_phone, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
+            "id, customer_user_id, subscription_id, order_category, customer_name, customer_phone, cash_to_collect_from_customer, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
           )
           .eq("status", "delivering")
           .eq("cyclist_id", cyclist.id)
@@ -534,11 +542,29 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         ? await (supabaseAdmin as any).from("profiles").select("id, address").in("id", uniqueCustomerUserIds)
         : { data: [], error: null };
 
+      const uniqueSubscriptionIds = Array.from(
+        new Set(
+          allRows
+            .map((row) => row.subscription_id)
+            .filter((value): value is string => typeof value === "string" && value.length > 0),
+        ),
+      );
+
+      const { data: subscriptions, error: subscriptionsError } = uniqueSubscriptionIds.length
+        ? await (supabaseAdmin as any)
+            .from("platform_subscriptions")
+            .select("id, contact_phone, delivery_address, pack_quantity")
+            .in("id", uniqueSubscriptionIds)
+        : { data: [], error: null };
+
       if (customersError) {
         throw new Error(customersError.message);
       }
       if (profilesError) {
         throw new Error(profilesError.message);
+      }
+      if (subscriptionsError) {
+        throw new Error(subscriptionsError.message);
       }
 
       const { neighborhoodMap, communeMap } = await buildServiceZoneMaps();
@@ -551,8 +577,34 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           typeof profile.address === "string" ? profile.address.trim() : "",
         ]),
       );
+      const subscriptionMetaMap = new Map(
+        (
+          (subscriptions ?? []) as Array<{
+            id: string;
+            contact_phone?: string | null;
+            delivery_address?: string | null;
+            pack_quantity?: number | null;
+          }>
+        ).map((subscription) => [
+          subscription.id,
+          {
+            contactPhone: typeof subscription.contact_phone === "string" ? subscription.contact_phone.trim() : "",
+            deliveryAddress:
+              typeof subscription.delivery_address === "string" ? subscription.delivery_address.trim() : "",
+            packQuantity: Number(subscription.pack_quantity ?? 1),
+          },
+        ]),
+      );
 
       const mapOrder = (row: OrderRow): CyclistOrderCard => {
+        const orderCategory =
+          String(row.order_category ?? "").trim().toUpperCase() === "PLATFORM_SUBSCRIPTION"
+            ? "PLATFORM_SUBSCRIPTION"
+            : "MARKETPLACE";
+        const subscriptionMeta =
+          typeof row.subscription_id === "string" && row.subscription_id.length > 0
+            ? subscriptionMetaMap.get(row.subscription_id)
+            : null;
         const neighborhood = neighborhoodMap.get(row.neighborhood_id);
         const neighborhoodName =
           neighborhood?.name_ar?.trim() || neighborhood?.name_fr?.trim() || neighborhood?.name_en || "Unspecified";
@@ -562,7 +614,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         const checkoutAddress =
           typeof row.customer_user_id === "string" ? (profileAddressMap.get(row.customer_user_id) ?? "") : "";
         const deliveryAddress =
-          checkoutAddress || neighborhoodName;
+          subscriptionMeta?.deliveryAddress || checkoutAddress || neighborhoodName;
         const deliveryInstructions = (row.delivery_notes ?? "").trim();
         const items = Array.isArray(row.order_items)
           ? row.order_items.map((item) => {
@@ -602,15 +654,21 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
         return {
           id: row.id,
+          subscriptionId:
+            typeof row.subscription_id === "string" && row.subscription_id.length > 0 ? row.subscription_id : null,
+          orderCategory,
           customerName: row.customer_name,
           customerPhone: row.customer_phone,
+          contactPhone: subscriptionMeta?.contactPhone || row.customer_phone,
           deliveryAddress,
           deliveryInstructions,
           deliveryZone,
           douar: neighborhoodName,
           deliveryFeeMad: Number(row.delivery_fee ?? 0),
           totalMad: Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
+          cashToCollectMad: Number(row.cash_to_collect_from_customer ?? 0),
           paymentMethod: row.payment_method === "Carnet" ? "Carnet" : "COD",
+          packQuantity: Math.max(1, Math.floor(subscriptionMeta?.packQuantity ?? 1)),
           items,
           savedInstructions,
           deliveryNotes: row.delivery_notes,
@@ -909,7 +967,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
     try {
       const { data: order, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, cyclist_id, status, payment_method")
+        .select("id, cyclist_id, status, payment_method, order_category, subscription_id")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivering")
@@ -923,8 +981,13 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         throw new Error("Order is not an active delivery for this cyclist.");
       }
 
+      const isPlatformSubscriptionOrder =
+        String(order.order_category ?? "").trim().toUpperCase() === "PLATFORM_SUBSCRIPTION";
       const normalizedMethod = String(order.payment_method ?? "").trim().toLowerCase();
-      const nextStatus = normalizedMethod === "cod" || normalizedMethod === "cash" ? "delivered_cash_with_cyclist" : "delivered";
+      const nextStatus =
+        isPlatformSubscriptionOrder || (!(normalizedMethod === "cod" || normalizedMethod === "cash"))
+          ? "delivered"
+          : "delivered_cash_with_cyclist";
 
       const { error } = await (supabaseAdmin as any)
         .from("orders")
@@ -940,6 +1003,36 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
 
       if (error) {
         throw new Error(error.message);
+      }
+
+      if (isPlatformSubscriptionOrder && typeof order.subscription_id === "string" && order.subscription_id.length > 0) {
+        const { data: subscriptionRow, error: progressError } = await (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .select("id, total_deliveries, completed_deliveries")
+          .eq("id", order.subscription_id)
+          .single();
+
+        if (progressError) {
+          throw new Error(progressError.message ?? "Failed to sync subscription progress.");
+        }
+
+        const totalDeliveries = Number(subscriptionRow?.total_deliveries ?? 0);
+        const completedDeliveries = Number(subscriptionRow?.completed_deliveries ?? 0);
+        const nextCompleted = completedDeliveries + 1;
+        const isCycleComplete = totalDeliveries > 0 && nextCompleted >= totalDeliveries;
+
+        const { error: subscriptionProgressError } = await (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .update({
+            completed_deliveries: nextCompleted,
+            deliveries_completed: nextCompleted,
+            status: isCycleComplete ? "completed" : "active",
+          })
+          .eq("id", order.subscription_id);
+
+        if (subscriptionProgressError) {
+          throw new Error(subscriptionProgressError.message ?? "Failed to update subscription completion progress.");
+        }
       }
 
       return { ok: true, nextStatus };

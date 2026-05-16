@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Package, PackageCheck, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -28,7 +28,7 @@ import appI18n from "@/lib/i18n";
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
 
-type CyclistView = "available" | "active";
+type CyclistView = "available" | "active" | "platformPacks";
 type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
@@ -169,12 +169,35 @@ function CyclistDashboardPage() {
     toast.success(t("cyclist.soundsEnabled"));
   };
 
+  const activeDeliveryIds = useMemo(() => new Set(activeDeliveries.map((order) => order.id)), [activeDeliveries]);
+  const availableMarketplaceRuns = useMemo(
+    () => availableRuns.filter((order) => order.orderCategory !== "PLATFORM_SUBSCRIPTION"),
+    [availableRuns],
+  );
+  const activeMarketplaceDeliveries = useMemo(
+    () => activeDeliveries.filter((order) => order.orderCategory !== "PLATFORM_SUBSCRIPTION"),
+    [activeDeliveries],
+  );
+  const platformPackDeliveries = useMemo(
+    () => [...availableRuns, ...activeDeliveries].filter((order) => order.orderCategory === "PLATFORM_SUBSCRIPTION"),
+    [availableRuns, activeDeliveries],
+  );
+
   const onlineCountLabel = useMemo(() => {
     if (activeView === "available") {
-      return t("cyclist.availableRunsCount", { count: availableRuns.length });
+      return t("cyclist.availableRunsCount", { count: availableMarketplaceRuns.length });
     }
-    return t("cyclist.activeDeliveriesCount", { count: activeDeliveries.length });
-  }, [activeView, availableRuns.length, activeDeliveries.length]);
+    if (activeView === "platformPacks") {
+      return t("cyclist.platformPackTasksCount", { count: platformPackDeliveries.length });
+    }
+    return t("cyclist.activeDeliveriesCount", { count: activeMarketplaceDeliveries.length });
+  }, [
+    activeView,
+    availableMarketplaceRuns.length,
+    platformPackDeliveries.length,
+    activeMarketplaceDeliveries.length,
+    t,
+  ]);
 
   const updateOnlineState = async (isOnline: boolean) => {
     if (!cyclist?.id) {
@@ -268,8 +291,12 @@ function CyclistDashboardPage() {
         }
 
         setIsUpdatingOrderId(orderId);
-        await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
-        toast.success("Order delivered. Cash kept with cyclist.");
+        const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
+        toast.success(
+          completionResult.nextStatus === "delivered_cash_with_cyclist"
+            ? "Order delivered. Cash kept with cyclist."
+            : "Order delivered successfully.",
+        );
       } else if (action === "vendor_handover") {
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
@@ -444,6 +471,17 @@ function CyclistDashboardPage() {
           >
             {t("cyclist.activeDeliveriesTab")}
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveView("platformPacks")}
+            className={`h-10 flex-1 rounded-lg text-sm font-medium transition ${
+              activeView === "platformPacks"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {t("cyclist.platformPacksTab")}
+          </button>
         </div>
 
         <div className="mb-3 flex items-center justify-between">
@@ -490,10 +528,10 @@ function CyclistDashboardPage() {
                 icon={Lock}
                 className="bg-card"
               />
-            ) : availableRuns.length === 0 ? (
+            ) : availableMarketplaceRuns.length === 0 ? (
               <EmptyState label={t("cyclist.noReadyDeliveries")} />
             ) : (
-              availableRuns.map((order) => (
+              availableMarketplaceRuns.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -507,12 +545,12 @@ function CyclistDashboardPage() {
               ))
             )}
           </div>
-        ) : (
+        ) : activeView === "active" ? (
           <div className="space-y-3">
-            {activeDeliveries.length === 0 ? (
+            {activeMarketplaceDeliveries.length === 0 ? (
               <EmptyState label={t("cyclist.noActiveDeliveries")} />
             ) : (
-              activeDeliveries.map((order) => (
+              activeMarketplaceDeliveries.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -525,6 +563,26 @@ function CyclistDashboardPage() {
                   onAction={() => openScanner()}
                 />
               ))
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {platformPackDeliveries.length === 0 ? (
+              <EmptyState label={t("cyclist.noPlatformPackTasks")} />
+            ) : (
+              platformPackDeliveries.map((order) => {
+                const isActiveTask = activeDeliveryIds.has(order.id);
+                return (
+                  <PlatformPackOrderCard
+                    key={order.id}
+                    order={order}
+                    isActiveDelivery={isActiveTask}
+                    isBusy={isUpdatingOrderId === order.id}
+                    onAccept={() => handleAcceptDelivery(order)}
+                    onDeliver={() => openScanner()}
+                  />
+                );
+              })
             )}
           </div>
         )}
@@ -591,6 +649,18 @@ function CyclistDashboardPage() {
             }`}
           >
             {t("cyclist.activeDeliveriesTab")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveView("platformPacks")}
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+              activeView === "platformPacks"
+                ? "bg-primary text-primary-foreground"
+                : "border border-border bg-card text-muted-foreground"
+            }`}
+          >
+            {t("cyclist.platformPacksTab")}
           </button>
         </div>
       </nav>
@@ -891,6 +961,95 @@ function OrderCard({
       <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
+      </Button>
+    </article>
+  );
+}
+
+function PlatformPackOrderCard({
+  order,
+  isActiveDelivery,
+  isBusy,
+  onAccept,
+  onDeliver,
+}: {
+  order: CyclistOrderCard;
+  isActiveDelivery: boolean;
+  isBusy: boolean;
+  onAccept: () => void;
+  onDeliver: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 rounded-xl border border-highlight/60 bg-highlight/10 p-2.5">
+        <p className="text-[12px] font-bold text-highlight-foreground">
+          PREPAID - COLLECT 0.00 MAD / باقة مسبقة الدفع - 0 درهم
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{order.customerName}</p>
+            <p className="text-xs text-muted-foreground">{order.contactPhone}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={`tel:${order.contactPhone}`}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground"
+              aria-label={t("cyclist.callCustomerAria")}
+            >
+              <Phone className="size-4" />
+            </a>
+            <a
+              href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground"
+              aria-label={t("cyclist.openMapAria")}
+            >
+              <MapPin className="size-4" />
+            </a>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-2.5">
+          <p className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">{t("cyclist.destinationLabel")}</p>
+          <p className="text-sm font-medium text-foreground">{order.deliveryAddress}</p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase text-muted-foreground">{t("cyclist.packPayloadLabel")}</p>
+            <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground">
+              <PackageCheck className="size-3.5" />
+              {t("cyclist.quantity")}: {order.packQuantity}
+            </span>
+          </div>
+          <p className="mb-2 text-[11px] text-muted-foreground">{t("cyclist.platformWarehouseHint")}</p>
+          <div className="space-y-1">
+            {order.items.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("cyclist.noOrderItems")}</p>
+            ) : (
+              order.items.map((item, index) => (
+                <p key={`${order.id}-platform-pack-item-${index}`} className="text-xs text-foreground">
+                  • {item.name} × {item.quantity}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Button
+        className="mt-4 h-11 w-full rounded-xl text-base font-semibold"
+        onClick={isActiveDelivery ? onDeliver : onAccept}
+        disabled={isBusy}
+      >
+        {isActiveDelivery ? <Camera className="size-4" /> : <Truck className="size-4" />}
+        {isBusy ? t("cyclist.refreshing") : isActiveDelivery ? t("cyclist.scanToDeliver") : t("cyclist.acceptPickup")}
       </Button>
     </article>
   );
