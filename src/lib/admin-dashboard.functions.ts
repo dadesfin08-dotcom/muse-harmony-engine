@@ -1840,7 +1840,9 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
         `Contract price: ${Number(data.agreedPriceMad).toFixed(2)} MAD`,
         `Requested quantity: ${Math.max(1, Number(subscriptionRes.data.pack_quantity ?? 1))}`,
         subscriptionRes.data.delivery_address ? `Address: ${subscriptionRes.data.delivery_address}` : null,
-      ].join(" | ");
+      ]
+        .filter((value): value is string => Boolean(value))
+        .join(" | ");
 
       const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
