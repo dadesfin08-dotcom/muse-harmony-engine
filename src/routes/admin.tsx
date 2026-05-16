@@ -215,6 +215,7 @@ import {
   resetBrandEngineScore,
   setBrandBlacklistState,
   uploadSiteLogo,
+  uploadPlatformPackAsset,
   updateGlobalSettings,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
@@ -665,6 +666,7 @@ function AdminPage() {
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
   const uploadSiteLogoToStorage = useServerFn(uploadSiteLogo);
+  const uploadPlatformPackAssetToStorage = useServerFn(uploadPlatformPackAsset);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
