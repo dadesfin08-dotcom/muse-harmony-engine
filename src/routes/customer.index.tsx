@@ -2389,25 +2389,30 @@ function Index() {
                   <button
                     type="button"
                     onClick={() => openSubscriptionCheckout(pack)}
-                    className="relative block h-36 w-full overflow-hidden"
+                    className="group block w-full text-left"
                   >
-                    <img
-                      src={pack.imageUrl || productFallbackImage}
-                      alt={`${pack.name} subscription pack`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
-                      {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                    <div className="relative h-36 w-full overflow-hidden">
+                      <img
+                        src={pack.imageUrl || productFallbackImage}
+                        alt={`${pack.name} subscription pack`}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
+                      />
+                      <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+                        {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                      </div>
+                    </div>
+                    <div className="space-y-2 p-3">
+                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
+                      {pack.description ? (
+                        <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Direct prepaid platform subscription</p>
+                      )}
                     </div>
                   </button>
 
-                  <div className="space-y-3 p-3">
-                    <div>
-                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
-                      {pack.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p> : null}
-                    </div>
-
+                  <div className="space-y-3 px-3 pb-3">
                     {packSubscriptionState?.status === "pending" ? (
                       <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
                         Pending Review / قيد المراجعة
