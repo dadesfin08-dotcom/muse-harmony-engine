@@ -1727,7 +1727,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
         ? ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).map((item) => {
             const normalized = normalizePlatformPackItem(item);
             return {
-              name: normalized.name || item.item_label,
+              name: normalized.nameEn || item.item_label,
               quantity: normalized.quantity ?? 1,
               unit: normalized.unit ?? null,
               imageUrl: normalized.imageUrl ?? null,
