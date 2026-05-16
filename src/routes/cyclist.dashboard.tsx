@@ -673,12 +673,12 @@ function CyclistDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-white px-3 py-2 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/70 bg-background/95 px-3 py-2 pb-safe backdrop-blur">
         <div className="mx-auto flex w-full max-w-lg flex-row items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setActiveView("available")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "available"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -690,7 +690,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => navigate({ to: "/cyclist/wallet" })}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 shadow-sm transition-all duration-200 hover:bg-emerald-100"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition-all duration-200 hover:bg-muted active:scale-95"
             aria-label={t("cyclist.walletAria")}
           >
             <Wallet className="size-5" />
@@ -699,7 +699,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("active")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "active"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -711,7 +711,7 @@ function CyclistDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveView("platformPacks")}
-            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
               activeView === "platformPacks"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground"
@@ -747,21 +747,21 @@ function CyclistDashboardPage() {
                 </div>
 
                 {detailsOrder.deliveryInstructions?.trim() ? (
-                  <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
+                  <div className="mb-4 rounded-xl border border-border bg-background p-4 shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                     <div className="flex items-center gap-2">
-                      <MessageSquareText className="h-5 w-5 text-amber-500" />
-                      <span className="font-bold text-slate-800">{t("cyclist.deliveryInstructions")}</span>
+                      <MessageSquareText className="h-5 w-5 text-highlight" />
+                      <span className="font-bold text-foreground">{t("cyclist.deliveryInstructions")}</span>
                     </div>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-700">{detailsOrder.deliveryInstructions.trim()}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground">{detailsOrder.deliveryInstructions.trim()}</p>
                   </div>
                 ) : null}
 
                 <div className="mb-2 flex items-center gap-2" dir={isArabic ? "rtl" : "ltr"}>
-                  <PackageSearch className="h-5 w-5 text-slate-600" />
-                  <p className="text-sm font-bold text-slate-800">{t("cyclist.productsList")}</p>
+                  <PackageSearch className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm font-bold text-foreground">{t("cyclist.productsList")}</p>
                 </div>
 
-                <div className="space-y-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" dir="rtl">
+                <div className="space-y-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm" dir={isArabic ? "rtl" : "ltr"}>
                   {detailsOrder.items.length > 0 ? (
                     detailsOrder.items.map((item, index) => (
                       <div
