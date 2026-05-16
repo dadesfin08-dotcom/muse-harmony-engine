@@ -3557,7 +3557,7 @@ function AdminPage() {
       billingCycle: "WEEKLY",
       unitType: "Kg",
       deliveryWindow: "",
-      packItems: [""],
+      packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
       packFeatures: [""],
       imageUrl: "",
       isActive: true,
@@ -3579,7 +3579,7 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: Array<{ name: string; imageUrl: string | null; quantity: number | null; unit: string | null }>;
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -3594,7 +3594,15 @@ function AdminPage() {
       billingCycle: pack.billingCycle,
       unitType: pack.unitType,
       deliveryWindow: pack.deliveryWindow ?? "",
-      packItems: pack.packItems.length > 0 ? [...pack.packItems] : [""],
+      packItems:
+        pack.packItems.length > 0
+          ? pack.packItems.map((item) => ({
+              name: item.name ?? "",
+              imageUrl: item.imageUrl ?? "",
+              quantity: item.quantity != null ? String(item.quantity) : "",
+              unit: item.unit ?? "",
+            }))
+          : [{ name: "", imageUrl: "", quantity: "", unit: "" }],
       packFeatures: pack.packFeatures.length > 0 ? [...pack.packFeatures] : [""],
       imageUrl: pack.imageUrl ?? "",
       isActive: pack.isActive,
@@ -3644,7 +3652,14 @@ function AdminPage() {
         billingCycle: platformPackForm.billingCycle,
         unitType: platformPackForm.unitType.trim(),
         deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
-        packItems: platformPackForm.packItems.map((item) => item.trim()).filter((item) => item.length > 0),
+        packItems: platformPackForm.packItems
+          .map((item) => ({
+            name: item.name.trim(),
+            imageUrl: item.imageUrl.trim() || null,
+            quantity: item.quantity === "" ? null : Number(item.quantity),
+            unit: item.unit.trim() || null,
+          }))
+          .filter((item) => item.name.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
         packFeatures: platformPackForm.packFeatures.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
         imageUrl: finalImageUrl,
         isActive: platformPackForm.isActive,
