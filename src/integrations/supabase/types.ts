@@ -818,6 +818,7 @@ export type Database = {
           platform_markup: number
           platform_profit: number
           status: Database["public"]["Enums"]["order_status"]
+          subscription_id: string | null
           subtotal_base_price: number
           total_price: number
           updated_at: string
@@ -846,6 +847,7 @@ export type Database = {
           platform_markup?: number
           platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subscription_id?: string | null
           subtotal_base_price?: number
           total_price?: number
           updated_at?: string
@@ -874,6 +876,7 @@ export type Database = {
           platform_markup?: number
           platform_profit?: number
           status?: Database["public"]["Enums"]["order_status"]
+          subscription_id?: string | null
           subtotal_base_price?: number
           total_price?: number
           updated_at?: string
@@ -901,6 +904,13 @@ export type Database = {
             columns: ["neighborhood_id"]
             isOneToOne: false
             referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "platform_subscriptions"
             referencedColumns: ["id"]
           },
           {
@@ -1140,6 +1150,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      platform_subscriptions: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string | null
+          customer_user_id: string
+          deliveries_completed: number
+          deliveries_expected: number
+          expiration_date: string | null
+          id: string
+          lifetime_revenue_mad: number
+          next_scheduled_delivery_date: string | null
+          notes: string | null
+          pack_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["platform_subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone?: string | null
+          customer_user_id: string
+          deliveries_completed?: number
+          deliveries_expected?: number
+          expiration_date?: string | null
+          id?: string
+          lifetime_revenue_mad?: number
+          next_scheduled_delivery_date?: string | null
+          notes?: string | null
+          pack_id: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["platform_subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string | null
+          customer_user_id?: string
+          deliveries_completed?: number
+          deliveries_expected?: number
+          expiration_date?: string | null
+          id?: string
+          lifetime_revenue_mad?: number
+          next_scheduled_delivery_date?: string | null
+          notes?: string | null
+          pack_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["platform_subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_subscriptions_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "platform_packs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1693,6 +1765,11 @@ export type Database = {
       pack_billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY"
       payment_method: "COD" | "Carnet"
       platform_commission_transaction_type: "ACCRUAL" | "WITHDRAWAL"
+      platform_subscription_status:
+        | "active"
+        | "paused"
+        | "expired"
+        | "cancelled"
       product_category:
         | "Vegetables"
         | "Fruits"
@@ -1866,6 +1943,12 @@ export const Constants = {
       pack_billing_cycle: ["DAILY", "WEEKLY", "MONTHLY"],
       payment_method: ["COD", "Carnet"],
       platform_commission_transaction_type: ["ACCRUAL", "WITHDRAWAL"],
+      platform_subscription_status: [
+        "active",
+        "paused",
+        "expired",
+        "cancelled",
+      ],
       product_category: [
         "Vegetables",
         "Fruits",

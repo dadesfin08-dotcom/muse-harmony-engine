@@ -59,6 +59,10 @@ import {
   Ban,
   Zap,
   CalendarDays,
+  PauseCircle,
+  StopCircle,
+  PlayCircle,
+  MoreHorizontal,
   Map as MapIcon,
   Eye,
   Tag,
@@ -93,6 +97,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -189,6 +199,9 @@ import {
   createPlatformPack,
   updatePlatformPack,
   deletePlatformPack,
+  listPlatformSubscribers,
+  updatePlatformSubscriberStatus,
+  getPlatformSubscriberHistory,
   assignSubscriptionOrderCyclist,
   autoDispatchSubscriptionOrder,
   updateSubscriptionOrderStatus,
@@ -637,9 +650,12 @@ function AdminPage() {
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
   const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
   const fetchPlatformPacks = useServerFn(listPlatformPacks);
+  const fetchPlatformSubscribers = useServerFn(listPlatformSubscribers);
   const createPlatformPackInDatabase = useServerFn(createPlatformPack);
   const updatePlatformPackInDatabase = useServerFn(updatePlatformPack);
   const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
+  const updatePlatformSubscriberStatusInDatabase = useServerFn(updatePlatformSubscriberStatus);
+  const fetchPlatformSubscriberHistory = useServerFn(getPlatformSubscriberHistory);
   const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
   const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
   const updateSubscriptionOrderStatusInDatabase = useServerFn(updateSubscriptionOrderStatus);
@@ -755,6 +771,13 @@ function AdminPage() {
     queryFn: () => fetchPlatformPacks(),
     placeholderData: (previousData) => previousData,
   });
+  const platformSubscribersQuery = useQuery({
+    queryKey: ["admin", "platform-subscribers"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchPlatformSubscribers(),
+    refetchInterval: 15_000,
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -813,6 +836,23 @@ function AdminPage() {
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
+  }>;
+  const platformSubscribers = (platformSubscribersQuery.data ?? []) as Array<{
+    id: string;
+    customerUserId: string;
+    customerName: string;
+    customerPhone: string;
+    packId: string;
+    packName: string;
+    status: "active" | "paused" | "expired" | "cancelled";
+    startDate: string;
+    expirationDate: string | null;
+    nextScheduledDeliveryDate: string | null;
+    lifetimeRevenueMad: number;
+    deliveriesCompleted: number;
+    deliveriesExpected: number;
+    deliveryCompletionPercent: number;
+    createdAt: string;
   }>;
   const adminCustomers =
     (adminCustomersQuery.data as
@@ -998,6 +1038,9 @@ function AdminPage() {
     "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled"
   >("all");
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
+  const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "active" | "paused" | "expired" | "cancelled">("all");
+  const [selectedSubscriberForHistory, setSelectedSubscriberForHistory] = useState<null | { id: string; customerName: string }>(null);
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
     id: "",
@@ -1132,6 +1175,29 @@ function AdminPage() {
     placeholderData: (previousData) => previousData,
   });
 
+  const platformSubscriberHistoryQuery = useQuery({
+    queryKey: ["admin", "platform-subscriber-history", selectedSubscriberForHistory?.id ?? null],
+    enabled: isAdminDataEnabled && Boolean(selectedSubscriberForHistory?.id),
+    queryFn: () =>
+      fetchPlatformSubscriberHistory({
+        data: { subscriptionId: selectedSubscriberForHistory!.id },
+      }),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const updatePlatformSubscriberStatusMutation = useMutation({
+    mutationFn: ({ subscriptionId, status }: { subscriptionId: string; status: "active" | "paused" | "expired" | "cancelled" }) =>
+      updatePlatformSubscriberStatusInDatabase({ data: { subscriptionId, status } }),
+    onSuccess: async () => {
+      await platformSubscribersQuery.refetch();
+      toast.success("Subscriber status updated.");
+    },
+    onError: (error) => {
+      console.error("Failed to update subscriber status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update subscriber status.");
+    },
+  });
+
   const filteredOrders = useMemo(
     () =>
       adminOrders.filter((order) => {
@@ -1161,6 +1227,22 @@ function AdminPage() {
       return matchesSearch && matchesStatus && matchesCyclist;
     });
   }, [packOrders, packOrdersSearchTerm, packOrdersStatusFilter, packOrdersCyclistFilter]);
+
+  const filteredPlatformSubscribers = useMemo(() => {
+    const search = subscriberSearchTerm.trim().toLowerCase();
+
+    return platformSubscribers.filter((subscriber) => {
+      const matchesSearch =
+        search.length === 0 ||
+        subscriber.customerName.toLowerCase().includes(search) ||
+        subscriber.customerPhone.toLowerCase().includes(search) ||
+        subscriber.packName.toLowerCase().includes(search) ||
+        subscriber.id.toLowerCase().includes(search);
+
+      const matchesStatus = subscriberStatusFilter === "all" || subscriber.status === subscriberStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [platformSubscribers, subscriberSearchTerm, subscriberStatusFilter]);
 
   const communeOptions = serviceZones;
   const adTargetZones = useMemo(
@@ -3688,10 +3770,49 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "platform-packs-subscribers" ? (
-                <PlaceholderSection
-                  icon={Users}
-                  title="Subscribers"
-                  subtitle="Phase 1 placeholder. Subscriber lifecycle and renewal controls will be enabled in the next phase."
+                <SubscribersSection
+                  subscribers={filteredPlatformSubscribers}
+                  isLoading={dbHealthQuery.isLoading || platformSubscribersQuery.isLoading}
+                  isMutating={updatePlatformSubscriberStatusMutation.isPending}
+                  searchTerm={subscriberSearchTerm}
+                  onSearchTermChange={setSubscriberSearchTerm}
+                  statusFilter={subscriberStatusFilter}
+                  onStatusFilterChange={setSubscriberStatusFilter}
+                  onPause={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
+                  onResume={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
+                  onCancel={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
+                  onViewHistory={(subscriptionId: string, customerName: string) =>
+                    setSelectedSubscriberForHistory({ id: subscriptionId, customerName })
+                  }
+                  historyOpen={Boolean(selectedSubscriberForHistory)}
+                  onHistoryOpenChange={(open: boolean) => {
+                    if (!open) setSelectedSubscriberForHistory(null);
+                  }}
+                  historyTitle={selectedSubscriberForHistory?.customerName ?? "Subscriber"}
+                  historyRows={
+                    (platformSubscriberHistoryQuery.data ?? []) as Array<{
+                      id: string;
+                      createdAt: string;
+                      deliveredAt: string | null;
+                      status:
+                        | "new"
+                        | "preparing"
+                        | "ready"
+                        | "delivering"
+                        | "delivered"
+                        | "delivered_cash_with_cyclist"
+                        | "cash_transferred_to_vendor"
+                        | "cancelled";
+                      cyclistName: string;
+                      customerName: string;
+                      customerPhone: string;
+                      itemCount: number;
+                      totalPriceMad: number;
+                      cashToCollectMad: number;
+                      packSnapshotName: string | null;
+                    }>
+                  }
+                  historyLoading={platformSubscriberHistoryQuery.isLoading}
                 />
               ) : null}
               {tab === "platform-packs-analytics" ? (
@@ -7884,6 +8005,276 @@ function PackOrdersSection({
           </TableBody>
         </Table>
       </div>
+    </section>
+  );
+}
+
+function SubscribersSection({
+  subscribers,
+  isLoading,
+  isMutating,
+  searchTerm,
+  onSearchTermChange,
+  statusFilter,
+  onStatusFilterChange,
+  onPause,
+  onResume,
+  onCancel,
+  onViewHistory,
+  historyOpen,
+  onHistoryOpenChange,
+  historyTitle,
+  historyRows,
+  historyLoading,
+}: {
+  subscribers: Array<{
+    id: string;
+    customerName: string;
+    customerPhone: string;
+    packName: string;
+    status: "active" | "paused" | "expired" | "cancelled";
+    startDate: string;
+    expirationDate: string | null;
+    nextScheduledDeliveryDate: string | null;
+    lifetimeRevenueMad: number;
+    deliveryCompletionPercent: number;
+  }>;
+  isLoading: boolean;
+  isMutating: boolean;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  statusFilter: "all" | "active" | "paused" | "expired" | "cancelled";
+  onStatusFilterChange: (value: "all" | "active" | "paused" | "expired" | "cancelled") => void;
+  onPause: (subscriptionId: string) => void;
+  onResume: (subscriptionId: string) => void;
+  onCancel: (subscriptionId: string) => void;
+  onViewHistory: (subscriptionId: string, customerName: string) => void;
+  historyOpen: boolean;
+  onHistoryOpenChange: (open: boolean) => void;
+  historyTitle: string;
+  historyRows: Array<{
+    id: string;
+    createdAt: string;
+    deliveredAt: string | null;
+    status:
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+      | "cancelled";
+    cyclistName: string;
+    itemCount: number;
+    totalPriceMad: number;
+    cashToCollectMad: number;
+    packSnapshotName: string | null;
+  }>;
+  historyLoading: boolean;
+}) {
+  const statusBadgeClass: Record<"active" | "paused" | "expired" | "cancelled", string> = {
+    active: "bg-success/20 text-success",
+    paused: "bg-chart-4/20 text-chart-4",
+    expired: "bg-muted text-muted-foreground",
+    cancelled: "bg-destructive/20 text-destructive",
+  };
+
+  const formatDateLabel = (value: string | null) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString();
+  };
+
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">Subscribers</h2>
+          <p className="text-sm text-muted-foreground">Recurring membership center for platform-direct subscriptions.</p>
+        </div>
+        <Badge className="bg-success/20 text-success">Prepaid · 0.00 MAD Dispatch</Badge>
+      </div>
+
+      <div className="sticky top-14 z-10 rounded-md border border-border bg-background/95 p-3 backdrop-blur">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(event) => onSearchTermChange(event.target.value)}
+              placeholder="Search subscriber, phone, pack, or ID"
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="size-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as typeof statusFilter)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <Table className="min-w-[1240px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Subscriber</TableHead>
+              <TableHead>Current Pack</TableHead>
+              <TableHead>Timeline</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Engagement</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center">
+                  <AppEmptyState title="Loading subscribers..." subtitle="Syncing recurring memberships." className="border-0 bg-transparent py-2" />
+                </TableCell>
+              </TableRow>
+            ) : subscribers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center">
+                  <AppEmptyState title="No subscribers found" subtitle="Try adjusting your filters." className="border-0 bg-transparent py-2" />
+                </TableCell>
+              </TableRow>
+            ) : (
+              subscribers.map((subscriber) => (
+                <TableRow key={subscriber.id}>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <p className="font-semibold text-foreground">{subscriber.customerName}</p>
+                      <p className="text-xs text-muted-foreground">{subscriber.customerPhone}</p>
+                      <p className="text-xs text-muted-foreground">#{subscriber.id.slice(0, 8)}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <p className="font-medium text-foreground">{subscriber.packName}</p>
+                      <p className="text-xs text-muted-foreground">Recurring membership</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <p className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" />Start: {formatDateLabel(subscriber.startDate)}</p>
+                      <p className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" />Expire: {formatDateLabel(subscriber.expirationDate)}</p>
+                      <p className="inline-flex items-center gap-1"><CalendarDays className="size-3.5" />Next delivery: {formatDateLabel(subscriber.nextScheduledDeliveryDate)}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusBadgeClass[subscriber.status]}>{subscriber.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-foreground">{subscriber.lifetimeRevenueMad.toFixed(2)} MAD</p>
+                      <Progress value={subscriber.deliveryCompletionPercent} className="h-1.5" indicatorClassName="bg-success" />
+                      <p className="text-xs text-muted-foreground">Delivery completion: {subscriber.deliveryCompletionPercent}%</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={isMutating}>
+                          <MoreHorizontal className="size-4" />
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {subscriber.status === "active" ? (
+                          <DropdownMenuItem onClick={() => onPause(subscriber.id)}>
+                            <PauseCircle className="size-4" />
+                            Pause
+                          </DropdownMenuItem>
+                        ) : null}
+                        {(subscriber.status === "paused" || subscriber.status === "expired") ? (
+                          <DropdownMenuItem onClick={() => onResume(subscriber.id)}>
+                            <PlayCircle className="size-4" />
+                            Resume
+                          </DropdownMenuItem>
+                        ) : null}
+                        {subscriber.status !== "cancelled" ? (
+                          <DropdownMenuItem onClick={() => onCancel(subscriber.id)}>
+                            <StopCircle className="size-4" />
+                            Cancel
+                          </DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem onClick={() => onViewHistory(subscriber.id, subscriber.customerName)}>
+                          <CalendarDays className="size-4" />
+                          View History
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={historyOpen} onOpenChange={onHistoryOpenChange}>
+        <DialogContent className="w-[95vw] max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{historyTitle} · Delivery History</DialogTitle>
+            <DialogDescription>Past PLATFORM_SUBSCRIPTION deliveries linked to this membership.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto rounded-md border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Pack Snapshot</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Cyclist</TableHead>
+                  <TableHead className="text-right">Financial</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historyLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">Loading history...</TableCell>
+                  </TableRow>
+                ) : historyRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">No linked deliveries found.</TableCell>
+                  </TableRow>
+                ) : (
+                  historyRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{formatDateLabel(row.deliveredAt ?? row.createdAt)}</TableCell>
+                      <TableCell>{row.packSnapshotName ?? `Items: ${row.itemCount}`}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-muted text-muted-foreground">{row.status}</Badge>
+                      </TableCell>
+                      <TableCell>{row.cyclistName}</TableCell>
+                      <TableCell className="text-right">
+                        <p className="text-xs text-muted-foreground">Total: {row.totalPriceMad.toFixed(2)} MAD</p>
+                        <p className="text-xs font-semibold text-success">Collect: {row.cashToCollectMad.toFixed(2)} MAD</p>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onHistoryOpenChange(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
