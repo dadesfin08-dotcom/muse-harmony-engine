@@ -890,7 +890,7 @@ function AdminPage() {
     customerPhone: string;
     packId: string;
     packName: string;
-    status: "active" | "paused" | "expired" | "cancelled";
+    status: "pending" | "active" | "paused" | "expired" | "cancelled";
     startDate: string;
     expirationDate: string | null;
     nextScheduledDeliveryDate: string | null;
@@ -1085,7 +1085,7 @@ function AdminPage() {
   >("all");
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
-  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "active" | "paused" | "expired" | "cancelled">("all");
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "pending" | "active" | "paused" | "expired" | "cancelled">("all");
   const [selectedSubscriberForHistory, setSelectedSubscriberForHistory] = useState<null | { id: string; customerName: string }>(null);
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
@@ -1232,7 +1232,7 @@ function AdminPage() {
   });
 
   const updatePlatformSubscriberStatusMutation = useMutation({
-    mutationFn: ({ subscriptionId, status }: { subscriptionId: string; status: "active" | "paused" | "expired" | "cancelled" }) =>
+    mutationFn: ({ subscriptionId, status }: { subscriptionId: string; status: "pending" | "active" | "paused" | "expired" | "cancelled" }) =>
       updatePlatformSubscriberStatusInDatabase({ data: { subscriptionId, status } }),
     onSuccess: async () => {
       await platformSubscribersQuery.refetch();
