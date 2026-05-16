@@ -3778,10 +3778,12 @@ function AdminPage() {
                   onSearchTermChange={setSubscriberSearchTerm}
                   statusFilter={subscriberStatusFilter}
                   onStatusFilterChange={setSubscriberStatusFilter}
-                  onPause={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
-                  onResume={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
-                  onCancel={(subscriptionId) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
-                  onViewHistory={(subscriptionId, customerName) => setSelectedSubscriberForHistory({ id: subscriptionId, customerName })}
+                  onPause={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
+                  onResume={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
+                  onCancel={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
+                  onViewHistory={(subscriptionId: string, customerName: string) =>
+                    setSelectedSubscriberForHistory({ id: subscriptionId, customerName })
+                  }
                 />
               ) : null}
               {tab === "platform-packs-analytics" ? (
