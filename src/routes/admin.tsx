@@ -399,6 +399,9 @@ const initialAdminOrders: Array<{
   vendorName: string;
   customerName: string;
   customerPhone: string;
+  contactPhone: string | null;
+  deliveryAddress: string | null;
+  packQuantity: number | null;
   totalPrice: number;
   itemCount: number;
   orderItems: unknown[];
@@ -904,6 +907,9 @@ function AdminPage() {
     customerUserId: string;
     customerName: string;
     customerPhone: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    packQuantity: number;
     packId: string;
     packName: string;
     status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
@@ -7991,6 +7997,9 @@ function PackOrdersSection({
     createdAt: string;
     customerName: string;
     customerPhone: string;
+    contactPhone: string | null;
+    deliveryAddress: string | null;
+    packQuantity: number | null;
     totalPrice: number;
     itemCount: number;
     orderItems: unknown[];
@@ -8160,7 +8169,8 @@ function PackOrdersSection({
                     <TableCell>
                       <div className="space-y-1">
                         <p className="font-semibold text-foreground">{order.customerName}</p>
-                        <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                        <p className="text-xs text-muted-foreground">{order.contactPhone || order.customerPhone}</p>
+                        <p className="text-xs text-muted-foreground">{order.deliveryAddress || "Address not provided"}</p>
                         <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleString()}</p>
                       </div>
                     </TableCell>
@@ -8168,6 +8178,7 @@ function PackOrdersSection({
                       <div className="space-y-1">
                         <p className="font-medium text-foreground">{pack.packName}</p>
                         <p className="text-xs text-muted-foreground">{pack.quantityLabel}</p>
+                        <p className="text-xs text-muted-foreground">Requested Qty: {Math.max(1, Number(order.packQuantity ?? 1))}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -8273,6 +8284,9 @@ function SubscribersSection({
     id: string;
     customerName: string;
     customerPhone: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    packQuantity: number;
     packName: string;
     status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
     startDate: string;
@@ -8319,6 +8333,9 @@ function SubscribersSection({
   const [approvalModalTarget, setApprovalModalTarget] = useState<null | {
     subscriptionId: string;
     customerName: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    packQuantity: number;
     packName: string;
   }>(null);
   const [approvalForm, setApprovalForm] = useState({
@@ -8442,14 +8459,15 @@ function SubscribersSection({
                   <TableCell>
                     <div className="space-y-1">
                       <p className="font-semibold text-foreground">{subscriber.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{subscriber.customerPhone}</p>
+                      <p className="text-xs text-muted-foreground">{subscriber.contactPhone || subscriber.customerPhone}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{subscriber.deliveryAddress || "Address not provided"}</p>
                       <p className="text-xs text-muted-foreground">#{subscriber.id.slice(0, 8)}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <p className="font-medium text-foreground">{subscriber.packName}</p>
-                      <p className="text-xs text-muted-foreground">Recurring membership</p>
+                      <p className="text-xs text-muted-foreground">Recurring membership · Qty {Math.max(1, Number(subscriber.packQuantity ?? 1))}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -8490,6 +8508,9 @@ function SubscribersSection({
                               setApprovalModalTarget({
                                 subscriptionId: subscriber.id,
                                 customerName: subscriber.customerName,
+                                contactPhone: subscriber.contactPhone,
+                                deliveryAddress: subscriber.deliveryAddress,
+                                packQuantity: subscriber.packQuantity,
                                 packName: subscriber.packName,
                               });
                               setApprovalForm({
@@ -8547,6 +8568,9 @@ function SubscribersSection({
             <div className="rounded-md border border-border bg-muted/20 p-3">
               <p className="text-sm font-medium text-foreground">{approvalModalTarget?.customerName ?? "Subscriber"}</p>
               <p className="text-xs text-muted-foreground">{approvalModalTarget?.packName ?? "Pack"}</p>
+              <p className="text-xs text-muted-foreground">Phone: {approvalModalTarget?.contactPhone ?? "—"}</p>
+              <p className="text-xs text-muted-foreground">Qty: {Math.max(1, Number(approvalModalTarget?.packQuantity ?? 1))}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">Address: {approvalModalTarget?.deliveryAddress ?? "—"}</p>
             </div>
 
             <div className="space-y-2">

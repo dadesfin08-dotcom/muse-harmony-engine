@@ -30,6 +30,9 @@ type AdminOrderRow = {
   subscription_id?: string | null;
   customer_name: string | null;
   customer_phone: string;
+  contact_phone?: string | null;
+  delivery_address?: string | null;
+  pack_quantity?: number | null;
   total_price: number;
   item_count?: number;
   order_items?: unknown;
@@ -208,6 +211,9 @@ type PlatformSubscriptionRow = {
   customer_user_id: string;
   customer_name: string;
   customer_phone: string | null;
+  contact_phone: string | null;
+  delivery_address: string | null;
+  pack_quantity: number | null;
   pack_id: string;
   status: PlatformSubscriptionStatus;
   start_date: string;
@@ -1029,7 +1035,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, subscription_id, customer_name, customer_phone, total_price, item_count, order_items, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
+        "id, vendor_id, subscription_id, customer_name, customer_phone, total_price, item_count, order_items, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer, delivery_notes",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
@@ -1060,10 +1066,11 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
   );
 
   let subscriptionStatusById = new Map<string, PlatformSubscriptionStatus>();
+  let subscriptionMetaById = new Map<string, { contactPhone: string | null; deliveryAddress: string | null; packQuantity: number | null }>();
   if (subscriptionIds.length > 0) {
     const { data: subscriptions, error: subscriptionsError } = await (supabaseAdmin as any)
       .from("platform_subscriptions")
-      .select("id, status")
+      .select("id, status, contact_phone, delivery_address, pack_quantity")
       .in("id", subscriptionIds);
 
     if (subscriptionsError) {
@@ -1073,9 +1080,20 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     subscriptionStatusById = new Map(
       ((subscriptions ?? []) as Array<{ id: string; status: PlatformSubscriptionStatus }>).map((row) => [row.id, row.status]),
     );
+    subscriptionMetaById = new Map(
+      ((subscriptions ?? []) as Array<{ id: string; contact_phone: string | null; delivery_address: string | null; pack_quantity: number | null }>).map((row) => [
+        row.id,
+        {
+          contactPhone: row.contact_phone,
+          deliveryAddress: row.delivery_address,
+          packQuantity: row.pack_quantity,
+        },
+      ]),
+    );
   }
 
   return orders.map((order) => ({
+    ...(order.subscription_id ? subscriptionMetaById.get(order.subscription_id) ?? { contactPhone: null, deliveryAddress: null, packQuantity: null } : { contactPhone: null, deliveryAddress: null, packQuantity: null }),
     id: order.id,
     subscriptionId: order.subscription_id ?? null,
     subscriptionStatus:
@@ -1537,7 +1555,7 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
     (supabaseAdmin as any)
       .from("platform_subscriptions")
       .select(
-        "id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, agreed_price, total_deliveries, completed_deliveries, deliveries_completed, deliveries_expected, created_at",
+        "id, customer_user_id, customer_name, customer_phone, contact_phone, delivery_address, pack_quantity, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, agreed_price, total_deliveries, completed_deliveries, deliveries_completed, deliveries_expected, created_at",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
@@ -1570,6 +1588,9 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
       customerUserId: row.customer_user_id,
       customerName: row.customer_name?.trim() || "Unknown Subscriber",
       customerPhone: row.customer_phone?.trim() || "—",
+      contactPhone: row.contact_phone?.trim() || row.customer_phone?.trim() || "—",
+      deliveryAddress: row.delivery_address?.trim() || "—",
+      packQuantity: Math.max(1, Number(row.pack_quantity ?? 1)),
       packId: row.pack_id,
       packName: packNameById.get(row.pack_id) ?? "Unknown Pack",
       status: row.status,
@@ -1725,7 +1746,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
     const [subscriptionRes, packItemsRes] = await Promise.all([
       (supabaseAdmin as any)
         .from("platform_subscriptions")
-        .select("id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, next_scheduled_delivery_date")
+        .select("id, customer_user_id, customer_name, customer_phone, contact_phone, delivery_address, pack_quantity, pack_id, status, start_date, next_scheduled_delivery_date")
         .eq("id", data.subscriptionId)
         .single(),
       (supabaseAdmin as any)
@@ -1787,9 +1808,10 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
       const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).length
         ? ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).map((item) => {
             const normalized = normalizePlatformPackItem(item);
+            const requestedQuantity = Math.max(1, Number(subscriptionRes.data.pack_quantity ?? 1));
             return {
               name: normalized.nameEn || item.item_label,
-              quantity: normalized.quantity ?? 1,
+              quantity: (normalized.quantity ?? 1) * requestedQuantity,
               unit: normalized.unit ?? null,
               imageUrl: normalized.imageUrl ?? null,
               unitPriceMad: 0,
@@ -1816,7 +1838,11 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
       const orderNotes = [
         `Subscription activation order`,
         `Contract price: ${Number(data.agreedPriceMad).toFixed(2)} MAD`,
-      ].join(" | ");
+        `Requested quantity: ${Math.max(1, Number(subscriptionRes.data.pack_quantity ?? 1))}`,
+        subscriptionRes.data.delivery_address ? `Address: ${subscriptionRes.data.delivery_address}` : null,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .join(" | ");
 
       const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
@@ -1825,7 +1851,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
           vendor_id: null,
           subscription_id: data.subscriptionId,
           customer_name: subscriptionRes.data.customer_name,
-          customer_phone: subscriptionRes.data.customer_phone,
+          customer_phone: subscriptionRes.data.contact_phone || subscriptionRes.data.customer_phone,
           delivery_notes: orderNotes,
           payment_method: "COD",
           status: "new",

@@ -48,6 +48,9 @@ function PlatformPackDetailsPage() {
 
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [fullName, setFullName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [packQuantity, setPackQuantity] = useState(1);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
   const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
@@ -74,6 +77,7 @@ function PlatformPackDetailsPage() {
         const parsed = JSON.parse(persistedSession) as CustomerSession;
         if (parsed?.phoneNumber) {
           setCustomerSession(parsed);
+          setContactPhone((current) => current || parsed.phoneNumber);
         }
       } catch {
         localStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -116,8 +120,10 @@ function PlatformPackDetailsPage() {
     if (!customerProfileQuery.data) return;
 
     setFullName((current) => current || customerProfileQuery.data?.fullName || "");
+    setContactPhone((current) => current || customerProfileQuery.data?.phoneNumber || customerSession?.phoneNumber || "");
+    setDeliveryAddress((current) => current || customerProfileQuery.data?.address || "");
     setSelectedNeighborhoodId((current) => current || customerProfileQuery.data?.neighborhoodId || "");
-  }, [customerProfileQuery.data]);
+  }, [customerProfileQuery.data, customerSession?.phoneNumber]);
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async () => {
@@ -126,6 +132,12 @@ function PlatformPackDetailsPage() {
       }
       if (!fullName.trim()) {
         throw new Error("Please add your full name before subscribing.");
+      }
+      if (!contactPhone.trim()) {
+        throw new Error("Please add a contact phone number.");
+      }
+      if (!deliveryAddress.trim()) {
+        throw new Error("Please add the delivery address.");
       }
       if (!selectedNeighborhoodId) {
         throw new Error("Please set your delivery location from the home page first.");
@@ -136,9 +148,9 @@ function PlatformPackDetailsPage() {
 
       await saveCustomerProfile({
         data: {
-          phoneNumber: customerSession.phoneNumber,
+          phoneNumber: contactPhone.trim(),
           fullName: fullName.trim(),
-          address: "",
+          address: deliveryAddress.trim(),
           savedInstructions: "",
           neighborhoodId: selectedNeighborhoodId,
         },
@@ -149,6 +161,9 @@ function PlatformPackDetailsPage() {
           packId,
           customerName: fullName.trim(),
           customerPhone: customerSession.phoneNumber,
+          contactPhone: contactPhone.trim(),
+          deliveryAddress: deliveryAddress.trim(),
+          packQuantity,
           neighborhoodId: selectedNeighborhoodId,
           deliveryNotes: subscriptionNotes.trim(),
           preferredStartDate: subscriptionStartDate,
@@ -241,6 +256,7 @@ function PlatformPackDetailsPage() {
   const completedDeliveries = Math.max(0, Number(subscriptionState?.completedDeliveries ?? 0));
   const totalDeliveries = Math.max(0, Number(subscriptionState?.totalDeliveries ?? 0));
   const nextDeliveryNumber = Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1));
+  const quantityEstimateMad = Math.max(0, Number(packDetailsQuery.data?.basePriceMad ?? 0)) * packQuantity;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-14 pt-5 sm:px-6">
@@ -449,6 +465,58 @@ function PlatformPackDetailsPage() {
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     placeholder={t("customer.checkout.fullNamePlaceholder")}
+                  />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subscription-contact-phone">Phone</Label>
+                    <Input
+                      id="subscription-contact-phone"
+                      value={contactPhone}
+                      onChange={(event) => setContactPhone(event.target.value)}
+                      placeholder="+212XXXXXXXXX"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subscription-pack-quantity">Quantity</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl px-3"
+                        onClick={() => setPackQuantity((current) => Math.max(1, current - 1))}
+                      >
+                        -
+                      </Button>
+                      <Input
+                        id="subscription-pack-quantity"
+                        type="number"
+                        min={1}
+                        value={packQuantity}
+                        onChange={(event) => setPackQuantity(Math.max(1, Number(event.target.value) || 1))}
+                        className="text-center"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-xl px-3"
+                        onClick={() => setPackQuantity((current) => Math.min(99, current + 1))}
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Estimated contract value: {quantityEstimateMad.toFixed(2)} MAD</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="subscription-delivery-address">Address</Label>
+                  <Input
+                    id="subscription-delivery-address"
+                    value={deliveryAddress}
+                    onChange={(event) => setDeliveryAddress(event.target.value)}
+                    placeholder="Delivery address"
                   />
                 </div>
 
