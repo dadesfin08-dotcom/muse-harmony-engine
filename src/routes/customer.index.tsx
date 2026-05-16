@@ -30,6 +30,8 @@ import {
   Share2,
   Flame,
   Clock3,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -70,6 +72,7 @@ import {
   getCustomerSubscriptions,
   getCustomerOrders,
   upsertCustomerProfile,
+  updateCustomerSubscriptionStatus,
 } from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
