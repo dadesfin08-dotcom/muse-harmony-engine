@@ -72,6 +72,10 @@ const getCustomerOrdersInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
+const getCustomerSubscriptionsInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+});
+
 const vendorSettlementSummaryInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
@@ -708,8 +712,6 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
         throw new Error(profileUpsertError.message);
       }
 
-      const deliveriesExpected = pack.billing_cycle === "DAILY" ? 30 : pack.billing_cycle === "WEEKLY" ? 4 : 1;
-
       const { data: insertedSubscription, error: subscriptionError } = await (supabaseAdmin as any)
         .from("platform_subscriptions")
         .insert({
@@ -720,9 +722,12 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
           status: "pending",
           start_date: data.preferredStartDate,
           next_scheduled_delivery_date: data.preferredStartDate,
-          deliveries_expected: deliveriesExpected,
+          deliveries_expected: 0,
           deliveries_completed: 0,
-          lifetime_revenue_mad: Number(pack.base_price_mad ?? 0),
+          completed_deliveries: 0,
+          total_deliveries: null,
+          agreed_price: null,
+          lifetime_revenue_mad: 0,
           notes: `Preferred delivery time: ${data.preferredDeliveryTime}`,
         })
         .select("id")
@@ -732,70 +737,7 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
         throw new Error(subscriptionError?.message ?? "Failed to create subscription.");
       }
 
-      const orderItems =
-        packItems.length > 0
-          ? packItems.map((itemLabel) => ({
-              name: itemLabel,
-              quantity: 1,
-              unitPriceMad: 0,
-              selectedVariant: null,
-              brandName: null,
-              measurementValue: null,
-              measurementUnit: null,
-            }))
-          : [
-              {
-                name: pack.name_en,
-                quantity: 1,
-                unitPriceMad: 0,
-                selectedVariant: null,
-                brandName: null,
-                measurementValue: null,
-                measurementUnit: "Pack",
-              },
-            ];
-
-      const mergedDeliveryNotes = [
-        data.deliveryNotes?.trim() || "",
-        `Preferred start date: ${data.preferredStartDate}`,
-        `Preferred delivery time: ${data.preferredDeliveryTime}`,
-        `Pack: ${pack.name_en}`,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
-      const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
-        .from("orders")
-        .insert({
-          customer_user_id: customerUserId,
-          vendor_id: null,
-          subscription_id: insertedSubscription.id,
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone,
-          neighborhood_id: data.neighborhoodId,
-          delivery_notes: mergedDeliveryNotes,
-          payment_method: "COD",
-          status: "new",
-          delivery_fee: 0,
-          subtotal_base_price: Number(pack.base_price_mad ?? 0),
-          platform_profit: Number(pack.base_price_mad ?? 0),
-          platform_markup: Number(pack.base_price_mad ?? 0),
-          vendor_revenue: 0,
-          total_price: Number(pack.base_price_mad ?? 0),
-          item_count: orderItems.length,
-          order_items: orderItems,
-          order_category: "PLATFORM_SUBSCRIPTION",
-          cash_to_collect_from_customer: 0,
-        })
-        .select("id")
-        .single();
-
-      if (orderError || !insertedOrder?.id) {
-        throw new Error(orderError?.message ?? "Failed to create subscription order.");
-      }
-
       return {
-        orderId: String(insertedOrder.id),
         subscriptionId: String(insertedSubscription.id),
       };
     } catch (error) {
