@@ -516,6 +516,29 @@ type BrandEngineAnalytics = {
   threshold: number;
 };
 
+type PlatformPacksAnalytics = {
+  generatedAt: string;
+  kpis: {
+    totalActiveSubscribers: number;
+    monthlyRecurringRevenueMad: number;
+    totalPacksDelivered: number;
+    churnRate: number;
+    churnedCount: number;
+    totalSubscriptions: number;
+  };
+  subscriptionGrowth: Array<{
+    key: string;
+    label: string;
+    subscriptions: number;
+  }>;
+  packPopularity: Array<{
+    packId: string;
+    packName: string;
+    activeSubscribers: number;
+    isActive: boolean;
+  }>;
+};
+
 const salesOrdersChartConfig = {
   orders: {
     label: "Orders",
@@ -546,6 +569,20 @@ const brandEngineChartConfig = {
   searchVolume: {
     label: "Search Volume",
     color: "var(--color-chart-4)",
+  },
+} satisfies ChartConfig;
+
+const platformGrowthChartConfig = {
+  subscriptions: {
+    label: "New subscriptions",
+    color: "oklch(0.68 0.16 160)",
+  },
+} satisfies ChartConfig;
+
+const platformPopularityChartConfig = {
+  activeSubscribers: {
+    label: "Active subscribers",
+    color: "oklch(0.64 0.14 150)",
   },
 } satisfies ChartConfig;
 
