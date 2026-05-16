@@ -880,12 +880,18 @@ function AdminPage() {
     unitType: string;
     deliveryWindow: string | null;
     packItems: Array<{
-      name: string;
+      nameEn: string;
+      nameFr: string | null;
+      nameAr: string | null;
       imageUrl: string | null;
       quantity: number | null;
       unit: string | null;
     }>;
-    packFeatures: string[];
+    packFeatures: Array<{
+      textEn: string;
+      textFr: string | null;
+      textAr: string | null;
+    }>;
     imageUrl: string | null;
     isActive: boolean;
     createdAt: string;
@@ -1106,8 +1112,8 @@ function AdminPage() {
     billingCycle: "WEEKLY" as "DAILY" | "WEEKLY" | "MONTHLY",
     unitType: "Kg",
     deliveryWindow: "",
-    packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-    packFeatures: [""],
+    packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+    packFeatures: [{ textEn: "", textFr: "", textAr: "" }],
     imageUrl: "",
     isActive: true,
   });
@@ -3557,8 +3563,8 @@ function AdminPage() {
       billingCycle: "WEEKLY",
       unitType: "Kg",
       deliveryWindow: "",
-      packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-      packFeatures: [""],
+      packItems: [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+      packFeatures: [{ textEn: "", textFr: "", textAr: "" }],
       imageUrl: "",
       isActive: true,
     });
@@ -3579,8 +3585,19 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: Array<{ name: string; imageUrl: string | null; quantity: number | null; unit: string | null }>;
-    packFeatures: string[];
+    packItems: Array<{
+      nameEn: string;
+      nameFr: string | null;
+      nameAr: string | null;
+      imageUrl: string | null;
+      quantity: number | null;
+      unit: string | null;
+    }>;
+    packFeatures: Array<{
+      textEn: string;
+      textFr: string | null;
+      textAr: string | null;
+    }>;
     imageUrl: string | null;
     isActive: boolean;
   }) => {
@@ -3597,13 +3614,22 @@ function AdminPage() {
       packItems:
         pack.packItems.length > 0
           ? pack.packItems.map((item) => ({
-              name: item.name ?? "",
+              nameEn: item.nameEn ?? "",
+              nameFr: item.nameFr ?? "",
+              nameAr: item.nameAr ?? "",
               imageUrl: item.imageUrl ?? "",
               quantity: item.quantity != null ? String(item.quantity) : "",
               unit: item.unit ?? "",
             }))
-          : [{ name: "", imageUrl: "", quantity: "", unit: "" }],
-      packFeatures: pack.packFeatures.length > 0 ? [...pack.packFeatures] : [""],
+          : [{ nameEn: "", nameFr: "", nameAr: "", imageUrl: "", quantity: "", unit: "" }],
+      packFeatures:
+        pack.packFeatures.length > 0
+          ? pack.packFeatures.map((feature) => ({
+              textEn: feature.textEn ?? "",
+              textFr: feature.textFr ?? "",
+              textAr: feature.textAr ?? "",
+            }))
+          : [{ textEn: "", textFr: "", textAr: "" }],
       imageUrl: pack.imageUrl ?? "",
       isActive: pack.isActive,
     });
@@ -3654,13 +3680,21 @@ function AdminPage() {
         deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
         packItems: platformPackForm.packItems
           .map((item) => ({
-            name: item.name.trim(),
+            nameEn: item.nameEn.trim(),
+            nameFr: item.nameFr.trim() || null,
+            nameAr: item.nameAr.trim() || null,
             imageUrl: item.imageUrl.trim() || null,
             quantity: item.quantity === "" ? null : Number(item.quantity),
             unit: item.unit.trim() || null,
           }))
-          .filter((item) => item.name.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
-        packFeatures: platformPackForm.packFeatures.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
+          .filter((item) => item.nameEn.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
+        packFeatures: platformPackForm.packFeatures
+          .map((feature) => ({
+            textEn: feature.textEn.trim(),
+            textFr: feature.textFr.trim() || null,
+            textAr: feature.textAr.trim() || null,
+          }))
+          .filter((feature) => feature.textEn.length > 0),
         imageUrl: finalImageUrl,
         isActive: platformPackForm.isActive,
       };
