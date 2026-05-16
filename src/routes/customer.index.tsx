@@ -1040,6 +1040,17 @@ function Index() {
       return;
     }
 
+    const currentPackSubscription = activeOrPendingSubscriptionByPackId.get(pack.id);
+    if (currentPackSubscription?.status === "pending") {
+      toast.message("Pending Review / قيد المراجعة");
+      return;
+    }
+
+    if (currentPackSubscription?.status === "active") {
+      toast.message("This pack is already active in your subscriptions.");
+      return;
+    }
+
     setSelectedPack(pack);
     setIsSubscriptionCheckoutOpen(true);
   };
@@ -2338,7 +2349,12 @@ function Index() {
             />
           ) : (
             <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {platformPacks.map((pack) => (
+              {platformPacks.map((pack) => {
+                const packSubscriptionState = activeOrPendingSubscriptionByPackId.get(pack.id) ?? null;
+                const completedDeliveries = Math.max(0, Number(packSubscriptionState?.completedDeliveries ?? 0));
+                const totalDeliveries = Math.max(0, Number(packSubscriptionState?.totalDeliveries ?? 0));
+
+                return (
                 <article
                   key={pack.id}
                   className="surface-panel min-w-[260px] max-w-[300px] flex-1 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
@@ -2365,25 +2381,46 @@ function Index() {
                       {pack.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p> : null}
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5">
-                      {pack.packItems.slice(0, 3).map((item) => (
-                        <Badge key={`${pack.id}-${item}`} className="bg-muted text-muted-foreground" variant="secondary">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    <Button
-                      type="button"
-                      className="w-full rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
-                      onClick={() => openSubscriptionCheckout(pack)}
-                    >
-                      <Package className="size-4" />
-                      Subscribe
-                    </Button>
+                    {packSubscriptionState?.status === "pending" ? (
+                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-warning">
+                        Pending Review / قيد المراجعة
+                      </div>
+                    ) : packSubscriptionState?.status === "active" ? (
+                      <div className="space-y-2 rounded-xl border border-success/30 bg-success/10 p-2.5">
+                        <div className="flex items-center gap-1.5">
+                          {(totalDeliveries > 0 ? Array.from({ length: totalDeliveries }) : Array.from({ length: 4 })).map((_, index) => {
+                            const isDone = index < completedDeliveries;
+                            return (
+                              <span
+                                key={`${pack.id}-step-${index}`}
+                                className={[
+                                  "h-2.5 flex-1 rounded-sm border transition-colors",
+                                  isDone
+                                    ? "border-success bg-success"
+                                    : "border-border/80 bg-muted",
+                                ].join(" ")}
+                              />
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] font-medium text-success">
+                          Delivery {Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1))} of {Math.max(totalDeliveries, 1)}
+                        </p>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        className="w-full rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
+                        onClick={() => openSubscriptionCheckout(pack)}
+                      >
+                        <Package className="size-4" />
+                        Subscribe
+                      </Button>
+                    )}
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
