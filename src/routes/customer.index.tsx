@@ -165,7 +165,12 @@ type PlatformPack = {
   unitType: string;
   deliveryWindow?: string | null;
   imageUrl?: string | null;
-  packItems: string[];
+  packItems: Array<{
+    name: string;
+    imageUrl: string | null;
+    quantity: number | null;
+    unit: string | null;
+  }>;
   packFeatures: string[];
 };
 

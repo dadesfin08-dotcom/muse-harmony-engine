@@ -299,14 +299,38 @@ function PlatformPackDetailsPage() {
             <article className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pack Contents</h2>
               {packDetailsQuery.data.packItems.length > 0 ? (
-                <ul className="space-y-2">
-                  {packDetailsQuery.data.packItems.map((item) => (
-                    <li key={`pack-item-${item}`} className="inline-flex items-center gap-2 text-sm text-foreground">
-                      <Check className="size-4 text-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {packDetailsQuery.data.packItems.map((item, index) => {
+                    const itemName = (item?.name ?? "").trim() || "Pack item";
+                    const itemImageUrl = (item?.imageUrl ?? "").trim();
+                    const quantityText = item?.quantity != null && Number.isFinite(item.quantity) ? String(item.quantity) : "";
+                    const unitText = (item?.unit ?? "").trim();
+                    const qtyLabel = [quantityText, unitText].filter((value) => value.length > 0).join(" ");
+
+                    return (
+                      <div
+                        key={`pack-item-${index}-${itemName}`}
+                        className="overflow-hidden rounded-xl border border-border/70 bg-background/70 shadow-sm"
+                      >
+                        {itemImageUrl ? (
+                          <img src={itemImageUrl} alt={itemName} className="h-24 w-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="flex h-24 w-full items-center justify-center bg-muted px-2 text-center text-xs text-muted-foreground">
+                            {itemName}
+                          </div>
+                        )}
+                        <div className="space-y-1 p-2.5">
+                          <p className="line-clamp-2 text-xs font-semibold text-foreground">{itemName}</p>
+                          {qtyLabel ? (
+                            <Badge variant="secondary" className="h-5 rounded-md px-1.5 text-[11px] font-medium">
+                              {qtyLabel}
+                            </Badge>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No items defined yet.</p>
               )}

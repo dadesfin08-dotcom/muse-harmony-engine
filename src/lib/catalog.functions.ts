@@ -166,6 +166,39 @@ const platformPackDetailsInputSchema = z.object({
   packId: z.string().uuid(),
 });
 
+type PlatformPackItem = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
+function normalizePlatformPackItem(row: { item_label: string; item_data?: unknown }): PlatformPackItem {
+  const data = row.item_data && typeof row.item_data === "object" && !Array.isArray(row.item_data)
+    ? (row.item_data as Record<string, unknown>)
+    : null;
+
+  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
+  const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
+  const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
+
+  const quantitySource = data?.quantity;
+  const quantityParsed =
+    typeof quantitySource === "number"
+      ? quantitySource
+      : typeof quantitySource === "string"
+        ? Number(quantitySource)
+        : Number.NaN;
+
+  return {
+    name: nameFromData || nameFromLabel,
+    imageUrl: imageUrlRaw || null,
+    quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
+    unit: unitRaw || null,
+  };
+}
+
 type MasterProductRow = {
   id: string;
   product_name: string;
@@ -1390,7 +1423,7 @@ export const listActivePlatformPacks = createServerFn({ method: "POST" })
         await Promise.all([
           (supabaseAdmin as any)
             .from("pack_items")
-            .select("pack_id, item_label, sort_order")
+            .select("pack_id, item_label, item_data, sort_order")
             .in("pack_id", packIds)
             .order("sort_order", { ascending: true }),
           (supabaseAdmin as any)
@@ -1408,10 +1441,10 @@ export const listActivePlatformPacks = createServerFn({ method: "POST" })
         throw new Error(packFeaturesError.message);
       }
 
-      const itemMap = new Map<string, string[]>();
-      for (const row of (packItemsData ?? []) as Array<{ pack_id: string; item_label: string; sort_order: number }>) {
+      const itemMap = new Map<string, PlatformPackItem[]>();
+      for (const row of (packItemsData ?? []) as Array<{ pack_id: string; item_label: string; item_data?: unknown; sort_order: number }>) {
         const current = itemMap.get(row.pack_id) ?? [];
-        current.push(row.item_label);
+        current.push(normalizePlatformPackItem(row));
         itemMap.set(row.pack_id, current);
       }
 
@@ -1470,7 +1503,7 @@ export const getPlatformPackDetails = createServerFn({ method: "POST" })
       const [{ data: itemRows, error: itemError }, { data: featureRows, error: featureError }] = await Promise.all([
         (supabaseAdmin as any)
           .from("pack_items")
-          .select("item_label, sort_order")
+          .select("item_label, item_data, sort_order")
           .eq("pack_id", data.packId)
           .order("sort_order", { ascending: true }),
         (supabaseAdmin as any)
@@ -1513,7 +1546,7 @@ export const getPlatformPackDetails = createServerFn({ method: "POST" })
         unitType: pack.unit_type,
         deliveryWindow: pack.delivery_window,
         imageUrl: pack.image_url,
-        packItems: ((itemRows ?? []) as Array<{ item_label: string }>).map((row) => row.item_label),
+        packItems: ((itemRows ?? []) as Array<{ item_label: string; item_data?: unknown }>).map((row) => normalizePlatformPackItem(row)),
         packFeatures: ((featureRows ?? []) as Array<{ feature_label: string }>).map((row) => row.feature_label),
       };
     } catch (error) {

@@ -879,7 +879,12 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: Array<{
+      name: string;
+      imageUrl: string | null;
+      quantity: number | null;
+      unit: string | null;
+    }>;
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -1101,7 +1106,7 @@ function AdminPage() {
     billingCycle: "WEEKLY" as "DAILY" | "WEEKLY" | "MONTHLY",
     unitType: "Kg",
     deliveryWindow: "",
-    packItems: [""],
+    packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
     packFeatures: [""],
     imageUrl: "",
     isActive: true,
@@ -3552,7 +3557,7 @@ function AdminPage() {
       billingCycle: "WEEKLY",
       unitType: "Kg",
       deliveryWindow: "",
-      packItems: [""],
+      packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }],
       packFeatures: [""],
       imageUrl: "",
       isActive: true,
@@ -3574,7 +3579,7 @@ function AdminPage() {
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: Array<{ name: string; imageUrl: string | null; quantity: number | null; unit: string | null }>;
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -3589,7 +3594,15 @@ function AdminPage() {
       billingCycle: pack.billingCycle,
       unitType: pack.unitType,
       deliveryWindow: pack.deliveryWindow ?? "",
-      packItems: pack.packItems.length > 0 ? [...pack.packItems] : [""],
+      packItems:
+        pack.packItems.length > 0
+          ? pack.packItems.map((item) => ({
+              name: item.name ?? "",
+              imageUrl: item.imageUrl ?? "",
+              quantity: item.quantity != null ? String(item.quantity) : "",
+              unit: item.unit ?? "",
+            }))
+          : [{ name: "", imageUrl: "", quantity: "", unit: "" }],
       packFeatures: pack.packFeatures.length > 0 ? [...pack.packFeatures] : [""],
       imageUrl: pack.imageUrl ?? "",
       isActive: pack.isActive,
@@ -3639,7 +3652,14 @@ function AdminPage() {
         billingCycle: platformPackForm.billingCycle,
         unitType: platformPackForm.unitType.trim(),
         deliveryWindow: platformPackForm.deliveryWindow.trim() || null,
-        packItems: platformPackForm.packItems.map((item) => item.trim()).filter((item) => item.length > 0),
+        packItems: platformPackForm.packItems
+          .map((item) => ({
+            name: item.name.trim(),
+            imageUrl: item.imageUrl.trim() || null,
+            quantity: item.quantity === "" ? null : Number(item.quantity),
+            unit: item.unit.trim() || null,
+          }))
+          .filter((item) => item.name.length > 0 && (item.quantity == null || Number.isFinite(item.quantity))),
         packFeatures: platformPackForm.packFeatures.map((feature) => feature.trim()).filter((feature) => feature.length > 0),
         imageUrl: finalImageUrl,
         isActive: platformPackForm.isActive,
@@ -7444,6 +7464,20 @@ function AdsContentSection({
   );
 }
 
+type PackItemFormValue = {
+  name: string;
+  imageUrl: string;
+  quantity: string;
+  unit: string;
+};
+
+type PackItemValue = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
 function PlatformPacksSection({
   packs,
   isLoading,
@@ -7469,7 +7503,7 @@ function PlatformPacksSection({
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: PackItemValue[];
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -7486,7 +7520,7 @@ function PlatformPacksSection({
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string;
-    packItems: string[];
+    packItems: PackItemFormValue[];
     packFeatures: string[];
     imageUrl: string;
     isActive: boolean;
@@ -7502,7 +7536,7 @@ function PlatformPacksSection({
       billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
       unitType: string;
       deliveryWindow: string;
-      packItems: string[];
+      packItems: PackItemFormValue[];
       packFeatures: string[];
       imageUrl: string;
       isActive: boolean;
@@ -7520,7 +7554,7 @@ function PlatformPacksSection({
     billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
     unitType: string;
     deliveryWindow: string | null;
-    packItems: string[];
+    packItems: PackItemValue[];
     packFeatures: string[];
     imageUrl: string | null;
     isActive: boolean;
@@ -7532,22 +7566,22 @@ function PlatformPacksSection({
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
   isSaving: boolean;
 }) {
-  const updatePackItemAt = (index: number, value: string) => {
+  const updatePackItemAt = (index: number, field: keyof PackItemFormValue, value: string) => {
     onFormChange((current) => {
       const next = [...current.packItems];
-      next[index] = value;
+      next[index] = { ...next[index], [field]: value };
       return { ...current, packItems: next };
     });
   };
 
   const addPackItem = () => {
-    onFormChange((current) => ({ ...current, packItems: [...current.packItems, ""] }));
+    onFormChange((current) => ({ ...current, packItems: [...current.packItems, { name: "", imageUrl: "", quantity: "", unit: "" }] }));
   };
 
   const removePackItem = (index: number) => {
     onFormChange((current) => {
       if (current.packItems.length <= 1) {
-        return { ...current, packItems: [""] };
+        return { ...current, packItems: [{ name: "", imageUrl: "", quantity: "", unit: "" }] };
       }
       return { ...current, packItems: current.packItems.filter((_, itemIndex) => itemIndex !== index) };
     });
@@ -7669,10 +7703,36 @@ function PlatformPacksSection({
               Add Item
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {form.packItems.map((item, index) => (
-              <div key={`pack-item-${index}`} className="flex items-center gap-2">
-                <Input value={item} onChange={(event) => updatePackItemAt(index, event.target.value)} placeholder={`Item ${index + 1}`} />
+              <div key={`pack-item-${index}`} className="grid gap-2 rounded-md border border-border/60 bg-background/40 p-2 md:grid-cols-[1.3fr_1.2fr_0.8fr_0.7fr_auto] md:items-center">
+                <Input
+                  value={item.name}
+                  onChange={(event) => updatePackItemAt(index, "name", event.target.value)}
+                  placeholder="Item name"
+                  className="h-9"
+                />
+                <Input
+                  value={item.imageUrl}
+                  onChange={(event) => updatePackItemAt(index, "imageUrl", event.target.value)}
+                  placeholder="Image URL"
+                  className="h-9"
+                />
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={item.quantity}
+                  onChange={(event) => updatePackItemAt(index, "quantity", event.target.value)}
+                  placeholder="Qty"
+                  className="h-9"
+                />
+                <Input
+                  value={item.unit}
+                  onChange={(event) => updatePackItemAt(index, "unit", event.target.value)}
+                  placeholder="Unit"
+                  className="h-9"
+                />
                 <Button type="button" size="icon" variant="outline" onClick={() => removePackItem(index)}>
                   <Trash2 className="size-3.5" />
                 </Button>

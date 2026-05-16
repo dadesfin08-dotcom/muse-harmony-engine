@@ -63,8 +63,66 @@ type PlatformPackItemRow = {
   id: string;
   pack_id: string;
   item_label: string;
+  item_data?: unknown;
   sort_order: number;
 };
+
+type PlatformPackItemInput = {
+  name: string;
+  imageUrl?: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+};
+
+type PlatformPackItemValue = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
+const platformPackItemInputSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  imageUrl: z.string().trim().url().max(2000).nullable().optional(),
+  quantity: z.number().min(0).max(100_000).nullable().optional(),
+  unit: z.string().trim().max(40).nullable().optional(),
+});
+
+function normalizePlatformPackItem(row: { item_label: string; item_data?: unknown }): PlatformPackItemValue {
+  const data = row.item_data && typeof row.item_data === "object" && !Array.isArray(row.item_data)
+    ? (row.item_data as Record<string, unknown>)
+    : null;
+
+  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
+
+  const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
+  const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
+
+  const quantitySource = data?.quantity;
+  const quantityParsed =
+    typeof quantitySource === "number"
+      ? quantitySource
+      : typeof quantitySource === "string"
+        ? Number(quantitySource)
+        : Number.NaN;
+
+  return {
+    name: nameFromData || nameFromLabel,
+    imageUrl: imageUrlRaw || null,
+    quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
+    unit: unitRaw || null,
+  };
+}
+
+function serializePlatformPackItem(item: PlatformPackItemInput) {
+  return {
+    name: item.name,
+    image_url: item.imageUrl ?? null,
+    quantity: item.quantity ?? null,
+    unit: item.unit ?? null,
+  };
+}
 
 type PlatformPackFeatureRow = {
   id: string;
@@ -117,7 +175,7 @@ const platformPackInputSchema = z.object({
   billingCycle: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
   unitType: z.string().trim().min(1).max(40),
   deliveryWindow: z.string().trim().max(120).nullable().optional(),
-  packItems: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
+  packItems: z.array(platformPackItemInputSchema).max(80).default([]),
   packFeatures: z.array(z.string().trim().min(1).max(200)).max(80).default([]),
   imageUrl: z.string().trim().url().max(2000).nullable().optional(),
   isActive: z.boolean().default(true),
@@ -971,7 +1029,7 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
         "id, name_en, name_fr, name_ar, description, base_price_mad, billing_cycle, price_per_unit, unit_type, delivery_window, image_url, is_active, created_at, updated_at",
       )
       .order("created_at", { ascending: false }),
-    (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, sort_order").order("sort_order", { ascending: true }),
+    (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, item_data, sort_order").order("sort_order", { ascending: true }),
     (supabaseAdmin as any)
       .from("pack_features")
       .select("id, pack_id, feature_label, sort_order")
@@ -982,10 +1040,10 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
   if (itemsRes.error) throw new Error(itemsRes.error.message ?? "Failed to load pack items.");
   if (featuresRes.error) throw new Error(featuresRes.error.message ?? "Failed to load pack features.");
 
-  const itemMap = new Map<string, string[]>();
+  const itemMap = new Map<string, PlatformPackItemValue[]>();
   for (const row of (itemsRes.data ?? []) as PlatformPackItemRow[]) {
     const current = itemMap.get(row.pack_id) ?? [];
-    current.push(row.item_label);
+    current.push(normalizePlatformPackItem(row));
     itemMap.set(row.pack_id, current);
   }
 
@@ -1044,7 +1102,8 @@ export const createPlatformPack = createServerFn({ method: "POST" })
       const { error: packItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: inserted.id,
-          item_label: item,
+          item_label: item.name,
+          item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
       );
@@ -1105,7 +1164,8 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
       const { error: insertItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: data.id,
-          item_label: item,
+          item_label: item.name,
+          item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
       );
@@ -1593,7 +1653,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
 
       const { data: packItemsRows, error: packItemsError } = await (supabaseAdmin as any)
         .from("pack_items")
-        .select("item_label, sort_order")
+        .select("item_label, item_data, sort_order")
         .eq("pack_id", subscriptionRes.data.pack_id)
         .order("sort_order", { ascending: true });
 
@@ -1601,20 +1661,27 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
         throw new Error(packItemsError.message ?? "Failed to prepare first delivery order.");
       }
 
-      const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).length
-        ? ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) => ({
-            name: item.item_label,
-            quantity: 1,
-            unitPriceMad: 0,
-            selectedVariant: null,
-            brandName: null,
-            measurementValue: null,
-            measurementUnit: null,
-          }))
+      const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).length
+        ? ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).map((item) => {
+            const normalized = normalizePlatformPackItem(item);
+            return {
+              name: normalized.name || item.item_label,
+              quantity: normalized.quantity ?? 1,
+              unit: normalized.unit ?? null,
+              imageUrl: normalized.imageUrl ?? null,
+              unitPriceMad: 0,
+              selectedVariant: null,
+              brandName: null,
+              measurementValue: null,
+              measurementUnit: null,
+            };
+          })
         : [
             {
               name: "Subscription Pack Delivery",
               quantity: 1,
+              unit: "Pack",
+              imageUrl: null,
               unitPriceMad: 0,
               selectedVariant: null,
               brandName: null,
