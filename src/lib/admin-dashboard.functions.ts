@@ -73,7 +73,7 @@ type PlatformPackFeatureRow = {
   sort_order: number;
 };
 
-type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled";
+type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
 
 type PlatformSubscriptionRow = {
   id: string;
@@ -86,6 +86,9 @@ type PlatformSubscriptionRow = {
   expiration_date: string | null;
   next_scheduled_delivery_date: string | null;
   lifetime_revenue_mad: number;
+  agreed_price: number | null;
+  total_deliveries: number | null;
+  completed_deliveries: number;
   deliveries_completed: number;
   deliveries_expected: number;
   created_at: string;
@@ -144,7 +147,13 @@ const updateSubscriptionOrderStatusInputSchema = z.object({
 
 const updatePlatformSubscriberStatusInputSchema = z.object({
   subscriptionId: z.string().uuid(),
-  status: z.enum(["pending", "active", "paused", "expired", "cancelled"]),
+  status: z.enum(["pending", "active", "paused", "expired", "cancelled", "completed"]),
+});
+
+const activatePlatformSubscriberInputSchema = z.object({
+  subscriptionId: z.string().uuid(),
+  agreedPriceMad: z.number().positive().max(1_000_000),
+  totalDeliveries: z.number().int().min(1).max(365),
 });
 
 const getPlatformSubscriberHistoryInputSchema = z.object({
