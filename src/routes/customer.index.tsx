@@ -1050,18 +1050,6 @@ function Index() {
   }, [isSubscriptionCheckoutOpen, language]);
 
   const openSubscriptionCheckout = (pack: PlatformPack) => {
-    if (!selectedNeighborhoodId) {
-      setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
-      return;
-    }
-
-    if (!customerSession?.phoneNumber) {
-      setIsCustomerAuthModalOpen(true);
-      toast.error("Login is required before subscribing.");
-      return;
-    }
-
     setSelectedPack(pack);
     setIsSubscriptionCheckoutOpen(true);
   };
