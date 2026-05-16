@@ -72,6 +72,10 @@ const getCustomerOrdersInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
 
+const getCustomerSubscriptionsInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema,
+});
+
 const vendorSettlementSummaryInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
@@ -594,26 +598,17 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
   .inputValidator((input) => createPlatformSubscriptionOrderInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const [packResult, packItemsResult] = await Promise.all([
+      const [packResult] = await Promise.all([
         (supabaseAdmin as any)
           .from("platform_packs")
           .select("id, name_en, name_fr, name_ar, base_price_mad, billing_cycle, is_active")
           .eq("id", data.packId)
           .eq("is_active", true)
           .maybeSingle(),
-        (supabaseAdmin as any)
-          .from("pack_items")
-          .select("item_label, sort_order")
-          .eq("pack_id", data.packId)
-          .order("sort_order", { ascending: true }),
       ]);
 
       if (packResult.error) {
         throw new Error(packResult.error.message);
-      }
-
-      if (packItemsResult.error) {
-        throw new Error(packItemsResult.error.message);
       }
 
       const pack = packResult.data as {
@@ -629,10 +624,6 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
       if (!pack?.id || !pack.is_active) {
         throw new Error("Selected subscription pack is not available.");
       }
-
-      const packItems = ((packItemsResult.data ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) =>
-        item.item_label,
-      );
 
       const { data: existingProfile, error: profileLookupError } = await (supabaseAdmin as any)
         .from("profiles")
@@ -708,8 +699,6 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
         throw new Error(profileUpsertError.message);
       }
 
-      const deliveriesExpected = pack.billing_cycle === "DAILY" ? 30 : pack.billing_cycle === "WEEKLY" ? 4 : 1;
-
       const { data: insertedSubscription, error: subscriptionError } = await (supabaseAdmin as any)
         .from("platform_subscriptions")
         .insert({
@@ -720,9 +709,12 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
           status: "pending",
           start_date: data.preferredStartDate,
           next_scheduled_delivery_date: data.preferredStartDate,
-          deliveries_expected: deliveriesExpected,
+          deliveries_expected: 0,
           deliveries_completed: 0,
-          lifetime_revenue_mad: Number(pack.base_price_mad ?? 0),
+          completed_deliveries: 0,
+          total_deliveries: null,
+          agreed_price: null,
+          lifetime_revenue_mad: 0,
           notes: `Preferred delivery time: ${data.preferredDeliveryTime}`,
         })
         .select("id")
@@ -732,70 +724,7 @@ export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" }
         throw new Error(subscriptionError?.message ?? "Failed to create subscription.");
       }
 
-      const orderItems =
-        packItems.length > 0
-          ? packItems.map((itemLabel) => ({
-              name: itemLabel,
-              quantity: 1,
-              unitPriceMad: 0,
-              selectedVariant: null,
-              brandName: null,
-              measurementValue: null,
-              measurementUnit: null,
-            }))
-          : [
-              {
-                name: pack.name_en,
-                quantity: 1,
-                unitPriceMad: 0,
-                selectedVariant: null,
-                brandName: null,
-                measurementValue: null,
-                measurementUnit: "Pack",
-              },
-            ];
-
-      const mergedDeliveryNotes = [
-        data.deliveryNotes?.trim() || "",
-        `Preferred start date: ${data.preferredStartDate}`,
-        `Preferred delivery time: ${data.preferredDeliveryTime}`,
-        `Pack: ${pack.name_en}`,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
-      const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
-        .from("orders")
-        .insert({
-          customer_user_id: customerUserId,
-          vendor_id: null,
-          subscription_id: insertedSubscription.id,
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone,
-          neighborhood_id: data.neighborhoodId,
-          delivery_notes: mergedDeliveryNotes,
-          payment_method: "COD",
-          status: "new",
-          delivery_fee: 0,
-          subtotal_base_price: Number(pack.base_price_mad ?? 0),
-          platform_profit: Number(pack.base_price_mad ?? 0),
-          platform_markup: Number(pack.base_price_mad ?? 0),
-          vendor_revenue: 0,
-          total_price: Number(pack.base_price_mad ?? 0),
-          item_count: orderItems.length,
-          order_items: orderItems,
-          order_category: "PLATFORM_SUBSCRIPTION",
-          cash_to_collect_from_customer: 0,
-        })
-        .select("id")
-        .single();
-
-      if (orderError || !insertedOrder?.id) {
-        throw new Error(orderError?.message ?? "Failed to create subscription order.");
-      }
-
       return {
-        orderId: String(insertedOrder.id),
         subscriptionId: String(insertedSubscription.id),
       };
     } catch (error) {
@@ -1850,5 +1779,75 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getCustomerOrders failed:", error);
       throw new Error("Failed to load customer orders.");
+    }
+  });
+
+export const getCustomerSubscriptions = createServerFn({ method: "POST" })
+  .inputValidator((input) => getCustomerSubscriptionsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const [subscriptionsRes, packsRes] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .select(
+            "id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, agreed_price, total_deliveries, completed_deliveries, created_at",
+          )
+          .eq("customer_phone", data.phoneNumber)
+          .order("created_at", { ascending: false }),
+        (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
+      ]);
+
+      if (subscriptionsRes.error) {
+        throw new Error(subscriptionsRes.error.message);
+      }
+      if (packsRes.error) {
+        throw new Error(packsRes.error.message);
+      }
+
+      const packNameById = new Map(
+        ((packsRes.data ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>).map((pack) => [
+          pack.id,
+          (pack.name_en?.trim() || pack.name_fr?.trim() || pack.name_ar?.trim() || "Unknown Pack"),
+        ]),
+      );
+
+      return ((subscriptionsRes.data ?? []) as Array<{
+        id: string;
+        customer_name: string;
+        customer_phone: string | null;
+        pack_id: string;
+        status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
+        start_date: string;
+        expiration_date: string | null;
+        next_scheduled_delivery_date: string | null;
+        agreed_price: number | null;
+        total_deliveries: number | null;
+        completed_deliveries: number | null;
+        created_at: string;
+      }>).map((row) => {
+        const completed = Number(row.completed_deliveries ?? 0);
+        const total = Number(row.total_deliveries ?? 0);
+        const completionPercent = total > 0 ? Math.max(0, Math.min(100, Math.round((completed / total) * 100))) : 0;
+
+        return {
+          id: row.id,
+          customerName: row.customer_name,
+          customerPhone: row.customer_phone,
+          packId: row.pack_id,
+          packName: packNameById.get(row.pack_id) ?? "Unknown Pack",
+          status: row.status,
+          startDate: row.start_date,
+          expirationDate: row.expiration_date,
+          nextScheduledDeliveryDate: row.next_scheduled_delivery_date,
+          agreedPriceMad: Number(row.agreed_price ?? 0),
+          totalDeliveries: total,
+          completedDeliveries: completed,
+          completionPercent,
+          createdAt: row.created_at,
+        };
+      });
+    } catch (error) {
+      console.error("getCustomerSubscriptions failed:", error);
+      throw new Error("Failed to load customer subscriptions.");
     }
   });

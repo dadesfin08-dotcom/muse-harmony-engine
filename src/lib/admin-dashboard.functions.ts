@@ -73,7 +73,7 @@ type PlatformPackFeatureRow = {
   sort_order: number;
 };
 
-type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled";
+type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
 
 type PlatformSubscriptionRow = {
   id: string;
@@ -86,6 +86,9 @@ type PlatformSubscriptionRow = {
   expiration_date: string | null;
   next_scheduled_delivery_date: string | null;
   lifetime_revenue_mad: number;
+  agreed_price: number | null;
+  total_deliveries: number | null;
+  completed_deliveries: number;
   deliveries_completed: number;
   deliveries_expected: number;
   created_at: string;
@@ -144,7 +147,13 @@ const updateSubscriptionOrderStatusInputSchema = z.object({
 
 const updatePlatformSubscriberStatusInputSchema = z.object({
   subscriptionId: z.string().uuid(),
-  status: z.enum(["pending", "active", "paused", "expired", "cancelled"]),
+  status: z.enum(["pending", "active", "paused", "expired", "cancelled", "completed"]),
+});
+
+const activatePlatformSubscriberInputSchema = z.object({
+  subscriptionId: z.string().uuid(),
+  agreedPriceMad: z.number().positive().max(1_000_000),
+  totalDeliveries: z.number().int().min(1).max(365),
 });
 
 const getPlatformSubscriberHistoryInputSchema = z.object({
@@ -1300,14 +1309,44 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
       .update({ status: data.status })
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
-      .select("id")
+      .select("id, status")
       .single();
 
     if (error || !updated?.id) {
       throw new Error(error?.message ?? "Failed to update subscription order status.");
     }
 
-    return { ok: true };
+    if (data.status === "delivered") {
+      const { data: subscriptionRow, error: progressError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .select("id, total_deliveries, completed_deliveries")
+        .eq("id", currentOrder.subscription_id)
+        .single();
+
+      if (progressError) {
+        throw new Error(progressError.message ?? "Failed to sync subscription progress.");
+      }
+
+      const totalDeliveries = Number(subscriptionRow?.total_deliveries ?? 0);
+      const completedDeliveries = Number(subscriptionRow?.completed_deliveries ?? 0);
+      const nextCompleted = completedDeliveries + 1;
+      const isCycleComplete = totalDeliveries > 0 && nextCompleted >= totalDeliveries;
+
+      const { error: subscriptionUpdateError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .update({
+          completed_deliveries: nextCompleted,
+          deliveries_completed: nextCompleted,
+          status: isCycleComplete ? "completed" : "active",
+        })
+        .eq("id", currentOrder.subscription_id);
+
+      if (subscriptionUpdateError) {
+        throw new Error(subscriptionUpdateError.message ?? "Failed to update subscription completion progress.");
+      }
+    }
+
+    return { ok: true, status: updated.status };
   });
 
 export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler(async () => {
@@ -1315,7 +1354,7 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
     (supabaseAdmin as any)
       .from("platform_subscriptions")
       .select(
-        "id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, deliveries_completed, deliveries_expected, created_at",
+        "id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, lifetime_revenue_mad, agreed_price, total_deliveries, completed_deliveries, deliveries_completed, deliveries_expected, created_at",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
@@ -1336,8 +1375,8 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
   );
 
   return ((subscriptionsRes.data ?? []) as PlatformSubscriptionRow[]).map((row) => {
-    const deliveriesCompleted = Number(row.deliveries_completed ?? 0);
-    const deliveriesExpected = Number(row.deliveries_expected ?? 0);
+    const deliveriesCompleted = Number(row.completed_deliveries ?? row.deliveries_completed ?? 0);
+    const deliveriesExpected = Number(row.total_deliveries ?? row.deliveries_expected ?? 0);
     const completionPct =
       deliveriesExpected > 0
         ? Math.max(0, Math.min(100, Math.round((deliveriesCompleted / deliveriesExpected) * 100)))
@@ -1355,6 +1394,7 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
       expirationDate: row.expiration_date,
       nextScheduledDeliveryDate: row.next_scheduled_delivery_date,
       lifetimeRevenueMad: Number(row.lifetime_revenue_mad ?? 0),
+      agreedPriceMad: Number(row.agreed_price ?? 0),
       deliveriesCompleted,
       deliveriesExpected,
       deliveryCompletionPercent: completionPct,
@@ -1496,6 +1536,132 @@ export const getPlatformPacksAnalytics = createServerFn({ method: "GET" }).handl
   };
 });
 
+export const activatePlatformSubscriber = createServerFn({ method: "POST" })
+  .inputValidator((input) => activatePlatformSubscriberInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const [subscriptionRes, packItemsRes] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .select("id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, next_scheduled_delivery_date")
+        .eq("id", data.subscriptionId)
+        .single(),
+      (supabaseAdmin as any)
+        .from("orders")
+        .select("id")
+        .eq("subscription_id", data.subscriptionId)
+        .eq("order_category", "PLATFORM_SUBSCRIPTION")
+        .limit(1),
+    ]);
+
+    if (subscriptionRes.error || !subscriptionRes.data?.id) {
+      throw new Error(subscriptionRes.error?.message ?? "Subscription not found.");
+    }
+
+    if (subscriptionRes.data.status !== "pending") {
+      throw new Error("Only pending subscriptions can be activated.");
+    }
+
+    const firstOrderExists = Array.isArray(packItemsRes.data) && packItemsRes.data.length > 0;
+
+    const { error: updateError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .update({
+        status: "active",
+        agreed_price: data.agreedPriceMad,
+        total_deliveries: data.totalDeliveries,
+        completed_deliveries: 0,
+        deliveries_expected: data.totalDeliveries,
+        deliveries_completed: 0,
+        lifetime_revenue_mad: data.agreedPriceMad,
+      })
+      .eq("id", data.subscriptionId);
+
+    if (updateError) {
+      throw new Error(updateError.message ?? "Failed to activate subscription.");
+    }
+
+    if (!firstOrderExists) {
+      const { data: profileRow, error: profileError } = await (supabaseAdmin as any)
+        .from("profiles")
+        .select("neighborhood_id")
+        .eq("id", subscriptionRes.data.customer_user_id)
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error(profileError.message ?? "Failed to resolve delivery neighborhood for subscription.");
+      }
+
+      const { data: packItemsRows, error: packItemsError } = await (supabaseAdmin as any)
+        .from("pack_items")
+        .select("item_label, sort_order")
+        .eq("pack_id", subscriptionRes.data.pack_id)
+        .order("sort_order", { ascending: true });
+
+      if (packItemsError) {
+        throw new Error(packItemsError.message ?? "Failed to prepare first delivery order.");
+      }
+
+      const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).length
+        ? ((packItemsRows ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) => ({
+            name: item.item_label,
+            quantity: 1,
+            unitPriceMad: 0,
+            selectedVariant: null,
+            brandName: null,
+            measurementValue: null,
+            measurementUnit: null,
+          }))
+        : [
+            {
+              name: "Subscription Pack Delivery",
+              quantity: 1,
+              unitPriceMad: 0,
+              selectedVariant: null,
+              brandName: null,
+              measurementValue: null,
+              measurementUnit: "Pack",
+            },
+          ];
+
+      const orderNotes = [
+        `Subscription activation order`,
+        `Contract price: ${Number(data.agreedPriceMad).toFixed(2)} MAD`,
+      ].join(" | ");
+
+      const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .insert({
+          customer_user_id: subscriptionRes.data.customer_user_id,
+          vendor_id: null,
+          subscription_id: data.subscriptionId,
+          customer_name: subscriptionRes.data.customer_name,
+          customer_phone: subscriptionRes.data.customer_phone,
+          delivery_notes: orderNotes,
+          payment_method: "COD",
+          status: "new",
+          delivery_fee: 0,
+          subtotal_base_price: 0,
+          platform_profit: Number(data.agreedPriceMad),
+          platform_markup: Number(data.agreedPriceMad),
+          vendor_revenue: 0,
+          total_price: Number(data.agreedPriceMad),
+          item_count: orderItems.length,
+          order_items: orderItems,
+          order_category: "PLATFORM_SUBSCRIPTION",
+          cash_to_collect_from_customer: 0,
+          neighborhood_id: profileRow?.neighborhood_id ?? null,
+        })
+        .select("id")
+        .single();
+
+      if (orderError || !insertedOrder?.id) {
+        throw new Error(orderError?.message ?? "Failed to create first dispatch order.");
+      }
+    }
+
+    return { ok: true };
+  });
+
 export const updatePlatformSubscriberStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => updatePlatformSubscriberStatusInputSchema.parse(input))
   .handler(async ({ data }) => {
@@ -1508,19 +1674,6 @@ export const updatePlatformSubscriberStatus = createServerFn({ method: "POST" })
 
     if (error || !updated?.id) {
       throw new Error(error?.message ?? "Failed to update subscriber status.");
-    }
-
-    if (data.status === "active") {
-      const { error: activateOrdersError } = await (supabaseAdmin as any)
-        .from("orders")
-        .update({ status: "preparing" })
-        .eq("subscription_id", data.subscriptionId)
-        .eq("order_category", "PLATFORM_SUBSCRIPTION")
-        .eq("status", "new");
-
-      if (activateOrdersError) {
-        throw new Error(activateOrdersError.message ?? "Failed to activate subscription orders.");
-      }
     }
 
     return { ok: true };
