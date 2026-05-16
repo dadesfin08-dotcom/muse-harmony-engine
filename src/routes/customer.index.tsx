@@ -30,6 +30,8 @@ import {
   Share2,
   Flame,
   Clock3,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -70,6 +72,7 @@ import {
   getCustomerSubscriptions,
   getCustomerOrders,
   upsertCustomerProfile,
+  updateCustomerSubscriptionStatus,
 } from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
@@ -435,6 +438,7 @@ function Index() {
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
   const submitPlatformSubscriptionOrder = useServerFn(createPlatformSubscriptionOrder);
+  const submitCustomerSubscriptionStatus = useServerFn(updateCustomerSubscriptionStatus);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -564,6 +568,24 @@ function Index() {
       setIsSubscriptionCheckoutOpen(false);
       setSelectedPack(null);
       setSubscriptionNotes("");
+    },
+  });
+  const subscriptionStatusMutation = useMutation({
+    mutationFn: (payload: { subscriptionId: string; status: "active" | "paused" }) =>
+      submitCustomerSubscriptionStatus({
+        data: {
+          phoneNumber: customerSession!.phoneNumber,
+          subscriptionId: payload.subscriptionId,
+          status: payload.status,
+        },
+      }),
+    onSuccess: async (_result, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null] });
+      const actionLabel = variables.status === "paused" ? "Subscription paused." : "Subscription resumed.";
+      toast.success(actionLabel);
+    },
+    onError: () => {
+      toast.error("Failed to update subscription status.");
     },
   });
 
@@ -1028,29 +1050,6 @@ function Index() {
   }, [isSubscriptionCheckoutOpen, language]);
 
   const openSubscriptionCheckout = (pack: PlatformPack) => {
-    if (!selectedNeighborhoodId) {
-      setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
-      return;
-    }
-
-    if (!customerSession?.phoneNumber) {
-      setIsCustomerAuthModalOpen(true);
-      toast.error("Login is required before subscribing.");
-      return;
-    }
-
-    const currentPackSubscription = activeOrPendingSubscriptionByPackId.get(pack.id);
-    if (currentPackSubscription?.status === "pending") {
-      toast.message("Pending Review / قيد المراجعة");
-      return;
-    }
-
-    if (currentPackSubscription?.status === "active") {
-      toast.message("This pack is already active in your subscriptions.");
-      return;
-    }
-
     setSelectedPack(pack);
     setIsSubscriptionCheckoutOpen(true);
   };
@@ -1405,20 +1404,27 @@ function Index() {
     const map = new Map<
       string,
       {
-        status: "pending" | "active";
+        id: string;
+        status: "pending" | "active" | "paused";
         completedDeliveries: number;
         totalDeliveries: number;
       }
     >();
 
     for (const subscription of customerSubscriptions) {
-      if (subscription.status !== "pending" && subscription.status !== "active") {
+      if (subscription.status !== "pending" && subscription.status !== "active" && subscription.status !== "paused") {
         continue;
       }
 
       const existing = map.get(subscription.packId);
-      if (!existing || (existing.status === "pending" && subscription.status === "active")) {
+      const shouldReplace =
+        !existing ||
+        (existing.status === "pending" && (subscription.status === "active" || subscription.status === "paused")) ||
+        (existing.status === "paused" && subscription.status === "active");
+
+      if (shouldReplace) {
         map.set(subscription.packId, {
+          id: subscription.id,
           status: subscription.status,
           completedDeliveries: Math.max(0, Number(subscription.completedDeliveries ?? 0)),
           totalDeliveries: Math.max(0, Number(subscription.totalDeliveries ?? 0)),
@@ -1429,6 +1435,15 @@ function Index() {
     return map;
   }, [customerSubscriptions]);
   const hasCustomerSubscriptions = customerSubscriptions.length > 0;
+  const selectedPackSubscriptionState = selectedPack
+    ? (activeOrPendingSubscriptionByPackId.get(selectedPack.id) ?? null)
+    : null;
+  const selectedPackCompletedDeliveries = Math.max(0, Number(selectedPackSubscriptionState?.completedDeliveries ?? 0));
+  const selectedPackTotalDeliveries = Math.max(0, Number(selectedPackSubscriptionState?.totalDeliveries ?? 0));
+  const selectedPackNextDeliveryNumber = Math.min(
+    selectedPackCompletedDeliveries + 1,
+    Math.max(selectedPackTotalDeliveries, 1),
+  );
   const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
     if (status === "pending") return "Pending Admin Review / قيد المراجعة";
     if (status === "active") return "Active";
@@ -2362,25 +2377,30 @@ function Index() {
                   <button
                     type="button"
                     onClick={() => openSubscriptionCheckout(pack)}
-                    className="relative block h-36 w-full overflow-hidden"
+                    className="group block w-full text-left"
                   >
-                    <img
-                      src={pack.imageUrl || productFallbackImage}
-                      alt={`${pack.name} subscription pack`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                    <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
-                      {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                    <div className="relative h-36 w-full overflow-hidden">
+                      <img
+                        src={pack.imageUrl || productFallbackImage}
+                        alt={`${pack.name} subscription pack`}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        loading="lazy"
+                      />
+                      <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+                        {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                      </div>
+                    </div>
+                    <div className="space-y-2 p-3">
+                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
+                      {pack.description ? (
+                        <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Direct prepaid platform subscription</p>
+                      )}
                     </div>
                   </button>
 
-                  <div className="space-y-3 p-3">
-                    <div>
-                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
-                      {pack.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p> : null}
-                    </div>
-
+                  <div className="space-y-3 px-3 pb-3">
                     {packSubscriptionState?.status === "pending" ? (
                       <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
                         Pending Review / قيد المراجعة
@@ -2406,6 +2426,10 @@ function Index() {
                         <p className="text-[11px] font-medium text-success">
                           Delivery {Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1))} of {Math.max(totalDeliveries, 1)}
                         </p>
+                      </div>
+                    ) : packSubscriptionState?.status === "paused" ? (
+                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+                        Paused — View details to resume
                       </div>
                     ) : (
                       <Button
@@ -2819,101 +2843,171 @@ function Index() {
               </div>
             </div>
 
-            <section className="space-y-2 rounded-2xl border border-success/30 bg-success/10 p-4">
-              <p className="text-sm font-semibold text-success">
-                This is a prepaid subscription. 0.00 MAD will be collected upon delivery.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Order is created directly in the isolated subscription engine, outside the marketplace cart flow.
-              </p>
-            </section>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
-                <h4 className="text-sm font-semibold text-foreground">Pack Items</h4>
-                {selectedPack?.packItems?.length ? (
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {selectedPack.packItems.map((item) => (
-                      <li key={`checkout-item-${item}`} className="inline-flex items-center gap-2">
-                        <Check className="size-3.5 text-success" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No items defined for this pack.</p>
-                )}
+            {selectedPackSubscriptionState?.status === "pending" ? (
+              <section className="space-y-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                <p className="text-sm font-semibold text-amber-400">Your subscription is currently under review.</p>
+                <p className="text-xs text-muted-foreground">We'll notify you as soon as the admin approves your request.</p>
               </section>
-
-              <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
-                <h4 className="text-sm font-semibold text-foreground">Pack Features</h4>
-                {selectedPack?.packFeatures?.length ? (
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {selectedPack.packFeatures.map((feature) => (
-                      <li key={`checkout-feature-${feature}`} className="inline-flex items-center gap-2">
-                        <Check className="size-3.5 text-primary" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No features defined for this pack.</p>
-                )}
+            ) : selectedPackSubscriptionState?.status === "active" ? (
+              <section className="space-y-3 rounded-2xl border border-success/30 bg-success/10 p-4">
+                <p className="text-sm font-semibold text-success">
+                  Delivery {selectedPackNextDeliveryNumber} of {Math.max(selectedPackTotalDeliveries, 1)}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  {(selectedPackTotalDeliveries > 0
+                    ? Array.from({ length: selectedPackTotalDeliveries })
+                    : Array.from({ length: 4 })
+                  ).map((_, index) => {
+                    const isDone = index < selectedPackCompletedDeliveries;
+                    return (
+                      <span
+                        key={`${selectedPack?.id ?? "pack"}-modal-progress-${index}`}
+                        className={[
+                          "h-2.5 flex-1 rounded-sm border transition-colors",
+                          isDone ? "border-success bg-success" : "border-border/80 bg-muted",
+                        ].join(" ")}
+                      />
+                    );
+                  })}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full rounded-xl"
+                  onClick={() => {
+                    if (!selectedPackSubscriptionState?.id) return;
+                    void subscriptionStatusMutation.mutateAsync({
+                      subscriptionId: selectedPackSubscriptionState.id,
+                      status: "paused",
+                    });
+                  }}
+                  disabled={subscriptionStatusMutation.isPending}
+                >
+                  <PauseCircle className="size-4" />
+                  Pause Subscription / إيقاف مؤقت
+                </Button>
               </section>
-            </div>
+            ) : selectedPackSubscriptionState?.status === "paused" ? (
+              <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                <p className="text-sm font-semibold text-foreground">Your subscription is currently on hold.</p>
+                <p className="text-xs text-muted-foreground">Resume anytime to continue your delivery cycle.</p>
+                <Button
+                  type="button"
+                  className="w-full rounded-xl"
+                  onClick={() => {
+                    if (!selectedPackSubscriptionState?.id) return;
+                    void subscriptionStatusMutation.mutateAsync({
+                      subscriptionId: selectedPackSubscriptionState.id,
+                      status: "active",
+                    });
+                  }}
+                  disabled={subscriptionStatusMutation.isPending}
+                >
+                  <PlayCircle className="size-4" />
+                  Resume Subscription / استئناف
+                </Button>
+              </section>
+            ) : (
+              <>
+                <section className="space-y-2 rounded-2xl border border-success/30 bg-success/10 p-4">
+                  <p className="text-sm font-semibold text-success">
+                    This is a prepaid subscription. 0.00 MAD will be collected upon delivery.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Order is created directly in the isolated subscription engine, outside the marketplace cart flow.
+                  </p>
+                </section>
 
-            <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="subscription-start-date">Start Date / Delivery Time</Label>
-                <Input
-                  id="subscription-start-date"
-                  type="date"
-                  value={subscriptionStartDate}
-                  onChange={(event) => setSubscriptionStartDate(event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="subscription-delivery-time">Preferred Delivery Time</Label>
-                <Input
-                  id="subscription-delivery-time"
-                  placeholder="Morning / Afternoon"
-                  value={subscriptionDeliveryTime}
-                  onChange={(event) => setSubscriptionDeliveryTime(event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="subscription-notes">Notes (optional)</Label>
-                <Input
-                  id="subscription-notes"
-                  placeholder="Any preferred delivery instructions"
-                  value={subscriptionNotes}
-                  onChange={(event) => setSubscriptionNotes(event.target.value)}
-                />
-              </div>
-            </section>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <h4 className="text-sm font-semibold text-foreground">Pack Items</h4>
+                    {selectedPack?.packItems?.length ? (
+                      <ul className="space-y-1.5 text-sm text-muted-foreground">
+                        {selectedPack.packItems.map((item) => (
+                          <li key={`checkout-item-${item}`} className="inline-flex items-center gap-2">
+                            <Check className="size-3.5 text-success" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No items defined for this pack.</p>
+                    )}
+                  </section>
+
+                  <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <h4 className="text-sm font-semibold text-foreground">Pack Features</h4>
+                    {selectedPack?.packFeatures?.length ? (
+                      <ul className="space-y-1.5 text-sm text-muted-foreground">
+                        {selectedPack.packFeatures.map((feature) => (
+                          <li key={`checkout-feature-${feature}`} className="inline-flex items-center gap-2">
+                            <Check className="size-3.5 text-primary" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No features defined for this pack.</p>
+                    )}
+                  </section>
+                </div>
+
+                <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subscription-start-date">Start Date / Delivery Time</Label>
+                    <Input
+                      id="subscription-start-date"
+                      type="date"
+                      value={subscriptionStartDate}
+                      onChange={(event) => setSubscriptionStartDate(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subscription-delivery-time">Preferred Delivery Time</Label>
+                    <Input
+                      id="subscription-delivery-time"
+                      placeholder="Morning / Afternoon"
+                      value={subscriptionDeliveryTime}
+                      onChange={(event) => setSubscriptionDeliveryTime(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <Label htmlFor="subscription-notes">Notes (optional)</Label>
+                    <Input
+                      id="subscription-notes"
+                      placeholder="Any preferred delivery instructions"
+                      value={subscriptionNotes}
+                      onChange={(event) => setSubscriptionNotes(event.target.value)}
+                    />
+                  </div>
+                </section>
+              </>
+            )}
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" className="rounded-xl" onClick={() => setIsSubscriptionCheckoutOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                className="rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
-                onClick={confirmSubscriptionCheckout}
-                disabled={subscriptionCheckoutMutation.isPending}
-              >
-                {subscriptionCheckoutMutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="size-4" />
-                    Confirm Subscription
-                  </>
-                )}
-              </Button>
+              {!selectedPackSubscriptionState ? (
+                <Button
+                  type="button"
+                  className="rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
+                  onClick={confirmSubscriptionCheckout}
+                  disabled={subscriptionCheckoutMutation.isPending}
+                >
+                  {subscriptionCheckoutMutation.isPending ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="size-4" />
+                      Confirm Subscription
+                    </>
+                  )}
+                </Button>
+              ) : null}
             </div>
           </div>
         </DialogContent>
