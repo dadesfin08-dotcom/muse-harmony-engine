@@ -195,6 +195,7 @@ import {
 import {
   getAdminOverviewAnalytics,
   getBrandEngineAnalytics,
+  getPlatformPacksAnalytics,
   listPlatformPacks,
   createPlatformPack,
   updatePlatformPack,
@@ -649,6 +650,7 @@ function AdminPage() {
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
   const deleteMarkupRuleInDatabase = useServerFn(deleteMarkupRule);
   const fetchBrandEngineAnalytics = useServerFn(getBrandEngineAnalytics);
+  const fetchPlatformPacksAnalytics = useServerFn(getPlatformPacksAnalytics);
   const fetchPlatformPacks = useServerFn(listPlatformPacks);
   const fetchPlatformSubscribers = useServerFn(listPlatformSubscribers);
   const createPlatformPackInDatabase = useServerFn(createPlatformPack);
