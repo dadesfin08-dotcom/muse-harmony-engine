@@ -367,6 +367,11 @@ function Index() {
   const [desktopSearchInput, setDesktopSearchInput] = useState("");
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSubscriptionCheckoutOpen, setIsSubscriptionCheckoutOpen] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<PlatformPack | null>(null);
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
+  const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
+  const [subscriptionNotes, setSubscriptionNotes] = useState("");
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
@@ -424,8 +429,10 @@ function Index() {
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
+  const fetchActivePlatformPacks = useServerFn(listActivePlatformPacks);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
+  const submitPlatformSubscriptionOrder = useServerFn(createPlatformSubscriptionOrder);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -510,6 +517,13 @@ function Index() {
     enabled: !!selectedNeighborhoodId,
     refetchInterval: selectedNeighborhoodId ? 10_000 : false,
   });
+  const platformPacksQuery = useQuery({
+    queryKey: ["customer", "platform-packs", selectedNeighborhoodId || null],
+    queryFn: () => fetchActivePlatformPacks({ data: { neighborhoodId: selectedNeighborhoodId } }),
+    enabled: !!selectedNeighborhoodId,
+    staleTime: 20_000,
+    refetchInterval: selectedNeighborhoodId ? 20_000 : false,
+  });
   const predictiveSearchQuery = useQuery({
     queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
     queryFn: () =>
@@ -524,6 +538,24 @@ function Index() {
     staleTime: 8_000,
   });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
+  const subscriptionCheckoutMutation = useMutation({
+    mutationFn: (payload: {
+      packId: string;
+      customerName: string;
+      customerPhone: string;
+      neighborhoodId: string;
+      deliveryNotes: string;
+      preferredStartDate: string;
+      preferredDeliveryTime: string;
+    }) => submitPlatformSubscriptionOrder({ data: payload }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession?.phoneNumber ?? null] });
+      toast.success("Subscription activated successfully.");
+      setIsSubscriptionCheckoutOpen(false);
+      setSelectedPack(null);
+      setSubscriptionNotes("");
+    },
+  });
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
