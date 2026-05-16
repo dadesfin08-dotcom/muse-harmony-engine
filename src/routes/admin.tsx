@@ -8325,6 +8325,149 @@ function SubscribersSection({
   );
 }
 
+function PackAnalyticsSection({
+  analytics,
+  isLoading,
+  isFetching,
+}: {
+  analytics: PlatformPacksAnalytics | undefined;
+  isLoading: boolean;
+  isFetching: boolean;
+}) {
+  const growthData = analytics?.subscriptionGrowth ?? [];
+  const popularityData = analytics?.packPopularity ?? [];
+  const generatedLabel = analytics?.generatedAt
+    ? new Date(analytics.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    : "--";
+
+  const kpiCards: Array<{
+    title: string;
+    value: string;
+    sub: string;
+    icon: ComponentType<{ className?: string }>;
+  }> = [
+    {
+      title: "Total Active Subscribers",
+      value: String(analytics?.kpis.totalActiveSubscribers ?? 0),
+      sub: "Currently active memberships",
+      icon: Users,
+    },
+    {
+      title: "Monthly Recurring Revenue (MRR)",
+      value: `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(analytics?.kpis.monthlyRecurringRevenueMad ?? 0)} MAD`,
+      sub: "Projected monthly run-rate",
+      icon: CircleDollarSign,
+    },
+    {
+      title: "Total Packs Delivered",
+      value: String(analytics?.kpis.totalPacksDelivered ?? 0),
+      sub: "Completed prepaid subscription deliveries",
+      icon: PackageCheck,
+    },
+    {
+      title: "Churn Rate",
+      value: `${(analytics?.kpis.churnRate ?? 0).toFixed(1)}%`,
+      sub: `${analytics?.kpis.churnedCount ?? 0} paused/cancelled of ${analytics?.kpis.totalSubscriptions ?? 0}`,
+      icon: TrendingDown,
+    },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <section className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/90 px-4 py-3 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur">
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">Pack Analytics</p>
+          <p className="text-xs text-muted-foreground">D2C subscription intelligence with prepaid 0.00 MAD delivery isolation.</p>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+          <Landmark className="size-3.5" />
+          {isFetching ? "Syncing..." : `Updated ${generatedLabel}`}
+        </span>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kpiCards.map((card) => (
+          <article
+            key={card.title}
+            className="rounded-2xl border border-border/70 bg-card/90 p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{card.title}</p>
+                <p className="mt-2 text-3xl font-semibold text-foreground">{isLoading ? "..." : card.value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{card.sub}</p>
+              </div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-success/30 bg-success/10 text-success">
+                <card.icon className="size-4" />
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[2fr_1fr]">
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Subscription Growth</h2>
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs text-success">
+              <TrendingUp className="size-3.5" />
+              Last 30 days
+            </span>
+          </div>
+          {isLoading ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+              Loading subscription trend...
+            </div>
+          ) : (
+            <ChartContainer config={platformGrowthChartConfig} className="h-72 w-full">
+              <LineChart data={growthData} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Line
+                  type="monotone"
+                  dataKey="subscriptions"
+                  stroke="var(--color-subscriptions)"
+                  strokeWidth={2.6}
+                  dot={{ r: 2.5 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </article>
+
+        <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">Pack Popularity</h2>
+            <Users className="size-4 text-muted-foreground" />
+          </div>
+          {isLoading ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+              Loading pack adoption...
+            </div>
+          ) : popularityData.length === 0 ? (
+            <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-4 text-center text-sm text-muted-foreground">
+              No active subscribers yet.
+            </div>
+          ) : (
+            <ChartContainer config={platformPopularityChartConfig} className="h-72 w-full">
+              <BarChart data={popularityData.slice(0, 8)} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="packName" tickLine={false} axisLine={false} interval={0} angle={-20} textAnchor="end" height={56} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={34} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                <Bar dataKey="activeSubscribers" fill="var(--color-activeSubscribers)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          )}
+        </article>
+      </section>
+    </div>
+  );
+}
+
 function OrdersSection({
   orders,
   cyclists,
