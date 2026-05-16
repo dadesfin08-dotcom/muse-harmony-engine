@@ -1027,25 +1027,11 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
             completed_deliveries: nextCompleted,
             deliveries_completed: nextCompleted,
             status: isCycleComplete ? "completed" : "active",
-          });
-          
-        if (!subscriptionProgressError) {
-          const { error: scopedUpdateError } = await (supabaseAdmin as any)
-            .from("platform_subscriptions")
-            .update({
-              completed_deliveries: nextCompleted,
-              deliveries_completed: nextCompleted,
-              status: isCycleComplete ? "completed" : "active",
-            })
-            .eq("id", order.subscription_id);
-
-          if (scopedUpdateError) {
-            throw new Error(scopedUpdateError.message ?? "Failed to update subscription completion progress.");
-          }
-        }
+          })
+          .eq("id", order.subscription_id);
 
         if (subscriptionProgressError) {
-          throw new Error(subscriptionProgressError.message);
+          throw new Error(subscriptionProgressError.message ?? "Failed to update subscription completion progress.");
         }
       }
 
