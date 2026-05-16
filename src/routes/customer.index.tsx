@@ -2439,6 +2439,10 @@ function Index() {
                           Delivery {Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1))} of {Math.max(totalDeliveries, 1)}
                         </p>
                       </div>
+                    ) : packSubscriptionState?.status === "paused" ? (
+                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
+                        Paused — View details to resume
+                      </div>
                     ) : (
                       <Button
                         type="button"
