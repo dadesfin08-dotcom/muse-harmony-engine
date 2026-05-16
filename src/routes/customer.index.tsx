@@ -1377,6 +1377,26 @@ function Index() {
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
   const deliveredCustomerOrders = allCustomerOrders.filter((order) => isDeliveredOrderStatus(order.status));
+  const customerSubscriptions =
+    (customerSubscriptionsQuery.data ?? []) as Array<{
+      id: string;
+      packName: string;
+      status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
+      completionPercent: number;
+      completedDeliveries: number;
+      totalDeliveries: number;
+      agreedPriceMad: number;
+      createdAt: string;
+    }>;
+  const hasCustomerSubscriptions = customerSubscriptions.length > 0;
+  const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
+    if (status === "pending") return "Pending Admin Review / قيد المراجعة";
+    if (status === "active") return "Active";
+    if (status === "completed") return "Subscription finished";
+    if (status === "paused") return "Paused";
+    if (status === "expired") return "Expired";
+    return "Cancelled";
+  };
 
   const addToCart = (product: Product, selectedVariant?: string | null) => {
     if (!selectedNeighborhoodId) {
