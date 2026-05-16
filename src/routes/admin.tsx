@@ -8078,7 +8078,7 @@ function SubscribersSection({
     customerName: string;
     customerPhone: string;
     packName: string;
-    status: "active" | "paused" | "expired" | "cancelled";
+    status: "pending" | "active" | "paused" | "expired" | "cancelled";
     startDate: string;
     expirationDate: string | null;
     nextScheduledDeliveryDate: string | null;
@@ -8090,7 +8090,8 @@ function SubscribersSection({
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
   statusFilter: "all" | "active" | "paused" | "expired" | "cancelled";
-  onStatusFilterChange: (value: "all" | "active" | "paused" | "expired" | "cancelled") => void;
+  onStatusFilterChange: (value: "all" | "pending" | "active" | "paused" | "expired" | "cancelled") => void;
+  onApprove: (subscriptionId: string) => void;
   onPause: (subscriptionId: string) => void;
   onResume: (subscriptionId: string) => void;
   onCancel: (subscriptionId: string) => void;
@@ -8119,7 +8120,8 @@ function SubscribersSection({
   }>;
   historyLoading: boolean;
 }) {
-  const statusBadgeClass: Record<"active" | "paused" | "expired" | "cancelled", string> = {
+  const statusBadgeClass: Record<"pending" | "active" | "paused" | "expired" | "cancelled", string> = {
+    pending: "bg-chart-4/20 text-chart-4",
     active: "bg-success/20 text-success",
     paused: "bg-chart-4/20 text-chart-4",
     expired: "bg-muted text-muted-foreground",
@@ -8162,6 +8164,7 @@ function SubscribersSection({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="paused">Paused</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
@@ -8239,6 +8242,12 @@ function SubscribersSection({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
+                        {subscriber.status === "pending" ? (
+                          <DropdownMenuItem onClick={() => onApprove(subscriber.id)}>
+                            <PlayCircle className="size-4" />
+                            Approve
+                          </DropdownMenuItem>
+                        ) : null}
                         {subscriber.status === "active" ? (
                           <DropdownMenuItem onClick={() => onPause(subscriber.id)}>
                             <PauseCircle className="size-4" />
