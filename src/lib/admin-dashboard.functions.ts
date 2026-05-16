@@ -72,6 +72,38 @@ type PlatformPackFeatureRow = {
   sort_order: number;
 };
 
+type PlatformSubscriptionStatus = "active" | "paused" | "expired" | "cancelled";
+
+type PlatformSubscriptionRow = {
+  id: string;
+  customer_user_id: string;
+  customer_name: string;
+  customer_phone: string | null;
+  pack_id: string;
+  status: PlatformSubscriptionStatus;
+  start_date: string;
+  expiration_date: string | null;
+  next_scheduled_delivery_date: string | null;
+  lifetime_revenue_mad: number;
+  deliveries_completed: number;
+  deliveries_expected: number;
+  created_at: string;
+};
+
+type PlatformSubscriptionOrderHistoryRow = {
+  id: string;
+  created_at: string;
+  delivered_at: string | null;
+  status: AdminOrderStatus;
+  cyclist_id: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  item_count: number | null;
+  total_price: number | null;
+  cash_to_collect_from_customer: number | null;
+  order_items: unknown;
+};
+
 const platformPackInputSchema = z.object({
   nameEn: z.string().trim().min(1).max(160),
   nameFr: z.string().trim().max(160).nullable().optional(),
@@ -107,6 +139,15 @@ const autoDispatchSubscriptionOrderInputSchema = z.object({
 const updateSubscriptionOrderStatusInputSchema = z.object({
   orderId: z.string().uuid(),
   status: z.enum(["new", "preparing", "ready", "delivering", "delivered", "cancelled"]),
+});
+
+const updatePlatformSubscriberStatusInputSchema = z.object({
+  subscriptionId: z.string().uuid(),
+  status: z.enum(["active", "paused", "expired", "cancelled"]),
+});
+
+const getPlatformSubscriberHistoryInputSchema = z.object({
+  subscriptionId: z.string().uuid(),
 });
 
 type AdminVendorRow = {
