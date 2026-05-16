@@ -8333,6 +8333,9 @@ function SubscribersSection({
   const [approvalModalTarget, setApprovalModalTarget] = useState<null | {
     subscriptionId: string;
     customerName: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    packQuantity: number;
     packName: string;
   }>(null);
   const [approvalForm, setApprovalForm] = useState({
@@ -8505,6 +8508,9 @@ function SubscribersSection({
                               setApprovalModalTarget({
                                 subscriptionId: subscriber.id,
                                 customerName: subscriber.customerName,
+                                contactPhone: subscriber.contactPhone,
+                                deliveryAddress: subscriber.deliveryAddress,
+                                packQuantity: subscriber.packQuantity,
                                 packName: subscriber.packName,
                               });
                               setApprovalForm({
@@ -8562,6 +8568,9 @@ function SubscribersSection({
             <div className="rounded-md border border-border bg-muted/20 p-3">
               <p className="text-sm font-medium text-foreground">{approvalModalTarget?.customerName ?? "Subscriber"}</p>
               <p className="text-xs text-muted-foreground">{approvalModalTarget?.packName ?? "Pack"}</p>
+              <p className="text-xs text-muted-foreground">Phone: {approvalModalTarget?.contactPhone ?? "—"}</p>
+              <p className="text-xs text-muted-foreground">Qty: {Math.max(1, Number(approvalModalTarget?.packQuantity ?? 1))}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">Address: {approvalModalTarget?.deliveryAddress ?? "—"}</p>
             </div>
 
             <div className="space-y-2">
