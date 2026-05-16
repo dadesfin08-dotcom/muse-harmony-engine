@@ -196,6 +196,7 @@ import {
   getAdminOverviewAnalytics,
   getBrandEngineAnalytics,
   getPlatformPacksAnalytics,
+  activatePlatformSubscriber,
   listPlatformPacks,
   createPlatformPack,
   updatePlatformPack,
@@ -690,6 +691,7 @@ function AdminPage() {
   const fetchPlatformPacksAnalytics = useServerFn(getPlatformPacksAnalytics);
   const fetchPlatformPacks = useServerFn(listPlatformPacks);
   const fetchPlatformSubscribers = useServerFn(listPlatformSubscribers);
+  const activatePlatformSubscriberInDatabase = useServerFn(activatePlatformSubscriber);
   const createPlatformPackInDatabase = useServerFn(createPlatformPack);
   const updatePlatformPackInDatabase = useServerFn(updatePlatformPack);
   const deletePlatformPackInDatabase = useServerFn(deletePlatformPack);
@@ -1235,12 +1237,29 @@ function AdminPage() {
     mutationFn: ({ subscriptionId, status }: { subscriptionId: string; status: "pending" | "active" | "paused" | "expired" | "cancelled" }) =>
       updatePlatformSubscriberStatusInDatabase({ data: { subscriptionId, status } }),
     onSuccess: async () => {
-      await platformSubscribersQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["admin", "platform-subscribers"] });
       toast.success("Subscriber status updated.");
     },
     onError: (error) => {
       console.error("Failed to update subscriber status:", error);
       toast.error(error instanceof Error ? error.message : "Failed to update subscriber status.");
+    },
+  });
+
+  const activatePlatformSubscriberMutation = useMutation({
+    mutationFn: ({ subscriptionId, agreedPriceMad, totalDeliveries }: { subscriptionId: string; agreedPriceMad: number; totalDeliveries: number }) =>
+      activatePlatformSubscriberInDatabase({ data: { subscriptionId, agreedPriceMad, totalDeliveries } }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "platform-subscribers"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "platform-packs-analytics"] }),
+      ]);
+      toast.success("Subscription activated and first delivery order created.");
+    },
+    onError: (error) => {
+      console.error("Failed to activate subscriber:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to activate subscription.");
     },
   });
 
