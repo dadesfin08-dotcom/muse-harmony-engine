@@ -646,6 +646,18 @@ function CyclistDashboardPage() {
           >
             {t("cyclist.activeDeliveriesTab")}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveView("platformPacks")}
+            className={`h-12 min-w-0 flex-1 rounded-xl px-2 text-center text-[13px] font-semibold whitespace-nowrap transition-all duration-200 ${
+              activeView === "platformPacks"
+                ? "bg-primary text-primary-foreground"
+                : "border border-border bg-card text-muted-foreground"
+            }`}
+          >
+            {t("cyclist.platformPacksTab")}
+          </button>
         </div>
       </nav>
 
@@ -945,6 +957,94 @@ function OrderCard({
       <Button className={`mt-4 h-11 w-full rounded-xl text-base font-semibold ${actionClass}`} onClick={onAction} disabled={isBusy}>
         <ActionIcon className="size-4" />
         {isBusy ? t("cyclist.refreshing") : actionLabel}
+      </Button>
+    </article>
+  );
+}
+
+function PlatformPackOrderCard({
+  order,
+  isActiveDelivery,
+  isBusy,
+  onAccept,
+  onDeliver,
+}: {
+  order: CyclistOrderCard;
+  isActiveDelivery: boolean;
+  isBusy: boolean;
+  onAccept: () => void;
+  onDeliver: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 rounded-xl border border-highlight/60 bg-highlight/10 p-2.5">
+        <p className="text-[12px] font-bold text-highlight-foreground">
+          PREPAID - COLLECT 0.00 MAD / باقة مسبقة الدفع - 0 درهم
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{order.customerName}</p>
+            <p className="text-xs text-muted-foreground">{order.contactPhone}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={`tel:${order.contactPhone}`}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground"
+              aria-label={t("cyclist.callCustomerAria")}
+            >
+              <Phone className="size-4" />
+            </a>
+            <a
+              href={`https://maps.google.com/?q=${encodeURIComponent(order.deliveryAddress)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground"
+              aria-label={t("cyclist.openMapAria")}
+            >
+              <MapPin className="size-4" />
+            </a>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-2.5">
+          <p className="mb-1 text-[11px] font-semibold uppercase text-muted-foreground">{t("cyclist.destinationLabel")}</p>
+          <p className="text-sm font-medium text-foreground">{order.deliveryAddress}</p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-2.5">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase text-muted-foreground">{t("cyclist.packPayloadLabel")}</p>
+            <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground">
+              <PackageCheck className="size-3.5" />
+              {t("cyclist.quantity")}: {order.packQuantity}
+            </span>
+          </div>
+          <div className="space-y-1">
+            {order.items.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("cyclist.noOrderItems")}</p>
+            ) : (
+              order.items.map((item, index) => (
+                <p key={`${order.id}-platform-pack-item-${index}`} className="text-xs text-foreground">
+                  • {item.name} × {item.quantity}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Button
+        className="mt-4 h-11 w-full rounded-xl text-base font-semibold"
+        onClick={isActiveDelivery ? onDeliver : onAccept}
+        disabled={isBusy}
+      >
+        {isActiveDelivery ? <Camera className="size-4" /> : <Truck className="size-4" />}
+        {isBusy ? t("cyclist.refreshing") : isActiveDelivery ? t("cyclist.scanToDeliver") : t("cyclist.acceptPickup")}
       </Button>
     </article>
   );
