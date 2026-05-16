@@ -2980,6 +2980,68 @@ function Index() {
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
+                  {customerSubscriptionsQuery.isLoading ? (
+                    <AppEmptyState title="Loading subscriptions..." subtitle="Syncing your contract status." className="p-4" />
+                  ) : hasCustomerSubscriptions ? (
+                    <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">My Subscriptions</p>
+                      <div className="space-y-2">
+                        {customerSubscriptions.map((subscription) => {
+                          const isPending = subscription.status === "pending";
+                          const isActive = subscription.status === "active";
+                          const isCompleted = subscription.status === "completed";
+
+                          return (
+                            <article key={subscription.id} className="space-y-2 rounded-xl border border-border bg-background p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-foreground">{subscription.packName}</p>
+                                  <p className="text-xs text-muted-foreground">#{subscription.id.slice(0, 8).toUpperCase()}</p>
+                                </div>
+                                <Badge
+                                  className={
+                                    isPending
+                                      ? "border border-chart-4/40 bg-chart-4/20 text-chart-4"
+                                      : isCompleted
+                                        ? "bg-success/20 text-success"
+                                        : "bg-primary/15 text-primary"
+                                  }
+                                >
+                                  {getSubscriptionStatusLabel(subscription.status)}
+                                </Badge>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Progress
+                                  value={subscription.completionPercent}
+                                  className="h-2 bg-muted"
+                                  indicatorClassName="bg-success"
+                                  aria-label={`Subscription progress ${subscription.completionPercent}%`}
+                                />
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                  <span>
+                                    {subscription.completedDeliveries}/{Math.max(subscription.totalDeliveries, 0)} deliveries
+                                  </span>
+                                  <span>{subscription.completionPercent}%</span>
+                                </div>
+                              </div>
+
+                              {isPending ? (
+                                <p className="text-xs font-medium text-chart-4">Awaiting platform approval before activation.</p>
+                              ) : null}
+                              {isActive ? (
+                                <p className="text-xs font-medium text-success">Subscription active — deliveries are being tracked live.</p>
+                              ) : null}
+                              {isCompleted ? (
+                                <p className="text-xs font-medium text-success">Subscription finished.</p>
+                              ) : null}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
                   {customerOrdersQuery.isLoading ? (
                     <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
                   ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
@@ -3391,6 +3453,68 @@ function Index() {
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
                   <div className="space-y-3">
+                    {customerSubscriptionsQuery.isLoading ? (
+                      <AppEmptyState title="Loading subscriptions..." subtitle="Syncing your contract status." className="p-4" />
+                    ) : hasCustomerSubscriptions ? (
+                      <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">My Subscriptions</p>
+                        <div className="space-y-2">
+                          {customerSubscriptions.map((subscription) => {
+                            const isPending = subscription.status === "pending";
+                            const isActive = subscription.status === "active";
+                            const isCompleted = subscription.status === "completed";
+
+                            return (
+                              <article key={subscription.id} className="space-y-2 rounded-xl border border-border bg-background p-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-semibold text-foreground">{subscription.packName}</p>
+                                    <p className="text-xs text-muted-foreground">#{subscription.id.slice(0, 8).toUpperCase()}</p>
+                                  </div>
+                                  <Badge
+                                    className={
+                                      isPending
+                                        ? "border border-chart-4/40 bg-chart-4/20 text-chart-4"
+                                        : isCompleted
+                                          ? "bg-success/20 text-success"
+                                          : "bg-primary/15 text-primary"
+                                    }
+                                  >
+                                    {getSubscriptionStatusLabel(subscription.status)}
+                                  </Badge>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Progress
+                                    value={subscription.completionPercent}
+                                    className="h-2 bg-muted"
+                                    indicatorClassName="bg-success"
+                                    aria-label={`Subscription progress ${subscription.completionPercent}%`}
+                                  />
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>
+                                      {subscription.completedDeliveries}/{Math.max(subscription.totalDeliveries, 0)} deliveries
+                                    </span>
+                                    <span>{subscription.completionPercent}%</span>
+                                  </div>
+                                </div>
+
+                                {isPending ? (
+                                  <p className="text-xs font-medium text-chart-4">Awaiting platform approval before activation.</p>
+                                ) : null}
+                                {isActive ? (
+                                  <p className="text-xs font-medium text-success">Subscription active — deliveries are being tracked live.</p>
+                                ) : null}
+                                {isCompleted ? (
+                                  <p className="text-xs font-medium text-success">Subscription finished.</p>
+                                ) : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    ) : null}
+
                     {customerOrdersQuery.isLoading ? (
                       <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
                     ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
