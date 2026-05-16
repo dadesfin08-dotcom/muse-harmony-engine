@@ -166,6 +166,39 @@ const platformPackDetailsInputSchema = z.object({
   packId: z.string().uuid(),
 });
 
+type PlatformPackItem = {
+  name: string;
+  imageUrl: string | null;
+  quantity: number | null;
+  unit: string | null;
+};
+
+function normalizePlatformPackItem(row: { item_label: string; item_data?: unknown }): PlatformPackItem {
+  const data = row.item_data && typeof row.item_data === "object" && !Array.isArray(row.item_data)
+    ? (row.item_data as Record<string, unknown>)
+    : null;
+
+  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
+  const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
+  const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
+
+  const quantitySource = data?.quantity;
+  const quantityParsed =
+    typeof quantitySource === "number"
+      ? quantitySource
+      : typeof quantitySource === "string"
+        ? Number(quantitySource)
+        : Number.NaN;
+
+  return {
+    name: nameFromData || nameFromLabel,
+    imageUrl: imageUrlRaw || null,
+    quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
+    unit: unitRaw || null,
+  };
+}
+
 type MasterProductRow = {
   id: string;
   product_name: string;
