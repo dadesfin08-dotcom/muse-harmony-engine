@@ -162,6 +162,10 @@ const activePlatformPacksInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
 });
 
+const platformPackDetailsInputSchema = z.object({
+  packId: z.string().uuid(),
+});
+
 type MasterProductRow = {
   id: string;
   product_name: string;
@@ -1439,6 +1443,82 @@ export const listActivePlatformPacks = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("listActivePlatformPacks failed:", error);
       throw new Error("Failed to load subscription packs.");
+    }
+  });
+
+export const getPlatformPackDetails = createServerFn({ method: "POST" })
+  .inputValidator((input) => platformPackDetailsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: packData, error: packError } = await (supabaseAdmin as any)
+        .from("platform_packs")
+        .select(
+          "id, name_en, name_fr, name_ar, description, base_price_mad, billing_cycle, price_per_unit, unit_type, delivery_window, image_url, is_active",
+        )
+        .eq("id", data.packId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (packError) {
+        throw new Error(packError.message);
+      }
+
+      if (!packData?.id) {
+        return null;
+      }
+
+      const [{ data: itemRows, error: itemError }, { data: featureRows, error: featureError }] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("pack_items")
+          .select("item_label, sort_order")
+          .eq("pack_id", data.packId)
+          .order("sort_order", { ascending: true }),
+        (supabaseAdmin as any)
+          .from("pack_features")
+          .select("feature_label, sort_order")
+          .eq("pack_id", data.packId)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      if (itemError) {
+        throw new Error(itemError.message);
+      }
+      if (featureError) {
+        throw new Error(featureError.message);
+      }
+
+      const pack = packData as {
+        id: string;
+        name_en: string;
+        name_fr: string | null;
+        name_ar: string | null;
+        description: string | null;
+        base_price_mad: number;
+        billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY";
+        price_per_unit: number;
+        unit_type: string;
+        delivery_window: string | null;
+        image_url: string | null;
+      };
+
+      return {
+        id: pack.id,
+        name: pack.name_en,
+        nameFr: pack.name_fr,
+        nameAr: pack.name_ar,
+        description: pack.description,
+        basePriceMad: Number(pack.base_price_mad ?? 0),
+        billingCycle: pack.billing_cycle,
+        pricePerUnit: Number(pack.price_per_unit ?? 0),
+        unitType: pack.unit_type,
+        deliveryWindow: pack.delivery_window,
+        imageUrl: pack.image_url,
+        packItems: ((itemRows ?? []) as Array<{ item_label: string }>).map((row) => row.item_label),
+        packFeatures: ((featureRows ?? []) as Array<{ feature_label: string }>).map((row) => row.feature_label),
+      };
+    } catch (error) {
+      console.error("getPlatformPackDetails failed:", error);
+      throw new Error("Failed to load pack details.");
     }
   });
 

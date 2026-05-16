@@ -28,6 +28,7 @@ import { Route as CustomerAllProductsRouteImport } from './routes/customer.all-p
 import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
 import { Route as VendorOrderOrderIdRouteImport } from './routes/vendor.order.$orderId'
 import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
+import { Route as CustomerPlatformPacksPackIdRouteImport } from './routes/customer.platform-packs.$packId'
 import { Route as CustomerOrderOrderIdRouteImport } from './routes/customer.order.$orderId'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 import { Route as AdminServiceZonesCommuneIdRouteImport } from './routes/admin.service-zones.$communeId'
@@ -127,6 +128,12 @@ const CustomerProductIdRoute = CustomerProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => CustomerRoute,
 } as any)
+const CustomerPlatformPacksPackIdRoute =
+  CustomerPlatformPacksPackIdRouteImport.update({
+    id: '/platform-packs/$packId',
+    path: '/platform-packs/$packId',
+    getParentRoute: () => CustomerRoute,
+  } as any)
 const CustomerOrderOrderIdRoute = CustomerOrderOrderIdRouteImport.update({
   id: '/order/$orderId',
   path: '/order/$orderId',
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
+  '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -188,6 +196,7 @@ export interface FileRoutesByTo {
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
+  '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -213,6 +222,7 @@ export interface FileRoutesById {
   '/admin/service-zones/$communeId': typeof AdminServiceZonesCommuneIdRoute
   '/customer/categories/$id': typeof CustomerCategoriesIdRoute
   '/customer/order/$orderId': typeof CustomerOrderOrderIdRoute
+  '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
 }
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
+    | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   fileRoutesByTo: FileRoutesByTo
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
+    | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   id:
@@ -286,6 +298,7 @@ export interface FileRouteTypes {
     | '/admin/service-zones/$communeId'
     | '/customer/categories/$id'
     | '/customer/order/$orderId'
+    | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
   fileRoutesById: FileRoutesById
@@ -441,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CustomerProductIdRouteImport
       parentRoute: typeof CustomerRoute
     }
+    '/customer/platform-packs/$packId': {
+      id: '/customer/platform-packs/$packId'
+      path: '/platform-packs/$packId'
+      fullPath: '/customer/platform-packs/$packId'
+      preLoaderRoute: typeof CustomerPlatformPacksPackIdRouteImport
+      parentRoute: typeof CustomerRoute
+    }
     '/customer/order/$orderId': {
       id: '/customer/order/$orderId'
       path: '/order/$orderId'
@@ -504,6 +524,7 @@ interface CustomerRouteChildren {
   CustomerFlashDealsRoute: typeof CustomerFlashDealsRoute
   CustomerIndexRoute: typeof CustomerIndexRoute
   CustomerOrderOrderIdRoute: typeof CustomerOrderOrderIdRoute
+  CustomerPlatformPacksPackIdRoute: typeof CustomerPlatformPacksPackIdRoute
   CustomerProductIdRoute: typeof CustomerProductIdRoute
 }
 
@@ -513,6 +534,7 @@ const CustomerRouteChildren: CustomerRouteChildren = {
   CustomerFlashDealsRoute: CustomerFlashDealsRoute,
   CustomerIndexRoute: CustomerIndexRoute,
   CustomerOrderOrderIdRoute: CustomerOrderOrderIdRoute,
+  CustomerPlatformPacksPackIdRoute: CustomerPlatformPacksPackIdRoute,
   CustomerProductIdRoute: CustomerProductIdRoute,
 }
 
