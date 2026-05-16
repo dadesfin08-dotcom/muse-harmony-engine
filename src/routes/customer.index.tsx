@@ -371,11 +371,6 @@ function Index() {
   const [desktopSearchInput, setDesktopSearchInput] = useState("");
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isSubscriptionCheckoutOpen, setIsSubscriptionCheckoutOpen] = useState(false);
-  const [selectedPack, setSelectedPack] = useState<PlatformPack | null>(null);
-  const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
-  const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
-  const [subscriptionNotes, setSubscriptionNotes] = useState("");
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
@@ -1037,80 +1032,8 @@ function Index() {
     }));
   }, [getLocalizedText, language, platformPacksQuery.data]);
 
-  useEffect(() => {
-    if (isSubscriptionCheckoutOpen) {
-      return;
-    }
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    setSubscriptionStartDate(tomorrow.toISOString().slice(0, 10));
-    setSubscriptionDeliveryTime(language === "ar" ? "الصباح" : language === "fr" ? "Morning" : "Morning");
-    setSubscriptionNotes("");
-  }, [isSubscriptionCheckoutOpen, language]);
-
   const openSubscriptionCheckout = (pack: PlatformPack) => {
-    setSelectedPack(pack);
-    setIsSubscriptionCheckoutOpen(true);
-  };
-
-  const confirmSubscriptionCheckout = async () => {
-    if (!selectedPack?.id) {
-      toast.error("Select a subscription pack first.");
-      return;
-    }
-
-    if (!customerSession?.phoneNumber) {
-      setIsCustomerAuthModalOpen(true);
-      toast.error("Please login first.");
-      return;
-    }
-
-    if (!selectedNeighborhoodId) {
-      setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
-      return;
-    }
-
-    if (!fullName.trim()) {
-      toast.error("Please complete your profile name before subscribing.");
-      return;
-    }
-
-    if (!subscriptionStartDate) {
-      toast.error("Please select a start date.");
-      return;
-    }
-
-    if (!subscriptionDeliveryTime.trim()) {
-      toast.error("Please select your preferred delivery time.");
-      return;
-    }
-
-    try {
-      await saveCustomerProfile({
-        data: {
-          phoneNumber: customerSession.phoneNumber,
-          fullName: fullName.trim(),
-          address: address.trim(),
-          savedInstructions: deliveryNotes.trim(),
-          neighborhoodId: selectedNeighborhoodId,
-        },
-      });
-
-      await subscriptionCheckoutMutation.mutateAsync({
-        packId: selectedPack.id,
-        customerName: fullName.trim(),
-        customerPhone: customerSession.phoneNumber,
-        neighborhoodId: selectedNeighborhoodId,
-        deliveryNotes: subscriptionNotes.trim(),
-        preferredStartDate: subscriptionStartDate,
-        preferredDeliveryTime: subscriptionDeliveryTime.trim(),
-      });
-    } catch (error) {
-      console.error("Failed to create platform subscription checkout:", error);
-      toast.error("Failed to activate subscription. Please try again.");
-    }
+    void navigate({ to: "/customer/platform-packs/$packId", params: { packId: pack.id } });
   };
 
   const countdownLabel = useMemo(() => {
