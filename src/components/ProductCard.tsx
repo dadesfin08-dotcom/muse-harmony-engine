@@ -75,7 +75,7 @@ export function ProductCard({
   const resolvedVariant = normalizedVariants.length > 0 ? variantValue || normalizedVariants[0] : null;
 
   return (
-    <article className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       <Link to="/customer/product/$id" params={{ id }} className="block">
         <div className="relative h-28 w-full bg-gray-50">
           <img
@@ -92,7 +92,7 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className="space-y-1.5 p-3">
+      <div className="flex flex-1 flex-col space-y-1.5 p-3">
         {normalizedVariants.length > 0 ? (
           <select
             value={resolvedVariant ?? ""}
@@ -114,7 +114,12 @@ export function ProductCard({
 
         <div className="flex items-start justify-between gap-1.5">
           <Link to="/customer/product/$id" params={{ id }} className="min-w-0 flex-1">
-            <h2 className="line-clamp-1 text-sm font-semibold text-gray-900">{name}</h2>
+            <h2
+              title={name}
+              className="h-11 overflow-hidden text-ellipsis text-sm font-semibold leading-5 text-gray-900 line-clamp-2"
+            >
+              {name}
+            </h2>
           </Link>
           <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
             <Package className="size-3" />
@@ -123,7 +128,7 @@ export function ProductCard({
           </span>
         </div>
 
-        <div className="flex items-center justify-between gap-2 pt-0">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-0">
           <div className={cn("flex items-center gap-1.5", isFlashDeal && "flex flex-wrap")}>
             <p className={cn("text-xl font-extrabold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
               {Number(price ?? 0)}{" "}
