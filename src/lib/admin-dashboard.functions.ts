@@ -1029,7 +1029,7 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
         "id, name_en, name_fr, name_ar, description, base_price_mad, billing_cycle, price_per_unit, unit_type, delivery_window, image_url, is_active, created_at, updated_at",
       )
       .order("created_at", { ascending: false }),
-    (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, sort_order").order("sort_order", { ascending: true }),
+    (supabaseAdmin as any).from("pack_items").select("id, pack_id, item_label, item_data, sort_order").order("sort_order", { ascending: true }),
     (supabaseAdmin as any)
       .from("pack_features")
       .select("id, pack_id, feature_label, sort_order")
@@ -1040,10 +1040,10 @@ export const listPlatformPacks = createServerFn({ method: "GET" }).handler(async
   if (itemsRes.error) throw new Error(itemsRes.error.message ?? "Failed to load pack items.");
   if (featuresRes.error) throw new Error(featuresRes.error.message ?? "Failed to load pack features.");
 
-  const itemMap = new Map<string, string[]>();
+  const itemMap = new Map<string, PlatformPackItemValue[]>();
   for (const row of (itemsRes.data ?? []) as PlatformPackItemRow[]) {
     const current = itemMap.get(row.pack_id) ?? [];
-    current.push(row.item_label);
+    current.push(normalizePlatformPackItem(row));
     itemMap.set(row.pack_id, current);
   }
 
@@ -1102,7 +1102,8 @@ export const createPlatformPack = createServerFn({ method: "POST" })
       const { error: packItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: inserted.id,
-          item_label: item,
+          item_label: item.name,
+          item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
       );
@@ -1163,7 +1164,8 @@ export const updatePlatformPack = createServerFn({ method: "POST" })
       const { error: insertItemsError } = await (supabaseAdmin as any).from("pack_items").insert(
         data.packItems.map((item, index) => ({
           pack_id: data.id,
-          item_label: item,
+          item_label: item.name,
+          item_data: serializePlatformPackItem(item),
           sort_order: index,
         })),
       );
