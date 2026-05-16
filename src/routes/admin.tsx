@@ -3754,11 +3754,11 @@ function AdminPage() {
       if (platformPackForm.id === id) {
         resetPlatformPackForm();
       }
-      if (result.archived) {
-        toast.success(`Platform pack archived (linked to ${result.linkedSubscriptionsCount} subscription${result.linkedSubscriptionsCount === 1 ? "" : "s"}).`);
-      } else {
-        toast.success("Platform pack deleted.");
-      }
+      toast.success(
+        result.linkedSubscriptionsCount > 0
+          ? `Platform pack deleted (removed ${result.linkedSubscriptionsCount} linked subscription${result.linkedSubscriptionsCount === 1 ? "" : "s"}).`
+          : "Platform pack deleted.",
+      );
     } catch (error) {
       console.error("Failed to delete platform pack:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete platform pack.");
