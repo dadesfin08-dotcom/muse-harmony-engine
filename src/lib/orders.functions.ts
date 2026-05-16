@@ -1794,3 +1794,73 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
       throw new Error("Failed to load customer orders.");
     }
   });
+
+export const getCustomerSubscriptions = createServerFn({ method: "POST" })
+  .inputValidator((input) => getCustomerSubscriptionsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const [subscriptionsRes, packsRes] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("platform_subscriptions")
+          .select(
+            "id, customer_name, customer_phone, pack_id, status, start_date, expiration_date, next_scheduled_delivery_date, agreed_price, total_deliveries, completed_deliveries, created_at",
+          )
+          .eq("customer_phone", data.phoneNumber)
+          .order("created_at", { ascending: false }),
+        (supabaseAdmin as any).from("platform_packs").select("id, name_en, name_fr, name_ar"),
+      ]);
+
+      if (subscriptionsRes.error) {
+        throw new Error(subscriptionsRes.error.message);
+      }
+      if (packsRes.error) {
+        throw new Error(packsRes.error.message);
+      }
+
+      const packNameById = new Map(
+        ((packsRes.data ?? []) as Array<{ id: string; name_en: string; name_fr: string | null; name_ar: string | null }>).map((pack) => [
+          pack.id,
+          (pack.name_en?.trim() || pack.name_fr?.trim() || pack.name_ar?.trim() || "Unknown Pack"),
+        ]),
+      );
+
+      return ((subscriptionsRes.data ?? []) as Array<{
+        id: string;
+        customer_name: string;
+        customer_phone: string | null;
+        pack_id: string;
+        status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
+        start_date: string;
+        expiration_date: string | null;
+        next_scheduled_delivery_date: string | null;
+        agreed_price: number | null;
+        total_deliveries: number | null;
+        completed_deliveries: number | null;
+        created_at: string;
+      }>).map((row) => {
+        const completed = Number(row.completed_deliveries ?? 0);
+        const total = Number(row.total_deliveries ?? 0);
+        const completionPercent = total > 0 ? Math.max(0, Math.min(100, Math.round((completed / total) * 100))) : 0;
+
+        return {
+          id: row.id,
+          customerName: row.customer_name,
+          customerPhone: row.customer_phone,
+          packId: row.pack_id,
+          packName: packNameById.get(row.pack_id) ?? "Unknown Pack",
+          status: row.status,
+          startDate: row.start_date,
+          expirationDate: row.expiration_date,
+          nextScheduledDeliveryDate: row.next_scheduled_delivery_date,
+          agreedPriceMad: Number(row.agreed_price ?? 0),
+          totalDeliveries: total,
+          completedDeliveries: completed,
+          completionPercent,
+          createdAt: row.created_at,
+        };
+      });
+    } catch (error) {
+      console.error("getCustomerSubscriptions failed:", error);
+      throw new Error("Failed to load customer subscriptions.");
+    }
+  });
