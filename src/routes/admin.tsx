@@ -8064,6 +8064,7 @@ function SubscribersSection({
   onSearchTermChange,
   statusFilter,
   onStatusFilterChange,
+  onApprove,
   onPause,
   onResume,
   onCancel,
