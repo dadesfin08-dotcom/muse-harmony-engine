@@ -167,10 +167,18 @@ const platformPackDetailsInputSchema = z.object({
 });
 
 type PlatformPackItem = {
-  name: string;
+  nameEn: string;
+  nameFr: string | null;
+  nameAr: string | null;
   imageUrl: string | null;
   quantity: number | null;
   unit: string | null;
+};
+
+type PlatformPackFeature = {
+  textEn: string;
+  textFr: string | null;
+  textAr: string | null;
 };
 
 function normalizePlatformPackItem(row: { item_label: string; item_data?: unknown }): PlatformPackItem {
@@ -178,12 +186,18 @@ function normalizePlatformPackItem(row: { item_label: string; item_data?: unknow
     ? (row.item_data as Record<string, unknown>)
     : null;
 
-  const nameFromData = typeof data?.name === "string" ? data.name.trim() : "";
+  const nameEnFromData = typeof data?.name_en === "string"
+    ? data.name_en.trim()
+    : typeof data?.name === "string"
+      ? data.name.trim()
+      : "";
+  const nameFrFromData = typeof data?.name_fr === "string" ? data.name_fr.trim() : "";
+  const nameArFromData = typeof data?.name_ar === "string" ? data.name_ar.trim() : "";
   const nameFromLabel = typeof row.item_label === "string" ? row.item_label.trim() : "";
   const imageUrlRaw = typeof data?.image_url === "string" ? data.image_url.trim() : "";
   const unitRaw = typeof data?.unit === "string" ? data.unit.trim() : "";
 
-  const quantitySource = data?.quantity;
+  const quantitySource = data?.qty ?? data?.quantity;
   const quantityParsed =
     typeof quantitySource === "number"
       ? quantitySource
@@ -192,10 +206,29 @@ function normalizePlatformPackItem(row: { item_label: string; item_data?: unknow
         : Number.NaN;
 
   return {
-    name: nameFromData || nameFromLabel,
+    nameEn: nameEnFromData || nameFromLabel,
+    nameFr: nameFrFromData || null,
+    nameAr: nameArFromData || null,
     imageUrl: imageUrlRaw || null,
     quantity: Number.isFinite(quantityParsed) && quantityParsed >= 0 ? Number(quantityParsed) : null,
     unit: unitRaw || null,
+  };
+}
+
+function normalizePlatformPackFeature(row: { feature_label: string; feature_data?: unknown }): PlatformPackFeature {
+  const data = row.feature_data && typeof row.feature_data === "object" && !Array.isArray(row.feature_data)
+    ? (row.feature_data as Record<string, unknown>)
+    : null;
+
+  const textEnFromData = typeof data?.text_en === "string" ? data.text_en.trim() : "";
+  const textFrFromData = typeof data?.text_fr === "string" ? data.text_fr.trim() : "";
+  const textArFromData = typeof data?.text_ar === "string" ? data.text_ar.trim() : "";
+  const textFromLabel = typeof row.feature_label === "string" ? row.feature_label.trim() : "";
+
+  return {
+    textEn: textEnFromData || textFromLabel,
+    textFr: textFrFromData || null,
+    textAr: textArFromData || null,
   };
 }
 
