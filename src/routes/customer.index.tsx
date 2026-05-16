@@ -1062,17 +1062,6 @@ function Index() {
       return;
     }
 
-    const currentPackSubscription = activeOrPendingSubscriptionByPackId.get(pack.id);
-    if (currentPackSubscription?.status === "pending") {
-      toast.message("Pending Review / قيد المراجعة");
-      return;
-    }
-
-    if (currentPackSubscription?.status === "active") {
-      toast.message("This pack is already active in your subscriptions.");
-      return;
-    }
-
     setSelectedPack(pack);
     setIsSubscriptionCheckoutOpen(true);
   };
@@ -1458,6 +1447,15 @@ function Index() {
     return map;
   }, [customerSubscriptions]);
   const hasCustomerSubscriptions = customerSubscriptions.length > 0;
+  const selectedPackSubscriptionState = selectedPack
+    ? (activeOrPendingSubscriptionByPackId.get(selectedPack.id) ?? null)
+    : null;
+  const selectedPackCompletedDeliveries = Math.max(0, Number(selectedPackSubscriptionState?.completedDeliveries ?? 0));
+  const selectedPackTotalDeliveries = Math.max(0, Number(selectedPackSubscriptionState?.totalDeliveries ?? 0));
+  const selectedPackNextDeliveryNumber = Math.min(
+    selectedPackCompletedDeliveries + 1,
+    Math.max(selectedPackTotalDeliveries, 1),
+  );
   const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
     if (status === "pending") return "Pending Admin Review / قيد المراجعة";
     if (status === "active") return "Active";
