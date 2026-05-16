@@ -291,8 +291,12 @@ function CyclistDashboardPage() {
         }
 
         setIsUpdatingOrderId(orderId);
-        await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
-        toast.success("Order delivered. Cash kept with cyclist.");
+        const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
+        toast.success(
+          completionResult.nextStatus === "delivered_cash_with_cyclist"
+            ? "Order delivered. Cash kept with cyclist."
+            : "Order delivered successfully.",
+        );
       } else if (action === "vendor_handover") {
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
