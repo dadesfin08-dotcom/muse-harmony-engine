@@ -1,0 +1,1 @@
+ALTER TYPE public.platform_subscription_status ADD VALUE IF NOT EXISTS 'pending';

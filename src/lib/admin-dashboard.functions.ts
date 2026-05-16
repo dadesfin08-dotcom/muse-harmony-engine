@@ -27,6 +27,7 @@ type AdminOrderStatus =
 type AdminOrderRow = {
   id: string;
   vendor_id: string | null;
+  subscription_id?: string | null;
   customer_name: string | null;
   customer_phone: string;
   total_price: number;
@@ -72,7 +73,7 @@ type PlatformPackFeatureRow = {
   sort_order: number;
 };
 
-type PlatformSubscriptionStatus = "active" | "paused" | "expired" | "cancelled";
+type PlatformSubscriptionStatus = "pending" | "active" | "paused" | "expired" | "cancelled";
 
 type PlatformSubscriptionRow = {
   id: string;
@@ -143,7 +144,7 @@ const updateSubscriptionOrderStatusInputSchema = z.object({
 
 const updatePlatformSubscriberStatusInputSchema = z.object({
   subscriptionId: z.string().uuid(),
-  status: z.enum(["active", "paused", "expired", "cancelled"]),
+  status: z.enum(["pending", "active", "paused", "expired", "cancelled"]),
 });
 
 const getPlatformSubscriberHistoryInputSchema = z.object({
@@ -884,7 +885,7 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     (supabaseAdmin as any)
       .from("orders")
       .select(
-        "id, vendor_id, customer_name, customer_phone, total_price, item_count, order_items, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
+        "id, vendor_id, subscription_id, customer_name, customer_phone, total_price, item_count, order_items, status, created_at, order_category, cyclist_id, neighborhood_id, cash_to_collect_from_customer",
       )
       .order("created_at", { ascending: false }),
     (supabaseAdmin as any).from("vendors").select("id, store_name"),
@@ -905,8 +906,38 @@ export const listAdminOrders = createServerFn({ method: "GET" }).handler(async (
     ]),
   );
 
-  return ((ordersRes.data ?? []) as AdminOrderRow[]).map((order) => ({
+  const orders = (ordersRes.data ?? []) as AdminOrderRow[];
+  const subscriptionIds = Array.from(
+    new Set(
+      orders
+        .map((order) => order.subscription_id)
+        .filter((value): value is string => typeof value === "string" && value.length > 0),
+    ),
+  );
+
+  let subscriptionStatusById = new Map<string, PlatformSubscriptionStatus>();
+  if (subscriptionIds.length > 0) {
+    const { data: subscriptions, error: subscriptionsError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("id, status")
+      .in("id", subscriptionIds);
+
+    if (subscriptionsError) {
+      throw new Error(subscriptionsError.message);
+    }
+
+    subscriptionStatusById = new Map(
+      ((subscriptions ?? []) as Array<{ id: string; status: PlatformSubscriptionStatus }>).map((row) => [row.id, row.status]),
+    );
+  }
+
+  return orders.map((order) => ({
     id: order.id,
+    subscriptionId: order.subscription_id ?? null,
+    subscriptionStatus:
+      typeof order.subscription_id === "string" && order.subscription_id.length > 0
+        ? (subscriptionStatusById.get(order.subscription_id) ?? null)
+        : null,
     createdAt: order.created_at,
     customerName: order.customer_name?.trim() || "Unknown Customer",
     customerPhone: order.customer_phone ?? "—",
@@ -1103,6 +1134,35 @@ export const deletePlatformPack = createServerFn({ method: "POST" })
 export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
   .inputValidator((input) => assignSubscriptionOrderCyclistInputSchema.parse(input))
   .handler(async ({ data }) => {
+    const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
+      .from("orders")
+      .select("id, subscription_id")
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .single();
+
+    if (currentOrderError || !currentOrder?.id) {
+      throw new Error(currentOrderError?.message ?? "Subscription order not found.");
+    }
+
+    if (!currentOrder.subscription_id) {
+      throw new Error("Order is not linked to a platform subscription.");
+    }
+
+    const { data: subscription, error: subscriptionError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("status")
+      .eq("id", currentOrder.subscription_id)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      throw new Error(subscriptionError.message ?? "Failed to validate subscription status.");
+    }
+
+    if (!subscription || subscription.status !== "active") {
+      throw new Error("Assign cyclist is only allowed after admin approval.");
+    }
+
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("orders")
       .update({ cyclist_id: data.cyclistId, status: "delivering" })
@@ -1123,7 +1183,7 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, neighborhood_id")
+      .select("id, neighborhood_id, subscription_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1135,6 +1195,24 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
     const neighborhoodId = order.neighborhood_id as string | null;
     if (!neighborhoodId) {
       throw new Error("Order has no neighborhood assigned.");
+    }
+
+    if (!order.subscription_id) {
+      throw new Error("Order is not linked to a platform subscription.");
+    }
+
+    const { data: subscription, error: subscriptionError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("status")
+      .eq("id", order.subscription_id)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      throw new Error(subscriptionError.message ?? "Failed to validate subscription status.");
+    }
+
+    if (!subscription || subscription.status !== "active") {
+      throw new Error("Auto-dispatch is only allowed after admin approval.");
     }
 
     const { data: coverageRows, error: coverageError } = await (supabaseAdmin as any)
@@ -1188,6 +1266,35 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
 export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => updateSubscriptionOrderStatusInputSchema.parse(input))
   .handler(async ({ data }) => {
+    const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
+      .from("orders")
+      .select("id, subscription_id")
+      .eq("id", data.orderId)
+      .eq("order_category", "PLATFORM_SUBSCRIPTION")
+      .single();
+
+    if (currentOrderError || !currentOrder?.id) {
+      throw new Error(currentOrderError?.message ?? "Subscription order not found.");
+    }
+
+    if (!currentOrder.subscription_id) {
+      throw new Error("Order is not linked to a platform subscription.");
+    }
+
+    const { data: subscription, error: subscriptionError } = await (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("status")
+      .eq("id", currentOrder.subscription_id)
+      .maybeSingle();
+
+    if (subscriptionError) {
+      throw new Error(subscriptionError.message ?? "Failed to validate subscription status.");
+    }
+
+    if (!subscription || subscription.status !== "active") {
+      throw new Error("Status updates are only allowed after admin approval.");
+    }
+
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("orders")
       .update({ status: data.status })
@@ -1283,7 +1390,7 @@ export const getPlatformPacksAnalytics = createServerFn({ method: "GET" }).handl
   const subscriptions = (subscriptionsRes.data ?? []) as Array<{
     id: string;
     pack_id: string;
-    status: "active" | "paused" | "expired" | "cancelled";
+    status: "pending" | "active" | "paused" | "expired" | "cancelled";
     created_at: string;
     start_date: string;
   }>;
@@ -1401,6 +1508,19 @@ export const updatePlatformSubscriberStatus = createServerFn({ method: "POST" })
 
     if (error || !updated?.id) {
       throw new Error(error?.message ?? "Failed to update subscriber status.");
+    }
+
+    if (data.status === "active") {
+      const { error: activateOrdersError } = await (supabaseAdmin as any)
+        .from("orders")
+        .update({ status: "preparing" })
+        .eq("subscription_id", data.subscriptionId)
+        .eq("order_category", "PLATFORM_SUBSCRIPTION")
+        .eq("status", "new");
+
+      if (activateOrdersError) {
+        throw new Error(activateOrdersError.message ?? "Failed to activate subscription orders.");
+      }
     }
 
     return { ok: true };
