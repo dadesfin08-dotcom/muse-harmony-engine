@@ -3838,12 +3838,14 @@ function AdminPage() {
                 <SubscribersSection
                   subscribers={filteredPlatformSubscribers}
                   isLoading={dbHealthQuery.isLoading || platformSubscribersQuery.isLoading}
-                  isMutating={updatePlatformSubscriberStatusMutation.isPending}
+                  isMutating={updatePlatformSubscriberStatusMutation.isPending || activatePlatformSubscriberMutation.isPending}
                   searchTerm={subscriberSearchTerm}
                   onSearchTermChange={setSubscriberSearchTerm}
                   statusFilter={subscriberStatusFilter}
                   onStatusFilterChange={setSubscriberStatusFilter}
-                  onApprove={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
+                  onApprove={(input: { subscriptionId: string; agreedPriceMad: number; totalDeliveries: number }) =>
+                    activatePlatformSubscriberMutation.mutate(input)
+                  }
                   onPause={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "paused" })}
                   onResume={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "active" })}
                   onCancel={(subscriptionId: string) => updatePlatformSubscriberStatusMutation.mutate({ subscriptionId, status: "cancelled" })}
