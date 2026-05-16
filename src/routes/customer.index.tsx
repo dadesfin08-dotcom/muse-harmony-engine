@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
@@ -40,7 +40,12 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { getCustomerCatalogByNeighborhood, listActiveFlashDeals, searchCustomerProducts } from "@/lib/catalog.functions";
+import {
+  getCustomerCatalogByNeighborhood,
+  listActiveFlashDeals,
+  listActivePlatformPacks,
+  searchCustomerProducts,
+} from "@/lib/catalog.functions";
 import type { ProductCategory } from "@/lib/catalog.functions";
 import { listActiveCategories } from "@/lib/categories.functions";
 import {
@@ -59,7 +64,12 @@ import {
   type CommuneSearchResult,
   type NeighborhoodSearchResult,
 } from "@/lib/locations.functions";
-import { createCustomerOrder, getCustomerOrders, upsertCustomerProfile } from "@/lib/orders.functions";
+import {
+  createCustomerOrder,
+  createPlatformSubscriptionOrder,
+  getCustomerOrders,
+  upsertCustomerProfile,
+} from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,6 +151,22 @@ type SearchResultProduct = {
   brandNameEn?: string | null;
   brandNameFr?: string | null;
   brandNameAr?: string | null;
+};
+
+type PlatformPack = {
+  id: string;
+  name: string;
+  nameFr?: string | null;
+  nameAr?: string | null;
+  description?: string | null;
+  basePriceMad: number;
+  billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
+  pricePerUnit: number;
+  unitType: string;
+  deliveryWindow?: string | null;
+  imageUrl?: string | null;
+  packItems: string[];
+  packFeatures: string[];
 };
 
 const productFallbackImage = heroImage;
