@@ -89,7 +89,7 @@ import productMintTeaImage from "@/assets/product-mint-tea.jpg";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { type CustomerPanelView, useCustomerPanelStore } from "@/lib/customer-panel-store";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 
