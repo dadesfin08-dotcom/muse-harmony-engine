@@ -3784,6 +3784,35 @@ function AdminPage() {
                   onViewHistory={(subscriptionId: string, customerName: string) =>
                     setSelectedSubscriberForHistory({ id: subscriptionId, customerName })
                   }
+                  historyOpen={Boolean(selectedSubscriberForHistory)}
+                  onHistoryOpenChange={(open) => {
+                    if (!open) setSelectedSubscriberForHistory(null);
+                  }}
+                  historyTitle={selectedSubscriberForHistory?.customerName ?? "Subscriber"}
+                  historyRows={
+                    (platformSubscriberHistoryQuery.data ?? []) as Array<{
+                      id: string;
+                      createdAt: string;
+                      deliveredAt: string | null;
+                      status:
+                        | "new"
+                        | "preparing"
+                        | "ready"
+                        | "delivering"
+                        | "delivered"
+                        | "delivered_cash_with_cyclist"
+                        | "cash_transferred_to_vendor"
+                        | "cancelled";
+                      cyclistName: string;
+                      customerName: string;
+                      customerPhone: string;
+                      itemCount: number;
+                      totalPriceMad: number;
+                      cashToCollectMad: number;
+                      packSnapshotName: string | null;
+                    }>
+                  }
+                  historyLoading={platformSubscriberHistoryQuery.isLoading}
                 />
               ) : null}
               {tab === "platform-packs-analytics" ? (
