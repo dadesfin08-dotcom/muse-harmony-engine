@@ -3785,7 +3785,7 @@ function AdminPage() {
                     setSelectedSubscriberForHistory({ id: subscriptionId, customerName })
                   }
                   historyOpen={Boolean(selectedSubscriberForHistory)}
-                  onHistoryOpenChange={(open) => {
+                  onHistoryOpenChange={(open: boolean) => {
                     if (!open) setSelectedSubscriberForHistory(null);
                   }}
                   historyTitle={selectedSubscriberForHistory?.customerName ?? "Subscriber"}
