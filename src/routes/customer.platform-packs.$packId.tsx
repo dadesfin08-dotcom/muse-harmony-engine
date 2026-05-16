@@ -48,6 +48,9 @@ function PlatformPackDetailsPage() {
 
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [fullName, setFullName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [packQuantity, setPackQuantity] = useState(1);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
   const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
@@ -116,8 +119,10 @@ function PlatformPackDetailsPage() {
     if (!customerProfileQuery.data) return;
 
     setFullName((current) => current || customerProfileQuery.data?.fullName || "");
+    setContactPhone((current) => current || customerProfileQuery.data?.phoneNumber || customerSession?.phoneNumber || "");
+    setDeliveryAddress((current) => current || customerProfileQuery.data?.address || "");
     setSelectedNeighborhoodId((current) => current || customerProfileQuery.data?.neighborhoodId || "");
-  }, [customerProfileQuery.data]);
+  }, [customerProfileQuery.data, customerSession?.phoneNumber]);
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async () => {
@@ -126,6 +131,12 @@ function PlatformPackDetailsPage() {
       }
       if (!fullName.trim()) {
         throw new Error("Please add your full name before subscribing.");
+      }
+      if (!contactPhone.trim()) {
+        throw new Error("Please add a contact phone number.");
+      }
+      if (!deliveryAddress.trim()) {
+        throw new Error("Please add the delivery address.");
       }
       if (!selectedNeighborhoodId) {
         throw new Error("Please set your delivery location from the home page first.");
@@ -138,7 +149,7 @@ function PlatformPackDetailsPage() {
         data: {
           phoneNumber: customerSession.phoneNumber,
           fullName: fullName.trim(),
-          address: "",
+          address: deliveryAddress.trim(),
           savedInstructions: "",
           neighborhoodId: selectedNeighborhoodId,
         },
@@ -149,6 +160,9 @@ function PlatformPackDetailsPage() {
           packId,
           customerName: fullName.trim(),
           customerPhone: customerSession.phoneNumber,
+          contactPhone: contactPhone.trim(),
+          deliveryAddress: deliveryAddress.trim(),
+          packQuantity,
           neighborhoodId: selectedNeighborhoodId,
           deliveryNotes: subscriptionNotes.trim(),
           preferredStartDate: subscriptionStartDate,
