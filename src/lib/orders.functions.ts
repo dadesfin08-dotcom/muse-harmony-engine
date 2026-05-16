@@ -40,6 +40,16 @@ const createCustomerOrderInputSchema = z.object({
   items: z.array(orderItemSchema).min(1),
 });
 
+const createPlatformSubscriptionOrderInputSchema = z.object({
+  packId: z.string().uuid(),
+  customerName: z.string().trim().min(1).max(120),
+  customerPhone: moroccoPhoneSchema,
+  neighborhoodId: z.string().uuid(),
+  deliveryNotes: z.string().trim().max(600).optional(),
+  preferredStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  preferredDeliveryTime: z.string().trim().min(1).max(80),
+});
+
 const vendorDashboardInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
 });
@@ -577,6 +587,221 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
       console.error("createCustomerOrder failed:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
       throw new Error(`Order confirmation failed: ${message}`);
+    }
+  });
+
+export const createPlatformSubscriptionOrder = createServerFn({ method: "POST" })
+  .inputValidator((input) => createPlatformSubscriptionOrderInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const [packResult, packItemsResult] = await Promise.all([
+        (supabaseAdmin as any)
+          .from("platform_packs")
+          .select("id, name_en, name_fr, name_ar, base_price_mad, billing_cycle, is_active")
+          .eq("id", data.packId)
+          .eq("is_active", true)
+          .maybeSingle(),
+        (supabaseAdmin as any)
+          .from("pack_items")
+          .select("item_label, sort_order")
+          .eq("pack_id", data.packId)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      if (packResult.error) {
+        throw new Error(packResult.error.message);
+      }
+
+      if (packItemsResult.error) {
+        throw new Error(packItemsResult.error.message);
+      }
+
+      const pack = packResult.data as {
+        id: string;
+        name_en: string;
+        name_fr: string | null;
+        name_ar: string | null;
+        base_price_mad: number;
+        billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY";
+        is_active: boolean;
+      } | null;
+
+      if (!pack?.id || !pack.is_active) {
+        throw new Error("Selected subscription pack is not available.");
+      }
+
+      const packItems = ((packItemsResult.data ?? []) as Array<{ item_label: string; sort_order: number }>).map((item) =>
+        item.item_label,
+      );
+
+      const { data: existingProfile, error: profileLookupError } = await (supabaseAdmin as any)
+        .from("profiles")
+        .select("id")
+        .eq("phone", data.customerPhone)
+        .maybeSingle();
+
+      if (profileLookupError) {
+        throw new Error(profileLookupError.message);
+      }
+
+      let customerUserId = (existingProfile as { id?: string } | null)?.id ?? null;
+
+      if (!customerUserId) {
+        const phoneSlug = data.customerPhone.replace(/\D/g, "");
+        const syntheticEmail = `customer-${phoneSlug}@checkout.local`;
+        const syntheticPassword = `${crypto.randomUUID()}A!1`;
+
+        const { data: createdUserData, error: createUserError } = await (supabaseAdmin as any).auth.admin.createUser({
+          email: syntheticEmail,
+          password: syntheticPassword,
+          email_confirm: true,
+          user_metadata: {
+            name: data.customerName,
+            phone: data.customerPhone,
+          },
+        });
+
+        if (createUserError) {
+          const { data: listedUsers, error: listUsersError } = await (supabaseAdmin as any).auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+
+          if (listUsersError) {
+            throw new Error(createUserError.message);
+          }
+
+          const existingUser = (listedUsers?.users ?? []).find(
+            (user: { email?: string | null; id: string }) =>
+              typeof user.email === "string" && user.email.toLowerCase() === syntheticEmail.toLowerCase(),
+          );
+
+          if (!existingUser?.id) {
+            throw new Error(createUserError.message);
+          }
+
+          customerUserId = existingUser.id;
+        } else {
+          customerUserId = createdUserData?.user?.id ?? null;
+        }
+      }
+
+      if (!customerUserId) {
+        throw new Error("Customer profile not found.");
+      }
+
+      const { error: profileUpsertError } = await (supabaseAdmin as any).from("profiles").upsert(
+        {
+          id: customerUserId,
+          phone: data.customerPhone,
+          full_name: data.customerName,
+          display_name: data.customerName,
+          neighborhood_id: data.neighborhoodId,
+        },
+        {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        },
+      );
+
+      if (profileUpsertError) {
+        throw new Error(profileUpsertError.message);
+      }
+
+      const deliveriesExpected = pack.billing_cycle === "DAILY" ? 30 : pack.billing_cycle === "WEEKLY" ? 4 : 1;
+
+      const { data: insertedSubscription, error: subscriptionError } = await (supabaseAdmin as any)
+        .from("platform_subscriptions")
+        .insert({
+          customer_user_id: customerUserId,
+          customer_name: data.customerName,
+          customer_phone: data.customerPhone,
+          pack_id: pack.id,
+          status: "active",
+          start_date: data.preferredStartDate,
+          next_scheduled_delivery_date: data.preferredStartDate,
+          deliveries_expected: deliveriesExpected,
+          deliveries_completed: 0,
+          lifetime_revenue_mad: Number(pack.base_price_mad ?? 0),
+          notes: `Preferred delivery time: ${data.preferredDeliveryTime}`,
+        })
+        .select("id")
+        .single();
+
+      if (subscriptionError || !insertedSubscription?.id) {
+        throw new Error(subscriptionError?.message ?? "Failed to create subscription.");
+      }
+
+      const orderItems =
+        packItems.length > 0
+          ? packItems.map((itemLabel) => ({
+              name: itemLabel,
+              quantity: 1,
+              unitPriceMad: 0,
+              selectedVariant: null,
+              brandName: null,
+              measurementValue: null,
+              measurementUnit: null,
+            }))
+          : [
+              {
+                name: pack.name_en,
+                quantity: 1,
+                unitPriceMad: 0,
+                selectedVariant: null,
+                brandName: null,
+                measurementValue: null,
+                measurementUnit: "Pack",
+              },
+            ];
+
+      const mergedDeliveryNotes = [
+        data.deliveryNotes?.trim() || "",
+        `Preferred start date: ${data.preferredStartDate}`,
+        `Preferred delivery time: ${data.preferredDeliveryTime}`,
+        `Pack: ${pack.name_en}`,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
+      const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .insert({
+          customer_user_id: customerUserId,
+          vendor_id: null,
+          subscription_id: insertedSubscription.id,
+          customer_name: data.customerName,
+          customer_phone: data.customerPhone,
+          neighborhood_id: data.neighborhoodId,
+          delivery_notes: mergedDeliveryNotes,
+          payment_method: "COD",
+          status: "new",
+          delivery_fee: 0,
+          subtotal_base_price: Number(pack.base_price_mad ?? 0),
+          platform_profit: Number(pack.base_price_mad ?? 0),
+          platform_markup: Number(pack.base_price_mad ?? 0),
+          vendor_revenue: 0,
+          total_price: Number(pack.base_price_mad ?? 0),
+          item_count: orderItems.length,
+          order_items: orderItems,
+          order_category: "PLATFORM_SUBSCRIPTION",
+          cash_to_collect_from_customer: 0,
+        })
+        .select("id")
+        .single();
+
+      if (orderError || !insertedOrder?.id) {
+        throw new Error(orderError?.message ?? "Failed to create subscription order.");
+      }
+
+      return {
+        orderId: String(insertedOrder.id),
+        subscriptionId: String(insertedSubscription.id),
+      };
+    } catch (error) {
+      console.error("createPlatformSubscriptionOrder failed:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Subscription checkout failed: ${message}`);
     }
   });
 

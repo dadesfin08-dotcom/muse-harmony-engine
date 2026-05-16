@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
@@ -40,7 +40,12 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { getCustomerCatalogByNeighborhood, listActiveFlashDeals, searchCustomerProducts } from "@/lib/catalog.functions";
+import {
+  getCustomerCatalogByNeighborhood,
+  listActiveFlashDeals,
+  listActivePlatformPacks,
+  searchCustomerProducts,
+} from "@/lib/catalog.functions";
 import type { ProductCategory } from "@/lib/catalog.functions";
 import { listActiveCategories } from "@/lib/categories.functions";
 import {
@@ -59,7 +64,12 @@ import {
   type CommuneSearchResult,
   type NeighborhoodSearchResult,
 } from "@/lib/locations.functions";
-import { createCustomerOrder, getCustomerOrders, upsertCustomerProfile } from "@/lib/orders.functions";
+import {
+  createCustomerOrder,
+  createPlatformSubscriptionOrder,
+  getCustomerOrders,
+  upsertCustomerProfile,
+} from "@/lib/orders.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,6 +151,22 @@ type SearchResultProduct = {
   brandNameEn?: string | null;
   brandNameFr?: string | null;
   brandNameAr?: string | null;
+};
+
+type PlatformPack = {
+  id: string;
+  name: string;
+  nameFr?: string | null;
+  nameAr?: string | null;
+  description?: string | null;
+  basePriceMad: number;
+  billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
+  pricePerUnit: number;
+  unitType: string;
+  deliveryWindow?: string | null;
+  imageUrl?: string | null;
+  packItems: string[];
+  packFeatures: string[];
 };
 
 const productFallbackImage = heroImage;
@@ -341,6 +367,11 @@ function Index() {
   const [desktopSearchInput, setDesktopSearchInput] = useState("");
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSubscriptionCheckoutOpen, setIsSubscriptionCheckoutOpen] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<PlatformPack | null>(null);
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
+  const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
+  const [subscriptionNotes, setSubscriptionNotes] = useState("");
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
@@ -398,8 +429,10 @@ function Index() {
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
+  const fetchActivePlatformPacks = useServerFn(listActivePlatformPacks);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
+  const submitPlatformSubscriptionOrder = useServerFn(createPlatformSubscriptionOrder);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -484,6 +517,13 @@ function Index() {
     enabled: !!selectedNeighborhoodId,
     refetchInterval: selectedNeighborhoodId ? 10_000 : false,
   });
+  const platformPacksQuery = useQuery({
+    queryKey: ["customer", "platform-packs", selectedNeighborhoodId || null],
+    queryFn: () => fetchActivePlatformPacks({ data: { neighborhoodId: selectedNeighborhoodId } }),
+    enabled: !!selectedNeighborhoodId,
+    staleTime: 20_000,
+    refetchInterval: selectedNeighborhoodId ? 20_000 : false,
+  });
   const predictiveSearchQuery = useQuery({
     queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
     queryFn: () =>
@@ -498,6 +538,24 @@ function Index() {
     staleTime: 8_000,
   });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
+  const subscriptionCheckoutMutation = useMutation({
+    mutationFn: (payload: {
+      packId: string;
+      customerName: string;
+      customerPhone: string;
+      neighborhoodId: string;
+      deliveryNotes: string;
+      preferredStartDate: string;
+      preferredDeliveryTime: string;
+    }) => submitPlatformSubscriptionOrder({ data: payload }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession?.phoneNumber ?? null] });
+      toast.success("Subscription activated successfully.");
+      setIsSubscriptionCheckoutOpen(false);
+      setSelectedPack(null);
+      setSubscriptionNotes("");
+    },
+  });
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -908,6 +966,120 @@ function Index() {
       };
     });
   }, [flashDealsQuery.data, getLocalizedText]);
+
+  const platformPacks = useMemo(() => {
+    const rows = (platformPacksQuery.data ?? []) as PlatformPack[];
+    return rows.map((pack) => ({
+      ...pack,
+      name: getLocalizedText({ en: pack.name, fr: pack.nameFr, ar: pack.nameAr }),
+      billingLabel:
+        pack.billingCycle === "DAILY"
+          ? language === "ar"
+            ? "يومي"
+            : language === "fr"
+              ? "Quotidien"
+              : "Daily"
+          : pack.billingCycle === "WEEKLY"
+            ? language === "ar"
+              ? "أسبوعي"
+              : language === "fr"
+                ? "Hebdomadaire"
+                : "Weekly"
+            : language === "ar"
+              ? "شهري"
+              : language === "fr"
+                ? "Mensuel"
+                : "Monthly",
+    }));
+  }, [getLocalizedText, language, platformPacksQuery.data]);
+
+  useEffect(() => {
+    if (isSubscriptionCheckoutOpen) {
+      return;
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setSubscriptionStartDate(tomorrow.toISOString().slice(0, 10));
+    setSubscriptionDeliveryTime(language === "ar" ? "الصباح" : language === "fr" ? "Morning" : "Morning");
+    setSubscriptionNotes("");
+  }, [isSubscriptionCheckoutOpen, language]);
+
+  const openSubscriptionCheckout = (pack: PlatformPack) => {
+    if (!selectedNeighborhoodId) {
+      setIsLocationModalOpen(true);
+      toast.error("Select your delivery location first.");
+      return;
+    }
+
+    if (!customerSession?.phoneNumber) {
+      setIsCustomerAuthModalOpen(true);
+      toast.error("Login is required before subscribing.");
+      return;
+    }
+
+    setSelectedPack(pack);
+    setIsSubscriptionCheckoutOpen(true);
+  };
+
+  const confirmSubscriptionCheckout = async () => {
+    if (!selectedPack?.id) {
+      toast.error("Select a subscription pack first.");
+      return;
+    }
+
+    if (!customerSession?.phoneNumber) {
+      setIsCustomerAuthModalOpen(true);
+      toast.error("Please login first.");
+      return;
+    }
+
+    if (!selectedNeighborhoodId) {
+      setIsLocationModalOpen(true);
+      toast.error("Select your delivery location first.");
+      return;
+    }
+
+    if (!fullName.trim()) {
+      toast.error("Please complete your profile name before subscribing.");
+      return;
+    }
+
+    if (!subscriptionStartDate) {
+      toast.error("Please select a start date.");
+      return;
+    }
+
+    if (!subscriptionDeliveryTime.trim()) {
+      toast.error("Please select your preferred delivery time.");
+      return;
+    }
+
+    try {
+      await saveCustomerProfile({
+        data: {
+          phoneNumber: customerSession.phoneNumber,
+          fullName: fullName.trim(),
+          address: address.trim(),
+          savedInstructions: deliveryNotes.trim(),
+          neighborhoodId: selectedNeighborhoodId,
+        },
+      });
+
+      await subscriptionCheckoutMutation.mutateAsync({
+        packId: selectedPack.id,
+        customerName: fullName.trim(),
+        customerPhone: customerSession.phoneNumber,
+        neighborhoodId: selectedNeighborhoodId,
+        deliveryNotes: subscriptionNotes.trim(),
+        preferredStartDate: subscriptionStartDate,
+        preferredDeliveryTime: subscriptionDeliveryTime.trim(),
+      });
+    } catch (error) {
+      console.error("Failed to create platform subscription checkout:", error);
+      toast.error("Failed to activate subscription. Please try again.");
+    }
+  };
 
   const countdownLabel = useMemo(() => {
     if (flashDeals.length === 0) {
@@ -2075,6 +2247,77 @@ function Index() {
           ) : null}
         </section>
 
+        <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-foreground md:text-lg">
+              <Sparkles className="size-4 text-primary" />
+              Saving Subscriptions / باكات التوفير
+            </h2>
+          </div>
+
+          {platformPacksQuery.isLoading ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={`platform-pack-skeleton-${index}`} className="h-56 rounded-2xl" />
+              ))}
+            </div>
+          ) : platformPacks.length === 0 ? (
+            <AppEmptyState
+              title="No subscription packs available yet."
+              subtitle="New prepaid savings packs will appear here soon."
+            />
+          ) : (
+            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {platformPacks.map((pack) => (
+                <article
+                  key={pack.id}
+                  className="surface-panel min-w-[260px] max-w-[300px] flex-1 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openSubscriptionCheckout(pack)}
+                    className="relative block h-36 w-full overflow-hidden"
+                  >
+                    <img
+                      src={pack.imageUrl || productFallbackImage}
+                      alt={`${pack.name} subscription pack`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+                      {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                    </div>
+                  </button>
+
+                  <div className="space-y-3 p-3">
+                    <div>
+                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
+                      {pack.description ? <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p> : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {pack.packItems.slice(0, 3).map((item) => (
+                        <Badge key={`${pack.id}-${item}`} className="bg-muted text-muted-foreground" variant="secondary">
+                          {item}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      className="w-full rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
+                      onClick={() => openSubscriptionCheckout(pack)}
+                    >
+                      <Package className="size-4" />
+                      Subscribe
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         {flashDeals.length > 0 ? (
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-3 sm:px-6">
           <div className="mb-3 flex items-center justify-between">
@@ -2455,6 +2698,119 @@ function Index() {
           </section>
         </div>
       ) : null}
+
+      <Dialog open={isSubscriptionCheckoutOpen} onOpenChange={setIsSubscriptionCheckoutOpen}>
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto rounded-2xl border-border bg-background p-0">
+          <div className="space-y-4 p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-semibold text-foreground">{selectedPack?.name || "Subscription Checkout"}</h3>
+                <p className="text-sm text-muted-foreground">Direct prepaid platform subscription</p>
+              </div>
+            </div>
+
+            <section className="space-y-2 rounded-2xl border border-success/30 bg-success/10 p-4">
+              <p className="text-sm font-semibold text-success">
+                This is a prepaid subscription. 0.00 MAD will be collected upon delivery.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Order is created directly in the isolated subscription engine, outside the marketplace cart flow.
+              </p>
+            </section>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                <h4 className="text-sm font-semibold text-foreground">Pack Items</h4>
+                {selectedPack?.packItems?.length ? (
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    {selectedPack.packItems.map((item) => (
+                      <li key={`checkout-item-${item}`} className="inline-flex items-center gap-2">
+                        <Check className="size-3.5 text-success" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No items defined for this pack.</p>
+                )}
+              </section>
+
+              <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                <h4 className="text-sm font-semibold text-foreground">Pack Features</h4>
+                {selectedPack?.packFeatures?.length ? (
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    {selectedPack.packFeatures.map((feature) => (
+                      <li key={`checkout-feature-${feature}`} className="inline-flex items-center gap-2">
+                        <Check className="size-3.5 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No features defined for this pack.</p>
+                )}
+              </section>
+            </div>
+
+            <section className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="subscription-start-date">Start Date / Delivery Time</Label>
+                <Input
+                  id="subscription-start-date"
+                  type="date"
+                  value={subscriptionStartDate}
+                  onChange={(event) => setSubscriptionStartDate(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="subscription-delivery-time">Preferred Delivery Time</Label>
+                <Input
+                  id="subscription-delivery-time"
+                  placeholder="Morning / Afternoon"
+                  value={subscriptionDeliveryTime}
+                  onChange={(event) => setSubscriptionDeliveryTime(event.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="subscription-notes">Notes (optional)</Label>
+                <Input
+                  id="subscription-notes"
+                  placeholder="Any preferred delivery instructions"
+                  value={subscriptionNotes}
+                  onChange={(event) => setSubscriptionNotes(event.target.value)}
+                />
+              </div>
+            </section>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" className="rounded-xl" onClick={() => setIsSubscriptionCheckoutOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
+                onClick={confirmSubscriptionCheckout}
+                disabled={subscriptionCheckoutMutation.isPending}
+              >
+                {subscriptionCheckoutMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="size-4" />
+                    Confirm Subscription
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isCustomerAuthModalOpen ? (
         isMobile ? (

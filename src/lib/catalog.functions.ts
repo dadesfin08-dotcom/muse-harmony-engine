@@ -158,6 +158,10 @@ const customerSearchInputSchema = z.object({
   limit: z.number().int().min(1).max(6).default(6),
 });
 
+const activePlatformPacksInputSchema = z.object({
+  neighborhoodId: z.string().uuid(),
+});
+
 type MasterProductRow = {
   id: string;
   product_name: string;
@@ -1338,6 +1342,103 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("listActiveFlashDeals failed:", error);
       throw new Error("Failed to load flash deals.");
+    }
+  });
+
+export const listActivePlatformPacks = createServerFn({ method: "POST" })
+  .inputValidator((input) => activePlatformPacksInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: packsData, error: packsError } = await (supabaseAdmin as any)
+        .from("platform_packs")
+        .select(
+          "id, name_en, name_fr, name_ar, description, base_price_mad, billing_cycle, price_per_unit, unit_type, delivery_window, image_url, is_active",
+        )
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (packsError) {
+        throw new Error(packsError.message);
+      }
+
+      const packs = (packsData ?? []) as Array<{
+        id: string;
+        name_en: string;
+        name_fr: string | null;
+        name_ar: string | null;
+        description: string | null;
+        base_price_mad: number;
+        billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY";
+        price_per_unit: number;
+        unit_type: string;
+        delivery_window: string | null;
+        image_url: string | null;
+        is_active: boolean;
+      }>;
+
+      if (packs.length === 0) {
+        return [] as Array<any>;
+      }
+
+      const packIds = packs.map((pack) => pack.id);
+
+      const [{ data: packItemsData, error: packItemsError }, { data: packFeaturesData, error: packFeaturesError }] =
+        await Promise.all([
+          (supabaseAdmin as any)
+            .from("pack_items")
+            .select("pack_id, item_label, sort_order")
+            .in("pack_id", packIds)
+            .order("sort_order", { ascending: true }),
+          (supabaseAdmin as any)
+            .from("pack_features")
+            .select("pack_id, feature_label, sort_order")
+            .in("pack_id", packIds)
+            .order("sort_order", { ascending: true }),
+        ]);
+
+      if (packItemsError) {
+        throw new Error(packItemsError.message);
+      }
+
+      if (packFeaturesError) {
+        throw new Error(packFeaturesError.message);
+      }
+
+      const itemMap = new Map<string, string[]>();
+      for (const row of (packItemsData ?? []) as Array<{ pack_id: string; item_label: string; sort_order: number }>) {
+        const current = itemMap.get(row.pack_id) ?? [];
+        current.push(row.item_label);
+        itemMap.set(row.pack_id, current);
+      }
+
+      const featureMap = new Map<string, string[]>();
+      for (const row of (packFeaturesData ?? []) as Array<{ pack_id: string; feature_label: string; sort_order: number }>) {
+        const current = featureMap.get(row.pack_id) ?? [];
+        current.push(row.feature_label);
+        featureMap.set(row.pack_id, current);
+      }
+
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+
+      return packs.map((pack) => ({
+        id: pack.id,
+        name: pack.name_en,
+        nameFr: pack.name_fr,
+        nameAr: pack.name_ar,
+        description: pack.description,
+        basePriceMad: Number(pack.base_price_mad ?? 0),
+        billingCycle: pack.billing_cycle,
+        pricePerUnit: Number(pack.price_per_unit ?? 0),
+        unitType: pack.unit_type,
+        deliveryWindow: pack.delivery_window,
+        imageUrl: pack.image_url,
+        packItems: itemMap.get(pack.id) ?? [],
+        packFeatures: featureMap.get(pack.id) ?? [],
+        hasMarketplaceCoverage: vendorIds.length > 0,
+      }));
+    } catch (error) {
+      console.error("listActivePlatformPacks failed:", error);
+      throw new Error("Failed to load subscription packs.");
     }
   });
 
