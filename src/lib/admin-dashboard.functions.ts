@@ -1256,6 +1256,139 @@ export const listPlatformSubscribers = createServerFn({ method: "GET" }).handler
   });
 });
 
+export const getPlatformPacksAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+  const [subscriptionsRes, packsRes, ordersRes] = await Promise.all([
+    (supabaseAdmin as any)
+      .from("platform_subscriptions")
+      .select("id, pack_id, status, created_at, start_date"),
+    (supabaseAdmin as any)
+      .from("platform_packs")
+      .select("id, name_en, name_fr, name_ar, base_price_mad, billing_cycle, is_active"),
+    (supabaseAdmin as any)
+      .from("orders")
+      .select("id, status, created_at, delivered_at, cash_to_collect_from_customer, order_category")
+      .eq("order_category", "PLATFORM_SUBSCRIPTION"),
+  ]);
+
+  if (subscriptionsRes.error) {
+    throw new Error(subscriptionsRes.error.message ?? "Failed to load platform subscriptions analytics.");
+  }
+  if (packsRes.error) {
+    throw new Error(packsRes.error.message ?? "Failed to load platform packs analytics.");
+  }
+  if (ordersRes.error) {
+    throw new Error(ordersRes.error.message ?? "Failed to load platform orders analytics.");
+  }
+
+  const subscriptions = (subscriptionsRes.data ?? []) as Array<{
+    id: string;
+    pack_id: string;
+    status: "active" | "paused" | "expired" | "cancelled";
+    created_at: string;
+    start_date: string;
+  }>;
+  const packs = (packsRes.data ?? []) as Array<{
+    id: string;
+    name_en: string | null;
+    name_fr: string | null;
+    name_ar: string | null;
+    base_price_mad: number | null;
+    billing_cycle: "DAILY" | "WEEKLY" | "MONTHLY";
+    is_active: boolean;
+  }>;
+  const subscriptionOrders = (ordersRes.data ?? []) as Array<{
+    id: string;
+    status: string;
+    created_at: string;
+    delivered_at: string | null;
+    cash_to_collect_from_customer: number | null;
+    order_category: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION";
+  }>;
+
+  const packById = new Map(
+    packs.map((pack) => [
+      pack.id,
+      {
+        name: pack.name_en?.trim() || pack.name_fr?.trim() || pack.name_ar?.trim() || "Unknown Pack",
+        basePriceMad: Number(pack.base_price_mad ?? 0),
+        billingCycle: pack.billing_cycle,
+        isActive: Boolean(pack.is_active),
+      },
+    ]),
+  );
+
+  const activeSubscriptions = subscriptions.filter((subscription) => subscription.status === "active");
+  const churnedSubscriptions = subscriptions.filter(
+    (subscription) => subscription.status === "paused" || subscription.status === "cancelled",
+  );
+
+  const mrr = activeSubscriptions.reduce((sum, subscription) => {
+    const pack = packById.get(subscription.pack_id);
+    if (!pack) return sum;
+    const monthlyMultiplier = pack.billingCycle === "DAILY" ? 30 : pack.billingCycle === "WEEKLY" ? 4 : 1;
+    return sum + pack.basePriceMad * monthlyMultiplier;
+  }, 0);
+
+  const deliveredStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"]);
+  const totalPacksDelivered = subscriptionOrders.filter(
+    (order) =>
+      deliveredStatuses.has(order.status) &&
+      Number(order.cash_to_collect_from_customer ?? 0) === 0 &&
+      order.order_category === "PLATFORM_SUBSCRIPTION",
+  ).length;
+
+  const now = new Date();
+  const growthBuckets = new Map<string, { key: string; label: string; subscriptions: number }>();
+  for (let i = 29; i >= 0; i -= 1) {
+    const bucketDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const key = bucketDate.toISOString().slice(0, 10);
+    growthBuckets.set(key, {
+      key,
+      label: bucketDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      subscriptions: 0,
+    });
+  }
+
+  for (const subscription of subscriptions) {
+    const createdAt = subscription.created_at || subscription.start_date;
+    if (!createdAt) continue;
+    const key = createdAt.slice(0, 10);
+    const bucket = growthBuckets.get(key);
+    if (!bucket) continue;
+    bucket.subscriptions += 1;
+  }
+
+  const packPopularityMap = new Map<string, { packId: string; packName: string; activeSubscribers: number; isActive: boolean }>();
+  for (const subscription of activeSubscriptions) {
+    const packMeta = packById.get(subscription.pack_id);
+    const bucket = packPopularityMap.get(subscription.pack_id) ?? {
+      packId: subscription.pack_id,
+      packName: packMeta?.name ?? "Unknown Pack",
+      activeSubscribers: 0,
+      isActive: packMeta?.isActive ?? false,
+    };
+    bucket.activeSubscribers += 1;
+    packPopularityMap.set(subscription.pack_id, bucket);
+  }
+
+  const packPopularity = Array.from(packPopularityMap.values()).sort((a, b) => b.activeSubscribers - a.activeSubscribers);
+  const churnRate = subscriptions.length > 0 ? (churnedSubscriptions.length / subscriptions.length) * 100 : 0;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    kpis: {
+      totalActiveSubscribers: activeSubscriptions.length,
+      monthlyRecurringRevenueMad: Number(mrr.toFixed(2)),
+      totalPacksDelivered,
+      churnRate: Number(churnRate.toFixed(2)),
+      churnedCount: churnedSubscriptions.length,
+      totalSubscriptions: subscriptions.length,
+    },
+    subscriptionGrowth: Array.from(growthBuckets.values()),
+    packPopularity,
+  };
+});
+
 export const updatePlatformSubscriberStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => updatePlatformSubscriberStatusInputSchema.parse(input))
   .handler(async ({ data }) => {
