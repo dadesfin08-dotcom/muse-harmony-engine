@@ -399,6 +399,9 @@ const initialAdminOrders: Array<{
   vendorName: string;
   customerName: string;
   customerPhone: string;
+  contactPhone: string | null;
+  deliveryAddress: string | null;
+  packQuantity: number | null;
   totalPrice: number;
   itemCount: number;
   orderItems: unknown[];
@@ -904,6 +907,9 @@ function AdminPage() {
     customerUserId: string;
     customerName: string;
     customerPhone: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    packQuantity: number;
     packId: string;
     packName: string;
     status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
