@@ -108,25 +108,26 @@ export function ProductCard({
           </select>
         ) : null}
 
-        <span className="mb-1 inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
-          {brand || "—"}
-        </span>
+        <div className="mb-2 flex w-full flex-row items-center justify-between gap-1.5">
+          <span className="inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
+            {brand || "—"}
+          </span>
 
-        <div className="flex items-start justify-between gap-1.5">
-          <Link to="/customer/product/$id" params={{ id }} className="min-w-0 flex-1">
-            <h2
-              title={name}
-              className="h-11 overflow-hidden text-ellipsis text-sm font-semibold leading-5 text-gray-900 line-clamp-2"
-            >
-              {name}
-            </h2>
-          </Link>
           <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
             <Package className="size-3" />
             {measurementValue != null ? `${measurementValue} ` : ""}
             {measurementUnit}
           </span>
         </div>
+
+        <Link to="/customer/product/$id" params={{ id }} className="block w-full min-w-0">
+          <h2
+            title={name}
+            className="h-11 w-full overflow-hidden text-ellipsis text-sm font-semibold leading-5 text-gray-900 line-clamp-2"
+          >
+            {name}
+          </h2>
+        </Link>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-0">
           <div className={cn("flex items-center gap-1.5", isFlashDeal && "flex flex-wrap")}>
