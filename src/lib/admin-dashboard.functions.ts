@@ -1746,7 +1746,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
     const [subscriptionRes, packItemsRes] = await Promise.all([
       (supabaseAdmin as any)
         .from("platform_subscriptions")
-        .select("id, customer_user_id, customer_name, customer_phone, pack_id, status, start_date, next_scheduled_delivery_date")
+        .select("id, customer_user_id, customer_name, customer_phone, contact_phone, delivery_address, pack_quantity, pack_id, status, start_date, next_scheduled_delivery_date")
         .eq("id", data.subscriptionId)
         .single(),
       (supabaseAdmin as any)
@@ -1808,9 +1808,10 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
       const orderItems = ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).length
         ? ((packItemsRows ?? []) as Array<{ item_label: string; item_data?: unknown; sort_order: number }>).map((item) => {
             const normalized = normalizePlatformPackItem(item);
+            const requestedQuantity = Math.max(1, Number(subscriptionRes.data.pack_quantity ?? 1));
             return {
               name: normalized.nameEn || item.item_label,
-              quantity: normalized.quantity ?? 1,
+              quantity: (normalized.quantity ?? 1) * requestedQuantity,
               unit: normalized.unit ?? null,
               imageUrl: normalized.imageUrl ?? null,
               unitPriceMad: 0,
@@ -1837,6 +1838,8 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
       const orderNotes = [
         `Subscription activation order`,
         `Contract price: ${Number(data.agreedPriceMad).toFixed(2)} MAD`,
+        `Requested quantity: ${Math.max(1, Number(subscriptionRes.data.pack_quantity ?? 1))}`,
+        subscriptionRes.data.delivery_address ? `Address: ${subscriptionRes.data.delivery_address}` : null,
       ].join(" | ");
 
       const { data: insertedOrder, error: orderError } = await (supabaseAdmin as any)
@@ -1846,7 +1849,7 @@ export const activatePlatformSubscriber = createServerFn({ method: "POST" })
           vendor_id: null,
           subscription_id: data.subscriptionId,
           customer_name: subscriptionRes.data.customer_name,
-          customer_phone: subscriptionRes.data.customer_phone,
+          customer_phone: subscriptionRes.data.contact_phone || subscriptionRes.data.customer_phone,
           delivery_notes: orderNotes,
           payment_method: "COD",
           status: "new",
