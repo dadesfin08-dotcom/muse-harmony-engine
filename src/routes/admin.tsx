@@ -3862,10 +3862,10 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "platform-packs-analytics" ? (
-                <PlaceholderSection
-                  icon={TrendingUp}
-                  title="Pack Analytics"
-                  subtitle="Phase 1 placeholder. Subscription KPIs and cohort analytics will be enabled in the next phase."
+                <PackAnalyticsSection
+                  analytics={platformPacksAnalyticsQuery.data as PlatformPacksAnalytics | undefined}
+                  isLoading={dbHealthQuery.isLoading || platformPacksAnalyticsQuery.isLoading}
+                  isFetching={platformPacksAnalyticsQuery.isFetching}
                 />
               ) : null}
               {tab === "vendors" ? (
