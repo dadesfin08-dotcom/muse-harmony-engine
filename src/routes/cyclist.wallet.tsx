@@ -16,6 +16,22 @@ import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclis
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
+const walletListVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.04,
+    },
+  },
+};
+
+const walletItemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 },
+};
+
 type CyclistSession = {
   cyclistId: string;
   fullName: string;
@@ -52,7 +68,10 @@ function CyclistWalletPage() {
     queryKey: ["cyclist", "wallet", session?.cyclistId ?? null],
     enabled: Boolean(session?.cyclistId),
     queryFn: () => fetchWalletSummary({ data: { cyclistId: session!.cyclistId } }),
+    staleTime: 0,
     refetchInterval: 4_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const earningsHistoryQuery = useQuery({
@@ -65,7 +84,10 @@ function CyclistWalletPage() {
           period: earningsPeriod,
         },
       }),
+    staleTime: 0,
     refetchInterval: 4_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
@@ -85,6 +107,8 @@ function CyclistWalletPage() {
           void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] });
           void queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] });
           void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "earnings-history", session.cyclistId] });
+          void walletQuery.refetch();
+          void earningsHistoryQuery.refetch();
         },
       )
       .subscribe();
@@ -111,6 +135,7 @@ function CyclistWalletPage() {
 
   const summary = walletQuery.data;
   const earningsHistory = earningsHistoryQuery.data;
+  const isWalletInitialLoading = (walletQuery.isLoading && !summary) || (earningsHistoryQuery.isLoading && !earningsHistory);
 
   const periodLabels: Array<{ value: EarningsPeriod; label: string }> = [
     { value: "today", label: t("cyclistWallet.periodToday") },
@@ -149,6 +174,29 @@ function CyclistWalletPage() {
           <span className="w-9" />
         </header>
 
+        {isWalletInitialLoading ? (
+          <motion.div
+            variants={walletListVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-4"
+          >
+            {Array.from({ length: 5 }).map((_, index) => (
+              <motion.div
+                key={`wallet-skeleton-${index}`}
+                variants={walletItemVariants}
+                className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm"
+              >
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 w-1/2 rounded-md bg-muted" />
+                  <div className="h-8 w-1/3 rounded-md bg-muted" />
+                  <div className="h-3 w-2/3 rounded-md bg-muted" />
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+        <>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
           <Card className="border-success/25">
           <CardHeader className="pb-2">
@@ -281,6 +329,8 @@ function CyclistWalletPage() {
           </CardContent>
           </Card>
         </motion.div>
+        </>
+        )}
       </motion.div>
 
       <Dialog open={isQrOpen} onOpenChange={setIsQrOpen}>
