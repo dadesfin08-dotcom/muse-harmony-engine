@@ -817,6 +817,13 @@ function AdminPage() {
     refetchInterval: 15_000,
     placeholderData: (previousData) => previousData,
   });
+  const platformPacksAnalyticsQuery = useQuery({
+    queryKey: ["admin", "platform-packs-analytics"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchPlatformPacksAnalytics(),
+    refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
+  });
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
