@@ -525,41 +525,6 @@ function CyclistDashboardPage() {
       </header>
 
       <section className="mx-auto w-full max-w-lg px-4 pt-4">
-        <div className="mb-4 inline-flex w-full items-center justify-center rounded-2xl border border-border/70 bg-card/95 p-1 shadow-sm backdrop-blur">
-          <div className="grid w-full grid-cols-3 gap-1">
-            <button
-              type="button"
-              onClick={() => setActiveView("available")}
-              className={cn(
-                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
-                activeView === "available" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
-              )}
-            >
-              {t("cyclist.availableRunsTab")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("active")}
-              className={cn(
-                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
-                activeView === "active" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
-              )}
-            >
-              {t("cyclist.activeDeliveriesTab")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("platformPacks")}
-              className={cn(
-                "h-10 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95",
-                activeView === "platformPacks" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70",
-              )}
-            >
-              {t("cyclist.platformPacksTab")}
-            </button>
-          </div>
-        </div>
-
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-medium text-foreground">{onlineCountLabel}</p>
           {dashboardQuery.isLoading ? <p className="text-xs text-muted-foreground">{t("cyclist.refreshing")}</p> : null}
