@@ -893,7 +893,7 @@ function AdminPage() {
     customerPhone: string;
     packId: string;
     packName: string;
-    status: "pending" | "active" | "paused" | "expired" | "cancelled";
+    status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
     startDate: string;
     expirationDate: string | null;
     nextScheduledDeliveryDate: string | null;
@@ -1088,7 +1088,7 @@ function AdminPage() {
   >("all");
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
-  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "pending" | "active" | "paused" | "expired" | "cancelled">("all");
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<"all" | "pending" | "active" | "paused" | "expired" | "cancelled" | "completed">("all");
   const [selectedSubscriberForHistory, setSelectedSubscriberForHistory] = useState<null | { id: string; customerName: string }>(null);
   const [isAssigningSubscriptionOrder, setIsAssigningSubscriptionOrder] = useState(false);
   const [platformPackForm, setPlatformPackForm] = useState({
@@ -8102,7 +8102,7 @@ function SubscribersSection({
     customerName: string;
     customerPhone: string;
     packName: string;
-    status: "pending" | "active" | "paused" | "expired" | "cancelled";
+    status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
     startDate: string;
     expirationDate: string | null;
     nextScheduledDeliveryDate: string | null;
@@ -8113,8 +8113,8 @@ function SubscribersSection({
   isMutating: boolean;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
-  statusFilter: "all" | "pending" | "active" | "paused" | "expired" | "cancelled";
-  onStatusFilterChange: (value: "all" | "pending" | "active" | "paused" | "expired" | "cancelled") => void;
+  statusFilter: "all" | "pending" | "active" | "paused" | "expired" | "cancelled" | "completed";
+  onStatusFilterChange: (value: "all" | "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => void;
   onApprove: (input: { subscriptionId: string; agreedPriceMad: number; totalDeliveries: number }) => void;
   onPause: (subscriptionId: string) => void;
   onResume: (subscriptionId: string) => void;
@@ -8153,12 +8153,13 @@ function SubscribersSection({
     agreedPriceMad: "",
     totalDeliveries: "4",
   });
-  const statusBadgeClass: Record<"pending" | "active" | "paused" | "expired" | "cancelled", string> = {
+  const statusBadgeClass: Record<"pending" | "active" | "paused" | "expired" | "cancelled" | "completed", string> = {
     pending: "bg-chart-4/20 text-chart-4",
     active: "bg-success/20 text-success",
     paused: "bg-chart-4/20 text-chart-4",
     expired: "bg-muted text-muted-foreground",
     cancelled: "bg-destructive/20 text-destructive",
+    completed: "bg-success/20 text-success",
   };
 
   const formatDateLabel = (value: string | null) => {
@@ -8231,6 +8232,7 @@ function SubscribersSection({
                 <SelectItem value="paused">Paused</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -8340,7 +8342,7 @@ function SubscribersSection({
                             Resume
                           </DropdownMenuItem>
                         ) : null}
-                        {subscriber.status !== "cancelled" ? (
+                        {subscriber.status !== "cancelled" && subscriber.status !== "completed" ? (
                           <DropdownMenuItem onClick={() => onCancel(subscriber.id)}>
                             <StopCircle className="size-4" />
                             Cancel
