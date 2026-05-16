@@ -3749,12 +3749,16 @@ function AdminPage() {
 
   const removePlatformPack = async (id: string) => {
     try {
-      await deletePlatformPackInDatabase({ data: { id } });
+      const result = await deletePlatformPackInDatabase({ data: { id } });
       await platformPacksQuery.refetch();
       if (platformPackForm.id === id) {
         resetPlatformPackForm();
       }
-      toast.success("Platform pack deleted.");
+      if (result.archived) {
+        toast.success(`Platform pack archived (linked to ${result.linkedSubscriptionsCount} subscription${result.linkedSubscriptionsCount === 1 ? "" : "s"}).`);
+      } else {
+        toast.success("Platform pack deleted.");
+      }
     } catch (error) {
       console.error("Failed to delete platform pack:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete platform pack.");
