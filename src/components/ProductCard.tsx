@@ -144,12 +144,12 @@ export function ProductCard({
         </Link>
 
         <div className="mt-auto flex w-full flex-row items-end justify-between gap-2 pt-1">
-          <div className="flex max-w-[65%] min-w-0 flex-col items-start justify-end overflow-hidden">
-            <div className="flex items-baseline gap-1">
+          <div className="flex min-w-0 flex-1 flex-col items-start justify-end">
+            <div className="flex flex-wrap items-baseline gap-1">
               <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
                 {Number(price ?? 0).toFixed(2)}
               </span>
-              <span className={cn("text-sm font-medium", isFlashDeal && "text-gray-800")}>MAD</span>
+              <span className={cn("text-xs font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>MAD</span>
             </div>
 
             {isFlashDeal && oldPrice != null ? (
