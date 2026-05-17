@@ -1841,11 +1841,11 @@ function VendorDashboardPage() {
                     <label
                       key={itemKey}
                       className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border border-l-2 border-l-border bg-card p-3 transition-all duration-200 hover:-translate-y-px hover:bg-muted/30",
+                        "flex cursor-pointer items-start gap-3 rounded-lg border border-border border-l-2 border-l-border bg-card px-4 py-[14px] transition-all duration-200 hover:-translate-y-px hover:bg-muted/30",
                         checked && "opacity-60",
                       )}
                     >
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border bg-muted/40">
+                      <div className="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-lg border border-border bg-muted/40">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -1865,7 +1865,8 @@ function VendorDashboardPage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-base font-semibold text-foreground">{item.name}</p>
+                        <div className="space-y-1.5">
+                          <p className="truncate text-base font-medium text-foreground">{item.name}</p>
                         {(() => {
                           const normalizedBrand = item.brandName?.trim();
                           const normalizedMeasurement =
@@ -1876,39 +1877,38 @@ function VendorDashboardPage() {
 
                           return (
                             <>
-                              {normalizedBrand ? (
-                                <div className="mt-1">
+                              <div className="flex items-center gap-2">
+                                {normalizedBrand ? (
                                   <span className="inline-flex shrink-0 items-center rounded-md border border-pink-200 bg-pink-50 px-2 py-0.5 text-[11px] font-medium text-pink-700 shadow-sm">
                                     <Tag className="me-1 h-3 w-3 text-pink-500" aria-hidden="true" />
                                     {normalizedBrand}
                                   </span>
-                                </div>
-                              ) : null}
-                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                ) : null}
                                 {normalizedMeasurement ? (
                                   <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                     <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
                                     <span dir="ltr">{normalizedMeasurement}</span>
                                   </span>
                                 ) : null}
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                                  Unit: {Number(item.unitPriceMad ?? 0).toFixed(2)} MAD
-                                </span>
-                                <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                                  Qty: {item.quantity}
-                                </span>
-                                {normalizedVariant ? (
-                                  <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                                    Variant: {normalizedVariant}
-                                  </span>
-                                ) : null}
                               </div>
+                              <p className="truncate text-[12.5px] text-muted-foreground">
+                                <span>{Number(item.unitPriceMad ?? 0).toFixed(2)} MAD</span>
+                                <span className="mx-1.5">·</span>
+                                <span>Qty: {item.quantity}</span>
+                                {normalizedVariant ? (
+                                  <>
+                                    <span className="mx-1.5">·</span>
+                                    <span>Variant: {normalizedVariant}</span>
+                                  </>
+                                ) : null}
+                              </p>
                             </>
                           );
                         })()}
+                        </div>
                       </div>
                       <Checkbox
-                        className="h-6 w-6"
+                        className="h-6 w-6 self-center"
                         checked={checked}
                         onCheckedChange={(value: boolean | "indeterminate") =>
                           togglePackingItem(itemKey, value === true)
