@@ -794,7 +794,17 @@ function VendorDashboardPage() {
         ),
         subtotalBasePriceMad: roundMoney(Number((row as { subtotal_base_price?: number | null }).subtotal_base_price ?? 0)),
         itemCount: Number(row.item_count ?? 0),
-        items: Array.isArray(row.order_items) ? row.order_items : [],
+        items: Array.isArray(row.order_items)
+          ? row.order_items.map((item) => ({
+              ...item,
+              imageUrl:
+                typeof (item as { imageUrl?: unknown }).imageUrl === "string"
+                  ? ((item as { imageUrl?: string }).imageUrl ?? null)
+                  : typeof (item as { image_url?: unknown }).image_url === "string"
+                    ? ((item as { image_url?: string }).image_url ?? null)
+                    : null,
+            }))
+          : [],
         cyclist:
           row.cyclist && typeof row.cyclist.name === "string" && typeof row.cyclist.phoneNumber === "string"
             ? {
