@@ -955,17 +955,64 @@ function AdminPage() {
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
-  const getLocalizedCommuneName = (commune: {
-    name: string;
-    nameEn?: string | null;
-    nameFr?: string | null;
-    nameAr?: string | null;
-  }) => {
-    const lang = i18n.resolvedLanguage || i18n.language || "en";
-    if (lang === "ar") return commune.nameAr?.trim() || commune.nameFr?.trim() || commune.nameEn || commune.name;
-    if (lang === "fr") return commune.nameFr?.trim() || commune.nameEn || commune.name;
-    return commune.nameEn || commune.name;
-  };
+  const getLocalizedCommuneName = useCallback(
+    (commune: {
+      name: string;
+      nameEn?: string | null;
+      nameFr?: string | null;
+      nameAr?: string | null;
+    }) => resolveLocalizedCommuneName(commune, activeLanguage),
+    [activeLanguage],
+  );
+  const getLocalizedNeighborhoodName = useCallback(
+    (neighborhood: {
+      name: string;
+      nameEn?: string | null;
+      nameFr?: string | null;
+      nameAr?: string | null;
+    }) => resolveLocalizedNeighborhoodName(neighborhood, activeLanguage),
+    [activeLanguage],
+  );
+  const localizedServiceZones = useMemo(
+    () =>
+      serviceZones.map((commune) => ({
+        ...commune,
+        name: getLocalizedCommuneName(commune),
+        neighborhoods: commune.neighborhoods.map((neighborhood) => ({
+          ...neighborhood,
+          name: getLocalizedNeighborhoodName(neighborhood),
+        })),
+      })),
+    [getLocalizedCommuneName, getLocalizedNeighborhoodName, serviceZones],
+  );
+  const neighborhoodById = useMemo(() => {
+    const map = new Map<string, (typeof localizedServiceZones)[number]["neighborhoods"][number]>();
+    localizedServiceZones.forEach((commune) => {
+      commune.neighborhoods.forEach((neighborhood) => {
+        map.set(neighborhood.id, neighborhood);
+      });
+    });
+    return map;
+  }, [localizedServiceZones]);
+  const formatZoneFromNeighborhoodIds = useCallback(
+    (neighborhoodIds: string[]) => {
+      const labels = neighborhoodIds
+        .map((id) => neighborhoodById.get(id))
+        .filter((value): value is NonNullable<typeof value> => Boolean(value))
+        .map((neighborhood) => neighborhood.name);
+
+      return labels.length > 0 ? labels.join(" • ") : t("admin.ordersMonitoring.labels.unassigned");
+    },
+    [neighborhoodById, t],
+  );
+  const localizedVendors = useMemo(
+    () => vendors.map((vendor) => ({ ...vendor, zone: formatZoneFromNeighborhoodIds(vendor.neighborhoodIds ?? []) })),
+    [formatZoneFromNeighborhoodIds, vendors],
+  );
+  const localizedCyclists = useMemo(
+    () => cyclists.map((cyclist) => ({ ...cyclist, zone: formatZoneFromNeighborhoodIds(cyclist.neighborhoodIds ?? []) })),
+    [cyclists, formatZoneFromNeighborhoodIds],
+  );
   const masterProducts =
     masterProductsQuery.data?.map(
       (row): MasterProductEntity => ({
@@ -1449,7 +1496,7 @@ function AdminPage() {
     });
   }, [platformSubscribers, subscriberSearchTerm, subscriberStatusFilter]);
 
-  const communeOptions = serviceZones;
+  const communeOptions = localizedServiceZones;
   const adTargetZones = useMemo(
     () => {
       const parseZoneParts = (communeName: string, zoneName: string) => {
@@ -1465,7 +1512,7 @@ function AdminPage() {
       };
 
       return communeOptions.flatMap((commune) => {
-        const fallbackCommuneName = getLocalizedCommuneName(commune);
+        const fallbackCommuneName = commune.name;
         return commune.neighborhoods.map((zone) => {
           const parsed = parseZoneParts(fallbackCommuneName, zone.name);
           return {
