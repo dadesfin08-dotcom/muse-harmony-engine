@@ -3106,7 +3106,7 @@ function FlashSalesView({
         !normalizedQuery ||
         item.name.toLowerCase().includes(normalizedQuery) ||
         (item.category ?? "").toLowerCase().includes(normalizedQuery) ||
-        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery)
+        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery))
       );
     });
   }, [items, searchTerm]);
