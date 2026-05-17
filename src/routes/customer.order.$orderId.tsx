@@ -103,14 +103,17 @@ function CustomerOrderDetailsPage() {
     return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
   }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
 
-  const normalizedOrderStatus = String(order?.status ?? "").toLowerCase();
+  const normalizedOrderStatus = String(order?.status ?? "").trim().toLowerCase();
   const deliveredStatuses = ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"];
-  const isOutForDelivery = ["delivering", "out_for_delivery", "picked_up", "on_the_way"].includes(normalizedOrderStatus);
+  const isOutForDelivery = ["in_delivery", "in_transit", "delivering", "out_for_delivery", "picked_up", "on_the_way"].includes(
+    normalizedOrderStatus,
+  );
   const isDelivered = deliveredStatuses.includes(normalizedOrderStatus);
+  const shouldShowHandoverQr = Boolean(order?.deliveryAuthCode) && isOutForDelivery && !isDelivered;
   const handoverQrPayload = useMemo(() => {
-    if (!order?.id || !isOutForDelivery) return "";
+    if (!order?.id || !shouldShowHandoverQr) return "";
     return JSON.stringify({ action: "customer_delivery", order_id: order.id });
-  }, [isOutForDelivery, order?.id]);
+  }, [order?.id, shouldShowHandoverQr]);
 
   const paymentBadge = useMemo(() => {
     const normalized = String(order?.paymentMethod ?? "").trim().toLowerCase();
@@ -169,7 +172,7 @@ function CustomerOrderDetailsPage() {
             <p className="text-sm text-destructive">{copy.loadError}</p>
           ) : (
             <>
-              {isOutForDelivery ? (
+              {shouldShowHandoverQr ? (
                 <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
                   <p className="text-sm font-semibold text-foreground">{copy.handoverTitle}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{copy.handoverHint}</p>
