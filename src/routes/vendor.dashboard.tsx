@@ -825,7 +825,12 @@ function VendorDashboardPage() {
       preparing: orders.filter((order) => order.status === "preparing"),
       ready: orders.filter((order) => order.status === "ready"),
       inDelivery: orders.filter((order) => order.status === "in_delivery" || order.status === "in_transit" || order.status === "delivering"),
-      delivered: orders.filter((order) => order.status === "delivered"),
+      delivered: orders.filter(
+        (order) =>
+          order.status === "delivered" ||
+          order.status === "delivered_cash_with_cyclist" ||
+          order.status === "cash_transferred_to_vendor",
+      ),
     }),
     [orders],
   );
@@ -2476,6 +2481,16 @@ function OrderHistoryView({
 }) {
   const filteredOrders = useMemo(() => {
     const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfWeek = new Date(startOfToday);
+    const dayOfWeek = startOfWeek.getDay();
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startOfMonth.setHours(0, 0, 0, 0);
 
     return orders.filter((order) => {
       const createdAt = new Date(order.createdAt);
@@ -2488,19 +2503,13 @@ function OrderHistoryView({
       }
 
       if (filter === "today") {
-        return createdAt.toDateString() === now.toDateString();
+        return createdAt >= startOfToday && createdAt <= now;
       }
 
       if (filter === "week") {
-        const startOfWeek = new Date(now);
-        const dayOffset = (startOfWeek.getDay() + 6) % 7;
-        startOfWeek.setDate(startOfWeek.getDate() - dayOffset);
-        startOfWeek.setHours(0, 0, 0, 0);
         return createdAt >= startOfWeek && createdAt <= now;
       }
 
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      startOfMonth.setHours(0, 0, 0, 0);
       return createdAt >= startOfMonth && createdAt <= now;
     });
   }, [orders, filter]);
