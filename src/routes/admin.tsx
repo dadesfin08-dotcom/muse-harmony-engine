@@ -4691,7 +4691,7 @@ function AdminPage() {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
               {activeCollectionVendor
-                ? `Pending commission: ${Math.max(0, Number(activeCollectionVendor.platformDuesMad ?? 0)).toFixed(2)} MAD`
+                ? `Pending commission: ${Number(activeCollectionVendor.platformDuesMad ?? 0).toFixed(2)} MAD`
                 : "Select a vendor first."}
             </p>
             <Input
@@ -5885,10 +5885,7 @@ function VendorsSection({
                 </td>
               </tr>
             ) : (
-              vendors.map((vendor) => {
-              const pendingCommissionMad = Math.max(0, Number(vendor.platformDuesMad ?? 0));
-
-              return (
+              vendors.map((vendor) => (
               <tr key={vendor.id} className="border-t border-border bg-card">
                 <td className="px-4 py-3 font-medium text-foreground">
                   <div className="space-y-0.5">
@@ -5921,17 +5918,16 @@ function VendorsSection({
                     <Button variant="soft" size="sm" className="rounded-md" onClick={() => onManageVendor(vendor)}>
                       {t("admin.common.manage")}
                     </Button>
-                    {pendingCommissionMad > 0 ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-md"
-                        onClick={() => onCollectPlatformDues(vendor)}
-                      >
-                        <CircleDollarSign className="size-3.5" />
-                        Collect Commission {pendingCommissionMad.toFixed(2)} MAD
-                      </Button>
-                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-md"
+                      onClick={() => onCollectPlatformDues(vendor)}
+                      disabled={Number(vendor.platformDuesMad ?? 0) <= 0}
+                    >
+                      <CircleDollarSign className="size-3.5" />
+                      Collect Commission {Number(vendor.platformDuesMad ?? 0).toFixed(2)} MAD
+                    </Button>
                     <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="size-3" />
                       {vendor.phoneNumber}
@@ -5939,8 +5935,7 @@ function VendorsSection({
                   </div>
                 </td>
               </tr>
-              );
-              })
+              ))
             )}
           </tbody>
         </table>
