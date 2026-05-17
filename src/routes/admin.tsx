@@ -235,6 +235,7 @@ import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
+import { getLocalizedCategoryName } from "@/lib/category-localization";
 import { getLocalizedCommuneName as resolveLocalizedCommuneName, getLocalizedNeighborhoodName as resolveLocalizedNeighborhoodName } from "@/lib/location-localization";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -3049,7 +3050,7 @@ function AdminPage() {
 
   const saveCategory = async () => {
     if (!categoryForm.nameEn.trim() || !categoryForm.nameFr.trim() || !categoryForm.nameAr.trim()) {
-      toast.error("Please enter category names in EN, FR, and AR.");
+      toast.error(t("admin.categories.validation.namesRequired"));
       return;
     }
 
@@ -3103,20 +3104,20 @@ function AdminPage() {
         queryClient.setQueryData(["admin", "categories"], (current: CategoryAdminRow[] | undefined) =>
           (current ?? []).map((row) => (row.id === updated.id ? updated : row)),
         );
-        toast.success("Category updated.");
+        toast.success(t("admin.categories.toast.updated"));
       } else {
         const created = await createCategoryInDatabase({ data: payload });
 
         queryClient.setQueryData(["admin", "categories"], (current: CategoryAdminRow[] | undefined) =>
           [...(current ?? []), created].sort((a, b) => a.sort_order - b.sort_order),
         );
-        toast.success("Category created.");
+        toast.success(t("admin.categories.toast.created"));
       }
 
       resetCategoryForm();
     } catch (error) {
       console.error("Failed to save category:", error);
-      toast.error("Failed to save category.");
+      toast.error(t("admin.categories.toast.saveFailed"));
     } finally {
       setIsSavingCategory(false);
     }
@@ -4242,6 +4243,8 @@ function AdminPage() {
               {tab === "categories" ? (
                 <CategoriesSection
                   categories={categories}
+                  activeLanguage={activeLanguage}
+                  isRtl={isRtl}
                   isLoading={dbHealthQuery.isLoading || categoriesQuery.isLoading}
                   form={categoryForm}
                   onFormChange={setCategoryForm}
@@ -6808,6 +6811,8 @@ function BrandsSection({
 
 function CategoriesSection({
   categories,
+  activeLanguage,
+  isRtl,
   isLoading,
   form,
   onFormChange,
@@ -6820,6 +6825,8 @@ function CategoriesSection({
   onImageChange,
 }: {
   categories: CategoryAdminRow[];
+  activeLanguage: "en" | "fr" | "ar";
+  isRtl: boolean;
   isLoading: boolean;
   form: {
     id: string;
@@ -6853,13 +6860,14 @@ function CategoriesSection({
   imagePreviewUrl: string | null;
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
+  const { t } = useTranslation();
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+    <section dir={isRtl ? "rtl" : "ltr"} className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Categories</h2>
-        <p className="text-sm text-muted-foreground">Manage multilingual sections for homepage and customer category pages.</p>
+        <h2 className={cn("text-base font-semibold text-foreground", isRtl && "text-right")}>{t("admin.categories.title")}</h2>
+        <p className={cn("text-sm text-muted-foreground", isRtl && "text-right")}>{t("admin.categories.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
@@ -6880,11 +6888,11 @@ function CategoriesSection({
               {imagePreviewUrl ? (
                 <img
                   src={imagePreviewUrl}
-                  alt="Category image preview"
+                  alt={t("admin.categories.form.imagePreviewAlt")}
                   className="mx-auto aspect-square w-full max-w-[220px] rounded-md object-cover"
                 />
               ) : (
-                <span className="text-sm text-muted-foreground">Upload category cover</span>
+                <span className="text-sm text-muted-foreground">{t("admin.categories.form.uploadCategoryCover")}</span>
               )}
             </button>
 
@@ -6900,43 +6908,47 @@ function CategoriesSection({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium text-foreground">Name (EN)</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.nameEn")}</label>
               <input
+                dir="ltr"
                 value={form.nameEn}
                 onChange={(event) => onFormChange((current) => ({ ...current, nameEn: event.target.value }))}
-                placeholder="e.g. Vegetables"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                placeholder={t("admin.categories.form.placeholders.nameEn")}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (FR)</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.nameFr")}</label>
               <input
+                dir="ltr"
                 value={form.nameFr}
                 onChange={(event) => onFormChange((current) => ({ ...current, nameFr: event.target.value }))}
-                placeholder="e.g. Légumes"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                placeholder={t("admin.categories.form.placeholders.nameFr")}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Name (AR)</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.nameAr")}</label>
               <input
+                dir="rtl"
                 value={form.nameAr}
                 onChange={(event) => onFormChange((current) => ({ ...current, nameAr: event.target.value }))}
-                placeholder="مثال: خضروات"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                placeholder={t("admin.categories.form.placeholders.nameAr")}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-right text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium text-foreground">Image URL (optional)</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.imageUrlOptional")}</label>
               <input
+                dir="ltr"
                 value={form.imageUrl}
                 onChange={(event) => onFormChange((current) => ({ ...current, imageUrl: event.target.value }))}
-                placeholder="https://..."
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                  placeholder={t("admin.categories.form.placeholders.imageUrl")}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className="text-sm font-medium text-foreground">Category Icon</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.categoryIcon")}</label>
               <Popover open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -6944,7 +6956,7 @@ function CategoriesSection({
                     variant="outline"
                     role="combobox"
                     aria-expanded={isIconPickerOpen}
-                    className="h-10 w-full justify-between rounded-md"
+                    className={cn("h-10 w-full justify-between rounded-md", isRtl && "flex-row-reverse")}
                   >
                     <span className="inline-flex items-center gap-2">
                       <CategoryIcon iconName={form.iconName} className="h-4 w-4" />
@@ -6955,9 +6967,9 @@ function CategoriesSection({
                 </PopoverTrigger>
                 <PopoverContent className="w-[300px] p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search icon..." />
+                    <CommandInput placeholder={t("admin.categories.form.searchIcon")} />
                     <CommandList>
-                      <CommandEmpty>No icon found.</CommandEmpty>
+                      <CommandEmpty>{t("admin.categories.form.noIconFound")}</CommandEmpty>
                       {CATEGORY_ICON_OPTIONS.map((iconName) => (
                         <CommandItem
                           key={iconName}
@@ -6969,7 +6981,7 @@ function CategoriesSection({
                         >
                           <CategoryIcon iconName={iconName} className="h-4 w-4" />
                           <span>{iconName}</span>
-                          <span className={cn("ml-auto text-xs", form.iconName === iconName ? "text-primary" : "text-transparent")}>Selected</span>
+                          <span className={cn("ml-auto text-xs", form.iconName === iconName ? "text-primary" : "text-transparent")}>{t("admin.categories.form.selected")}</span>
                         </CommandItem>
                       ))}
                     </CommandList>
@@ -6978,7 +6990,7 @@ function CategoriesSection({
               </Popover>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Accent Color</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.accentColor")}</label>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -6987,51 +6999,53 @@ function CategoriesSection({
                   className="h-10 w-12 rounded-md border border-input bg-background p-1"
                 />
                 <input
+                  dir="ltr"
                   value={form.accentColor}
                   onChange={(event) => onFormChange((current) => ({ ...current, accentColor: event.target.value }))}
                   placeholder="#fef3c7"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Sort Order</label>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.sortOrder")}</label>
               <input
+                dir="ltr"
                 type="number"
                 value={form.sortOrder}
                 onChange={(event) => onFormChange((current) => ({ ...current, sortOrder: event.target.value }))}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
-            <div className="flex items-end gap-2">
+            <div className={cn("flex items-end gap-2", isRtl && "flex-row-reverse justify-end")}>
               <Switch
                 checked={form.isActive}
                 onCheckedChange={(checked) => onFormChange((current) => ({ ...current, isActive: checked }))}
               />
-              <span className="text-sm text-foreground">Active</span>
+              <span className="text-sm text-foreground">{t("admin.categories.form.active")}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className={cn("flex items-center gap-2", isRtl && "justify-end")}>
             <Button variant="hero" className="rounded-md" onClick={onSave} disabled={isSaving}>
-              {isSaving ? "Saving..." : form.id ? "Update Category" : "Add Category"}
+              {isSaving ? t("admin.common.saving") : form.id ? t("admin.categories.form.updateCategory") : t("admin.categories.form.addCategory")}
             </Button>
             <Button type="button" variant="outline" className="rounded-md" onClick={onReset}>
-              Reset
+              {t("admin.categories.form.reset")}
             </Button>
           </div>
         </div>
 
         <div className="space-y-3 rounded-md border border-border bg-background p-3">
-          <h3 className="text-sm font-semibold text-foreground">Saved Categories</h3>
+          <h3 className={cn("text-sm font-semibold text-foreground", isRtl && "text-right")}>{t("admin.categories.saved.title")}</h3>
           {isLoading ? (
-            <AppEmptyState title="Loading categories..." subtitle="Please wait while categories are fetched." className="py-5" />
+            <AppEmptyState title={t("admin.categories.saved.loadingTitle")} subtitle={t("admin.categories.saved.loadingSubtitle")} className="py-5" />
           ) : categories.length === 0 ? (
-            <AppEmptyState title="No categories yet." subtitle="Create your first category to organize products." className="py-5" />
+            <AppEmptyState title={t("admin.categories.saved.emptyTitle")} subtitle={t("admin.categories.saved.emptySubtitle")} className="py-5" />
           ) : (
             <div className="space-y-2">
               {categories.map((category) => (
-                <article key={category.id} className="flex items-center gap-3 rounded-md border border-border bg-card p-2">
+                <article key={category.id} className={cn("flex items-center gap-3 rounded-md border border-border bg-card p-2", isRtl && "flex-row-reverse") }>
                   <div
                     className="flex h-16 w-16 items-center justify-center rounded-2xl"
                     style={{ backgroundColor: category.accent_color || "#f3f4f6" }}
@@ -7039,7 +7053,9 @@ function CategoriesSection({
                     {category.image_url ? (
                       <img
                         src={category.image_url || fallbackProductImage}
-                        alt={`${category.name_en} category icon`}
+                        alt={t("admin.categories.saved.itemIconAlt", {
+                          name: getLocalizedCategoryName(category, activeLanguage),
+                        })}
                         className="h-10 w-10 object-contain"
                         loading="lazy"
                       />
@@ -7048,14 +7064,19 @@ function CategoriesSection({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">{category.name_en}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {category.name_fr} • {category.name_ar}
+                    <p className={cn("truncate text-sm font-semibold text-foreground", isRtl && "text-right")}>
+                      {getLocalizedCategoryName(category, activeLanguage)}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">Sort: {category.sort_order}</p>
+                    <p className={cn("truncate text-xs text-muted-foreground", isRtl && "text-right")}>
+                      {[category.name_en, category.name_fr, category.name_ar]
+                        .map((name) => name?.trim())
+                        .filter((name, index, array) => Boolean(name) && array.indexOf(name) === index)
+                        .join(" • ")}
+                    </p>
+                    <p className={cn("mt-1 text-xs text-muted-foreground", isRtl && "text-right")}>{t("admin.categories.saved.sortLabel", { value: category.sort_order })}</p>
                   </div>
                   <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={() => onEdit(category)}>
-                    Edit
+                    {t("admin.categories.saved.edit")}
                   </Button>
                 </article>
               ))}
