@@ -13,6 +13,7 @@ import {
 import { I18nextProvider } from "react-i18next";
 
 import i18n, { LANGUAGE_STORAGE_KEY } from "@/lib/i18n";
+import { applyLanguageToDocument, persistLanguagePreference, resolveAppLanguage } from "@/lib/localization";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ensureAuthSessionHydrated,
@@ -142,10 +143,9 @@ function RootComponent() {
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {
-      const nextLang = language === "ar" ? "ar" : language === "fr" ? "fr" : "en";
-      document.documentElement.lang = nextLang;
-      document.documentElement.dir = nextLang === "ar" ? "rtl" : "ltr";
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLang);
+      const nextLang = resolveAppLanguage(language);
+      applyLanguageToDocument(nextLang);
+      persistLanguagePreference(nextLang);
     };
 
     applyLanguageDirection(i18n.resolvedLanguage || i18n.language);
