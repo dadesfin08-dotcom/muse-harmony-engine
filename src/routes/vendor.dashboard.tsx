@@ -27,7 +27,6 @@ import {
   Users,
   Tag,
   Scale,
-  Sparkles,
   QrCode,
   Volume2,
   VolumeX,
