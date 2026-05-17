@@ -1509,7 +1509,7 @@ function AdminPage() {
             return { communeName: parsedCommune, douarName: parsedDouar };
           }
         }
-        return { communeName, douarName: raw || "Unnamed Douar" };
+        return { communeName, douarName: raw || t("admin.adsContentCms.campaigns.douarSubzone") };
       };
 
       return communeOptions.flatMap((commune) => {
