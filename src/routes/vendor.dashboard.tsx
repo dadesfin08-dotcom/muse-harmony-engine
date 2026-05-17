@@ -93,7 +93,7 @@ import {
 } from "@/components/ThermalReceipt";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
-type OrderQueueTab = "new" | "preparing" | "ready" | "inDelivery";
+type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
 type HistoryFilter = "today" | "week" | "month" | "all";
 type CarnetLedgerTransaction = {
   id: string;
@@ -165,7 +165,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
 const vendorDashboardSearchSchema = z.object({
   tab: fallback(z.enum(["live", "inventory", "flash-sales", "carnet", "history"]), "live").default("live"),
-  sub: fallback(z.enum(["new", "preparing", "ready", "inDelivery"]), "new").default("new"),
+  sub: fallback(z.enum(["pending", "preparing", "ready", "inDelivery"]), "pending").default("pending"),
 });
 
 type VendorDashboardSearch = z.infer<typeof vendorDashboardSearchSchema>;
@@ -180,9 +180,11 @@ type DashboardOrder = {
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
   status:
+    | "pending"
     | "new"
     | "preparing"
     | "ready"
+    | "in_delivery"
     | "in_transit"
     | "delivering"
     | "delivered"
@@ -215,23 +217,19 @@ type DashboardOrder = {
 };
 
 function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
-  if (status === "picked_up" || status === "in_transit") {
-    return "in_transit";
+  if (status === "picked_up" || status === "in_transit" || status === "in_delivery" || status === "delivering") {
+    return "in_delivery";
   }
 
-  if (
-    status === "new" ||
-    status === "preparing" ||
-    status === "ready" ||
-    status === "delivering" ||
-    status === "delivered" ||
-    status === "delivered_cash_with_cyclist" ||
-    status === "cash_transferred_to_vendor"
-  ) {
+  if (status === "pending" || status === "new") {
+    return "pending";
+  }
+
+  if (status === "preparing" || status === "ready" || status === "delivered" || status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
     return status;
   }
 
-  return "new";
+  return "pending";
 }
 
 type InventoryItem = {
@@ -577,7 +575,7 @@ function VendorDashboardPage() {
             return;
           }
 
-          if (inserted?.status !== "new" || !inserted?.id) {
+          if (!(inserted?.status === "pending" || inserted?.status === "new") || !inserted?.id) {
             return;
           }
 
@@ -641,7 +639,7 @@ function VendorDashboardPage() {
                             search: (prev: VendorDashboardSearch) => ({
                               ...prev,
                               tab: "live",
-                              sub: "new",
+                              sub: "pending",
                             }),
                             replace: true,
                           });
@@ -814,10 +812,10 @@ function VendorDashboardPage() {
 
   const queue = useMemo(
     () => ({
-      new: orders.filter((order) => order.status === "new"),
+      pending: orders.filter((order) => order.status === "pending" || order.status === "new"),
       preparing: orders.filter((order) => order.status === "preparing"),
       ready: orders.filter((order) => order.status === "ready"),
-      inDelivery: orders.filter((order) => order.status === "in_transit" || order.status === "delivering"),
+      inDelivery: orders.filter((order) => order.status === "in_delivery" || order.status === "in_transit" || order.status === "delivering"),
       delivered: orders.filter((order) => order.status === "delivered"),
     }),
     [orders],
@@ -892,7 +890,7 @@ function VendorDashboardPage() {
       return normalizedDate >= startOfMonth.getTime() && normalizedDate <= endOfMonth.getTime();
     };
 
-    const pendingOrders = queue.new.length + queue.preparing.length;
+    const pendingOrders = queue.pending.length + queue.preparing.length;
     const deliveredInFilter = orders.filter(
       (order) =>
         (order.status === "delivered" ||
@@ -2191,7 +2189,7 @@ function LiveOrdersView({
   activeTab: OrderQueueTab;
   onTabChange: (tab: OrderQueueTab) => void;
   queue: {
-    new: DashboardOrder[];
+    pending: DashboardOrder[];
     preparing: DashboardOrder[];
     ready: DashboardOrder[];
     inDelivery: DashboardOrder[];
@@ -2218,14 +2216,14 @@ function LiveOrdersView({
       <Tabs
         value={activeTab}
         onValueChange={(v) =>
-          v === "new" || v === "preparing" || v === "ready" || v === "inDelivery"
+          v === "pending" || v === "preparing" || v === "ready" || v === "inDelivery"
             ? onTabChange(v)
             : undefined
         }
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
-          <TabsTrigger value="new" className="rounded-lg">
-            New ({queue.new.length})
+          <TabsTrigger value="pending" className="rounded-lg">
+            Pending ({queue.pending.length})
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
             Preparing ({queue.preparing.length})
@@ -2238,19 +2236,19 @@ function LiveOrdersView({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="new" className="mt-4">
+        <TabsContent value="pending" className="mt-4">
           {isLoading ? (
             <EmptyState label="Loading live orders..." />
-          ) : queue.new.length === 0 ? (
-            <EmptyState label="No new orders right now." />
+          ) : queue.pending.length === 0 ? (
+            <EmptyState label="No pending orders right now." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {queue.new.map((order) => (
+                {queue.pending.map((order) => (
                   <OrderCard
                     key={order.id}
                     order={order}
-                    tab="new"
+                    tab="pending"
                     isUpdating={isUpdating === order.id}
                     onOpenDetails={() => onOpenOrder(order.id)}
                     onAccept={() => onAcceptOrder(order.id)}
@@ -3272,7 +3270,7 @@ function OrderCard({
         {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
-      {tab === "new" ? (
+      {tab === "pending" ? (
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="soft" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
             <BadgeCheck className="size-4" />
@@ -3342,8 +3340,8 @@ function EmptyState({ label }: { label: string }) {
 }
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
-  if (tab === "new") {
-    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">New</Badge>;
+  if (tab === "pending") {
+    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">Pending</Badge>;
   }
 
   if (tab === "preparing") {
