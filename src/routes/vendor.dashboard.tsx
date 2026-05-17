@@ -3014,6 +3014,7 @@ function FlashSalesView({
   onDraftChange: Dispatch<SetStateAction<Record<string, { enabled: boolean; price: string; endAt: string }>>>;
   onSaveFlash: (item: InventoryItem) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredItems = useMemo(() => {
@@ -3029,14 +3030,14 @@ function FlashSalesView({
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Flash Sales</h2>
-        <p className="text-xs text-muted-foreground">Enable limited-time deals to boost conversions.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.flashSales.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.subtitle")}</p>
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading flash sale products..." />
+        <EmptyState label={t("vendorDashboard.flashSales.loading")} />
       ) : filteredItems.length === 0 ? (
-        <EmptyState label="No in-stock priced products available for flash sales." />
+        <EmptyState label={t("vendorDashboard.flashSales.empty")} />
       ) : (
         <>
           <div className="mb-4 rounded-xl border border-border bg-background p-3">
@@ -3045,7 +3046,7 @@ function FlashSalesView({
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search products by name"
+                placeholder={t("vendorDashboard.flashSales.searchPlaceholder")}
                 className="h-10 rounded-xl pl-9"
               />
             </div>
@@ -3091,12 +3092,12 @@ function FlashSalesView({
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Regular: {item.vendorPrice.toFixed(2)} MAD</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t("vendorDashboard.flashSales.regularPrice", { price: item.vendorPrice.toFixed(2) })}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2 py-1.5">
-                      <span className="text-xs font-medium text-foreground">{draft.enabled ? "Active" : "Inactive"}</span>
+                      <span className="text-xs font-medium text-foreground">{draft.enabled ? t("vendorDashboard.flashSales.active") : t("vendorDashboard.flashSales.inactive")}</span>
                       <Switch
                         checked={draft.enabled}
                         onCheckedChange={(checked) =>
@@ -3118,7 +3119,7 @@ function FlashSalesView({
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Flash Price (MAD)</label>
+                      <label className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.flashPrice")}</label>
                       <Input
                         type="number"
                         min="0"
@@ -3137,7 +3138,7 @@ function FlashSalesView({
                             },
                           }))
                         }
-                        placeholder="0.00"
+                        placeholder={t("vendorDashboard.common.pricePlaceholder")}
                         className={cn(
                           "h-10 rounded-xl",
                           isFlashPriceInvalid &&
@@ -3146,12 +3147,12 @@ function FlashSalesView({
                         disabled={!draft.enabled}
                       />
                       {isFlashPriceInvalid ? (
-                        <p className="text-xs text-destructive">Flash price must be less than the regular price.</p>
+                        <p className="text-xs text-destructive">{t("vendorDashboard.toasts.flashPriceLowerThanRegular")}</p>
                       ) : null}
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Ends At</label>
+                      <label className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.endsAt")}</label>
                       <Input
                         type="datetime-local"
                         value={draft.endAt ? new Date(draft.endAt).toISOString().slice(0, 16) : ""}
@@ -3180,7 +3181,7 @@ function FlashSalesView({
                     onClick={() => onSaveFlash(item)}
                     disabled={isSavingFlashFor === item.id || !canSaveFlashSale}
                   >
-                    {isSavingFlashFor === item.id ? "Saving..." : "Save Flash Sale"}
+                    {isSavingFlashFor === item.id ? t("vendorDashboard.actions.saving") : t("vendorDashboard.flashSales.save")}
                   </Button>
                 </article>
               );
