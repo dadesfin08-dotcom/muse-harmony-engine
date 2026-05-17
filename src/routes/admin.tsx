@@ -534,7 +534,7 @@ const MOCK_BRAND_DATA: Array<{
   search_volume: number;
 }> = [
   {
-    id: "mock-brand-atlas",
+    id: "7b3db6ba-7932-4d5f-8f85-58f2efc7fb71",
     brand_name: "Atlas Fresh",
     current_score: 154,
     active_days: 12,
@@ -544,7 +544,7 @@ const MOCK_BRAND_DATA: Array<{
     search_volume: 182,
   },
   {
-    id: "mock-brand-casablanca",
+    id: "cd4704e8-4f4d-4a53-91c3-4efe124ea462",
     brand_name: "Casablanca Market",
     current_score: 131,
     active_days: 8,
@@ -554,7 +554,7 @@ const MOCK_BRAND_DATA: Array<{
     search_volume: 149,
   },
   {
-    id: "mock-brand-sahara",
+    id: "9d8b5fdf-6a75-4095-aab8-76be260f7b96",
     brand_name: "Sahara Select",
     current_score: 96,
     active_days: 4,
