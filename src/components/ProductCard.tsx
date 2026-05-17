@@ -138,12 +138,12 @@ export function ProductCard({
         </div>
 
         <Link to="/customer/product/$id" params={{ id }} className="block w-full min-w-0">
-          <h2 title={name} className="h-[2.75rem] w-full text-base font-bold line-clamp-2">
+          <h2 title={name} className="w-full text-base font-bold line-clamp-2 h-[3.5rem] leading-snug pb-1">
             {name}
           </h2>
         </Link>
 
-        <div className="mt-auto flex w-full flex-row items-end justify-between gap-2 pt-1">
+        <div className="flex flex-row justify-between items-center w-full mt-auto gap-2 pt-1">
           <div className="flex min-w-0 flex-1 flex-col items-start justify-end">
             <div className="flex flex-wrap items-baseline gap-1">
               <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
