@@ -12,8 +12,7 @@ import { getCategoryById, listCategoryMasterProducts } from "@/lib/categories.fu
 import { CategoryIcon } from "@/lib/lucide-category-icons";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
-
-type AppLanguage = "en" | "fr" | "ar";
+import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
 
 type CategoryRow = {
   id: string;
@@ -43,8 +42,9 @@ export const Route = createFileRoute("/customer/categories/$id")({
 
 function CategoryDetailPage() {
   const { id } = Route.useParams();
-  const { t, i18n } = useTranslation();
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
+  const getLocalizedText = useLocalizedText();
   const isArabic = language === "ar";
 
   const fetchCategoryById = useServerFn(getCategoryById);
@@ -87,22 +87,21 @@ function CategoryDetailPage() {
 
   const localizedCategoryName = useMemo(() => {
     if (!category) return t("categories.title", { defaultValue: "Quick categories" });
-    if (language === "ar") return category.name_ar || category.name_en;
-    if (language === "fr") return category.name_fr || category.name_en;
-    return category.name_en;
-  }, [category, language, t]);
+    return getLocalizedText(
+      { en: category.name_en, fr: category.name_fr, ar: category.name_ar },
+      category.name_en,
+    );
+  }, [category, getLocalizedText, t]);
 
   const localizedProducts = useMemo(() => {
     return products.map((product) => ({
       ...product,
-      localizedName:
-        language === "ar"
-          ? product.name_ar || product.product_name
-          : language === "fr"
-            ? product.name_fr || product.product_name
-            : product.product_name,
+      localizedName: getLocalizedText(
+        { en: product.product_name, fr: product.name_fr, ar: product.name_ar },
+        product.product_name,
+      ),
     }));
-  }, [products, language]);
+  }, [getLocalizedText, products]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
