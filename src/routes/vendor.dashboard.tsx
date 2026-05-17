@@ -3205,6 +3205,7 @@ function OrderCard({
         .join("")
     : "DR";
   const shouldShowDriverBlock = tab === "inDelivery" || (tab === "ready" && !!order.cyclist);
+  const isPreparingTab = tab === "preparing";
   const driver = order.cyclist;
   const driverPhoneForCall = driver?.phoneNumber?.trim() ?? "";
   const driverPhoneDigits = driverPhoneForCall.replace(/\D/g, "");
@@ -3239,11 +3240,18 @@ function OrderCard({
         "flex h-full min-h-[200px] flex-col transition hover:shadow-md",
         isInDeliveryTab
           ? "rounded-2xl border border-[#e5e7eb] border-l-4 border-l-[#16a34a] bg-white p-5 shadow-sm"
-          : "rounded-xl border border-border bg-card p-4 shadow-sm",
+          : isPreparingTab
+            ? "rounded-2xl border-[0.5px] border-[#e5e7eb] border-t-[3px] border-t-[#f59e0b] bg-white p-4 shadow-sm"
+            : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
-      <div className={cn("flex-1 space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
-        <div className={cn("flex w-full items-start justify-between gap-2", !isInDeliveryTab ? "mb-3 flex flex-row items-center justify-end gap-2" : "") }>
+      <div className={cn("flex-1 space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : isPreparingTab ? "space-y-3" : "")}> 
+        <div
+          className={cn(
+            "flex w-full items-start justify-between gap-2",
+            !isInDeliveryTab && !isPreparingTab ? "mb-3 flex flex-row items-center justify-end gap-2" : "",
+          )}
+        >
           {isInDeliveryTab ? (
             <div className="flex w-full items-center justify-between gap-3">
               <span className="inline-flex h-7 items-center gap-2 rounded-full bg-[#dcfce7] px-3 text-xs font-medium text-[#15803d]" dir="rtl">
@@ -3253,6 +3261,17 @@ function OrderCard({
               <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
                 <span className="max-w-[130px] truncate whitespace-nowrap">{elapsed}</span>
+              </p>
+            </div>
+          ) : isPreparingTab ? (
+            <div className="flex w-full items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-[20px] bg-[#fef9c3] px-[10px] py-[3px] text-[11px] font-medium text-[#b45309]">
+                <span className="h-[14px] w-[14px] shrink-0 animate-spin rounded-full border-2 border-[#f59e0b] border-t-transparent" />
+                <span>Preparing</span>
+              </span>
+              <p className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">{elapsed}</span>
               </p>
             </div>
           ) : (
@@ -3283,20 +3302,51 @@ function OrderCard({
         ) : (
           <>
             <div className="flex-1 space-y-2.5">
-              <div className="mb-3 flex w-full flex-row items-center justify-between">
-                <p className="text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
-                <p className="text-xl font-extrabold text-gray-900">{shortId}</p>
-              </div>
+              {isPreparingTab ? (
+                <>
+                  <div className="grid w-full grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Order</p>
+                      <p className="text-lg font-semibold text-foreground">{shortId}</p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Total</p>
+                      <p className="text-lg font-semibold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
+                    </div>
+                  </div>
 
-              <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
-                <User className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate font-semibold">{order.customerName}</span>
-              </p>
+                  <div className="space-y-1.5">
+                    <p className="inline-flex w-full items-center gap-1.5 text-[12px] text-muted-foreground">
+                      <User className="size-3.5 shrink-0 text-[#16a34a]" />
+                      <span className="truncate">{order.customerName}</span>
+                    </p>
 
-              <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
-                <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{destination || "Destination unavailable"}</span>
-              </p>
+                    <p className="inline-flex w-full items-center gap-1.5 text-[12px] text-muted-foreground">
+                      <MapPin className="size-3.5 shrink-0 text-[#16a34a]" />
+                      <span className="truncate">{destination || "Destination unavailable"}</span>
+                    </p>
+                  </div>
+
+                  <div className="border-t-[0.5px] border-dashed border-[#e5e7eb]" />
+                </>
+              ) : (
+                <>
+                  <div className="mb-3 flex w-full flex-row items-center justify-between">
+                    <p className="text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+                    <p className="text-xl font-extrabold text-gray-900">{shortId}</p>
+                  </div>
+
+                  <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
+                    <User className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate font-semibold">{order.customerName}</span>
+                  </p>
+
+                  <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
+                    <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{destination || "Destination unavailable"}</span>
+                  </p>
+                </>
+              )}
             </div>
           </>
         )}
@@ -3401,11 +3451,13 @@ function OrderCard({
           "mt-2 w-full rounded-[16px]",
           isInDeliveryTab
             ? "h-11 rounded-full bg-[#16a34a] text-sm font-medium text-white shadow-none hover:bg-[#15803d]"
+            : isPreparingTab
+              ? "h-10 rounded-full bg-[#16a34a] text-xs font-medium text-white shadow-none hover:bg-[#15803d]"
             : "h-10 rounded-xl",
         )}
         onClick={onOpenDetails}
       >
-        {isInDeliveryTab ? <Eye className="mr-1.5 h-4 w-4" /> : null}
+        {isInDeliveryTab || isPreparingTab ? <Eye className="mr-1.5 h-4 w-4" /> : null}
         {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
@@ -3423,8 +3475,8 @@ function OrderCard({
 
       {tab === "preparing" ? (
         <Button
-          variant="hero"
-          className="mt-2 h-10 w-full rounded-xl"
+          variant="outline"
+          className="mt-2 h-10 w-full rounded-full border-[#16a34a] bg-transparent text-xs font-medium text-[#16a34a] shadow-none hover:bg-[#dcfce7] hover:text-[#16a34a]"
           onClick={onMarkReady}
           disabled={isUpdating}
         >
