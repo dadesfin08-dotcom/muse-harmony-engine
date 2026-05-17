@@ -2353,14 +2353,15 @@ function LiveOrdersView({
   onRejectOrder: (orderId: string) => void;
   timeTick: number;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Live Orders</h2>
-          <p className="text-xs text-muted-foreground">Manage urgent orders by operational stage.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.liveOrders.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("vendorDashboard.liveOrders.subtitle")}</p>
         </div>
-        {isLoading ? <span className="text-sm text-muted-foreground">Loading...</span> : null}
+        {isLoading ? <span className="text-sm text-muted-foreground">{t("vendorDashboard.common.loading")}</span> : null}
       </div>
 
       <Tabs
@@ -2373,24 +2374,24 @@ function LiveOrdersView({
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="pending" className="rounded-lg">
-            Pending ({queue.pending.length})
+            {t("vendorDashboard.tabs.pending", { count: queue.pending.length })}
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
-            Preparing ({queue.preparing.length})
+            {t("vendorDashboard.tabs.preparing", { count: queue.preparing.length })}
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
-            Ready ({queue.ready.length})
+            {t("vendorDashboard.tabs.ready", { count: queue.ready.length })}
           </TabsTrigger>
           <TabsTrigger value="inDelivery" className="rounded-lg">
-            In Delivery / في الطريق ({queue.inDelivery.length})
+            {t("vendorDashboard.tabs.inDelivery", { count: queue.inDelivery.length })}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.pending.length === 0 ? (
-            <EmptyState label="No pending orders right now." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyPending")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2413,9 +2414,9 @@ function LiveOrdersView({
 
         <TabsContent value="preparing" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.preparing.length === 0 ? (
-            <EmptyState label="No orders are currently being prepared." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyPreparing")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2437,9 +2438,9 @@ function LiveOrdersView({
 
         <TabsContent value="ready" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.ready.length === 0 ? (
-            <EmptyState label="No orders waiting for pickup." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyReady")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2460,9 +2461,9 @@ function LiveOrdersView({
 
         <TabsContent value="inDelivery" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.inDelivery.length === 0 ? (
-            <EmptyState label="No orders currently in delivery." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyInDelivery")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
