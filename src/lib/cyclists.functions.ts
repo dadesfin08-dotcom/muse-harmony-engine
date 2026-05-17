@@ -525,6 +525,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       let assignedToOtherCyclistCount = 0;
       let unsupportedStatusCount = 0;
+      const unsupportedStatusCounts = new Map<string, number>();
       for (const row of (visibilityRows ?? []) as Array<{
         status?: string | null;
         cyclist_id?: string | null;
@@ -545,6 +546,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
         if (!lifecycleStatusesVisibleToCyclist.has(normalizedStatus)) {
           unsupportedStatusCount += 1;
+          unsupportedStatusCounts.set(normalizedStatus, (unsupportedStatusCounts.get(normalizedStatus) ?? 0) + 1);
         }
       }
 
@@ -770,6 +772,9 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         visibilityHints: {
           assignedToOtherCyclistCount,
           unsupportedStatusCount,
+          unsupportedStatuses: Array.from(unsupportedStatusCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([status, count]) => ({ status, count })),
         },
         totalCashCollectedMad,
       };
