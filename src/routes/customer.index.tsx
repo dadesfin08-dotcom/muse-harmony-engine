@@ -2894,7 +2894,7 @@ function Index() {
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
               }}
             >
-              <div className="relative shrink-0 border-b border-border/60 px-6 pb-3 pt-2">
+              <div className="relative shrink-0 border-b border-border/60 bg-background px-6 pb-4 pt-2">
                 <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" aria-hidden="true" />
                 <Button
                   type="button"
@@ -2906,9 +2906,17 @@ function Index() {
                 >
                   <X className="h-5 w-5" />
                 </Button>
+
+                <div className="pt-3 text-center">
+                  <UserCircle2 className="mx-auto mb-3 h-10 w-10 text-primary" strokeWidth={1.5} aria-hidden="true" />
+                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
+                  </p>
+                </div>
               </div>
 
-              <div className="pointer-events-none absolute inset-x-0 top-[54px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
+              <div className="pointer-events-none absolute inset-x-0 top-[126px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/95 via-background/60 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollDown ? 1 : 0 }} />
 
               <div
@@ -2922,14 +2930,6 @@ function Index() {
                 }}
               >
                 <div className="flex flex-col gap-5">
-                <div className="pt-2 text-center">
-                  <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
-                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
-                  </p>
-                </div>
-
                 {customerSession && customerPanelView === "account" ? (
                   <div className="space-y-3">
                   <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
