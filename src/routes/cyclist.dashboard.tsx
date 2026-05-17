@@ -266,7 +266,6 @@ function CyclistDashboardPage() {
   );
 
   const orderedDashboardTabs = isArabic ? [...dashboardTabs].reverse() : dashboardTabs;
-  const activeTabIndex = orderedDashboardTabs.findIndex((tab) => tab.key === activeView);
 
   const updateOnlineState = async (isOnline: boolean) => {
     if (!cyclist?.id) {
