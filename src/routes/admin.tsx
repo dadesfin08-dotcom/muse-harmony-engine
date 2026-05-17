@@ -213,6 +213,7 @@ import {
   manualBoostBrandScore,
   resetFactoryData,
   resetBrandEngineScore,
+  seedBrandEngineDemoData,
   setBrandBlacklistState,
   uploadSiteLogo,
   uploadPlatformPackAsset,
@@ -533,7 +534,7 @@ const MOCK_BRAND_DATA: Array<{
   search_volume: number;
 }> = [
   {
-    id: "mock-brand-atlas",
+    id: "7b3db6ba-7932-4d5f-8f85-58f2efc7fb71",
     brand_name: "Atlas Fresh",
     current_score: 154,
     active_days: 12,
@@ -543,7 +544,7 @@ const MOCK_BRAND_DATA: Array<{
     search_volume: 182,
   },
   {
-    id: "mock-brand-casablanca",
+    id: "cd4704e8-4f4d-4a53-91c3-4efe124ea462",
     brand_name: "Casablanca Market",
     current_score: 131,
     active_days: 8,
@@ -553,7 +554,7 @@ const MOCK_BRAND_DATA: Array<{
     search_volume: 149,
   },
   {
-    id: "mock-brand-sahara",
+    id: "9d8b5fdf-6a75-4095-aab8-76be260f7b96",
     brand_name: "Sahara Select",
     current_score: 96,
     active_days: 4,
@@ -811,6 +812,7 @@ function AdminPage() {
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
+  const triggerSeedBrandDemoData = useServerFn(seedBrandEngineDemoData);
   const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
@@ -2489,29 +2491,7 @@ function AdminPage() {
 
   const handleSeedBrandEngineDemoData = async () => {
     try {
-      const demoBrands = MOCK_BRAND_DATA.map((brand) => ({
-        id: brand.id,
-        name_en: brand.brand_name,
-        name_fr: brand.brand_name,
-        name_ar: brand.brand_name,
-        logo_url: null,
-      }));
-
-      const { error: brandError } = await supabase.from("brands").upsert(demoBrands, { onConflict: "id" });
-      if (brandError) throw brandError;
-
-      const demoScores = MOCK_BRAND_DATA.map((brand) => ({
-        brand_id: brand.id,
-        base_score: brand.current_score,
-        trending_velocity: brand.trending_velocity,
-        active_until: new Date(Date.now() + brand.active_days * 24 * 60 * 60 * 1000).toISOString(),
-        is_trending: brand.trend_status !== "Falling" && brand.current_score >= 120,
-        is_blacklisted: false,
-        last_updated: new Date().toISOString(),
-      }));
-
-      const { error: scoreError } = await supabase.from("brand_scores").upsert(demoScores, { onConflict: "brand_id" });
-      if (scoreError) throw scoreError;
+      await triggerSeedBrandDemoData();
 
       toast.success("Demo brand data seeded successfully.");
       await brandEngineQuery.refetch();

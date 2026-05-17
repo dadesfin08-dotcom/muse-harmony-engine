@@ -796,6 +796,36 @@ const brandBlacklistActionInputSchema = z.object({
 
 const BRAND_TRENDING_THRESHOLD = 120;
 
+const BRAND_ENGINE_DEMO_DATA: Array<{
+  id: string;
+  brandName: string;
+  baseScore: number;
+  activeDays: number;
+  trendingVelocity: number;
+}> = [
+  {
+    id: "7b3db6ba-7932-4d5f-8f85-58f2efc7fb71",
+    brandName: "Atlas Fresh",
+    baseScore: 154,
+    activeDays: 12,
+    trendingVelocity: 24.8,
+  },
+  {
+    id: "cd4704e8-4f4d-4a53-91c3-4efe124ea462",
+    brandName: "Casablanca Market",
+    baseScore: 131,
+    activeDays: 8,
+    trendingVelocity: 11.2,
+  },
+  {
+    id: "9d8b5fdf-6a75-4095-aab8-76be260f7b96",
+    brandName: "Sahara Select",
+    baseScore: 96,
+    activeDays: 4,
+    trendingVelocity: -6.5,
+  },
+];
+
 export const getBrandEngineAnalytics = createServerFn({ method: "GET" }).handler(async () => {
   await (supabaseAdmin as any).rpc("refresh_brand_scores");
 
@@ -1029,6 +1059,47 @@ export const resetBrandEngineScore = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+export const seedBrandEngineDemoData = createServerFn({ method: "POST" }).handler(async () => {
+  const now = Date.now();
+
+  const { error: brandsError } = await (supabaseAdmin as any).from("brands").upsert(
+    BRAND_ENGINE_DEMO_DATA.map((brand) => ({
+      id: brand.id,
+      name_en: brand.brandName,
+      name_fr: brand.brandName,
+      name_ar: brand.brandName,
+      logo_url: null,
+      created_at: new Date(now - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString(),
+    })),
+    { onConflict: "id" },
+  );
+
+  if (brandsError) {
+    throw new Error(brandsError.message ?? "Failed to seed demo brands.");
+  }
+
+  const { error: scoresError } = await (supabaseAdmin as any).from("brand_scores").upsert(
+    BRAND_ENGINE_DEMO_DATA.map((brand) => ({
+      brand_id: brand.id,
+      base_score: brand.baseScore,
+      trending_velocity: brand.trendingVelocity,
+      active_until: new Date(now + brand.activeDays * 24 * 60 * 60 * 1000).toISOString(),
+      is_trending: brand.baseScore >= BRAND_TRENDING_THRESHOLD,
+      is_blacklisted: false,
+      manual_boost_until: null,
+      last_updated: new Date().toISOString(),
+    })),
+    { onConflict: "brand_id" },
+  );
+
+  if (scoresError) {
+    throw new Error(scoresError.message ?? "Failed to seed demo brand scores.");
+  }
+
+  return { ok: true };
+});
 
 export const listAdminOrders = createServerFn({ method: "GET" }).handler(async () => {
   const [ordersRes, vendorsRes, cyclistsRes] = await Promise.all([
