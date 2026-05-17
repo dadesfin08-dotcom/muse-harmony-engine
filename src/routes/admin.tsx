@@ -3985,7 +3985,7 @@ function AdminPage() {
             className={cn(
               "space-y-5 p-4 md:p-6",
               isRtl &&
-                "text-right [&_table]:[direction:rtl] [&_table]:text-right [&_th]:text-right [&_td]:text-right [&_thead]:text-right [&_th:last-child]:text-left [&_td:last-child]:text-left [&_label]:text-right [&_input]:text-right [&_textarea]:text-right [&_button[role=combobox]]:flex-row-reverse [&_button[role=combobox]]:text-right [&_button[role=combobox]>svg]:ml-0 [&_button[role=combobox]>svg]:mr-2",
+                "text-right [&_.ml-auto]:mr-auto [&_.ml-auto]:ml-0 [&_.text-left]:text-right [&_table]:[direction:rtl] [&_table]:text-right [&_th]:text-right [&_td]:text-right [&_thead]:text-right [&_th:last-child]:text-left [&_td:last-child]:text-left [&_label]:text-right [&_input]:text-right [&_textarea]:text-right [&_button[role=combobox]]:flex-row-reverse [&_button[role=combobox]]:text-right [&_button[role=combobox]>svg]:ml-0 [&_button[role=combobox]>svg]:mr-2 [&_.absolute.left-3]:left-auto [&_.absolute.left-3]:right-3 [&_.pl-9]:pl-3 [&_.pl-9]:pr-9",
             )}
           >
             {!dbHealthQuery.isLoading && !dbHealthQuery.data?.healthy ? (
