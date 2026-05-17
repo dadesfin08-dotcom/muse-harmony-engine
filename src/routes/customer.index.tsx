@@ -2383,7 +2383,7 @@ function Index() {
                   <div className="flex flex-1 flex-col p-2.5">
                     <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-foreground">{product.name}</h3>
 
-                    <div className="mt-1.5 flex items-baseline gap-1">
+                    <div className="mt-1.5 gap-1 flex items-center justify-center">
                       <span className="text-base font-bold tracking-tight text-[#2A7543]">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
