@@ -3270,7 +3270,7 @@ function OrderCard({
         {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
       </Button>
 
-      {tab === "new" ? (
+      {tab === "pending" ? (
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="soft" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
             <BadgeCheck className="size-4" />
@@ -3340,8 +3340,8 @@ function EmptyState({ label }: { label: string }) {
 }
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
-  if (tab === "new") {
-    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">New</Badge>;
+  if (tab === "pending") {
+    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">Pending</Badge>;
   }
 
   if (tab === "preparing") {
