@@ -1212,6 +1212,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const vendor = await resolveVendorByPhone(data.phoneNumber);
+      const preferredLocale = resolveAppLanguage(data.locale);
 
       const { data: orderRow, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
@@ -1307,12 +1308,15 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
 
       const [byIdQuery, byNameQuery] = await Promise.all([
         productIds.length > 0
-          ? (supabaseAdmin as any).from("master_products").select("id, product_name").in("id", productIds)
+          ? (supabaseAdmin as any)
+              .from("master_products")
+              .select("id, product_name, name_fr, name_ar")
+              .in("id", productIds)
           : Promise.resolve({ data: [], error: null }),
         productNames.length > 0
           ? (supabaseAdmin as any)
               .from("master_products")
-              .select("id, product_name")
+              .select("id, product_name, name_fr, name_ar")
               .in("product_name", productNames)
           : Promise.resolve({ data: [], error: null }),
       ]);
@@ -1326,12 +1330,23 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
       }
 
       const productsById = new Map(
-        ((byIdQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [row.id, row.product_name]),
+        ((byIdQuery.data ?? []) as Array<{ id: string; product_name: string; name_fr: string | null; name_ar: string | null }>).map((row) => [
+          row.id,
+          {
+            en: row.product_name,
+            fr: row.name_fr,
+            ar: row.name_ar,
+          },
+        ]),
       );
       const productsByName = new Map(
-        ((byNameQuery.data ?? []) as Array<{ id: string; product_name: string }>).map((row) => [
+        ((byNameQuery.data ?? []) as Array<{ id: string; product_name: string; name_fr: string | null; name_ar: string | null }>).map((row) => [
           row.product_name.trim().toLowerCase(),
-          row.product_name,
+          {
+            en: row.product_name,
+            fr: row.name_fr,
+            ar: row.name_ar,
+          },
         ]),
       );
 
@@ -1340,19 +1355,43 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         const unitPriceMad = Number(item?.unitPriceMad ?? 0);
         const fallbackName = typeof item?.name === "string" ? item.name.trim() : "-";
         const normalizedFallbackName = fallbackName.toLowerCase();
-        const productName =
+        const localizedProduct =
           (typeof item?.productId === "string" ? productsById.get(item.productId) : null) ??
           productsByName.get(normalizedFallbackName) ??
+          null;
+        const productName =
+          getLocalizedValue(localizedProduct, preferredLocale, "") ||
+          getLocalizedValue(item?.name, preferredLocale, fallbackName) ||
           fallbackName;
+        const selectedVariant = getLocalizedValue(item?.selectedVariant, preferredLocale, "") || null;
         const lineTotalMad = roundMoney(unitPriceMad * quantity);
 
         return {
           productName,
+          selectedVariant,
           quantity,
           unitPriceMad,
           lineTotalMad,
         };
       });
+
+      const localizedAddressFromProfile = getLocalizedValue(profileQuery.data?.address, preferredLocale, "");
+      const localizedNeighborhoodName = localizeText(preferredLocale, {
+        en: neighborhoodQuery.data?.name_en,
+        fr: neighborhoodQuery.data?.name_fr,
+        ar: neighborhoodQuery.data?.name_ar,
+      });
+      const localizedCommuneName = localizeText(preferredLocale, {
+        en: communeQuery.data?.name_en,
+        fr: communeQuery.data?.name_fr,
+        ar: communeQuery.data?.name_ar,
+      });
+      const customerAddressParts = [
+        localizedAddressFromProfile,
+        localizedNeighborhoodName,
+        localizedCommuneName,
+      ].filter((part) => part.length > 0);
+      const customerAddress = customerAddressParts.length > 0 ? Array.from(new Set(customerAddressParts)).join("، ") : "-";
 
       const computedSubtotalMad = items.reduce((sum, item) => sum + Number(item.lineTotalMad ?? 0), 0);
       const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
@@ -1364,9 +1403,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         customerPhone: String(orderRow.customer_phone ?? "-"),
         customerAddress,
         specialInstructions:
-          typeof orderRow.delivery_notes === "string" && orderRow.delivery_notes.trim().length > 0
-            ? orderRow.delivery_notes.trim()
-            : "None",
+          getLocalizedValue(orderRow.delivery_notes, preferredLocale, "").trim() || "",
         paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
         status: (orderRow.status ?? "pending") as VendorOrderDetails["status"],
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
