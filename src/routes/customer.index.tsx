@@ -376,6 +376,8 @@ function Index() {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
+  const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
+  const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
@@ -1083,6 +1085,42 @@ function Index() {
 
     return () => clearInterval(interval);
   }, [isArabic, isBannerInteracting]);
+
+  useEffect(() => {
+    if (!isMobile || !isCustomerAuthModalOpen || typeof window === "undefined") {
+      setAuthKeyboardInset(0);
+      setAuthSheetMaxHeight(null);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+
+    const syncSheetViewport = () => {
+      const layoutHeight = window.innerHeight;
+      const visualHeight = viewport?.height ?? layoutHeight;
+      const visualTop = viewport?.offsetTop ?? 0;
+      const keyboardInset = Math.max(0, layoutHeight - (visualHeight + visualTop));
+      const topGap = Math.round(layoutHeight * 0.15);
+      const boundedHeight = Math.max(320, Math.round(visualHeight - topGap));
+
+      setAuthKeyboardInset(Math.round(keyboardInset));
+      setAuthSheetMaxHeight(boundedHeight);
+    };
+
+    syncSheetViewport();
+
+    if (!viewport) {
+      return;
+    }
+
+    viewport.addEventListener("resize", syncSheetViewport);
+    viewport.addEventListener("scroll", syncSheetViewport);
+
+    return () => {
+      viewport.removeEventListener("resize", syncSheetViewport);
+      viewport.removeEventListener("scroll", syncSheetViewport);
+    };
+  }, [isCustomerAuthModalOpen, isMobile]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
