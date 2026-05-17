@@ -1415,8 +1415,11 @@ function Index() {
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
     { label: "Order Placed", statuses: ["pending", "new"] },
-    { label: "Preparing", statuses: ["preparing", "accepted", "processing"] },
-    { label: "Out for Delivery", statuses: ["in_delivery", "out_for_delivery", "picked_up", "on_the_way", "delivering"] },
+    { label: "Preparing", statuses: ["preparing", "ready", "accepted", "processing"] },
+    {
+      label: "Out for Delivery",
+      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering"],
+    },
     {
       label: "Delivered",
       statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
@@ -1426,12 +1429,12 @@ function Index() {
   const deliveredStatuses = new Set(statusSteps[3].statuses);
 
   const getOrderStepIndex = (status: string) => {
-    const normalizedStatus = String(status ?? "").toLowerCase();
+    const normalizedStatus = String(status ?? "").trim().toLowerCase();
     const index = statusSteps.findIndex((step) => step.statuses.includes(normalizedStatus));
     return index < 0 ? 0 : index;
   };
 
-  const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").toLowerCase());
+  const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").trim().toLowerCase());
   const isCarnetUnpaidOrder = (paymentMethod: string | null | undefined) => {
     const normalized = String(paymentMethod ?? "").trim().toLowerCase();
     return normalized === "carnet" || normalized === "credit";
