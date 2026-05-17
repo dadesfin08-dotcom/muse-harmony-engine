@@ -741,6 +741,8 @@ export const Route = createFileRoute("/admin")({
 function AdminPage() {
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const { language: activeLanguage } = useAppLanguage();
+  const isRtl = activeLanguage === "ar";
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: "/admin" });
   const queryClient = useQueryClient();
@@ -3961,16 +3963,16 @@ function AdminPage() {
     <Outlet />
   ) : (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/20">
-        <AdminSidebar activeTab={tab} />
+      <div dir={isRtl ? "rtl" : "ltr"} className={cn("flex min-h-screen w-full bg-muted/20", isRtl && "flex-row-reverse") }>
+        <AdminSidebar activeTab={tab} isRtl={isRtl} />
         <SidebarInset className="bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
-            <div>
+            <div className={cn(isRtl && "text-right") }>
               <h1 className="text-base font-bold tracking-tight text-foreground">{t("admin.header.title")}</h1>
               <p className="text-xs text-muted-foreground">{t("admin.header.subtitle")}</p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className={cn("flex items-center gap-2", isRtl ? "mr-auto" : "ml-auto")}>
               <LanguageSwitcher />
               <Button variant="soft" className="rounded-lg" onClick={handleLogout}>
                 <LogOut className="size-4" />
@@ -3979,7 +3981,12 @@ function AdminPage() {
             </div>
           </header>
 
-          <main className="space-y-5 p-4 md:p-6">
+          <main
+            className={cn(
+              "space-y-5 p-4 md:p-6",
+              isRtl && "text-right [&_table]:[direction:rtl] [&_th]:text-right [&_td]:text-right",
+            )}
+          >
             {!dbHealthQuery.isLoading && !dbHealthQuery.data?.healthy ? (
               <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-sm">
                 <div className="flex items-start gap-3">
@@ -5310,13 +5317,13 @@ function AdminPage() {
   );
 }
 
-function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
+function AdminSidebar({ activeTab, isRtl }: { activeTab: AdminTab; isRtl: boolean }) {
   const { t } = useTranslation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/60">
+    <Sidebar side={isRtl ? "right" : "left"} collapsible="icon" className={cn(isRtl ? "border-l border-border/60" : "border-r border-border/60")}>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>{collapsed ? "" : t("admin.sidebar.controlCenter")}</SidebarGroupLabel>
