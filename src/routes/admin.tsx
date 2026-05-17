@@ -6943,7 +6943,7 @@ function CategoriesSection({
                 dir="ltr"
                 value={form.imageUrl}
                 onChange={(event) => onFormChange((current) => ({ ...current, imageUrl: event.target.value }))}
-                placeholder="https://..."
+                  placeholder={t("admin.categories.form.placeholders.imageUrl")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-left text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
             </div>
