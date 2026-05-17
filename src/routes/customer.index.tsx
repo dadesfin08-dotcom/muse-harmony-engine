@@ -2156,14 +2156,12 @@ function Index() {
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1 pr-2">
-                      <p className="truncate text-3xl font-extrabold text-[#2A7543]">
-                        {Number(product.price ?? 0).toFixed(2)} <span className="text-sm font-medium">MAD</span>
-                      </p>
-                    </div>
+                    <p className="text-3xl font-extrabold text-[#2A7543]">
+                      {product.price} <span className="text-sm font-medium">MAD</span>
+                    </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
-                      <div className="flex shrink-0 items-center rounded-full border border-gray-200 px-3 py-1">
+                      <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
                         <button
                           type="button"
                           className="inline-flex size-6 items-center justify-center text-[#2A7543]"
@@ -2195,7 +2193,7 @@ function Index() {
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800"
+                        className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800"
                          onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
