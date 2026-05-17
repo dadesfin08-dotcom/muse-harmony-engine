@@ -693,18 +693,10 @@ function CyclistDashboardPage() {
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
         <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
-          <div className="relative grid grid-cols-4 gap-1" dir={isArabic ? "rtl" : "ltr"}>
-            {activeTabIndex >= 0 ? (
-              <motion.span
-                layout
-                transition={{ type: "spring", stiffness: 360, damping: 30 }}
-                className="absolute inset-y-1 z-0 rounded-2xl bg-primary/12"
-                style={{
-                  width: "calc(25% - 0.375rem)",
-                  [isArabic ? "right" : "left"]: `calc(${activeTabIndex} * 25% + 0.1875rem)`,
-                }}
-              />
-            ) : null}
+          <div
+            className="flex flex-row items-center gap-2 overflow-x-auto whitespace-nowrap px-2 scrollbar-hide"
+            dir={isArabic ? "rtl" : "ltr"}
+          >
 
             {orderedDashboardTabs.map((tab) => {
               const TabIcon = tab.icon;
@@ -717,7 +709,7 @@ function CyclistDashboardPage() {
                   onClick={tab.onClick}
                   aria-label={tab.label}
                   className={cn(
-                    "relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition-all duration-200 active:scale-95",
+                    "relative z-10 flex min-h-14 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-semibold transition-all duration-200 active:scale-95",
                     isTabActive ? "text-primary" : "text-muted-foreground",
                   )}
                 >
