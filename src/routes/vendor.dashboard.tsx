@@ -95,7 +95,7 @@ import {
   type ThermalReceiptOrder,
 } from "@/components/ThermalReceipt";
 import { useAppLanguage } from "@/hooks/use-localization";
-import { withLocale } from "@/lib/localization";
+import { getLocalizedValue, withLocale } from "@/lib/localization";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
 type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
@@ -203,12 +203,14 @@ type DashboardOrder = {
   subtotalBasePriceMad: number;
   itemCount: number;
   items: Array<{
+    productId?: string | null;
     name: string;
     selectedVariant?: string | null;
     quantity: number;
     unitPriceMad: number;
     imageUrl?: string | null;
     brandName?: string | null;
+    categoryLabel?: string | null;
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
@@ -405,8 +407,46 @@ function VendorDashboardPage() {
 
   const dateFnsLocale = activeLanguage === "ar" ? arSA : activeLanguage === "fr" ? fr : enUS;
 
+  const localizeMeasurementUnit = (value: string | null | undefined) => {
+    const normalized = value?.trim().toLowerCase();
+    if (!normalized) return "";
+
+    if (normalized === "kg" || normalized === "kilogram" || normalized === "kilograms") {
+      return t("vendorDashboard.packOrder.units.kg", { defaultValue: "Kg" });
+    }
+    if (normalized === "liter" || normalized === "litre" || normalized === "liters" || normalized === "litres" || normalized === "l") {
+      return t("vendorDashboard.packOrder.units.liter", { defaultValue: "Liter" });
+    }
+    if (normalized === "piece" || normalized === "pcs" || normalized === "pc") {
+      return t("vendorDashboard.packOrder.units.piece", { defaultValue: "Piece" });
+    }
+    if (normalized === "pack") {
+      return t("vendorDashboard.packOrder.units.pack", { defaultValue: "Pack" });
+    }
+    if (normalized === "gram" || normalized === "grams" || normalized === "g") {
+      return t("vendorDashboard.packOrder.units.gram", { defaultValue: "Gram" });
+    }
+    if (normalized === "bunch") {
+      return t("vendorDashboard.packOrder.units.bunch", { defaultValue: "Bunch" });
+    }
+    if (normalized === "tray") {
+      return t("vendorDashboard.packOrder.units.tray", { defaultValue: "Tray" });
+    }
+    if (normalized === "box") {
+      return t("vendorDashboard.packOrder.units.box", { defaultValue: "Box" });
+    }
+
+    return value?.trim() ?? "";
+  };
+
+  const localizeCategoryLabel = (value: unknown) => {
+    const localized = getLocalizedValue(value, activeLanguage, "").trim();
+    if (!localized) return "";
+    return t(`categoryNames.${localized}`, { defaultValue: localized });
+  };
+
   const dashboardQuery = useQuery({
-    queryKey: ["vendor", "dashboard"],
+    queryKey: ["vendor", "dashboard", activeLanguage],
     queryFn: () =>
       fetchDashboardData({
         data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }),
@@ -785,7 +825,7 @@ function VendorDashboardPage() {
         specificAddress: typeof row.specific_address === "string" ? row.specific_address : null,
         neighborhoodName: typeof row.neighborhood_name === "string" ? row.neighborhood_name : "-",
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
-        deliveryNotes: row.delivery_notes,
+        deliveryNotes: getLocalizedValue((row as { delivery_notes?: unknown }).delivery_notes, activeLanguage, ""),
         paymentMethod: row.payment_method,
         status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
@@ -810,6 +850,23 @@ function VendorDashboardPage() {
         items: Array.isArray(row.order_items)
           ? row.order_items.map((item) => ({
               ...item,
+              name: getLocalizedValue((item as { name?: unknown }).name, activeLanguage, ""),
+              selectedVariant: getLocalizedValue(
+                (item as { selectedVariant?: unknown }).selectedVariant,
+                activeLanguage,
+                "",
+              ) || null,
+              brandName: getLocalizedValue((item as { brandName?: unknown }).brandName, activeLanguage, "") || null,
+              categoryLabel:
+                localizeCategoryLabel((item as { categoryLabel?: unknown }).categoryLabel) ||
+                localizeCategoryLabel((item as { categoryName?: unknown }).categoryName) ||
+                localizeCategoryLabel((item as { category?: unknown }).category) ||
+                null,
+              measurementUnit: getLocalizedValue(
+                (item as { measurementUnit?: unknown }).measurementUnit,
+                activeLanguage,
+                "",
+              ) || null,
               imageUrl:
                 typeof (item as { imageUrl?: unknown }).imageUrl === "string"
                   ? ((item as { imageUrl?: string }).imageUrl ?? null)
@@ -830,7 +887,7 @@ function VendorDashboardPage() {
         createdAt: row.created_at,
       }))
       .filter((order) => !rejectedOrderIds[order.id]);
-  }, [dashboardQuery.data, rejectedOrderIds]);
+  }, [activeLanguage, dashboardQuery.data, rejectedOrderIds, t]);
 
   const queue = useMemo(
     () => ({
@@ -1894,7 +1951,7 @@ function VendorDashboardPage() {
                           const normalizedBrand = item.brandName?.trim();
                           const normalizedMeasurement =
                             item.measurementValue != null && Number.isFinite(item.measurementValue) && item.measurementUnit?.trim()
-                              ? `${item.measurementValue} ${item.measurementUnit.trim()}`
+                              ? `${item.measurementValue} ${localizeMeasurementUnit(item.measurementUnit)}`
                               : null;
                           const normalizedVariant = item.selectedVariant?.trim();
 
@@ -3592,10 +3649,10 @@ function shortOrderId(id: string) {
 
 function getOrderItemKey(
   orderId: string,
-  item: { name: string; quantity: number; unitPriceMad: number },
+  item: { productId?: string | null; name: string; quantity: number; unitPriceMad: number },
   index: number,
 ) {
-  return `${orderId}:${item.name}:${item.quantity}:${item.unitPriceMad}:${index}`;
+  return `${orderId}:${item.productId || item.name}:${item.quantity}:${item.unitPriceMad}:${index}`;
 }
 
 function elapsedLabel(createdAt: string, nowTick: number) {
