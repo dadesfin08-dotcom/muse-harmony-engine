@@ -2230,7 +2230,7 @@ function Index() {
 
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="inline-flex items-center gap-2 text-base font-semibold text-foreground md:text-lg">
+            <h2 className="line-clamp-1 text-foreground font-serif text-xl font-bold text-center shadow-lg">
               <Sparkles className="size-4 text-primary" />
               Saving Subscriptions / باكات التوفير
             </h2>
