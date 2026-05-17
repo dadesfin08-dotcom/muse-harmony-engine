@@ -1525,7 +1525,7 @@ function AdminPage() {
         });
       });
     },
-    [communeOptions],
+    [communeOptions, t],
   );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
   const cyclistNeighborhoodOptions =
