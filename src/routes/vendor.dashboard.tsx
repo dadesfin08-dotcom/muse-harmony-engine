@@ -94,6 +94,7 @@ import {
   type ThermalReceiptOrder,
 } from "@/components/ThermalReceipt";
 import { useAppLanguage } from "@/hooks/use-localization";
+import { withLocale } from "@/lib/localization";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
 type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
@@ -405,7 +406,10 @@ function VendorDashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber, locale: activeLanguage } }),
+    queryFn: () =>
+      fetchDashboardData({
+        data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }),
+      }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
     enabled: hasValidVendorPhoneSession,
