@@ -7488,30 +7488,34 @@ function AdsContentSection({
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Active Campaigns</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.campaigns.table.activeCampaigns")}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Zone</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead>Window</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[190px]">Actions</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.campaign")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.type")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.zone")}</TableHead>
+                <TableHead className={cn("text-right", isRtl && "text-left")}>{t("admin.adsContentCms.campaigns.table.views")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {activeCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("admin.adsContentCms.campaigns.table.noActiveCampaigns")}</TableCell></TableRow>
               ) : (
                 activeCampaigns.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.campaign_name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
-                        <Tag className="mr-1 size-3" />
-                        {ad.campaign_type}
+                        <Tag className={cn("size-3", isRtl ? "ml-1" : "mr-1")} />
+                        {ad.campaign_type === "AD"
+                          ? t("admin.adsContentCms.campaigns.types.ad")
+                          : ad.campaign_type === "PROMO"
+                            ? t("admin.adsContentCms.campaigns.types.promo")
+                            : t("admin.adsContentCms.campaigns.types.news")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -7520,19 +7524,19 @@ function AdsContentSection({
                         {formatCampaignTargetLabel(ad.target_zone_ids)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={cn("text-right", isRtl && "text-left")}>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Eye className="size-3" />
                         {ad.views_count ?? 0}
                       </span>
                     </TableCell>
                     <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
-                    <TableCell><Badge variant="secondary">Active</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{t("admin.adsContentCms.campaigns.status.active")}</Badge></TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
-                        <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>Pause</Button>
-                        <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                      <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                        <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
+                        <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{t("admin.adsContentCms.campaigns.actions.pause")}</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -7543,33 +7547,41 @@ function AdsContentSection({
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Scheduled / Expired Campaigns</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.campaigns.table.scheduledExpiredCampaigns")}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Zone</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead>Window</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[190px]">Actions</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.campaign")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.type")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.zone")}</TableHead>
+                <TableHead className={cn("text-right", isRtl && "text-left")}>{t("admin.adsContentCms.campaigns.table.views")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {inactiveCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("admin.adsContentCms.campaigns.table.noScheduledExpiredCampaigns")}</TableCell></TableRow>
               ) : (
                 inactiveCampaigns.map((ad) => {
                   const state = getScheduleState(ad.start_date, ad.end_date);
-                  const badgeLabel = !ad.is_active ? "Disabled" : state === "scheduled" ? "Scheduled" : "Expired";
+                  const badgeLabel = !ad.is_active
+                    ? t("admin.adsContentCms.campaigns.status.disabled")
+                    : state === "scheduled"
+                      ? t("admin.adsContentCms.campaigns.status.scheduled")
+                      : t("admin.adsContentCms.campaigns.status.expired");
                   return (
                     <TableRow key={ad.id}>
                       <TableCell className="font-medium">{ad.campaign_name}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
-                          <Tag className="mr-1 size-3" />
-                          {ad.campaign_type}
+                          <Tag className={cn("size-3", isRtl ? "ml-1" : "mr-1")} />
+                          {ad.campaign_type === "AD"
+                            ? t("admin.adsContentCms.campaigns.types.ad")
+                            : ad.campaign_type === "PROMO"
+                              ? t("admin.adsContentCms.campaigns.types.promo")
+                              : t("admin.adsContentCms.campaigns.types.news")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -7578,7 +7590,7 @@ function AdsContentSection({
                           {formatCampaignTargetLabel(ad.target_zone_ids)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={cn("text-right", isRtl && "text-left")}>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <Eye className="size-3" />
                           {ad.views_count ?? 0}
@@ -7587,10 +7599,10 @@ function AdsContentSection({
                       <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
-                          <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{ad.is_active ? "Pause" : "Activate"}</Button>
-                          <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
+                          <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{ad.is_active ? t("admin.adsContentCms.campaigns.actions.pause") : t("admin.adsContentCms.campaigns.actions.activate")}</Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                         </div>
                       </TableCell>
                     </TableRow>
