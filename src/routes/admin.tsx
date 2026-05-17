@@ -7053,7 +7053,9 @@ function CategoriesSection({
                     {category.image_url ? (
                       <img
                         src={category.image_url || fallbackProductImage}
-                        alt={`${category.name_en} category icon`}
+                        alt={t("admin.categories.saved.itemIconAlt", {
+                          name: getLocalizedCategoryName(category, activeLanguage),
+                        })}
                         className="h-10 w-10 object-contain"
                         loading="lazy"
                       />
