@@ -1899,7 +1899,6 @@ function VendorDashboardPage() {
                                   <>
                                     <span className="mx-1.5">·</span>
                                     <span>Variant: {normalizedVariant}</span>
-                                  </span>
                                   </>
                                 ) : null}
                               </p>
