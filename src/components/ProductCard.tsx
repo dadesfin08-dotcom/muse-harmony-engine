@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Heart, Minus, Package, Plus, ShoppingCart } from "lucide-react";
+import { ChevronDown, Heart, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -23,6 +23,7 @@ type ProductCardProps = {
   flashDealContext?: boolean;
   oldPrice?: number | null;
   discountPercent?: number;
+  premiumGrid?: boolean;
   onAdd: (selectedVariant?: string | null) => void;
   onIncrease: (selectedVariant?: string | null) => void;
   onDecrease: (selectedVariant?: string | null) => void;
@@ -44,6 +45,7 @@ export function ProductCard({
   flashDealContext = false,
   oldPrice,
   discountPercent = 0,
+  premiumGrid = false,
   onAdd,
   onIncrease,
   onDecrease,
@@ -79,23 +81,30 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        "flex h-full min-h-[320px] flex-col overflow-hidden border border-gray-100 bg-white shadow-sm",
-        isFlashDeal ? "rounded-3xl pb-1" : "rounded-xl",
+        premiumGrid
+          ? "flex flex-col h-full bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+          : "flex h-full min-h-[320px] flex-col overflow-hidden border border-gray-100 bg-white shadow-sm",
+        isFlashDeal ? "rounded-3xl pb-1" : premiumGrid ? "" : "rounded-xl",
       )}
     >
       <Link
         to="/customer/product/$id"
         params={{ id }}
         search={(prev: Record<string, unknown>) => (flashDealContext ? { ...prev, deal: true } : prev)}
-        className={cn("block", isFlashDeal ? "" : "px-3 pt-3")}
+        className={cn("block", isFlashDeal ? "" : premiumGrid ? "" : "px-3 pt-3")}
       >
-        <div className={cn("relative aspect-square w-full overflow-hidden", isFlashDeal ? "rounded-t-2xl" : "rounded-2xl bg-gray-50")}>
+        <div
+          className={cn(
+            "relative w-full aspect-square overflow-hidden",
+            premiumGrid ? "bg-slate-50" : isFlashDeal ? "rounded-t-2xl" : "rounded-2xl bg-gray-50",
+          )}
+        >
           <img
             src={imageUrl || fallbackProductImage}
             alt={name}
             className={cn(
               "h-full w-full",
-              isFlashDeal ? "object-cover object-center" : "object-contain object-center p-2.5",
+              premiumGrid ? "object-cover object-center" : isFlashDeal ? "object-cover object-center" : "object-contain object-center p-2.5",
             )}
             loading="lazy"
           />
@@ -116,23 +125,29 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className={cn("flex flex-1 flex-col space-y-1.5", isFlashDeal ? "h-full p-4" : "p-3 pt-2")}>
+      <div className={cn("flex flex-col flex-1 p-3", isFlashDeal ? "h-full p-4" : premiumGrid ? "" : "pt-2") }>
         {normalizedVariants.length > 0 ? (
-          <select
-            value={resolvedVariant ?? ""}
-            onChange={(event) => setVariantValue(event.target.value)}
-            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground"
-            aria-label={`Select variant for ${name}`}
-          >
-            {normalizedVariants.map((variant) => (
-              <option key={variant} value={variant}>
-                {variant}
-              </option>
-            ))}
-          </select>
+          <div className="relative mb-2">
+            <select
+              value={resolvedVariant ?? ""}
+              onChange={(event) => setVariantValue(event.target.value)}
+              className={cn(
+                "appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500",
+                premiumGrid ? "pr-8" : "",
+              )}
+              aria-label={`Select variant for ${name}`}
+            >
+              {normalizedVariants.map((variant) => (
+                <option key={variant} value={variant}>
+                  {variant}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+          </div>
         ) : null}
 
-        <div className="mb-1 flex w-full flex-row items-center justify-between">
+        <div className="flex justify-between items-center w-full mb-1">
           <span className="inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
             {brand || "—"}
           </span>
@@ -150,12 +165,12 @@ export function ProductCard({
           search={(prev: Record<string, unknown>) => (flashDealContext ? { ...prev, deal: true } : prev)}
           className="block w-full min-w-0"
         >
-          <h2 title={name} className="w-full text-base font-bold line-clamp-2 h-[3.5rem] leading-snug pb-1">
+          <h2 title={name} className="text-sm font-bold leading-tight line-clamp-2 min-h-[2.5rem] mb-2">
             {name}
           </h2>
         </Link>
 
-        <div className="flex flex-row justify-between items-center w-full mt-auto gap-2 pt-1">
+        <div className="flex flex-row justify-between items-center w-full mt-auto gap-2">
           <div className="flex min-w-0 flex-1 flex-col items-start justify-end">
             <div className="flex flex-wrap items-baseline gap-1">
               <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
