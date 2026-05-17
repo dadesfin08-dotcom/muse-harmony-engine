@@ -6,6 +6,7 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
   .string()
@@ -596,6 +597,10 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
 
       }
 
+      void processPendingOrderPushEvents(30).catch((pushQueueError) => {
+        console.error("Push queue processing after order creation failed:", pushQueueError);
+      });
+
       return { id: insertedOrderIds[0] as string, orderIds: insertedOrderIds };
     } catch (error) {
       console.error("createCustomerOrder failed:", error);
@@ -1104,6 +1109,10 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
       if (updateError) {
         throw new Error(updateError.message);
       }
+
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after vendor status update failed:", pushQueueError);
+      });
 
       return { ok: true };
     } catch (error) {
