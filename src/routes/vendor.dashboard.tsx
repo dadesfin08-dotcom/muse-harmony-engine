@@ -1682,10 +1682,10 @@ function VendorDashboardPage() {
                     setPhoneForPendingCarnetVerification(trustedCustomerFullPhone);
                     setOtpCodeForCarnetVerification("");
                     setIsCarnetOtpModalOpen(true);
-                    toast.success("Verification code sent to customer WhatsApp.");
+                    toast.success(t("vendorDashboard.carnet.verificationCodeSent"));
                   } catch (error) {
                     console.error("Failed to save trusted customer:", error);
-                    toast.error("Unable to send verification code right now.");
+                    toast.error(t("vendorDashboard.carnet.unableToSendVerification"));
                   } finally {
                     setIsSavingCarnet(false);
                   }
@@ -1718,22 +1718,23 @@ function VendorDashboardPage() {
       <Dialog open={isCarnetOtpModalOpen} onOpenChange={setIsCarnetOtpModalOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl border border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Confirm WhatsApp Verification</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.carnet.confirmWhatsAppVerification")}</DialogTitle>
             <DialogDescription>
-              Averification code has been sent to the customer&apos;s WhatsApp. Enter it below to
-              confirm opening their credit account.
+              {t("vendorDashboard.carnet.confirmWhatsAppVerificationDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             {phoneForPendingCarnetVerification ? (
-              <p className="text-xs text-muted-foreground">Customer: {phoneForPendingCarnetVerification}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("vendorDashboard.carnet.customerLabel")}: {phoneForPendingCarnetVerification}
+              </p>
             ) : null}
 
             <Input
               inputMode="numeric"
               maxLength={4}
-              placeholder="4-digit code"
+              placeholder={t("vendorDashboard.carnet.fourDigitCode")}
               value={otpCodeForCarnetVerification}
               onChange={(event) =>
                 setOtpCodeForCarnetVerification(event.target.value.replace(/\D/g, "").slice(0, 4))
@@ -1752,7 +1753,7 @@ function VendorDashboardPage() {
               }}
               disabled={isSavingCarnet}
             >
-              Cancel
+              {t("vendorDashboard.actions.cancel")}
             </Button>
             <Button
               variant="hero"
@@ -1776,7 +1777,7 @@ function VendorDashboardPage() {
                   });
 
                   if (!result.verified) {
-                    toast.error("Invalid verification code.");
+                    toast.error(t("vendorDashboard.carnet.invalidVerificationCode"));
                     return;
                   }
 
@@ -1790,16 +1791,16 @@ function VendorDashboardPage() {
                   setOtpCodeForCarnetVerification("");
                   setIsCarnetOtpModalOpen(false);
                   await carnetQuery.refetch();
-                  toast.success("Trusted customer added to carnet.");
+                  toast.success(t("vendorDashboard.carnet.trustedCustomerAdded"));
                 } catch (error) {
                   console.error("Failed to verify and save trusted customer:", error);
-                  toast.error(error instanceof Error ? error.message : "Failed to verify trusted customer.");
+                  toast.error(error instanceof Error ? error.message : t("vendorDashboard.carnet.verifyTrustedCustomerFailed"));
                 } finally {
                   setIsSavingCarnet(false);
                 }
               }}
             >
-              {isSavingCarnet ? "Verifying..." : "Verify & Add to Carnet"}
+              {isSavingCarnet ? t("vendorDashboard.actions.verifying") : t("vendorDashboard.carnet.verifyAndAdd")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1815,9 +1816,11 @@ function VendorDashboardPage() {
       >
         <DialogContent className="flex h-[90vh] max-h-[90vh] w-[96vw] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-xl font-bold tracking-tight">{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight">
+              {`${t("vendorDashboard.packing.packOrder")} ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}
+            </DialogTitle>
             <DialogDescription>
-              Check every item to fill the bag and unlock the final confirmation.
+              {t("vendorDashboard.packing.description")}
             </DialogDescription>
             {packingOrder ? (
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -1829,11 +1832,11 @@ function VendorDashboardPage() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
                   <Clock3 className="h-3.5 w-3.5" />
-                  Deadline {packingDeadlineLabel}
+                  {t("vendorDashboard.packing.deadline")} {packingDeadlineLabel}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1.5 text-foreground">
                   <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
-                  {packingBagsCount} {packingBagsCount === 1 ? "bag" : "bags"} · ~{packingEstimatedWeightKg.toFixed(1)} kg
+                  {t("vendorDashboard.packing.bagsSummary", { count: packingBagsCount, weight: packingEstimatedWeightKg.toFixed(1) })}
                 </span>
               </div>
             ) : null}
