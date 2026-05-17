@@ -807,7 +807,7 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
         .from("orders")
         .select("id", { count: "exact", head: true })
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["ready", "in_delivery", "delivering"]);
+        .in("status", ["ready", "in_delivery"]);
 
       if (activeOrderCountError) {
         throw new Error(activeOrderCountError.message);
@@ -1056,7 +1056,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         .select("id, cyclist_id, status, payment_method, order_category, subscription_id, customer_user_id")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["in_delivery", "delivering"])
+        .in("status", ["in_delivery"])
         .maybeSingle();
 
       if (orderError) {
@@ -1085,7 +1085,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         })
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["in_delivery", "delivering"]);
+        .in("status", ["in_delivery"]);
 
       if (error) {
         throw new Error(error.message);
