@@ -6956,7 +6956,7 @@ function CategoriesSection({
                     variant="outline"
                     role="combobox"
                     aria-expanded={isIconPickerOpen}
-                    className="h-10 w-full justify-between rounded-md"
+                    className={cn("h-10 w-full justify-between rounded-md", isRtl && "flex-row-reverse")}
                   >
                     <span className="inline-flex items-center gap-2">
                       <CategoryIcon iconName={form.iconName} className="h-4 w-4" />
@@ -7045,7 +7045,7 @@ function CategoriesSection({
           ) : (
             <div className="space-y-2">
               {categories.map((category) => (
-                <article key={category.id} className="flex items-center gap-3 rounded-md border border-border bg-card p-2">
+                <article key={category.id} className={cn("flex items-center gap-3 rounded-md border border-border bg-card p-2", isRtl && "flex-row-reverse") }>
                   <div
                     className="flex h-16 w-16 items-center justify-center rounded-2xl"
                     style={{ backgroundColor: category.accent_color || "#f3f4f6" }}
@@ -7067,7 +7067,7 @@ function CategoriesSection({
                     <p className={cn("truncate text-sm font-semibold text-foreground", isRtl && "text-right")}>
                       {getLocalizedCategoryName(category, activeLanguage)}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className={cn("truncate text-xs text-muted-foreground", isRtl && "text-right")}>
                       {[category.name_en, category.name_fr, category.name_ar]
                         .map((name) => name?.trim())
                         .filter((name, index, array) => Boolean(name) && array.indexOf(name) === index)
