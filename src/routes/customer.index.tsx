@@ -2417,7 +2417,7 @@ function Index() {
                       ) : (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A7543] px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all hover:bg-[#23663A] active:scale-[0.98]"
+                          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98] bg-red-700"
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
