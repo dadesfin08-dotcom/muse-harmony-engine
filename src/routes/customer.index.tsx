@@ -2343,7 +2343,7 @@ function Index() {
                   <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
                 </span>
                 <div className="leading-tight">
-                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">HAMZET AL-YAWM</h2>
+                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">همزة اليوم</h2>
                   <p className="text-[10px] font-medium uppercase text-white/85">FRESH DAILY FLASH DEALS</p>
                 </div>
               </div>
