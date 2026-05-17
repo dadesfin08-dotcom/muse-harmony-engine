@@ -12,6 +12,7 @@ import { getBrandSuggestionsForNeighborhood, getCustomerProductDetail } from "@/
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { cn } from "@/lib/utils";
+import { resolveProductDetailPricing } from "@/lib/flash-pricing";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
@@ -158,10 +159,9 @@ function ProductDetailPage() {
     return cartItems.find((item) => (item.cartItemId || item.id) === cartItemId)?.quantity ?? 0;
   }, [cartItemId, cartItems, product]);
 
-  const displayPrice = Number(
-    product?.isFlashSaleActive ? (product?.finalFlashSalePrice ?? product?.finalVendorPrice ?? product?.vendorPrice ?? 0) : (product?.finalVendorPrice ?? product?.vendorPrice ?? 0),
-  );
-  const oldPrice = Number(product?.finalVendorPrice ?? product?.vendorPrice ?? 0);
+  const pricing = resolveProductDetailPricing(product);
+  const displayPrice = pricing.effectivePrice;
+  const oldPrice = pricing.oldPrice;
 
   const addToCart = () => {
     if (!product) return;
@@ -174,7 +174,7 @@ function ProductDetailPage() {
       selectedVariant: normalizedVariant,
       brandName: product.brand || null,
       measurementValue: product.measurementValue ?? null,
-      price: Number(product.isFlashSaleActive ? (product.finalFlashSalePrice ?? product.finalVendorPrice ?? product.vendorPrice ?? 0) : (product.finalVendorPrice ?? product.vendorPrice ?? 0)),
+      price: pricing.effectivePrice,
       basePrice: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.imageUrl || fallbackProductImage,
@@ -348,7 +348,7 @@ function ProductDetailPage() {
             <h1 className="text-pretty break-words text-2xl font-black leading-tight text-slate-900">{localizedName}</h1>
 
             <div className="flex items-end gap-3">
-              {product.isFlashSaleActive ? (
+              {pricing.useFlash ? (
                 <>
                   <p className="text-3xl font-black text-red-600">{displayPrice.toFixed(2)} MAD</p>
                   <p className="text-base font-semibold text-slate-400 line-through">{oldPrice.toFixed(2)} MAD</p>
