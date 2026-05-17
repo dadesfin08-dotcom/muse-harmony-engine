@@ -2819,20 +2819,24 @@ function Index() {
       {isCustomerAuthModalOpen ? (
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
-            <DrawerContent className="rounded-t-3xl border-border bg-background px-6 pb-6 pt-2">
-              <div className="relative flex flex-col gap-5">
+            <DrawerContent className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl border-border bg-background shadow-2xl sm:max-h-[90vh]">
+              <div className="relative shrink-0 border-b border-border/60 px-6 pb-3 pt-2">
+                <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" aria-hidden="true" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1.5 h-9 w-9 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsCustomerAuthModalOpen(false)}
                   aria-label="Close login prompt"
                 >
                   <X className="h-5 w-5" />
                 </Button>
+              </div>
 
-                <div className="pt-4 text-center">
+              <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2">
+                <div className="flex flex-col gap-5">
+                <div className="pt-2 text-center">
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
                   <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -3287,6 +3291,7 @@ function Index() {
                   </Button>
                   </div>
                 )}
+                </div>
               </div>
             </DrawerContent>
           </Drawer>
