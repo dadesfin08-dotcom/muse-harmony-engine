@@ -1178,6 +1178,57 @@ function VendorDashboardPage() {
 
   const totalPackingItems = packingOrder?.items.length ?? 0;
   const fillPercentage = totalPackingItems > 0 ? Math.round((packedItemsCount / totalPackingItems) * 100) : 0;
+  const packingDeadlineLabel = useMemo(() => {
+    if (!packingOrder?.createdAt) return "--:--";
+
+    const createdAt = new Date(packingOrder.createdAt);
+    if (Number.isNaN(createdAt.getTime())) return "--:--";
+
+    const deadline = new Date(createdAt.getTime() + 30 * 60 * 1000);
+    return deadline.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }, [packingOrder?.createdAt]);
+  const packingEstimatedWeightKg = useMemo(() => {
+    if (!packingOrder) return 0;
+
+    return packingOrder.items.reduce((sum, item) => {
+      const quantity = Number(item.quantity ?? 0);
+      const measurementValue = Number(item.measurementValue ?? 0);
+      const measurementUnit = item.measurementUnit?.trim().toLowerCase() ?? "";
+
+      if (!Number.isFinite(quantity) || !Number.isFinite(measurementValue) || quantity <= 0 || measurementValue <= 0) {
+        return sum;
+      }
+
+      if (measurementUnit === "kg") {
+        return sum + measurementValue * quantity;
+      }
+
+      if (measurementUnit === "gram" || measurementUnit === "g") {
+        return sum + (measurementValue / 1000) * quantity;
+      }
+
+      return sum;
+    }, 0);
+  }, [packingOrder]);
+  const packingBagsCount = useMemo(() => {
+    if (!packingOrder || packingOrder.items.length === 0) return 0;
+    const estimatedBags = Math.ceil(packingEstimatedWeightKg / 4);
+    return Math.max(1, estimatedBags || 1);
+  }, [packingEstimatedWeightKg, packingOrder]);
+  const packedByName = useMemo(() => {
+    if (typeof window === "undefined") {
+      return vendorStoreName;
+    }
+
+    try {
+      const raw = window.localStorage.getItem("bzaf.vendorSession");
+      if (!raw) return vendorStoreName;
+      const parsed = JSON.parse(raw) as { fullName?: string; ownerName?: string; name?: string };
+      return parsed.fullName?.trim() || parsed.ownerName?.trim() || parsed.name?.trim() || vendorStoreName;
+    } catch {
+      return vendorStoreName;
+    }
+  }, [vendorStoreName]);
   const isPackingComplete = useMemo(() => {
     if (!packingOrder || packingOrder.items.length === 0) return false;
     return packingOrder.items.every((item, index) => {
