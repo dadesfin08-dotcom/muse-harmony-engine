@@ -17,6 +17,7 @@ const resources = {
         locationFallback: "Select delivery location",
       },
       nav: { home: "Home", search: "Search", cart: "Cart", profile: "Profile", carnet: "Carnet" },
+      home: { view_all_products: "View All Products" },
       categories: {
         title: "Quick categories",
         subtitleDefault: "Essentials first",
@@ -724,6 +725,7 @@ const resources = {
         locationFallback: "Choisir la zone de livraison",
       },
       nav: { home: "Accueil", search: "Recherche", cart: "Panier", profile: "Profil", carnet: "Carnet" },
+      home: { view_all_products: "Voir tous les produits" },
       categories: {
         title: "Catégories rapides",
         subtitleDefault: "Les essentiels d'abord",
@@ -1447,6 +1449,7 @@ const resources = {
         locationFallback: "اختر موقع التوصيل",
       },
       nav: { home: "الرئيسية", search: "بحث", cart: "السلة", profile: "الملف", carnet: "الدفتر" },
+      home: { view_all_products: "عرض جميع المنتجات" },
       categories: {
         title: "الفئات السريعة",
         subtitleDefault: "الأساسيات أولاً",
