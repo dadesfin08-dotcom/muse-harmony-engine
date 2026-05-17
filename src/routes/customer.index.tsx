@@ -373,7 +373,9 @@ function Index() {
   const [desktopSearchInput, setDesktopSearchInput] = useState("");
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const bottomPromoAutoplayRef = useRef(
@@ -1015,6 +1017,23 @@ function Index() {
       .padStart(2, "0");
     return `${hours}:${minutes}:${seconds}`;
   }, [flashDeals, flashNowMs]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (scrollContainerRef.current && !isInteracting) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        const cardWidth = 180 + 12;
+
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          scrollContainerRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isInteracting]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -2365,7 +2384,14 @@ function Index() {
             </div>
           </div>
 
-          <div className="flex flex-row overflow-x-auto gap-3 pb-4 pt-1 scrollbar-hide snap-x snap-mandatory">
+          <div
+            ref={scrollContainerRef}
+            className="flex flex-row overflow-x-auto gap-3 pb-4 pt-1 scrollbar-hide snap-x snap-mandatory"
+            onMouseEnter={() => setIsInteracting(true)}
+            onMouseLeave={() => setIsInteracting(false)}
+            onTouchStart={() => setIsInteracting(true)}
+            onTouchEnd={() => setIsInteracting(false)}
+          >
             {flashDeals.slice(0, 4).map((product) => {
               const cartQty = getCartQuantity(product.id);
 
