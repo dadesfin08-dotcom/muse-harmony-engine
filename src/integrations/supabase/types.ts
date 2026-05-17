@@ -1864,10 +1864,10 @@ export type Database = {
         | "Box"
       order_category: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION"
       order_status:
-        | "new"
+        | "pending"
         | "preparing"
         | "ready"
-        | "delivering"
+        | "in_delivery"
         | "delivered"
         | "cancelled"
         | "delivered_cash_with_cyclist"
@@ -2043,10 +2043,10 @@ export const Constants = {
       ],
       order_category: ["MARKETPLACE", "PLATFORM_SUBSCRIPTION"],
       order_status: [
-        "new",
+        "pending",
         "preparing",
         "ready",
-        "delivering",
+        "in_delivery",
         "delivered",
         "cancelled",
         "delivered_cash_with_cyclist",
