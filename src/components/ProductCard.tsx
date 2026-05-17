@@ -138,13 +138,13 @@ export function ProductCard({
         </div>
 
         <Link to="/customer/product/$id" params={{ id }} className="block w-full min-w-0">
-          <h2 title={name} className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem]">
+          <h2 title={name} className="h-[2.75rem] w-full text-base font-bold line-clamp-2">
             {name}
           </h2>
         </Link>
 
         <div className="mt-auto flex w-full flex-row items-end justify-between gap-2 pt-1">
-          <div className="flex min-w-0 flex-col items-start justify-end">
+          <div className="flex max-w-[65%] min-w-0 flex-col items-start justify-end overflow-hidden">
             <div className="flex items-baseline gap-1">
               <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
                 {Number(price ?? 0).toFixed(2)}
@@ -163,50 +163,52 @@ export function ProductCard({
             ) : null}
           </div>
 
-          {cartQuantity > 0 ? (
-            <div
-              className={cn(
-                "flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1",
-                isFlashDeal ? "border border-red-200" : "border border-gray-200",
-              )}
-            >
+          <div className="flex min-w-[70px] shrink-0 justify-end">
+            {cartQuantity > 0 ? (
+              <div
+                className={cn(
+                  "flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1",
+                  isFlashDeal ? "border border-red-200" : "border border-gray-200",
+                )}
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex size-6 items-center justify-center rounded-full",
+                    isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
+                  )}
+                  onClick={() => onDecrease(resolvedVariant)}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="size-3" />
+                </button>
+                <span className="min-w-5 text-center text-xs font-semibold text-gray-900">{cartQuantity}</span>
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex size-6 items-center justify-center rounded-full",
+                    isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
+                  )}
+                  onClick={() => onIncrease(resolvedVariant)}
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="size-3" />
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
                 className={cn(
-                  "inline-flex size-6 items-center justify-center rounded-full",
-                  isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
+                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
+                  isFlashDeal ? "bg-red-600 hover:bg-red-700" : "bg-[#2A7543] hover:bg-green-800",
                 )}
-                onClick={() => onDecrease(resolvedVariant)}
-                aria-label="Decrease quantity"
+                onClick={() => onAdd(resolvedVariant)}
               >
-                <Minus className="size-3" />
+                <ShoppingCart className="size-3.5" />
+                {addLabel}
               </button>
-              <span className="min-w-5 text-center text-xs font-semibold text-gray-900">{cartQuantity}</span>
-              <button
-                type="button"
-                className={cn(
-                  "inline-flex size-6 items-center justify-center rounded-full",
-                  isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
-                )}
-                onClick={() => onIncrease(resolvedVariant)}
-                aria-label="Increase quantity"
-              >
-                <Plus className="size-3" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
-                isFlashDeal ? "bg-red-600 hover:bg-red-700" : "bg-[#2A7543] hover:bg-green-800",
-              )}
-              onClick={() => onAdd(resolvedVariant)}
-            >
-              <ShoppingCart className="size-3.5" />
-              {addLabel}
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </article>
