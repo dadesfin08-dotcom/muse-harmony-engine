@@ -2130,14 +2130,14 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Wishlist"
-                  className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white shadow-sm"
+                  className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white leading-none shadow-sm"
                 >
                   <Heart className="size-4 text-teal-700" />
                 </button>
 
                 <div className="p-3">
                   <div className="flex flex-row justify-between items-center w-full mb-2">
-                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs text-green-800 font-bold">
+                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-bold leading-none text-green-800">
                       {getLocalizedText({
                         en: product.brandNameEn || product.brand || "",
                         fr: product.brandNameFr || product.brandNameEn || product.brand || "",
@@ -2145,7 +2145,7 @@ function Index() {
                       }) || "—"}
                     </span>
 
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm text-gray-700">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm leading-none text-gray-700">
                       <Package className="size-3.5" />
                       {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                       {product.measurementUnit}
@@ -2165,7 +2165,7 @@ function Index() {
                       <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
                         <button
                           type="button"
-                          className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                          className="inline-flex size-6 items-center justify-center leading-none text-[#2A7543]"
                           onClick={() =>
                             decreaseItem(
                               product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
@@ -2180,7 +2180,7 @@ function Index() {
                         </span>
                         <button
                           type="button"
-                          className="inline-flex size-6 items-center justify-center text-[#2A7543]"
+                          className="inline-flex size-6 items-center justify-center leading-none text-[#2A7543]"
                           onClick={() =>
                             increaseItem(
                               product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
@@ -2194,7 +2194,7 @@ function Index() {
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-5 py-2 text-white transition hover:bg-green-800 font-bold"
+                        className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-3 py-1.5 text-sm font-bold leading-none text-white transition hover:bg-green-800"
                          onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
@@ -2212,7 +2212,7 @@ function Index() {
             <div className="px-4 pb-6 pt-2">
               <Link
                 to="/customer/all-products"
-                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-2.5 text-sm font-bold leading-tight text-emerald-700 transition-colors hover:bg-emerald-100"
               >
                 {t("home.view_all_products")}
               </Link>
