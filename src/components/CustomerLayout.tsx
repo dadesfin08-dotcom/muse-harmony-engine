@@ -295,10 +295,11 @@ export function CustomerLayout({
               trigger={
                 <button
                   type="button"
+                  dir="ltr"
                   aria-label={t("language.label")}
-                  className="relative -top-5 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
+                  className="relative -top-5 z-50 mx-auto flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
                 >
-                  <Languages className="size-6" />
+                  <Languages className="h-6 w-6 shrink-0 text-white" style={{ transform: "scaleX(1)" }} />
                 </button>
               }
             />
