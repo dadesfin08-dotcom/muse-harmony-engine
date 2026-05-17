@@ -79,6 +79,7 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { useAppLanguage } from "@/hooks/use-localization";
 import {
   AlertDialog,
   AlertDialogAction,
