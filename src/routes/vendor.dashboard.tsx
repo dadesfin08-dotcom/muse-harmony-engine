@@ -1785,23 +1785,23 @@ function VendorDashboardPage() {
       >
         <DialogContent className="w-[96vw] max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight">{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
             <DialogDescription>
               Check every item to fill the bag and unlock the final confirmation.
             </DialogDescription>
             {packingOrder ? (
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-muted/50 px-3 py-1.5 text-foreground">
                   <User className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="font-medium">{packingOrder.customerName}</span>
                   <span className="text-muted-foreground">·</span>
                   <span dir="ltr">{packingOrder.customerPhone || "—"}</span>
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 font-semibold text-amber-800">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
                   <Clock3 className="h-3.5 w-3.5" />
                   Deadline {packingDeadlineLabel}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1.5 text-foreground">
                   <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
                   {packingBagsCount} {packingBagsCount === 1 ? "bag" : "bags"} · ~{packingEstimatedWeightKg.toFixed(1)} kg
                 </span>
@@ -1813,9 +1813,9 @@ function VendorDashboardPage() {
             <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
               <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
                 {packingOrder.deliveryNotes?.trim() ? (
-                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
-                    <p className="text-xs font-semibold text-amber-900">Special instruction</p>
-                    <p className="mt-1 text-sm text-amber-800">{packingOrder.deliveryNotes.trim()}</p>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 border-l-4 border-l-amber-500">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">Special instruction</p>
+                    <p className="mt-1 text-base text-amber-900">{packingOrder.deliveryNotes.trim()}</p>
                   </div>
                 ) : null}
                 {packingOrder.items.map((item, index) => {
@@ -1826,7 +1826,7 @@ function VendorDashboardPage() {
                     <label
                       key={itemKey}
                       className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all",
+                        "flex cursor-pointer items-center gap-3 rounded-lg border border-border border-l-2 border-l-border bg-card p-3 transition-all duration-200 hover:-translate-y-px hover:bg-muted/30",
                         checked && "opacity-60",
                       )}
                     >
@@ -1850,7 +1850,7 @@ function VendorDashboardPage() {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                        <p className="truncate text-base font-semibold text-foreground">{item.name}</p>
                         {(() => {
                           const normalizedBrand = item.brandName?.trim();
                           const normalizedMeasurement =
@@ -1871,14 +1871,22 @@ function VendorDashboardPage() {
                               ) : null}
                               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 {normalizedMeasurement ? (
-                                  <span className="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 shadow-sm">
+                                  <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                     <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
                                     <span dir="ltr">{normalizedMeasurement}</span>
                                   </span>
                                 ) : null}
-                                <span>Unit: {Number(item.unitPriceMad ?? 0).toFixed(2)} MAD</span>
-                                <span>Qty: {item.quantity}</span>
-                                {normalizedVariant ? <span>Variant: {normalizedVariant}</span> : null}
+                                <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                  Unit: {Number(item.unitPriceMad ?? 0).toFixed(2)} MAD
+                                </span>
+                                <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                  Qty: {item.quantity}
+                                </span>
+                                {normalizedVariant ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                    Variant: {normalizedVariant}
+                                  </span>
+                                ) : null}
                               </div>
                             </>
                           );
@@ -1900,7 +1908,7 @@ function VendorDashboardPage() {
               <div className="rounded-xl border border-border bg-muted/10 p-4">
                 <div
                   className={cn(
-                    "relative mx-auto h-72 w-48 overflow-hidden rounded-[1.5rem_1.5rem_1rem_1rem] border-2 border-dashed border-border bg-background",
+                    "relative mx-auto h-72 w-48 overflow-hidden rounded-[1.5rem_1.5rem_1rem_1rem] border-2 border-border bg-background shadow-sm",
                     isPackingComplete && "border-success shadow-[0_0_24px_hsl(var(--success)/0.45)]",
                   )}
                 >
@@ -1910,7 +1918,7 @@ function VendorDashboardPage() {
                   </div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <ShoppingBag className="size-14 text-muted-foreground/40" />
-                    <p className="mt-2 text-center text-xl font-black text-foreground">{fillPercentage}%</p>
+                    <p className="mt-2 text-center text-2xl font-extrabold text-foreground">{fillPercentage}%</p>
                     <p className="text-xs text-muted-foreground">Bag fill progress</p>
                   </div>
                 </div>
@@ -1925,11 +1933,11 @@ function VendorDashboardPage() {
                     <p className="text-sm font-semibold text-foreground">
                       Subtotal: {packingSubtotalMad.toFixed(2)} MAD
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
                     </p>
-                    <div className="mt-2 border-t border-border pt-2">
-                      <p className="text-sm font-semibold text-foreground">
+                    <div className="mt-3 border-t border-border pt-2">
+                      <p className="text-base font-bold text-foreground">
                         Grand Total: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
                       </p>
                     </div>
@@ -1941,11 +1949,11 @@ function VendorDashboardPage() {
 
           <DialogFooter>
             <div className="flex w-full items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">Packed by: {packedByName}</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Packed by: {packedByName}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  className="rounded-xl"
+                  className="rounded-xl border-border bg-background"
                   onClick={() => {
                     setPackingOrderId(null);
                   }}
@@ -1955,12 +1963,13 @@ function VendorDashboardPage() {
                 <Button
                   variant="hero"
                   className={cn(
-                    "rounded-xl",
+                    "rounded-full px-4 disabled:bg-muted disabled:text-muted-foreground disabled:hover:bg-muted",
                     isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
                   )}
                   disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
                   onClick={handleConfirmPackedOrder}
                 >
+                  <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
                   {packingOrderId && isUpdating === packingOrderId
                     ? "Updating..."
                     : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
