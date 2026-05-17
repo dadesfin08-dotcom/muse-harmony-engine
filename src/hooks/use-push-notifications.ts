@@ -26,6 +26,14 @@ function normalizeRole(value: unknown): PushRole {
   return raw === "cyclist" || raw === "rider" ? "cyclist" : "customer";
 }
 
+function areUint8ArraysEqual(a: Uint8Array, b: Uint8Array) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 export function usePushNotifications(options: UsePushNotificationsOptions) {
   const fetchPushConfig = useServerFn(getPushClientConfig);
   const registerSubscriptionFn = useServerFn(registerPushSubscription);
@@ -46,18 +54,38 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
         const config = await fetchPushConfig();
         if (!config.enabled || !config.vapidPublicKey) return;
 
+        const vapidStorageKey = "push_vapid_public_key";
+        const previousVapidKey = window.localStorage.getItem(vapidStorageKey);
+        const vapidKeyChanged = !!previousVapidKey && previousVapidKey !== config.vapidPublicKey;
+
         const permission = await ensurePushPermission();
         if (permission !== "granted") return;
 
         const registration = await navigator.serviceWorker.register(config.serviceWorkerPath);
-        const existing = await registration.pushManager.getSubscription();
+        const expectedServerKey = urlBase64ToUint8Array(config.vapidPublicKey);
 
-        const subscription =
-          existing ??
-          (await registration.pushManager.subscribe({
+        let subscription = await registration.pushManager.getSubscription();
+        if (subscription && vapidKeyChanged) {
+          await subscription.unsubscribe();
+          subscription = null;
+        }
+
+        if (subscription?.options?.applicationServerKey) {
+          const currentServerKey = new Uint8Array(subscription.options.applicationServerKey);
+          const sameVapidKey = areUint8ArraysEqual(currentServerKey, expectedServerKey);
+
+          if (!sameVapidKey) {
+            await subscription.unsubscribe();
+            subscription = null;
+          }
+        }
+
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey),
-          }));
+            applicationServerKey: expectedServerKey,
+          });
+        }
 
         if (cancelled) return;
 
@@ -78,6 +106,8 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
             locationLabel: options.locationLabel ?? null,
           },
         });
+
+        window.localStorage.setItem(vapidStorageKey, config.vapidPublicKey);
       } catch (error) {
         console.error("Push registration failed:", error);
       }
