@@ -285,10 +285,10 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
 ];
 
 const platformPacksNavItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
-  { label: "Create Packs", tab: "platform-packs-create", icon: Package },
-  { label: "Pack Orders", tab: "platform-packs-orders", icon: PackageCheck },
-  { label: "Subscribers", tab: "platform-packs-subscribers", icon: Users },
-  { label: "Pack Analytics", tab: "platform-packs-analytics", icon: TrendingUp },
+  { label: "admin.nav.createPacks", tab: "platform-packs-create", icon: Package },
+  { label: "admin.nav.packOrders", tab: "platform-packs-orders", icon: PackageCheck },
+  { label: "admin.nav.subscribers", tab: "platform-packs-subscribers", icon: Users },
+  { label: "admin.nav.packAnalytics", tab: "platform-packs-analytics", icon: TrendingUp },
 ];
 
 const initialVendors: AdminVendorRecord[] = [];
