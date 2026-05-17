@@ -375,9 +375,11 @@ function Index() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
+  const [isBannerInteracting, setIsBannerInteracting] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
+  const bannerScrollRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const bottomPromoAutoplayRef = useRef(
