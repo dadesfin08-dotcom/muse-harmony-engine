@@ -318,7 +318,7 @@ function CommuneProfilePage() {
 
   if (communeQuery.isLoading) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
+      <main dir={isRtl ? "rtl" : "ltr"} className={cn("mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6", isRtl && "text-right")}>
         <p className="text-sm text-muted-foreground">{t("admin.serviceZones.communeProfileLoading")}</p>
       </main>
     );
@@ -326,7 +326,7 @@ function CommuneProfilePage() {
 
   if (communeQuery.error || !commune) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
+      <main dir={isRtl ? "rtl" : "ltr"} className={cn("mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6", isRtl && "text-right")}>
         <p className="text-sm text-destructive">{t("admin.serviceZones.communeProfileLoadFailed")}</p>
         <Button asChild variant="outline" className="rounded-md">
           <Link to="/admin" search={{ tab: "service-zones" }}>
