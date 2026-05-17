@@ -7617,20 +7617,39 @@ function AdsContentSection({
       <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <Megaphone className="size-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Announcement Manager</h3>
+          <h3 className={cn("text-sm font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.announcements.title")}</h3>
         </div>
 
         <Input
+          dir={isRtl ? "rtl" : "ltr"}
           value={announcementForm.title}
           onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, title: event.target.value }))}
-          placeholder="Announcement Title (Internal Reference)"
+          placeholder={t("admin.adsContentCms.announcements.announcementTitleInternalReference")}
         />
 
         <div className="grid gap-3 md:grid-cols-3">
           {([
-            { key: "messagesEn", label: "EN", addLabel: "+ Add EN Message", placeholder: "EN message" },
-            { key: "messagesFr", label: "FR", addLabel: "+ Add FR Message", placeholder: "FR message" },
-            { key: "messagesAr", label: "AR", addLabel: "+ Add AR Message", placeholder: "AR message" },
+            {
+              key: "messagesEn",
+              label: t("admin.adsContentCms.announcements.labels.enMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addEnMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.enMessage"),
+              dir: "ltr" as const,
+            },
+            {
+              key: "messagesFr",
+              label: t("admin.adsContentCms.announcements.labels.frMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addFrMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.frMessage"),
+              dir: "ltr" as const,
+            },
+            {
+              key: "messagesAr",
+              label: t("admin.adsContentCms.announcements.labels.arMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addArMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.arMessage"),
+              dir: "rtl" as const,
+            },
           ] as const).map((languageBlock) => {
             const messages = announcementForm[languageBlock.key];
 
@@ -7648,6 +7667,7 @@ function AdsContentSection({
                       className="flex items-center gap-2"
                     >
                       <Input
+                        dir={languageBlock.dir}
                         value={message}
                         onChange={(event) =>
                           onAnnouncementFormChange((current) => ({
@@ -7700,7 +7720,7 @@ function AdsContentSection({
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Start date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.startDate")}</span>
             <Input
               type="datetime-local"
               value={announcementForm.startDate}
@@ -7708,7 +7728,7 @@ function AdsContentSection({
             />
           </label>
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Expiration date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.expirationDate")}</span>
             <Input
               type="datetime-local"
               value={announcementForm.endDate}
@@ -7719,7 +7739,7 @@ function AdsContentSection({
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Background</span>
+            <span className="text-muted-foreground">{t("admin.adsContentCms.announcements.labels.background")}</span>
             <input
               type="color"
               value={announcementForm.bgColor}
@@ -7727,13 +7747,14 @@ function AdsContentSection({
               className="h-8 w-8 rounded border border-border"
             />
             <Input
+              dir="ltr"
               value={announcementForm.bgColor}
               onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, bgColor: event.target.value }))}
               className="h-8"
             />
           </label>
           <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Text</span>
+            <span className="text-muted-foreground">{t("admin.adsContentCms.announcements.labels.text")}</span>
             <input
               type="color"
               value={announcementForm.textColor}
@@ -7741,6 +7762,7 @@ function AdsContentSection({
               className="h-8 w-8 rounded border border-border"
             />
             <Input
+              dir="ltr"
               value={announcementForm.textColor}
               onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, textColor: event.target.value }))}
               className="h-8"
@@ -7748,48 +7770,52 @@ function AdsContentSection({
           </label>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center gap-3", isRtl && "flex-row-reverse")}>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Active</span>
+            <span className="text-xs text-muted-foreground">{t("admin.adsContentCms.announcements.labels.active")}</span>
             <Switch
               checked={announcementForm.isActive}
               onCheckedChange={(checked) => onAnnouncementFormChange((current) => ({ ...current, isActive: checked }))}
             />
           </div>
-          <div className="ml-auto grid grid-cols-2 gap-2">
+          <div className={cn("ml-auto grid grid-cols-2 gap-2", isRtl && "ml-0 mr-auto")}>
             <Button variant="hero" className="rounded-md" onClick={onSaveAnnouncement} disabled={isSavingAnnouncement}>
-              {isSavingAnnouncement ? "Saving..." : announcementForm.id ? "Update Announcement" : "Add Announcement"}
+              {isSavingAnnouncement
+                ? t("admin.common.saving")
+                : announcementForm.id
+                  ? t("admin.adsContentCms.announcements.labels.updateAnnouncement")
+                  : t("admin.adsContentCms.announcements.labels.addAnnouncement")}
             </Button>
-            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>Reset</Button>
+            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>{t("admin.adsContentCms.announcements.labels.reset")}</Button>
           </div>
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Configured Announcements</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.announcements.labels.configuredAnnouncements")}</h4>
           {isLoading ? (
-            <AppEmptyState title="Loading announcements..." subtitle="Fetching content entries." className="py-5" />
+            <AppEmptyState title={t("admin.adsContentCms.announcements.loadingTitle")} subtitle={t("admin.adsContentCms.announcements.loadingSubtitle")} className="py-5" />
           ) : announcements.length === 0 ? (
-            <AppEmptyState title="No announcements yet" subtitle="Create the first scheduled announcement." className="py-5" />
+            <AppEmptyState title={t("admin.adsContentCms.announcements.emptyTitle")} subtitle={t("admin.adsContentCms.announcements.emptySubtitle")} className="py-5" />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Message / Title</TableHead>
-                  <TableHead>Window</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[190px]">Actions</TableHead>
+                  <TableHead>{t("admin.adsContentCms.announcements.labels.messageTitle")}</TableHead>
+                  <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                  <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                  <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {announcements.map((announcement) => {
                   const state = getScheduleState(announcement.start_date, announcement.end_date);
                   const badgeLabel = !announcement.is_active
-                    ? "Disabled"
+                    ? t("admin.adsContentCms.announcements.labels.disabled")
                     : state === "scheduled"
-                      ? "Scheduled"
+                      ? t("admin.adsContentCms.campaigns.status.scheduled")
                       : state === "expired"
-                        ? "Expired"
-                        : "Active";
+                        ? t("admin.adsContentCms.campaigns.status.expired")
+                        : t("admin.adsContentCms.campaigns.status.active");
                   return (
                     <TableRow key={announcement.id}>
                       <TableCell>
@@ -7797,13 +7823,13 @@ function AdsContentSection({
                           <p className="text-sm font-semibold text-foreground">{announcement.title}</p>
                           <div className="inline-flex flex-wrap items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ backgroundColor: announcement.bg_color, color: announcement.text_color }}>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_ar ?? []).length} AR Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_ar ?? []).length, lang: "AR" })}
                             </Badge>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_fr ?? []).length} FR Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_fr ?? []).length, lang: "FR" })}
                             </Badge>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_en ?? []).length} EN Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_en ?? []).length, lang: "EN" })}
                             </Badge>
                           </div>
                         </div>
@@ -7811,12 +7837,12 @@ function AdsContentSection({
                       <TableCell>{formatDateTime(announcement.start_date)} → {formatDateTime(announcement.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => onEditAnnouncement(announcement)}><Pencil className="size-3" />Edit</Button>
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button size="sm" variant="outline" onClick={() => onEditAnnouncement(announcement)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
                           <Button size="sm" variant="outline" onClick={() => onToggleAnnouncementActive(announcement)}>
-                            {announcement.is_active ? "Pause" : "Activate"}
+                            {announcement.is_active ? t("admin.adsContentCms.campaigns.actions.pause") : t("admin.adsContentCms.announcements.labels.activate")}
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => onDeleteAnnouncement(announcement.id)}><Trash2 className="size-3" />Delete</Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAnnouncement(announcement.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                         </div>
                       </TableCell>
                     </TableRow>
