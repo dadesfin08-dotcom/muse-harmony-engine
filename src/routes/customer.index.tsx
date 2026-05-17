@@ -93,6 +93,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -568,6 +569,18 @@ function Index() {
     staleTime: 8_000,
   });
   const trackedOrderStatusRef = useRef<{ orderId: string; status: string } | null>(null);
+  const pushCustomerId =
+    typeof customerProfileQuery.data?.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(customerProfileQuery.data.id)
+      ? customerProfileQuery.data.id
+      : null;
+
+  usePushNotifications({
+    enabled: Boolean(customerSession?.phoneNumber),
+    role: "customer",
+    userId: pushCustomerId,
+    locationLabel: selectedLocationLabel,
+  });
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
