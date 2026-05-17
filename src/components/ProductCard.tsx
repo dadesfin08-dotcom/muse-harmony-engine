@@ -132,8 +132,9 @@ export function ProductCard({
               value={resolvedVariant ?? ""}
               onChange={(event) => setVariantValue(event.target.value)}
               className={cn(
-                "appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500",
-                premiumGrid ? "pr-8" : "",
+                premiumGrid
+                  ? "appearance-none w-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-full px-3 py-1.5 pr-8 cursor-pointer outline-none transition-colors"
+                  : "appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500",
               )}
               aria-label={`Select variant for ${name}`}
             >
@@ -143,12 +144,19 @@ export function ProductCard({
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-slate-500" />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
           </div>
         ) : null}
 
         <div className="flex justify-between items-center w-full mb-1">
-          <span className="inline-block rounded-sm bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
+          <span
+            className={cn(
+              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
+              premiumGrid
+                ? "bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wide"
+                : "bg-gray-50 text-gray-400",
+            )}
+          >
             {brand || "—"}
           </span>
 
