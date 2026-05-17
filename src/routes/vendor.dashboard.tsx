@@ -2498,6 +2498,7 @@ function OrderHistoryView({
   onFilterChange: (filter: HistoryFilter) => void;
   onOpenOrder: (orderId: string) => void;
 }) {
+  const { t } = useTranslation();
   const filteredOrders = useMemo(() => {
     const now = new Date();
     const startOfToday = new Date(now);
@@ -2542,18 +2543,18 @@ function OrderHistoryView({
   );
 
   const filterOptions: Array<{ value: HistoryFilter; label: string }> = [
-    { value: "today", label: "Today" },
-    { value: "week", label: "This Week" },
-    { value: "month", label: "This Month" },
-    { value: "all", label: "All Time" },
+    { value: "today", label: t("vendorDashboard.filters.today") },
+    { value: "week", label: t("vendorDashboard.filters.week") },
+    { value: "month", label: t("vendorDashboard.filters.month") },
+    { value: "all", label: t("vendorDashboard.filters.all") },
   ];
 
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Order History</h2>
-          <p className="text-xs text-muted-foreground">Delivered orders and revenue reporting.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.history.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("vendorDashboard.history.subtitle")}</p>
         </div>
 
         <div className="inline-flex items-center rounded-xl border border-border bg-background p-1">
@@ -2572,12 +2573,12 @@ function OrderHistoryView({
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <QuickStatCard label="Total Earnings (MAD)" value={`${summary.totalEarningsMad.toFixed(2)} MAD`} icon={Banknote} tone="accent" />
-        <QuickStatCard label="Completed Orders" value={String(summary.completedOrders)} icon={CheckCircle2} />
+        <QuickStatCard label={t("vendorDashboard.history.totalEarnings")} value={`${summary.totalEarningsMad.toFixed(2)} MAD`} icon={Banknote} tone="accent" />
+        <QuickStatCard label={t("vendorDashboard.history.completedOrders")} value={String(summary.completedOrders)} icon={CheckCircle2} />
       </div>
 
       {filteredOrders.length === 0 ? (
-        <EmptyState label="No delivered orders found for this period." />
+        <EmptyState label={t("vendorDashboard.history.empty") } />
       ) : (
         <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
