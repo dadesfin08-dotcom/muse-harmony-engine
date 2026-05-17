@@ -796,6 +796,57 @@ export type Database = {
         }
         Relationships: []
       }
+      order_push_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_user_id: string | null
+          event_type: string
+          failed_at: string | null
+          id: string
+          last_error: string | null
+          neighborhood_id: string | null
+          order_id: string
+          payload: Json
+          processed_at: string | null
+          processing_started_at: string | null
+          status_after: string | null
+          status_before: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_user_id?: string | null
+          event_type: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          neighborhood_id?: string | null
+          order_id: string
+          payload?: Json
+          processed_at?: string | null
+          processing_started_at?: string | null
+          status_after?: string | null
+          status_before?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_user_id?: string | null
+          event_type?: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          neighborhood_id?: string | null
+          order_id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_started_at?: string | null
+          status_after?: string | null
+          status_before?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           admin_settled: boolean
@@ -1290,8 +1341,10 @@ export type Database = {
           created_at: string
           endpoint: string
           id: string
+          last_location: string | null
           p256dh: string
           user_id: string
+          user_role: string | null
           user_type: string
         }
         Insert: {
@@ -1299,8 +1352,10 @@ export type Database = {
           created_at?: string
           endpoint: string
           id?: string
+          last_location?: string | null
           p256dh: string
           user_id: string
+          user_role?: string | null
           user_type: string
         }
         Update: {
@@ -1308,8 +1363,10 @@ export type Database = {
           created_at?: string
           endpoint?: string
           id?: string
+          last_location?: string | null
           p256dh?: string
           user_id?: string
+          user_role?: string | null
           user_type?: string
         }
         Relationships: []
@@ -1724,6 +1781,10 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      map_order_status_to_push_event: {
+        Args: { _status: string }
+        Returns: string
+      }
       recompute_vendor_carnet_customer_debt: {
         Args: { p_customer_phone: string; p_vendor_id: string }
         Returns: number
