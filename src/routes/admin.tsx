@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -234,6 +235,7 @@ import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
+import { getLocalizedCommuneName as resolveLocalizedCommuneName, getLocalizedNeighborhoodName as resolveLocalizedNeighborhoodName } from "@/lib/location-localization";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -953,17 +955,64 @@ function AdminPage() {
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
-  const getLocalizedCommuneName = (commune: {
-    name: string;
-    nameEn?: string | null;
-    nameFr?: string | null;
-    nameAr?: string | null;
-  }) => {
-    const lang = i18n.resolvedLanguage || i18n.language || "en";
-    if (lang === "ar") return commune.nameAr?.trim() || commune.nameFr?.trim() || commune.nameEn || commune.name;
-    if (lang === "fr") return commune.nameFr?.trim() || commune.nameEn || commune.name;
-    return commune.nameEn || commune.name;
-  };
+  const getLocalizedCommuneName = useCallback(
+    (commune: {
+      name: string;
+      nameEn?: string | null;
+      nameFr?: string | null;
+      nameAr?: string | null;
+    }) => resolveLocalizedCommuneName(commune, activeLanguage),
+    [activeLanguage],
+  );
+  const getLocalizedNeighborhoodName = useCallback(
+    (neighborhood: {
+      name: string;
+      nameEn?: string | null;
+      nameFr?: string | null;
+      nameAr?: string | null;
+    }) => resolveLocalizedNeighborhoodName(neighborhood, activeLanguage),
+    [activeLanguage],
+  );
+  const localizedServiceZones = useMemo(
+    () =>
+      serviceZones.map((commune) => ({
+        ...commune,
+        name: getLocalizedCommuneName(commune),
+        neighborhoods: commune.neighborhoods.map((neighborhood) => ({
+          ...neighborhood,
+          name: getLocalizedNeighborhoodName(neighborhood),
+        })),
+      })),
+    [getLocalizedCommuneName, getLocalizedNeighborhoodName, serviceZones],
+  );
+  const neighborhoodById = useMemo(() => {
+    const map = new Map<string, (typeof localizedServiceZones)[number]["neighborhoods"][number]>();
+    localizedServiceZones.forEach((commune) => {
+      commune.neighborhoods.forEach((neighborhood) => {
+        map.set(neighborhood.id, neighborhood);
+      });
+    });
+    return map;
+  }, [localizedServiceZones]);
+  const formatZoneFromNeighborhoodIds = useCallback(
+    (neighborhoodIds: string[]) => {
+      const labels = neighborhoodIds
+        .map((id) => neighborhoodById.get(id))
+        .filter((value): value is NonNullable<typeof value> => Boolean(value))
+        .map((neighborhood) => neighborhood.name);
+
+      return labels.length > 0 ? labels.join(" • ") : t("admin.ordersMonitoring.labels.unassigned");
+    },
+    [neighborhoodById, t],
+  );
+  const localizedVendors = useMemo(
+    () => vendors.map((vendor) => ({ ...vendor, zone: formatZoneFromNeighborhoodIds(vendor.neighborhoodIds ?? []) })),
+    [formatZoneFromNeighborhoodIds, vendors],
+  );
+  const localizedCyclists = useMemo(
+    () => cyclists.map((cyclist) => ({ ...cyclist, zone: formatZoneFromNeighborhoodIds(cyclist.neighborhoodIds ?? []) })),
+    [cyclists, formatZoneFromNeighborhoodIds],
+  );
   const masterProducts =
     masterProductsQuery.data?.map(
       (row): MasterProductEntity => ({
@@ -1447,7 +1496,7 @@ function AdminPage() {
     });
   }, [platformSubscribers, subscriberSearchTerm, subscriberStatusFilter]);
 
-  const communeOptions = serviceZones;
+  const communeOptions = localizedServiceZones;
   const adTargetZones = useMemo(
     () => {
       const parseZoneParts = (communeName: string, zoneName: string) => {
@@ -1463,7 +1512,7 @@ function AdminPage() {
       };
 
       return communeOptions.flatMap((commune) => {
-        const fallbackCommuneName = getLocalizedCommuneName(commune);
+        const fallbackCommuneName = commune.name;
         return commune.neighborhoods.map((zone) => {
           const parsed = parseZoneParts(fallbackCommuneName, zone.name);
           return {
@@ -4123,7 +4172,7 @@ function AdminPage() {
               ) : null}
               {tab === "vendors" ? (
                 <VendorsSection
-                  vendors={vendors}
+                  vendors={localizedVendors}
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
@@ -4132,14 +4181,14 @@ function AdminPage() {
               ) : null}
               {tab === "cyclists" ? (
                 <CyclistsSection
-                  cyclists={cyclists}
+                  cyclists={localizedCyclists}
                   isLoading={dbHealthQuery.isLoading || cyclistsQuery.isLoading}
                   onAddCyclist={() => setIsCyclistPanelOpen(true)}
                 />
               ) : null}
               {tab === "service-zones" ? (
                 <ServiceZonesSection
-                  zones={serviceZones}
+                  zones={localizedServiceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
                   isImporting={isImportingServiceZones}
                   form={serviceZoneForm}
@@ -4151,6 +4200,7 @@ function AdminPage() {
                   onImportCsv={handleServiceZonesCsvUpload}
                   onOpenCommuneProfile={openCommuneProfile}
                   localizeCommuneName={getLocalizedCommuneName}
+                  localizeNeighborhoodName={getLocalizedNeighborhoodName}
                 />
               ) : null}
               {tab === "catalog" ? (
@@ -4416,7 +4466,7 @@ function AdminPage() {
                           onChange={(event) => toggleVendorNeighborhood(neighborhood.id, event.target.checked)}
                           className="h-4 w-4 accent-primary"
                         />
-                        <span className="text-foreground">{neighborhood.name}</span>
+                        <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                       </label>
                     );
                   })
@@ -4433,7 +4483,7 @@ function AdminPage() {
                         onClick={() => toggleVendorNeighborhood(neighborhood.id, false)}
                         className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
                       >
-                        {neighborhood.name} ×
+                        {getLocalizedNeighborhoodName(neighborhood)} ×
                       </button>
                     ))}
                 </div>
@@ -4553,7 +4603,7 @@ function AdminPage() {
                           onChange={(event) => toggleCyclistNeighborhood(neighborhood.id, event.target.checked)}
                           className="h-4 w-4 accent-primary"
                         />
-                        <span className="text-foreground">{neighborhood.name}</span>
+                        <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                       </label>
                     );
                   })
@@ -4719,7 +4769,7 @@ function AdminPage() {
                                 onChange={(event) => toggleManageVendorNeighborhood(neighborhood.id, event.target.checked)}
                                 className="h-4 w-4 accent-primary"
                               />
-                              <span className="text-foreground">{neighborhood.name}</span>
+                              <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                             </label>
                           );
                         })
@@ -4736,7 +4786,7 @@ function AdminPage() {
                               onClick={() => toggleManageVendorNeighborhood(neighborhood.id, false)}
                               className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
                             >
-                              {neighborhood.name} ×
+                              {getLocalizedNeighborhoodName(neighborhood)} ×
                             </button>
                           ))}
                       </div>
@@ -6248,6 +6298,7 @@ function ServiceZonesSection({
   onImportCsv,
   onOpenCommuneProfile,
   localizeCommuneName,
+  localizeNeighborhoodName,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
@@ -6281,13 +6332,11 @@ function ServiceZonesSection({
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
+  localizeNeighborhoodName: (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => string;
 }) {
   const { t } = useTranslation();
   const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
-    const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value));
-    return Array.from(new Set(labels)).join(" / ");
+    return localizeNeighborhoodName(neighborhood);
   };
 
   return (
