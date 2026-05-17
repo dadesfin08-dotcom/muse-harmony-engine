@@ -1,4 +1,4 @@
-import type { PushRole } from "@/lib/push-notifications.server";
+export type PushRole = "customer" | "cyclist";
 
 export type PushClientConfig = {
   enabled: boolean;
