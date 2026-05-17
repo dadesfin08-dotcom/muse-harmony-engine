@@ -35,6 +35,7 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,11 +72,13 @@ import { getVendorDashboardData, updateVendorOrderStatus } from "@/lib/orders.fu
 import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { formatDistanceToNow } from "date-fns";
+import { arSA, enUS, fr } from "date-fns/locale";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
@@ -259,6 +262,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
 });
 
 function VendorDashboardPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate({ from: "/vendor/dashboard" });
   const search = Route.useSearch();
   const queryClient = useQueryClient();
@@ -395,9 +399,17 @@ function VendorDashboardPage() {
     });
   };
 
+  const activeLanguage = (i18n.resolvedLanguage || i18n.language || "en") === "ar"
+    ? "ar"
+    : (i18n.resolvedLanguage || i18n.language || "en") === "fr"
+      ? "fr"
+      : "en";
+  const dateFnsLocale = activeLanguage === "ar" ? arSA : activeLanguage === "fr" ? fr : enUS;
+  const intlLocale = activeLanguage === "ar" ? "ar-MA" : activeLanguage === "fr" ? "fr-FR" : "en-US";
+
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber, locale: activeLanguage } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
     enabled: hasValidVendorPhoneSession,
@@ -433,10 +445,10 @@ function VendorDashboardPage() {
 
   useEffect(() => {
     if (hasValidVendorPhoneSession) return;
-    toast.error("Vendor session invalid. Please log in again.");
+    toast.error(t("vendorDashboard.toasts.invalidSession"));
     clearRoleSessions();
     void navigate({ to: "/vendor/login" });
-  }, [hasValidVendorPhoneSession, navigate]);
+  }, [hasValidVendorPhoneSession, navigate, t]);
 
   const isDashboardInitialLoading = dashboardQuery.isLoading && !dashboardQuery.data;
   const isInventoryInitialLoading = inventoryQuery.isLoading && !inventoryQuery.data;
@@ -609,7 +621,7 @@ function VendorDashboardPage() {
           if (isSoundEnabled) {
             void playAlertSound({ enabled: true }).then((played) => {
               if (!played && !hasAudioPermissionHintShown) {
-                toast.info("Click the sound icon to allow alerts in your browser.");
+              toast.info(t("vendorDashboard.toasts.enableSoundHint"));
                 setHasAudioPermissionHintShown(true);
               }
             });
@@ -624,9 +636,9 @@ function VendorDashboardPage() {
                     <span className="absolute inset-0 rounded-full border border-success/35 animate-ping" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">طلب جديد واصل! 🛍️</p>
+                    <p className="text-sm font-semibold text-foreground">{t("vendorDashboard.toasts.newOrderTitle")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Order {shortOrderId(insertedId)} - {totalMad.toFixed(2)} MAD
+                      {t("vendorDashboard.toasts.orderSummary", { orderId: shortOrderId(insertedId), amount: totalMad.toFixed(2) })}
                     </p>
                     <div className="mt-2">
                       <Button
@@ -645,7 +657,7 @@ function VendorDashboardPage() {
                           toast.dismiss(toastId);
                         }}
                       >
-                        View Order
+                        {t("vendorDashboard.actions.viewOrder")}
                       </Button>
                     </div>
                   </div>
@@ -852,17 +864,17 @@ function VendorDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("Sounds disabled.");
+      toast.success(t("vendorDashboard.toasts.soundsDisabled"));
       return;
     }
 
     const played = await playAlertSound({ enabled: true });
     if (!played) {
-      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
+      toast.error(t("vendorDashboard.toasts.autoplayBlocked"));
       return;
     }
 
-    toast.success("Sounds enabled.");
+    toast.success(t("vendorDashboard.toasts.soundsEnabled"));
   };
 
   const quickStats = useMemo(() => {
@@ -999,7 +1011,7 @@ function VendorDashboardPage() {
     },
     onPrintError: () => {
       setPrintOrder(null);
-      toast.error("Failed to open printer dialog.");
+      toast.error(t("vendorDashboard.toasts.printFailed"));
     },
   });
 
@@ -1011,7 +1023,7 @@ function VendorDashboardPage() {
     const timer = window.setTimeout(() => {
       const receiptNode = receiptPrintRef.current;
       if (!receiptNode || !receiptNode.textContent?.trim()) {
-        toast.error("Receipt is not ready yet. Please try again.");
+      toast.error(t("vendorDashboard.toasts.receiptNotReady"));
         setPrintOrder(null);
         return;
       }
@@ -1106,11 +1118,11 @@ function VendorDashboardPage() {
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "preparing" } });
       await dashboardQuery.refetch();
-      toast.success("Order moved to preparing.");
+      toast.success(t("vendorDashboard.toasts.movedToPreparing"));
     } catch (error) {
       console.error("Failed to accept order:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update order status.");
+      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
     } finally {
       setIsUpdating(null);
     }
@@ -1135,7 +1147,7 @@ function VendorDashboardPage() {
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "ready" } });
       await dashboardQuery.refetch();
-      toast.success("Order marked as ready.");
+      toast.success(t("vendorDashboard.toasts.markedReady"));
 
       if (orderForReceipt) {
         setPrintOrder({
@@ -1147,7 +1159,7 @@ function VendorDashboardPage() {
     } catch (error) {
       console.error("Failed to mark order as ready:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update order status.");
+      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
       return false;
     } finally {
       setIsUpdating(null);
@@ -1157,7 +1169,7 @@ function VendorDashboardPage() {
   const handleOpenPackingModal = (orderId: string) => {
     const targetOrder = orders.find((order) => order.id === orderId);
     if (!targetOrder || targetOrder.items.length === 0) {
-      toast.error("This order has no items to pack.");
+      toast.error(t("vendorDashboard.toasts.noItemsToPack"));
       return;
     }
 
@@ -1311,7 +1323,7 @@ function VendorDashboardPage() {
         },
       });
       await inventoryQuery.refetch();
-      toast.success("Inventory updated.");
+      toast.success(t("vendorDashboard.toasts.inventoryUpdated"));
     } catch (error) {
       console.error("Failed to save inventory item:", error);
       toast.error("Failed to save inventory item.");
@@ -1435,7 +1447,7 @@ function VendorDashboardPage() {
 
   const handleLogout = async () => {
     clearRoleSessions();
-    toast.success("Logged out successfully.");
+    toast.success(t("vendorDashboard.toasts.loggedOut"));
     await navigate({ to: "/vendor/login" });
   };
 
@@ -1451,70 +1463,73 @@ function VendorDashboardPage() {
                 </span>
                 <div>
                   <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">{vendorStoreName}</h1>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Vendor Operations Dashboard</p>
+                  <p className="text-xs text-muted-foreground sm:text-sm">{t("vendorDashboard.header.subtitle")}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                <LanguageSwitcher className="rounded-xl" />
                 <Button
                   size="icon"
                   variant="soft"
                   className="rounded-xl"
                   onClick={handleToggleSounds}
-                  aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
-                  title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+                  aria-label={isSoundEnabled ? t("vendorDashboard.header.disableSounds") : t("vendorDashboard.header.enableSounds")}
+                  title={isSoundEnabled ? t("vendorDashboard.header.disableSounds") : t("vendorDashboard.header.enableSounds")}
                 >
                   {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
                 </Button>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 shadow-sm">
-                  <span className="text-xs text-muted-foreground sm:text-sm">{isOnline ? "Online" : "Offline"}</span>
+                  <span className="text-xs text-muted-foreground sm:text-sm">
+                    {isOnline ? t("vendorDashboard.header.online") : t("vendorDashboard.header.offline")}
+                  </span>
                   <Switch checked={isOnline} onCheckedChange={setIsOnline} />
                 </div>
                 <Button variant="soft" className="rounded-xl" onClick={handleLogout}>
                   <LogOut className="size-4" />
-                  Logout
+                  {t("vendorDashboard.header.logout")}
                 </Button>
                 <Button variant="soft" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
                   <Wallet className="size-4" />
-                  Wallet
+                  {t("vendorDashboard.header.wallet")}
                 </Button>
                 <Button variant="default" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
                   <QrCode className="size-4" />
-                  Pay Admin via QR · أداء مستحقات التطبيق
+                  {t("vendorDashboard.header.payAdmin")}
                 </Button>
               </div>
             </div>
 
             <section className="space-y-3">
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="text-xs font-medium text-muted-foreground">KPI Period</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("vendorDashboard.kpi.period")}</span>
                 <select
                   value={kpiFilter}
                   onChange={(event) => setKpiFilter(event.target.value as HistoryFilter)}
                   className="h-9 rounded-lg border border-input bg-background px-3 text-xs outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                 >
-                  <option value="today">Today</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="all">All Time</option>
+                  <option value="today">{t("vendorDashboard.filters.today")}</option>
+                  <option value="week">{t("vendorDashboard.filters.week")}</option>
+                  <option value="month">{t("vendorDashboard.filters.month")}</option>
+                  <option value="all">{t("vendorDashboard.filters.all")}</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <QuickStatCard label="Pending Orders" value={String(quickStats.pendingOrders)} icon={Clock3} />
+              <QuickStatCard label={t("vendorDashboard.kpi.pendingOrders")} value={String(quickStats.pendingOrders)} icon={Clock3} />
               <QuickStatCard
-                label="إجمالي النقد المستلم"
+                label={t("vendorDashboard.kpi.cashInHand")}
                 value={`${quickStats.totalCashInHandMad.toFixed(2)} MAD`}
                 icon={Banknote}
               />
               <QuickStatCard
-                label="صافي أرباحي"
+                label={t("vendorDashboard.kpi.netProfit")}
                 value={`${quickStats.myNetProfitMad.toFixed(2)} MAD`}
                 tone="success"
                 icon={BookUser}
               />
               <QuickStatCard
-                label="مستحقات المنصة"
+                label={t("vendorDashboard.kpi.platformDues")}
                 value={`${quickStats.platformDuesMad.toFixed(2)} MAD`}
                 tone="danger"
                 icon={History}
@@ -1532,31 +1547,31 @@ function VendorDashboardPage() {
           <aside className="hidden md:block">
             <div className="sticky top-36 space-y-1 rounded-2xl border border-border bg-card p-2 shadow-sm">
               <ViewNavButton
-                label="Live Orders"
+                label={t("vendorDashboard.nav.liveOrders")}
                 icon={ShoppingBag}
                 active={mainView === "orders"}
                 onClick={() => setMainView("orders")}
               />
               <ViewNavButton
-                label="Store Inventory"
+                label={t("vendorDashboard.nav.inventory")}
                 icon={Package}
                 active={mainView === "inventory"}
                 onClick={() => setMainView("inventory")}
               />
               <ViewNavButton
-                label="Flash Sales"
+                label={t("vendorDashboard.nav.flashSales")}
                 icon={Zap}
                 active={mainView === "flashSales"}
                 onClick={() => setMainView("flashSales")}
               />
               <ViewNavButton
-                label="Carnet (Credit)"
+                label={t("vendorDashboard.nav.carnet")}
                 icon={BookUser}
                 active={mainView === "carnet"}
                 onClick={() => setMainView("carnet")}
               />
               <ViewNavButton
-                label="Order History"
+                label={t("vendorDashboard.nav.history")}
                 icon={History}
                 active={mainView === "history"}
                 onClick={() => setMainView("history")}
@@ -1667,10 +1682,10 @@ function VendorDashboardPage() {
                     setPhoneForPendingCarnetVerification(trustedCustomerFullPhone);
                     setOtpCodeForCarnetVerification("");
                     setIsCarnetOtpModalOpen(true);
-                    toast.success("Verification code sent to customer WhatsApp.");
+                    toast.success(t("vendorDashboard.carnet.verificationCodeSent"));
                   } catch (error) {
                     console.error("Failed to save trusted customer:", error);
-                    toast.error("Unable to send verification code right now.");
+                    toast.error(t("vendorDashboard.carnet.unableToSendVerification"));
                   } finally {
                     setIsSavingCarnet(false);
                   }
@@ -1703,22 +1718,23 @@ function VendorDashboardPage() {
       <Dialog open={isCarnetOtpModalOpen} onOpenChange={setIsCarnetOtpModalOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl border border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Confirm WhatsApp Verification</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.carnet.confirmWhatsAppVerification")}</DialogTitle>
             <DialogDescription>
-              Averification code has been sent to the customer&apos;s WhatsApp. Enter it below to
-              confirm opening their credit account.
+              {t("vendorDashboard.carnet.confirmWhatsAppVerificationDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             {phoneForPendingCarnetVerification ? (
-              <p className="text-xs text-muted-foreground">Customer: {phoneForPendingCarnetVerification}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("vendorDashboard.carnet.customerLabel")}: {phoneForPendingCarnetVerification}
+              </p>
             ) : null}
 
             <Input
               inputMode="numeric"
               maxLength={4}
-              placeholder="4-digit code"
+              placeholder={t("vendorDashboard.carnet.fourDigitCode")}
               value={otpCodeForCarnetVerification}
               onChange={(event) =>
                 setOtpCodeForCarnetVerification(event.target.value.replace(/\D/g, "").slice(0, 4))
@@ -1737,7 +1753,7 @@ function VendorDashboardPage() {
               }}
               disabled={isSavingCarnet}
             >
-              Cancel
+              {t("vendorDashboard.actions.cancel")}
             </Button>
             <Button
               variant="hero"
@@ -1761,7 +1777,7 @@ function VendorDashboardPage() {
                   });
 
                   if (!result.verified) {
-                    toast.error("Invalid verification code.");
+                    toast.error(t("vendorDashboard.carnet.invalidVerificationCode"));
                     return;
                   }
 
@@ -1775,16 +1791,16 @@ function VendorDashboardPage() {
                   setOtpCodeForCarnetVerification("");
                   setIsCarnetOtpModalOpen(false);
                   await carnetQuery.refetch();
-                  toast.success("Trusted customer added to carnet.");
+                  toast.success(t("vendorDashboard.carnet.trustedCustomerAdded"));
                 } catch (error) {
                   console.error("Failed to verify and save trusted customer:", error);
-                  toast.error(error instanceof Error ? error.message : "Failed to verify trusted customer.");
+                  toast.error(error instanceof Error ? error.message : t("vendorDashboard.carnet.verifyTrustedCustomerFailed"));
                 } finally {
                   setIsSavingCarnet(false);
                 }
               }}
             >
-              {isSavingCarnet ? "Verifying..." : "Verify & Add to Carnet"}
+              {isSavingCarnet ? t("vendorDashboard.actions.verifying") : t("vendorDashboard.carnet.verifyAndAdd")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1800,9 +1816,11 @@ function VendorDashboardPage() {
       >
         <DialogContent className="flex h-[90vh] max-h-[90vh] w-[96vw] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6">
           <DialogHeader className="shrink-0">
-            <DialogTitle className="text-xl font-bold tracking-tight">{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
+            <DialogTitle className="text-xl font-bold tracking-tight">
+              {`${t("vendorDashboard.packing.packOrder")} ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}
+            </DialogTitle>
             <DialogDescription>
-              Check every item to fill the bag and unlock the final confirmation.
+              {t("vendorDashboard.packing.description")}
             </DialogDescription>
             {packingOrder ? (
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -1814,11 +1832,11 @@ function VendorDashboardPage() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/80 bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
                   <Clock3 className="h-3.5 w-3.5" />
-                  Deadline {packingDeadlineLabel}
+                  {t("vendorDashboard.packing.deadline")} {packingDeadlineLabel}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1.5 text-foreground">
                   <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
-                  {packingBagsCount} {packingBagsCount === 1 ? "bag" : "bags"} · ~{packingEstimatedWeightKg.toFixed(1)} kg
+                  {t("vendorDashboard.packing.bagsSummary", { count: packingBagsCount, weight: packingEstimatedWeightKg.toFixed(1) })}
                 </span>
               </div>
             ) : null}
@@ -1830,7 +1848,7 @@ function VendorDashboardPage() {
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pe-1">
                   {packingOrder.deliveryNotes?.trim() ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 border-l-4 border-l-amber-500">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">Special instruction</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">{t("vendorDashboard.packing.specialInstruction")}</p>
                       <p className="mt-1 text-base text-amber-900">{packingOrder.deliveryNotes.trim()}</p>
                     </div>
                   ) : null}
@@ -1861,7 +1879,7 @@ function VendorDashboardPage() {
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                             <Package className="size-4" aria-hidden="true" />
-                            <span className="sr-only">No product image</span>
+                            <span className="sr-only">{t("vendorDashboard.packing.noProductImage")}</span>
                           </div>
                         )}
                       </div>
@@ -1895,11 +1913,11 @@ function VendorDashboardPage() {
                               <p className="truncate text-[12.5px] text-muted-foreground">
                                 <span>{Number(item.unitPriceMad ?? 0).toFixed(2)} MAD</span>
                                 <span className="mx-1.5">·</span>
-                                <span>Qty: {item.quantity}</span>
+                                 <span>{t("vendorDashboard.packing.qty", { quantity: item.quantity })}</span>
                                 {normalizedVariant ? (
                                   <>
                                     <span className="mx-1.5">·</span>
-                                    <span>Variant: {normalizedVariant}</span>
+                                     <span>{t("vendorDashboard.packing.variant", { value: normalizedVariant })}</span>
                                   </>
                                 ) : null}
                               </p>
@@ -1914,7 +1932,7 @@ function VendorDashboardPage() {
                         onCheckedChange={(value: boolean | "indeterminate") =>
                           togglePackingItem(itemKey, value === true)
                         }
-                        aria-label={`Mark ${item.name} packed`}
+                        aria-label={t("vendorDashboard.packing.markPacked", { name: item.name })}
                       />
                     </label>
                   );
@@ -1937,26 +1955,26 @@ function VendorDashboardPage() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <ShoppingBag className="size-14 text-muted-foreground/40" />
                     <p className="mt-2 text-center text-2xl font-extrabold text-foreground">{fillPercentage}%</p>
-                    <p className="text-xs text-muted-foreground">Bag fill progress</p>
+                    <p className="text-xs text-muted-foreground">{t("vendorDashboard.packing.bagFillProgress")}</p>
                   </div>
                 </div>
 
                 <p className="mt-3 text-center text-sm text-muted-foreground">
-                  {packedItemsCount}/{totalPackingItems} items packed
+                  {t("vendorDashboard.packing.itemsPacked", { packed: packedItemsCount, total: totalPackingItems })}
                 </p>
 
                 <div className="mt-4 space-y-2">
                   <div className="rounded-lg border border-border bg-background px-3 py-2">
-                    <p className="text-xs text-muted-foreground">Costs</p>
+                    <p className="text-xs text-muted-foreground">{t("vendorDashboard.packing.costs")}</p>
                     <p className="text-sm font-semibold text-foreground">
-                      Subtotal: {packingSubtotalMad.toFixed(2)} MAD
+                      {t("vendorDashboard.packing.subtotal")}: {packingSubtotalMad.toFixed(2)} MAD
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
+                      {t("vendorDashboard.packing.deliveryFee")}: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
                     </p>
                     <div className="mt-3 border-t border-border pt-2">
                       <p className="text-base font-bold text-foreground">
-                        Grand Total: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
+                        {t("vendorDashboard.packing.grandTotal")}: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
                       </p>
                     </div>
                   </div>
@@ -1967,7 +1985,7 @@ function VendorDashboardPage() {
 
           <DialogFooter className="shrink-0">
             <div className="flex w-full items-center justify-between gap-3">
-              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Packed by: {packedByName}</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t("vendorDashboard.packing.packedBy")}: {packedByName}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -1976,7 +1994,7 @@ function VendorDashboardPage() {
                     setPackingOrderId(null);
                   }}
                 >
-                  Cancel
+                  {t("vendorDashboard.actions.cancel")}
                 </Button>
                 <Button
                   variant="hero"
@@ -1989,8 +2007,8 @@ function VendorDashboardPage() {
                 >
                   <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
                   {packingOrderId && isUpdating === packingOrderId
-                    ? "Updating..."
-                    : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
+                    ? t("vendorDashboard.actions.updating")
+                    : t("vendorDashboard.packing.confirmAndMarkReady", { packed: packedItemsCount, total: totalPackingItems })}
                 </Button>
               </div>
             </div>
@@ -2014,9 +2032,9 @@ function VendorDashboardPage() {
       >
         <DialogContent className="w-[95vw] max-w-4xl rounded-2xl border border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Customer Ledger</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.ledger.customerLedger")}</DialogTitle>
             <DialogDescription>
-              Detailed credit ledger with all carnet orders and payment events.
+              {t("vendorDashboard.ledger.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -2024,11 +2042,11 @@ function VendorDashboardPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-muted/20 p-3 md:grid-cols-2 xl:grid-cols-5">
                 <div>
-                  <p className="text-xs text-muted-foreground">Customer</p>
-                  <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerName ?? "Unnamed Customer"}</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.customer")}</p>
+                  <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerName ?? t("vendorDashboard.ledger.unnamedCustomer")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.phone")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerPhone}</p>
                 </div>
                 <div>
@@ -2036,11 +2054,11 @@ function VendorDashboardPage() {
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerCin ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Current Debt</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.currentDebt")}</p>
                   <p className="text-sm font-semibold text-destructive">{selectedCarnetCustomer.currentDebt.toFixed(2)} MAD</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Max Limit</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.maxLimit")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.maxLimit.toFixed(2)} MAD</p>
                 </div>
               </div>
@@ -2050,7 +2068,7 @@ function VendorDashboardPage() {
                   type="number"
                   min="0.01"
                   step="0.01"
-                  placeholder="Payment amount (MAD)"
+                  placeholder={t("vendorDashboard.ledger.paymentAmountPlaceholder")}
                   value={ledgerPaymentAmount}
                   onChange={(event) => setLedgerPaymentAmount(event.target.value)}
                   className="h-10 rounded-xl"
@@ -2062,7 +2080,7 @@ function VendorDashboardPage() {
                   onClick={async () => {
                     const amount = Number(ledgerPaymentAmount);
                     if (Number.isNaN(amount) || amount <= 0) {
-                      toast.error("Enter a valid payment amount.");
+                      toast.error(t("vendorDashboard.ledger.enterValidPaymentAmount"));
                       return;
                     }
 
@@ -2076,31 +2094,31 @@ function VendorDashboardPage() {
                       });
                       setLedgerPaymentAmount("");
                       await Promise.all([carnetQuery.refetch(), ledgerQuery.refetch()]);
-                      toast.success("Payment recorded successfully.");
+                      toast.success(t("vendorDashboard.ledger.paymentRecorded"));
                     } catch (error) {
                       console.error("Failed to record payment:", error);
-                      toast.error(error instanceof Error ? error.message : "Failed to record payment.");
+                      toast.error(error instanceof Error ? error.message : t("vendorDashboard.ledger.paymentRecordFailed"));
                     } finally {
                       setIsRecordingPayment(false);
                     }
                   }}
                 >
-                  {isRecordingPayment ? "Saving..." : "Record Payment"}
+                  {isRecordingPayment ? t("vendorDashboard.actions.saving") : t("vendorDashboard.ledger.recordPayment")}
                 </Button>
               </div>
 
               {isLedgerInitialLoading ? (
-                <EmptyState label="Loading ledger history..." />
+                <EmptyState label={t("vendorDashboard.ledger.loadingHistory")} />
               ) : ledgerTransactions.length === 0 ? (
-                <EmptyState label="No transactions found for this customer." />
+                <EmptyState label={t("vendorDashboard.ledger.noTransactions")} />
               ) : (
                 <div className="max-h-[360px] overflow-auto rounded-xl border border-border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>{t("vendorDashboard.ledger.date")}</TableHead>
+                        <TableHead>{t("vendorDashboard.ledger.descriptionColumn")}</TableHead>
+                        <TableHead className="text-right">{t("vendorDashboard.ledger.amount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2180,9 +2198,9 @@ function VendorDashboardPage() {
                                                 <p className="truncate font-medium text-foreground">
                                                   {item.quantity}x {item.name}
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  Unit: {item.unitPriceMad.toFixed(2)} MAD
-                                                </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                   {t("vendorDashboard.ledger.unit")} {item.unitPriceMad.toFixed(2)} MAD
+                                                 </p>
                                               </div>
                                                 <p className="shrink-0 font-semibold text-foreground">
                                                   {roundMoney(Number(item.quantity ?? 0) * Number(item.unitPriceMad ?? 0)).toFixed(2)} MAD
@@ -2193,9 +2211,7 @@ function VendorDashboardPage() {
                                           <div className="border-t border-gray-200 my-2" />
 
                                           <div className="flex items-center justify-between gap-3 py-1">
-                                            <p className="text-gray-500 text-sm">
-                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
-                                            </p>
+                                              <p className="text-gray-500 text-sm">{t("vendorDashboard.ledger.deliveryFeeToCyclist")}</p>
                                             <p className="shrink-0 font-semibold text-foreground">
                                               {orderDeliveryFeeMad.toFixed(2)} MAD
                                             </p>
@@ -2203,12 +2219,10 @@ function VendorDashboardPage() {
                                         </div>
                                       ) : (
                                         <div className="space-y-1">
-                                          <p>No item details available for this order.</p>
+                                          <p>{t("vendorDashboard.ledger.noItemDetails")}</p>
                                           <div className="border-t border-gray-200 my-2" />
                                           <div className="flex items-center justify-between gap-3 py-1">
-                                            <p className="text-gray-500 text-sm">
-                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
-                                            </p>
+                                            <p className="text-gray-500 text-sm">{t("vendorDashboard.ledger.deliveryFeeToCyclist")}</p>
                                             <p className="shrink-0 font-semibold text-foreground">
                                               {orderDeliveryFeeMad.toFixed(2)} MAD
                                             </p>
@@ -2229,7 +2243,7 @@ function VendorDashboardPage() {
               )}
             </div>
           ) : (
-            <EmptyState label="Customer not found." />
+            <EmptyState label={t("vendorDashboard.ledger.customerNotFound")} />
           )}
         </DialogContent>
       </Dialog>
@@ -2238,6 +2252,7 @@ function VendorDashboardPage() {
 }
 
 function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (view: MainView) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="md:hidden">
       <div className="grid w-full grid-cols-4 items-center gap-1 rounded-2xl border border-border bg-card p-1 shadow-sm">
@@ -2248,7 +2263,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("orders")}
         >
           <ShoppingBag className="size-4" />
-          Live Orders
+          {t("vendorDashboard.nav.liveOrders")}
         </Button>
         <Button
           type="button"
@@ -2257,7 +2272,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("history")}
         >
           <History className="size-4" />
-          History
+          {t("vendorDashboard.nav.history")}
         </Button>
         <Button
           type="button"
@@ -2266,7 +2281,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("inventory")}
         >
           <Boxes className="size-4" />
-          Store Inventory
+          {t("vendorDashboard.nav.inventory")}
         </Button>
         <Button
           type="button"
@@ -2275,7 +2290,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("flashSales")}
         >
           <Zap className="size-4" />
-          Flash Sales
+          {t("vendorDashboard.nav.flashSales")}
         </Button>
       </div>
     </div>
@@ -2338,14 +2353,15 @@ function LiveOrdersView({
   onRejectOrder: (orderId: string) => void;
   timeTick: number;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Live Orders</h2>
-          <p className="text-xs text-muted-foreground">Manage urgent orders by operational stage.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.liveOrders.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("vendorDashboard.liveOrders.subtitle")}</p>
         </div>
-        {isLoading ? <span className="text-sm text-muted-foreground">Loading...</span> : null}
+        {isLoading ? <span className="text-sm text-muted-foreground">{t("vendorDashboard.common.loading")}</span> : null}
       </div>
 
       <Tabs
@@ -2358,24 +2374,24 @@ function LiveOrdersView({
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
           <TabsTrigger value="pending" className="rounded-lg">
-            Pending ({queue.pending.length})
+            {t("vendorDashboard.tabs.pending", { count: queue.pending.length })}
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
-            Preparing ({queue.preparing.length})
+            {t("vendorDashboard.tabs.preparing", { count: queue.preparing.length })}
           </TabsTrigger>
           <TabsTrigger value="ready" className="rounded-lg">
-            Ready ({queue.ready.length})
+            {t("vendorDashboard.tabs.ready", { count: queue.ready.length })}
           </TabsTrigger>
           <TabsTrigger value="inDelivery" className="rounded-lg">
-            In Delivery / في الطريق ({queue.inDelivery.length})
+            {t("vendorDashboard.tabs.inDelivery", { count: queue.inDelivery.length })}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.pending.length === 0 ? (
-            <EmptyState label="No pending orders right now." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyPending")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2398,9 +2414,9 @@ function LiveOrdersView({
 
         <TabsContent value="preparing" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.preparing.length === 0 ? (
-            <EmptyState label="No orders are currently being prepared." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyPreparing")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2422,9 +2438,9 @@ function LiveOrdersView({
 
         <TabsContent value="ready" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.ready.length === 0 ? (
-            <EmptyState label="No orders waiting for pickup." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyReady")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2445,9 +2461,9 @@ function LiveOrdersView({
 
         <TabsContent value="inDelivery" className="mt-4">
           {isLoading ? (
-            <EmptyState label="Loading live orders..." />
+            <EmptyState label={t("vendorDashboard.liveOrders.loading")} />
           ) : queue.inDelivery.length === 0 ? (
-            <EmptyState label="No orders currently in delivery." />
+            <EmptyState label={t("vendorDashboard.liveOrders.emptyInDelivery")} />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -2482,6 +2498,7 @@ function OrderHistoryView({
   onFilterChange: (filter: HistoryFilter) => void;
   onOpenOrder: (orderId: string) => void;
 }) {
+  const { t } = useTranslation();
   const filteredOrders = useMemo(() => {
     const now = new Date();
     const startOfToday = new Date(now);
@@ -2526,18 +2543,18 @@ function OrderHistoryView({
   );
 
   const filterOptions: Array<{ value: HistoryFilter; label: string }> = [
-    { value: "today", label: "Today" },
-    { value: "week", label: "This Week" },
-    { value: "month", label: "This Month" },
-    { value: "all", label: "All Time" },
+    { value: "today", label: t("vendorDashboard.filters.today") },
+    { value: "week", label: t("vendorDashboard.filters.week") },
+    { value: "month", label: t("vendorDashboard.filters.month") },
+    { value: "all", label: t("vendorDashboard.filters.all") },
   ];
 
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Order History</h2>
-          <p className="text-xs text-muted-foreground">Delivered orders and revenue reporting.</p>
+          <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.history.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("vendorDashboard.history.subtitle")}</p>
         </div>
 
         <div className="inline-flex items-center rounded-xl border border-border bg-background p-1">
@@ -2556,12 +2573,12 @@ function OrderHistoryView({
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <QuickStatCard label="Total Earnings (MAD)" value={`${summary.totalEarningsMad.toFixed(2)} MAD`} icon={Banknote} tone="accent" />
-        <QuickStatCard label="Completed Orders" value={String(summary.completedOrders)} icon={CheckCircle2} />
+        <QuickStatCard label={t("vendorDashboard.history.totalEarnings")} value={`${summary.totalEarningsMad.toFixed(2)} MAD`} icon={Banknote} tone="accent" />
+        <QuickStatCard label={t("vendorDashboard.history.completedOrders")} value={String(summary.completedOrders)} icon={CheckCircle2} />
       </div>
 
       {filteredOrders.length === 0 ? (
-        <EmptyState label="No delivered orders found for this period." />
+        <EmptyState label={t("vendorDashboard.history.empty") } />
       ) : (
         <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
