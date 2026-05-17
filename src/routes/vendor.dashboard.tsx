@@ -1848,7 +1848,7 @@ function VendorDashboardPage() {
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pe-1">
                   {packingOrder.deliveryNotes?.trim() ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 border-l-4 border-l-amber-500">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">Special instruction</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">{t("vendorDashboard.packing.specialInstruction")}</p>
                       <p className="mt-1 text-base text-amber-900">{packingOrder.deliveryNotes.trim()}</p>
                     </div>
                   ) : null}
@@ -1879,7 +1879,7 @@ function VendorDashboardPage() {
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                             <Package className="size-4" aria-hidden="true" />
-                            <span className="sr-only">No product image</span>
+                            <span className="sr-only">{t("vendorDashboard.packing.noProductImage")}</span>
                           </div>
                         )}
                       </div>
@@ -1913,11 +1913,11 @@ function VendorDashboardPage() {
                               <p className="truncate text-[12.5px] text-muted-foreground">
                                 <span>{Number(item.unitPriceMad ?? 0).toFixed(2)} MAD</span>
                                 <span className="mx-1.5">·</span>
-                                <span>Qty: {item.quantity}</span>
+                                 <span>{t("vendorDashboard.packing.qty", { quantity: item.quantity })}</span>
                                 {normalizedVariant ? (
                                   <>
                                     <span className="mx-1.5">·</span>
-                                    <span>Variant: {normalizedVariant}</span>
+                                     <span>{t("vendorDashboard.packing.variant", { value: normalizedVariant })}</span>
                                   </>
                                 ) : null}
                               </p>
@@ -1932,7 +1932,7 @@ function VendorDashboardPage() {
                         onCheckedChange={(value: boolean | "indeterminate") =>
                           togglePackingItem(itemKey, value === true)
                         }
-                        aria-label={`Mark ${item.name} packed`}
+                        aria-label={t("vendorDashboard.packing.markPacked", { name: item.name })}
                       />
                     </label>
                   );
@@ -1955,26 +1955,26 @@ function VendorDashboardPage() {
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <ShoppingBag className="size-14 text-muted-foreground/40" />
                     <p className="mt-2 text-center text-2xl font-extrabold text-foreground">{fillPercentage}%</p>
-                    <p className="text-xs text-muted-foreground">Bag fill progress</p>
+                    <p className="text-xs text-muted-foreground">{t("vendorDashboard.packing.bagFillProgress")}</p>
                   </div>
                 </div>
 
                 <p className="mt-3 text-center text-sm text-muted-foreground">
-                  {packedItemsCount}/{totalPackingItems} items packed
+                  {t("vendorDashboard.packing.itemsPacked", { packed: packedItemsCount, total: totalPackingItems })}
                 </p>
 
                 <div className="mt-4 space-y-2">
                   <div className="rounded-lg border border-border bg-background px-3 py-2">
-                    <p className="text-xs text-muted-foreground">Costs</p>
+                    <p className="text-xs text-muted-foreground">{t("vendorDashboard.packing.costs")}</p>
                     <p className="text-sm font-semibold text-foreground">
-                      Subtotal: {packingSubtotalMad.toFixed(2)} MAD
+                      {t("vendorDashboard.packing.subtotal")}: {packingSubtotalMad.toFixed(2)} MAD
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
+                      {t("vendorDashboard.packing.deliveryFee")}: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
                     </p>
                     <div className="mt-3 border-t border-border pt-2">
                       <p className="text-base font-bold text-foreground">
-                        Grand Total: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
+                        {t("vendorDashboard.packing.grandTotal")}: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
                       </p>
                     </div>
                   </div>
@@ -1985,7 +1985,7 @@ function VendorDashboardPage() {
 
           <DialogFooter className="shrink-0">
             <div className="flex w-full items-center justify-between gap-3">
-              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Packed by: {packedByName}</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t("vendorDashboard.packing.packedBy")}: {packedByName}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -1994,7 +1994,7 @@ function VendorDashboardPage() {
                     setPackingOrderId(null);
                   }}
                 >
-                  Cancel
+                  {t("vendorDashboard.actions.cancel")}
                 </Button>
                 <Button
                   variant="hero"
@@ -2007,8 +2007,8 @@ function VendorDashboardPage() {
                 >
                   <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
                   {packingOrderId && isUpdating === packingOrderId
-                    ? "Updating..."
-                    : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
+                    ? t("vendorDashboard.actions.updating")
+                    : t("vendorDashboard.packing.confirmAndMarkReady", { packed: packedItemsCount, total: totalPackingItems })}
                 </Button>
               </div>
             </div>
