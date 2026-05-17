@@ -1094,7 +1094,7 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
 
       const currentStatus = (order as { status: string }).status;
       const allowed =
-        (currentStatus === "pending" && data.nextStatus === "preparing") ||
+        ((currentStatus === "pending" || currentStatus === "new") && data.nextStatus === "preparing") ||
         (currentStatus === "preparing" && data.nextStatus === "ready");
 
       if (!allowed) {
