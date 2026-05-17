@@ -2384,7 +2384,7 @@ function Index() {
                     <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-foreground">{product.name}</h3>
 
                     <div className="mt-1.5 gap-1 flex items-center justify-center">
-                      <span className="text-base font-bold tracking-tight text-[#2A7543]">
+                      <span className="text-[11px] font-bold text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
                       <span className="text-[11px] font-bold text-[#2A7543]">MAD</span>
