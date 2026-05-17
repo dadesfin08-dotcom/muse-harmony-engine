@@ -164,7 +164,7 @@ export function ProductCard({
           search={(prev: Record<string, unknown>) => (flashDealContext ? { ...prev, deal: true } : prev)}
           className="block w-full min-w-0"
         >
-          <h2 title={name} className="text-sm font-bold leading-tight line-clamp-2 min-h-[2.5rem] mb-2">
+          <h2 title={name} className="text-sm font-bold tracking-normal leading-snug line-clamp-2 min-h-[2.5rem] mb-2">
             {name}
           </h2>
         </Link>
