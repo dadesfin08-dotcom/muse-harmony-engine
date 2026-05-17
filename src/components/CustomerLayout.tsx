@@ -263,19 +263,8 @@ export function CustomerLayout({
     <>
       <main className="pb-24 md:pb-0">{children}</main>
 
-      <nav className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 md:hidden">
-        <div className="pointer-events-auto relative mx-auto max-w-6xl pb-safe">
-          <div className="relative h-[84px] [filter:drop-shadow(0_-5px_15px_rgba(0,0,0,0.08))]">
-            <div
-              className="absolute inset-0 border-t border-border bg-background"
-              style={{
-                WebkitMaskImage: "radial-gradient(circle at 50% 0, transparent 34px, black 39px)",
-                maskImage: "radial-gradient(circle at 50% 0, transparent 34px, black 39px)",
-              }}
-            />
-
-            <div className="relative z-10 flex h-[76px] items-end gap-2 overflow-x-auto whitespace-nowrap px-2 pb-2 scrollbar-hide">
-          <Link to="/" className="flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-primary">
+      <nav className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden">
+          <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
           </Link>
@@ -289,22 +278,21 @@ export function CustomerLayout({
                 void navigate({ to: "/customer/categories" });
               }
             }}
-            className="flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-muted-foreground"
+            className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors"
           >
             <Search className="size-5" />
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="relative z-20 flex min-w-[74px] flex-shrink-0 items-end justify-center">
+          <div className="flex items-center justify-center w-full h-full">
             <LanguageSwitcher
               trigger={
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="relative z-30 inline-flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.6)] [filter:drop-shadow(0_0_25px_rgba(16,185,129,0.3))] transition-transform duration-200 hover:scale-110 sm:h-16 sm:w-16 sm:-translate-y-5 sm:border-4"
+                  className="relative -top-6 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
                 >
-                  <Languages className="size-6 sm:size-7" />
-                  <span className="pointer-events-none absolute inset-0 rounded-full animate-pulse bg-emerald-400/20" />
+                  <Languages className="size-6" />
                 </button>
               }
             />
@@ -313,7 +301,7 @@ export function CustomerLayout({
           <button
             type="button"
             onClick={openCart}
-            className="relative flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-muted-foreground"
+            className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors"
             aria-label={cartLabel}
           >
             <span className="relative">
@@ -330,21 +318,18 @@ export function CustomerLayout({
             onClick={() => {
               setIsProfileHubOpen(true);
             }}
-            className={`flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 ${
+            className={`flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors ${
               isProfileHubOpen ||
               isCustomerAuthModalOpen ||
               customerPanelView === "profile" ||
               location.pathname === "/profile"
-                ? "text-primary"
-                : "text-muted-foreground"
+                ? "text-emerald-600"
+                : ""
             }`}
           >
             <UserCircle2 className="size-5" />
             <span className="text-[10px]">{t("nav.profile")}</span>
           </button>
-            </div>
-          </div>
-        </div>
       </nav>
 
       {isProfileHubOpen ? (
