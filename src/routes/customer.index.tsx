@@ -375,9 +375,11 @@ function Index() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
+  const [isBannerInteracting, setIsBannerInteracting] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
+  const bannerScrollRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const bottomPromoAutoplayRef = useRef(
@@ -1053,6 +1055,22 @@ function Index() {
 
     return () => clearInterval(interval);
   }, [isSubInteracting]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (bannerScrollRef.current && !isBannerInteracting) {
+        const { scrollLeft, scrollWidth, clientWidth } = bannerScrollRef.current;
+
+        if (scrollLeft + clientWidth >= scrollWidth - 5) {
+          bannerScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          bannerScrollRef.current.scrollBy({ left: clientWidth, behavior: "smooth" });
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isBannerInteracting]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -2020,40 +2038,43 @@ function Index() {
             </div>
           </div>
 
-          <div className="signature-tilt animate-enter h-[28vh] min-h-[170px] max-h-[30vh] overflow-hidden rounded-2xl border border-border/70 bg-card md:h-[410px] md:max-h-none">
-            <Carousel opts={{ loop: true }} className="h-full">
-              <CarouselContent className="h-full">
-                {displayAdSlides.map((slide) => (
-                  <CarouselItem key={slide.id} className="h-full pl-0">
-                    <article className="relative h-full w-full overflow-hidden">
-                      <img
-                        src={slide.image}
-                        alt={slide.alt}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                        width={1920}
-                        height={1080}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/35 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-3 text-background md:p-5">
-                        <span className="mb-2 inline-flex rounded-md border border-background/60 bg-foreground/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
-                          {slide.tag}
-                        </span>
-                        <p className="text-sm font-semibold leading-tight md:text-lg">{slide.headline}</p>
-                        <p className="mt-1 line-clamp-2 text-xs text-background/90 md:text-sm">{slide.copy}</p>
-                      </div>
-                      {slide.linkUrl ? (
-                        <a
-                          href={slide.linkUrl}
-                          className="absolute inset-0"
-                          aria-label="Open promotional offer"
-                        />
-                      ) : null}
-                    </article>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
+          <div
+            ref={bannerScrollRef}
+            className="flex flex-row overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory w-full"
+            onMouseEnter={() => setIsBannerInteracting(true)}
+            onMouseLeave={() => setIsBannerInteracting(false)}
+            onTouchStart={() => setIsBannerInteracting(true)}
+            onTouchEnd={() => setIsBannerInteracting(false)}
+          >
+            {displayAdSlides.map((slide) => (
+              <div key={slide.id} className="w-full flex-shrink-0 snap-center px-4">
+                <article className="signature-tilt animate-enter relative h-[28vh] min-h-[170px] max-h-[30vh] w-full overflow-hidden rounded-2xl border border-border/70 bg-card md:h-[410px] md:max-h-none">
+                  <img
+                    src={slide.image}
+                    alt={slide.alt}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    width={1920}
+                    height={1080}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/35 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-3 text-background md:p-5">
+                    <span className="mb-2 inline-flex rounded-md border border-background/60 bg-foreground/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                      {slide.tag}
+                    </span>
+                    <p className="text-sm font-semibold leading-tight md:text-lg">{slide.headline}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-background/90 md:text-sm">{slide.copy}</p>
+                  </div>
+                  {slide.linkUrl ? (
+                    <a
+                      href={slide.linkUrl}
+                      className="absolute inset-0"
+                      aria-label="Open promotional offer"
+                    />
+                  ) : null}
+                </article>
+              </div>
+            ))}
           </div>
         </section>
 
