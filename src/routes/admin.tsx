@@ -235,6 +235,7 @@ import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
+import { getLocalizedCategoryName } from "@/lib/category-localization";
 import { getLocalizedCommuneName as resolveLocalizedCommuneName, getLocalizedNeighborhoodName as resolveLocalizedNeighborhoodName } from "@/lib/location-localization";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -3049,7 +3050,7 @@ function AdminPage() {
 
   const saveCategory = async () => {
     if (!categoryForm.nameEn.trim() || !categoryForm.nameFr.trim() || !categoryForm.nameAr.trim()) {
-      toast.error("Please enter category names in EN, FR, and AR.");
+      toast.error(t("admin.categories.validation.namesRequired"));
       return;
     }
 
@@ -3103,20 +3104,20 @@ function AdminPage() {
         queryClient.setQueryData(["admin", "categories"], (current: CategoryAdminRow[] | undefined) =>
           (current ?? []).map((row) => (row.id === updated.id ? updated : row)),
         );
-        toast.success("Category updated.");
+        toast.success(t("admin.categories.toast.updated"));
       } else {
         const created = await createCategoryInDatabase({ data: payload });
 
         queryClient.setQueryData(["admin", "categories"], (current: CategoryAdminRow[] | undefined) =>
           [...(current ?? []), created].sort((a, b) => a.sort_order - b.sort_order),
         );
-        toast.success("Category created.");
+        toast.success(t("admin.categories.toast.created"));
       }
 
       resetCategoryForm();
     } catch (error) {
       console.error("Failed to save category:", error);
-      toast.error("Failed to save category.");
+      toast.error(t("admin.categories.toast.saveFailed"));
     } finally {
       setIsSavingCategory(false);
     }
