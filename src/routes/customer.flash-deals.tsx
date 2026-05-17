@@ -97,7 +97,7 @@ function FlashDealsPage() {
           </p>
         </section>
       ) : (
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <section className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3">
           {deals.map((deal) => (
             <ProductCard
               key={deal.id}

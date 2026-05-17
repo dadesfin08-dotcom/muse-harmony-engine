@@ -2405,7 +2405,7 @@ function Index() {
           >
             <CarouselContent className="-ml-0 items-stretch gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {flashDeals.map((product) => (
-                <CarouselItem key={`flash-${product.id}`} className="basis-[170px] pl-0">
+                <CarouselItem key={`flash-${product.id}`} className="basis-[170px] pl-0 h-full">
                   <ProductCard
                     id={product.id}
                     name={product.name}
