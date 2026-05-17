@@ -27,7 +27,7 @@ import {
   updateNeighborhood,
 } from "@/lib/locations.functions";
 import { useAppLanguage } from "@/hooks/use-localization";
-import { localizeText } from "@/lib/localization";
+import { getLocalizedCommuneName, getLocalizedNeighborhoodName } from "@/lib/location-localization";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/service-zones/$communeId")({
@@ -54,20 +54,10 @@ function CommuneProfilePage() {
   });
 
   const commune = communeQuery.data;
-  const localizedCommuneName = (value: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) => {
-    return localizeText(
-      language,
-      { en: value.nameEn || value.name, fr: value.nameFr, ar: value.nameAr },
-      value.name,
-    );
-  };
-  const localizedNeighborhoodName = (neighborhood: { nameEn: string; nameFr: string | null; nameAr: string | null }) => {
-    return localizeText(language, {
-      en: neighborhood.nameEn,
-      fr: neighborhood.nameFr,
-      ar: neighborhood.nameAr,
-    });
-  };
+  const localizedCommuneName = (value: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
+    getLocalizedCommuneName(value, language);
+  const localizedNeighborhoodName = (neighborhood: { nameEn: string; nameFr: string | null; nameAr: string | null; name?: string }) =>
+    getLocalizedNeighborhoodName(neighborhood, language);
 
   const sortedNeighborhoods = useMemo(() => {
     return [...(commune?.neighborhoods ?? [])].sort((a, b) =>
