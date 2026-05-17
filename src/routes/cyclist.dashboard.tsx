@@ -693,7 +693,7 @@ function CyclistDashboardPage() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
         <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
           <div
-            className="flex flex-row items-center overflow-x-auto whitespace-nowrap scrollbar-hide px-2 gap-2"
+            className="w-full flex flex-row items-center justify-start overflow-x-auto gap-2 px-2 py-2 flex-nowrap scrollbar-hide"
             dir={isArabic ? "rtl" : "ltr"}
           >
 
@@ -708,7 +708,7 @@ function CyclistDashboardPage() {
                   onClick={tab.onClick}
                   aria-label={tab.label}
                   className={cn(
-                    "relative z-10 flex min-h-14 shrink-0 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-semibold transition-all duration-200 active:scale-95",
+                    "relative z-10 flex min-h-14 shrink-0 flex-shrink-0 whitespace-nowrap flex-col items-center justify-center gap-1 rounded-2xl px-2 text-[11px] font-semibold transition-all duration-200 active:scale-95",
                     isTabActive ? "text-primary" : "text-muted-foreground",
                   )}
                 >
