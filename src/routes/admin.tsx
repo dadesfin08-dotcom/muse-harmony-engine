@@ -2487,6 +2487,40 @@ function AdminPage() {
     }
   };
 
+  const handleSeedBrandEngineDemoData = async () => {
+    try {
+      const demoBrands = MOCK_BRAND_DATA.map((brand) => ({
+        id: brand.id,
+        name_en: brand.brand_name,
+        name_fr: brand.brand_name,
+        name_ar: brand.brand_name,
+        logo_url: null,
+      }));
+
+      const { error: brandError } = await supabase.from("brands").upsert(demoBrands, { onConflict: "id" });
+      if (brandError) throw brandError;
+
+      const demoScores = MOCK_BRAND_DATA.map((brand) => ({
+        brand_id: brand.id,
+        base_score: brand.current_score,
+        trending_velocity: brand.trending_velocity,
+        active_until: new Date(Date.now() + brand.active_days * 24 * 60 * 60 * 1000).toISOString(),
+        is_trending: brand.trend_status !== "Falling" && brand.current_score >= 120,
+        is_blacklisted: false,
+        last_updated: new Date().toISOString(),
+      }));
+
+      const { error: scoreError } = await supabase.from("brand_scores").upsert(demoScores, { onConflict: "brand_id" });
+      if (scoreError) throw scoreError;
+
+      toast.success("Demo brand data seeded successfully.");
+      await brandEngineQuery.refetch();
+    } catch (error) {
+      console.error("Failed to seed demo brand data:", error);
+      toast.error("Failed to seed demo data.");
+    }
+  };
+
   const handleRotationRatioChange = (segment: "trending" | "midTier" | "discovery", value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value)));
     const rest = 100 - clamped;
@@ -4005,6 +4039,7 @@ function AdminPage() {
                   onManualBoost={handleBrandEngineManualBoost}
                   onToggleBlacklist={handleBrandEngineBlacklist}
                   onResetScore={handleBrandEngineResetScore}
+                  onSeedDemoData={handleSeedBrandEngineDemoData}
                 />
               ) : null}
               {tab === "platform-packs-create" ? (
