@@ -28,6 +28,7 @@ import {
 } from "@/lib/locations.functions";
 import { useAppLanguage } from "@/hooks/use-localization";
 import { localizeText } from "@/lib/localization";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/service-zones/$communeId")({
   component: CommuneProfilePage,
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/admin/service-zones/$communeId")({
 
 function CommuneProfilePage() {
   const { t } = useTranslation();
-  const { language } = useAppLanguage();
+  const { language, isRtl } = useAppLanguage();
   const { communeId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -317,7 +318,7 @@ function CommuneProfilePage() {
 
   if (communeQuery.isLoading) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
+      <main dir={isRtl ? "rtl" : "ltr"} className={cn("mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6", isRtl && "text-right")}>
         <p className="text-sm text-muted-foreground">{t("admin.serviceZones.communeProfileLoading")}</p>
       </main>
     );
@@ -325,7 +326,7 @@ function CommuneProfilePage() {
 
   if (communeQuery.error || !commune) {
     return (
-      <main className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6">
+      <main dir={isRtl ? "rtl" : "ltr"} className={cn("mx-auto w-full max-w-5xl space-y-4 p-4 md:p-6", isRtl && "text-right")}>
         <p className="text-sm text-destructive">{t("admin.serviceZones.communeProfileLoadFailed")}</p>
         <Button asChild variant="outline" className="rounded-md">
           <Link to="/admin" search={{ tab: "service-zones" }}>
@@ -337,11 +338,18 @@ function CommuneProfilePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6">
+    <main
+      dir={isRtl ? "rtl" : "ltr"}
+      className={cn(
+        "mx-auto w-full max-w-5xl space-y-6 p-4 md:p-6",
+        isRtl &&
+          "text-right [&_table]:[direction:rtl] [&_table]:text-right [&_thead]:text-right [&_th]:text-right [&_td]:text-right [&_th:last-child]:text-left [&_td:last-child]:text-left [&_input]:text-right [&_label]:text-right",
+      )}
+    >
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="outline" className="rounded-md">
-          <Link to="/admin" search={{ tab: "service-zones" }}>
-            <ArrowLeft className="size-4" />
+          <Link to="/admin" search={{ tab: "service-zones" }} className={cn("inline-flex items-center gap-2", isRtl && "flex-row-reverse")}>
+            <ArrowLeft className={cn("size-4", isRtl && "rotate-180")} />
             {t("admin.serviceZones.backToServiceZones")}
           </Link>
         </Button>
@@ -403,7 +411,7 @@ function CommuneProfilePage() {
 
         <div className="overflow-x-auto rounded-md border border-border">
           <table className="min-w-full text-sm">
-            <thead className="bg-muted/40 text-left text-muted-foreground">
+            <thead className="bg-muted/40 text-muted-foreground">
               <tr>
                  <th className="px-4 py-2 font-medium">{t("admin.serviceZones.douarName")}</th>
                  <th className="px-4 py-2 font-medium">{t("admin.serviceZones.deliveryFeeMad")}</th>
