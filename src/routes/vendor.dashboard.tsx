@@ -242,8 +242,13 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
 type InventoryItem = {
   id: string;
   name: string;
-  category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+  nameFr?: string | null;
+  nameAr?: string | null;
+  category?: string;
+  productVariants?: string[];
+  measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
+  measurementUnitLabel?: string;
   imageUrl?: string | null;
   vendorPrice: number;
   isAvailable: boolean;
@@ -463,8 +468,8 @@ function VendorDashboardPage() {
   });
 
   const inventoryQuery = useQuery({
-    queryKey: ["vendor", "inventory"],
-    queryFn: () => fetchInventoryData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryKey: ["vendor", "inventory", activeLanguage],
+    queryFn: () => fetchInventoryData({ data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }) }),
     placeholderData: (previousData) => previousData,
     enabled: hasValidVendorPhoneSession,
   });
@@ -1112,7 +1117,11 @@ function VendorDashboardPage() {
       ((inventoryQuery.data?.products ?? []) as Array<{
         id: string;
         name: string;
-        category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+        nameFr?: string | null;
+        nameAr?: string | null;
+        category?: string;
+        productVariants?: string[];
+        measurementValue?: number | null;
         measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         imageUrl?: string | null;
         vendorPrice: number;
@@ -1122,11 +1131,19 @@ function VendorDashboardPage() {
         flashSaleEndTime?: string | null;
       }>).map((item) => ({
         ...item,
+        name: getLocalizedValue({ en: item.name, fr: item.nameFr, ar: item.nameAr }, activeLanguage, item.name),
+        category: localizeCategoryLabel(item.category) || item.category,
+        productVariants: Array.isArray(item.productVariants)
+          ? item.productVariants
+              .map((variant) => getLocalizedValue(variant, activeLanguage, variant).trim())
+              .filter((variant) => variant.length > 0)
+          : [],
+        measurementUnitLabel: localizeMeasurementUnit(item.measurementUnit),
         isFlashSale: item.isFlashSale ?? false,
         flashSalePrice: item.flashSalePrice ?? null,
         flashSaleEndTime: item.flashSaleEndTime ?? null,
       })),
-    [inventoryQuery.data],
+    [activeLanguage, inventoryQuery.data],
   );
 
   useEffect(() => {
@@ -2896,7 +2913,11 @@ function StoreInventoryView({
       const parsedDraftPrice = Number(draft.vendorPrice);
       const effectivePrice = Number.isNaN(parsedDraftPrice) ? 0 : parsedDraftPrice;
 
-      const matchesSearch = !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery);
+      const matchesSearch =
+        !normalizedQuery ||
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        (item.category ?? "").toLowerCase().includes(normalizedQuery) ||
+        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery));
       const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
       const matchesStatus =
         statusFilter === "all"
@@ -2926,12 +2947,12 @@ function StoreInventoryView({
         <>
           <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-background p-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder={t("vendorDashboard.inventory.searchPlaceholder")}
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl ps-9"
               />
             </div>
 
@@ -2998,7 +3019,7 @@ function StoreInventoryView({
                           </Badge>
                         ) : null}
                         <Badge variant="outline" className="rounded-md">
-                          {item.measurementUnit}
+                          {item.measurementUnitLabel || item.measurementUnit}
                         </Badge>
                       </div>
                     </div>
@@ -3081,7 +3102,12 @@ function FlashSalesView({
       if (!item.isAvailable || item.vendorPrice <= 0) {
         return false;
       }
-      return !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery);
+      return (
+        !normalizedQuery ||
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        (item.category ?? "").toLowerCase().includes(normalizedQuery) ||
+        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery))
+      );
     });
   }, [items, searchTerm]);
 
@@ -3100,12 +3126,12 @@ function FlashSalesView({
         <>
           <div className="mb-4 rounded-xl border border-border bg-background p-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder={t("vendorDashboard.flashSales.searchPlaceholder")}
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl ps-9"
               />
             </div>
           </div>
@@ -3150,6 +3176,16 @@ function FlashSalesView({
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {item.category ? (
+                            <Badge variant="outline" className="rounded-md">
+                              {item.category}
+                            </Badge>
+                          ) : null}
+                          <Badge variant="outline" className="rounded-md">
+                            {item.measurementUnitLabel || item.measurementUnit}
+                          </Badge>
+                        </div>
                         <p className="mt-1 text-xs text-muted-foreground">{t("vendorDashboard.flashSales.regularPrice", { price: item.vendorPrice.toFixed(2) })}</p>
                       </div>
                     </div>
