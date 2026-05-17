@@ -93,7 +93,7 @@ import {
 } from "@/components/ThermalReceipt";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
-type OrderQueueTab = "new" | "preparing" | "ready" | "inDelivery";
+type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
 type HistoryFilter = "today" | "week" | "month" | "all";
 type CarnetLedgerTransaction = {
   id: string;
@@ -165,7 +165,7 @@ const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
 
 const vendorDashboardSearchSchema = z.object({
   tab: fallback(z.enum(["live", "inventory", "flash-sales", "carnet", "history"]), "live").default("live"),
-  sub: fallback(z.enum(["new", "preparing", "ready", "inDelivery"]), "new").default("new"),
+  sub: fallback(z.enum(["pending", "preparing", "ready", "inDelivery"]), "pending").default("pending"),
 });
 
 type VendorDashboardSearch = z.infer<typeof vendorDashboardSearchSchema>;
