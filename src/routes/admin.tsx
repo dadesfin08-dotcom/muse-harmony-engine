@@ -1509,7 +1509,7 @@ function AdminPage() {
             return { communeName: parsedCommune, douarName: parsedDouar };
           }
         }
-        return { communeName, douarName: raw || "Unnamed Douar" };
+        return { communeName, douarName: raw || t("admin.adsContentCms.campaigns.douarSubzone") };
       };
 
       return communeOptions.flatMap((commune) => {
@@ -1525,7 +1525,7 @@ function AdminPage() {
         });
       });
     },
-    [communeOptions],
+    [communeOptions, t],
   );
   const neighborhoodOptions = communeOptions.find((commune) => commune.id === vendorForm.communeId)?.neighborhoods ?? [];
   const cyclistNeighborhoodOptions =
@@ -3157,17 +3157,17 @@ function AdminPage() {
 
   const saveAd = async () => {
     if (!adForm.campaignName.trim()) {
-      toast.error("Campaign name is required.");
+      toast.error(t("admin.adsContentCms.validation.campaignNameRequired"));
       return;
     }
 
     if (!adForm.imageAr.trim() && !adForm.imageFr.trim() && !adForm.imageEn.trim()) {
-      toast.error("Add at least one localized image URL.");
+      toast.error(t("admin.adsContentCms.validation.atLeastOneImageRequired"));
       return;
     }
 
     if (adForm.startDate && adForm.endDate && new Date(adForm.endDate).getTime() < new Date(adForm.startDate).getTime()) {
-      toast.error("Expiration date must be after start date.");
+      toast.error(t("admin.adsContentCms.validation.expirationAfterStart"));
       return;
     }
 
@@ -3201,7 +3201,7 @@ function AdminPage() {
             isActive: adForm.isActive,
           },
         });
-        toast.success("Campaign updated.");
+        toast.success(t("admin.adsContentCms.toast.campaignUpdated"));
       } else {
         await createSiteAdInDatabase({
           data: {
@@ -3217,14 +3217,14 @@ function AdminPage() {
             isActive: adForm.isActive,
           },
         });
-        toast.success("Campaign created.");
+        toast.success(t("admin.adsContentCms.toast.campaignCreated"));
       }
 
       await siteAdsQuery.refetch();
       resetAdForm();
     } catch (error) {
       console.error("Failed to save ad:", error);
-      toast.error("Failed to save ad.");
+      toast.error(t("admin.adsContentCms.toast.campaignSaveFailed"));
     } finally {
       setIsSavingAd(false);
     }
@@ -3233,7 +3233,7 @@ function AdminPage() {
   const saveAnnouncement = async () => {
     const normalizedTitle = announcementForm.title.trim();
     if (!normalizedTitle) {
-      toast.error("Announcement title is required.");
+      toast.error(t("admin.adsContentCms.validation.announcementTitleRequired"));
       return;
     }
 
@@ -3242,7 +3242,7 @@ function AdminPage() {
     const normalizedMessagesAr = announcementForm.messagesAr.map((value) => value.trim()).filter(Boolean);
 
     if (normalizedMessagesAr.length === 0 && normalizedMessagesFr.length === 0 && normalizedMessagesEn.length === 0) {
-      toast.error("Add at least one localized announcement message.");
+      toast.error(t("admin.adsContentCms.validation.atLeastOneAnnouncementMessage"));
       return;
     }
 
@@ -3251,7 +3251,7 @@ function AdminPage() {
       announcementForm.endDate &&
       new Date(announcementForm.endDate).getTime() < new Date(announcementForm.startDate).getTime()
     ) {
-      toast.error("Expiration date must be after start date.");
+      toast.error(t("admin.adsContentCms.validation.expirationAfterStart"));
       return;
     }
 
@@ -3272,7 +3272,7 @@ function AdminPage() {
             textColor: announcementForm.textColor.trim() || "#000000",
           },
         });
-        toast.success("Announcement updated.");
+        toast.success(t("admin.adsContentCms.toast.announcementUpdated"));
       } else {
         await createAnnouncementInDatabase({
           data: {
@@ -3287,14 +3287,14 @@ function AdminPage() {
             textColor: announcementForm.textColor.trim() || "#000000",
           },
         });
-        toast.success("Announcement created.");
+        toast.success(t("admin.adsContentCms.toast.announcementCreated"));
       }
 
       await announcementsQuery.refetch();
       resetAnnouncementForm();
     } catch (error) {
       console.error("Failed to save announcement:", error);
-      toast.error("Failed to save announcement.");
+      toast.error(t("admin.adsContentCms.toast.announcementSaveFailed"));
     } finally {
       setIsSavingAnnouncement(false);
     }
@@ -7262,6 +7262,9 @@ function AdsContentSection({
   onResetAnnouncementForm: () => void;
   isSavingAnnouncement: boolean;
 }) {
+  const { t } = useTranslation();
+  const { intlLocale, isRtl } = useAppLanguage();
+
   const getScheduleState = (startDate: string | null, endDate: string | null) => {
     const now = Date.now();
     const startMs = startDate ? new Date(startDate).getTime() : Number.NEGATIVE_INFINITY;
@@ -7278,7 +7281,7 @@ function AdsContentSection({
     if (!value) return "—";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleString();
+    return date.toLocaleString(intlLocale);
   };
 
   const groupedZonesByCommune = useMemo(() => {
@@ -7300,10 +7303,10 @@ function AdsContentSection({
 
   const formatCampaignTargetLabel = (targetZoneIds: string[] | null) => {
     const ids = Array.isArray(targetZoneIds) ? targetZoneIds : [];
-    if (ids.length === 0) return "Global / All Regions";
+    if (ids.length === 0) return t("admin.adsContentCms.campaigns.globalAllRegions");
 
     const zones = ids.map((zoneId) => adTargetZones.find((zone) => zone.id === zoneId)).filter(Boolean) as typeof adTargetZones;
-    if (zones.length === 0) return "Global / All Regions";
+    if (zones.length === 0) return t("admin.adsContentCms.campaigns.globalAllRegions");
 
     const communeNames = Array.from(new Set(zones.map((zone) => zone.communeName)));
     if (communeNames.length === 1) {
@@ -7312,7 +7315,7 @@ function AdsContentSection({
       const isWholeCommune = communeAllZoneIds.length > 0 && communeAllZoneIds.every((zoneId) => ids.includes(zoneId));
 
       if (isWholeCommune || zones.length > 1) {
-        return `${communeName} (All Douars)`;
+        return `${communeName} (${t("admin.adsContentCms.campaigns.allDouarsSuffix")})`;
       }
 
       if (zones.length === 1) {
@@ -7330,22 +7333,23 @@ function AdsContentSection({
   };
 
   return (
-    <section className="space-y-6 rounded-lg border border-border bg-card p-4 shadow-sm md:p-6">
+    <section dir={isRtl ? "rtl" : "ltr"} className="space-y-6 rounded-lg border border-border bg-card p-4 shadow-sm md:p-6">
       <div>
-        <h2 className="text-base font-semibold text-foreground">Ads & Content CMS</h2>
-        <p className="text-sm text-muted-foreground">Manage multilingual campaigns and scheduled announcements.</p>
+        <h2 className={cn("text-base font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.title")}</h2>
+        <p className={cn("text-sm text-muted-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.subtitle")}</p>
       </div>
 
       <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <ImageIcon className="size-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Ad Campaigns</h3>
+          <h3 className={cn("text-sm font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.campaigns.title")}</h3>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <Input
+            dir={isRtl ? "rtl" : "ltr"}
             value={adForm.campaignName}
             onChange={(event) => onAdFormChange((current) => ({ ...current, campaignName: event.target.value }))}
-            placeholder="Campaign name"
+            placeholder={t("admin.adsContentCms.campaigns.campaignName")}
           />
           <Select
             value={adForm.campaignType}
@@ -7354,12 +7358,12 @@ function AdsContentSection({
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Campaign type" />
+              <SelectValue placeholder={t("admin.adsContentCms.campaigns.campaignType")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="AD">Advertisement (إعلان)</SelectItem>
-              <SelectItem value="PROMO">Promotion (ترويج)</SelectItem>
-              <SelectItem value="NEWS">News (خبر)</SelectItem>
+              <SelectItem value="AD">{t("admin.adsContentCms.campaigns.types.ad")}</SelectItem>
+              <SelectItem value="PROMO">{t("admin.adsContentCms.campaigns.types.promo")}</SelectItem>
+              <SelectItem value="NEWS">{t("admin.adsContentCms.campaigns.types.news")}</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -7369,11 +7373,11 @@ function AdsContentSection({
             <SelectTrigger>
               <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <MapIcon className="size-3.5" />
-                <SelectValue placeholder="Commune (الجماعة)" />
+                <SelectValue placeholder={t("admin.adsContentCms.campaigns.commune")} />
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="global">Global / All Regions</SelectItem>
+              <SelectItem value="global">{t("admin.adsContentCms.campaigns.globalAllRegions")}</SelectItem>
               {groupedZonesByCommune.map((group) => (
                 <SelectItem key={group.communeName} value={group.communeName}>
                   {group.communeName}
@@ -7394,11 +7398,11 @@ function AdsContentSection({
             <SelectTrigger>
               <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="size-3.5" />
-                <SelectValue placeholder="Douar / Sub-zone (الدوار)" />
+                <SelectValue placeholder={t("admin.adsContentCms.campaigns.douarSubzone")} />
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-douars">All Douars in selected commune</SelectItem>
+              <SelectItem value="all-douars">{t("admin.adsContentCms.campaigns.allDouarsInSelectedCommune")}</SelectItem>
               {selectedCommuneZones.map((zone) => (
                 <SelectItem key={zone.id} value={zone.id}>
                   {zone.zoneName} ({zone.zoneCode})
@@ -7407,9 +7411,10 @@ function AdsContentSection({
             </SelectContent>
           </Select>
           <Input
+            dir="ltr"
             value={adForm.targetUrl}
             onChange={(event) => onAdFormChange((current) => ({ ...current, targetUrl: event.target.value }))}
-            placeholder="Target URL"
+            placeholder={t("admin.adsContentCms.campaigns.targetUrl")}
           />
         </div>
 
@@ -7421,30 +7426,33 @@ function AdsContentSection({
           </TabsList>
           <TabsContent value="en">
             <Input
+              dir="ltr"
               value={adForm.imageEn}
               onChange={(event) => onAdFormChange((current) => ({ ...current, imageEn: event.target.value }))}
-              placeholder="English image URL"
+              placeholder={t("admin.adsContentCms.campaigns.imageUrlEn")}
             />
           </TabsContent>
           <TabsContent value="fr">
             <Input
+              dir="ltr"
               value={adForm.imageFr}
               onChange={(event) => onAdFormChange((current) => ({ ...current, imageFr: event.target.value }))}
-              placeholder="French image URL"
+              placeholder={t("admin.adsContentCms.campaigns.imageUrlFr")}
             />
           </TabsContent>
           <TabsContent value="ar">
             <Input
+              dir="rtl"
               value={adForm.imageAr}
               onChange={(event) => onAdFormChange((current) => ({ ...current, imageAr: event.target.value }))}
-              placeholder="Arabic image URL"
+              placeholder={t("admin.adsContentCms.campaigns.imageUrlAr")}
             />
           </TabsContent>
         </Tabs>
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Start date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.startDate")}</span>
             <Input
               type="datetime-local"
               value={adForm.startDate}
@@ -7452,7 +7460,7 @@ function AdsContentSection({
             />
           </label>
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Expiration date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.expirationDate")}</span>
             <Input
               type="datetime-local"
               value={adForm.endDate}
@@ -7461,49 +7469,53 @@ function AdsContentSection({
           </label>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center gap-3", isRtl && "flex-row-reverse")}>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Active</span>
+            <span className="text-xs text-muted-foreground">{t("admin.adsContentCms.campaigns.active")}</span>
             <Switch
               checked={adForm.isActive}
               onCheckedChange={(checked) => onAdFormChange((current) => ({ ...current, isActive: checked }))}
             />
           </div>
-          <div className="ml-auto grid grid-cols-2 gap-2">
+          <div className={cn("ml-auto grid grid-cols-2 gap-2", isRtl && "ml-0 mr-auto")}>
             <Button variant="hero" className="rounded-md" onClick={onSaveAd} disabled={isSavingAd}>
-              {isSavingAd ? "Saving..." : adForm.id ? "Update Campaign" : "Create Campaign"}
+              {isSavingAd ? t("admin.common.saving") : adForm.id ? t("admin.adsContentCms.campaigns.updateCampaign") : t("admin.adsContentCms.campaigns.createCampaign")}
             </Button>
             <Button variant="outline" className="rounded-md" onClick={onResetAdForm}>
-              Reset
+              {t("admin.adsContentCms.campaigns.reset")}
             </Button>
           </div>
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Active Campaigns</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.campaigns.table.activeCampaigns")}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Zone</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead>Window</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[190px]">Actions</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.campaign")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.type")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.zone")}</TableHead>
+                <TableHead className={cn("text-right", isRtl && "text-left")}>{t("admin.adsContentCms.campaigns.table.views")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {activeCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No active campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("admin.adsContentCms.campaigns.table.noActiveCampaigns")}</TableCell></TableRow>
               ) : (
                 activeCampaigns.map((ad) => (
                   <TableRow key={ad.id}>
                     <TableCell className="font-medium">{ad.campaign_name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
-                        <Tag className="mr-1 size-3" />
-                        {ad.campaign_type}
+                        <Tag className={cn("size-3", isRtl ? "ml-1" : "mr-1")} />
+                        {ad.campaign_type === "AD"
+                          ? t("admin.adsContentCms.campaigns.types.ad")
+                          : ad.campaign_type === "PROMO"
+                            ? t("admin.adsContentCms.campaigns.types.promo")
+                            : t("admin.adsContentCms.campaigns.types.news")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -7512,19 +7524,19 @@ function AdsContentSection({
                         {formatCampaignTargetLabel(ad.target_zone_ids)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className={cn("text-right", isRtl && "text-left")}>
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <Eye className="size-3" />
                         {ad.views_count ?? 0}
                       </span>
                     </TableCell>
                     <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
-                    <TableCell><Badge variant="secondary">Active</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{t("admin.adsContentCms.campaigns.status.active")}</Badge></TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
-                        <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>Pause</Button>
-                        <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                      <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                        <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
+                        <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{t("admin.adsContentCms.campaigns.actions.pause")}</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -7535,33 +7547,41 @@ function AdsContentSection({
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Scheduled / Expired Campaigns</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.campaigns.table.scheduledExpiredCampaigns")}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Zone</TableHead>
-                <TableHead className="text-right">Views</TableHead>
-                <TableHead>Window</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[190px]">Actions</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.campaign")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.type")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.zone")}</TableHead>
+                <TableHead className={cn("text-right", isRtl && "text-left")}>{t("admin.adsContentCms.campaigns.table.views")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {inactiveCampaigns.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No scheduled or expired campaigns</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">{t("admin.adsContentCms.campaigns.table.noScheduledExpiredCampaigns")}</TableCell></TableRow>
               ) : (
                 inactiveCampaigns.map((ad) => {
                   const state = getScheduleState(ad.start_date, ad.end_date);
-                  const badgeLabel = !ad.is_active ? "Disabled" : state === "scheduled" ? "Scheduled" : "Expired";
+                  const badgeLabel = !ad.is_active
+                    ? t("admin.adsContentCms.campaigns.status.disabled")
+                    : state === "scheduled"
+                      ? t("admin.adsContentCms.campaigns.status.scheduled")
+                      : t("admin.adsContentCms.campaigns.status.expired");
                   return (
                     <TableRow key={ad.id}>
                       <TableCell className="font-medium">{ad.campaign_name}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={getCampaignTypeBadgeClass(ad.campaign_type)}>
-                          <Tag className="mr-1 size-3" />
-                          {ad.campaign_type}
+                          <Tag className={cn("size-3", isRtl ? "ml-1" : "mr-1")} />
+                          {ad.campaign_type === "AD"
+                            ? t("admin.adsContentCms.campaigns.types.ad")
+                            : ad.campaign_type === "PROMO"
+                              ? t("admin.adsContentCms.campaigns.types.promo")
+                              : t("admin.adsContentCms.campaigns.types.news")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -7570,7 +7590,7 @@ function AdsContentSection({
                           {formatCampaignTargetLabel(ad.target_zone_ids)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className={cn("text-right", isRtl && "text-left")}>
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           <Eye className="size-3" />
                           {ad.views_count ?? 0}
@@ -7579,10 +7599,10 @@ function AdsContentSection({
                       <TableCell>{formatDateTime(ad.start_date)} → {formatDateTime(ad.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />Edit</Button>
-                          <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{ad.is_active ? "Pause" : "Activate"}</Button>
-                          <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />Delete</Button>
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button size="sm" variant="outline" onClick={() => onEditAd(ad)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
+                          <Button size="sm" variant="outline" onClick={() => onToggleAdActive(ad)}>{ad.is_active ? t("admin.adsContentCms.campaigns.actions.pause") : t("admin.adsContentCms.campaigns.actions.activate")}</Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAd(ad.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -7597,20 +7617,39 @@ function AdsContentSection({
       <div className="space-y-4 rounded-md border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <Megaphone className="size-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Announcement Manager</h3>
+          <h3 className={cn("text-sm font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.announcements.title")}</h3>
         </div>
 
         <Input
+          dir={isRtl ? "rtl" : "ltr"}
           value={announcementForm.title}
           onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, title: event.target.value }))}
-          placeholder="Announcement Title (Internal Reference)"
+          placeholder={t("admin.adsContentCms.announcements.announcementTitleInternalReference")}
         />
 
         <div className="grid gap-3 md:grid-cols-3">
           {([
-            { key: "messagesEn", label: "EN", addLabel: "+ Add EN Message", placeholder: "EN message" },
-            { key: "messagesFr", label: "FR", addLabel: "+ Add FR Message", placeholder: "FR message" },
-            { key: "messagesAr", label: "AR", addLabel: "+ Add AR Message", placeholder: "AR message" },
+            {
+              key: "messagesEn",
+              label: t("admin.adsContentCms.announcements.labels.enMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addEnMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.enMessage"),
+              dir: "ltr" as const,
+            },
+            {
+              key: "messagesFr",
+              label: t("admin.adsContentCms.announcements.labels.frMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addFrMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.frMessage"),
+              dir: "ltr" as const,
+            },
+            {
+              key: "messagesAr",
+              label: t("admin.adsContentCms.announcements.labels.arMessages"),
+              addLabel: t("admin.adsContentCms.announcements.labels.addArMessage"),
+              placeholder: t("admin.adsContentCms.announcements.labels.arMessage"),
+              dir: "rtl" as const,
+            },
           ] as const).map((languageBlock) => {
             const messages = announcementForm[languageBlock.key];
 
@@ -7628,6 +7667,7 @@ function AdsContentSection({
                       className="flex items-center gap-2"
                     >
                       <Input
+                        dir={languageBlock.dir}
                         value={message}
                         onChange={(event) =>
                           onAnnouncementFormChange((current) => ({
@@ -7680,7 +7720,7 @@ function AdsContentSection({
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Start date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.startDate")}</span>
             <Input
               type="datetime-local"
               value={announcementForm.startDate}
@@ -7688,7 +7728,7 @@ function AdsContentSection({
             />
           </label>
           <label className="space-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> Expiration date</span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" /> {t("admin.adsContentCms.campaigns.expirationDate")}</span>
             <Input
               type="datetime-local"
               value={announcementForm.endDate}
@@ -7699,7 +7739,7 @@ function AdsContentSection({
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Background</span>
+            <span className="text-muted-foreground">{t("admin.adsContentCms.announcements.labels.background")}</span>
             <input
               type="color"
               value={announcementForm.bgColor}
@@ -7707,13 +7747,14 @@ function AdsContentSection({
               className="h-8 w-8 rounded border border-border"
             />
             <Input
+              dir="ltr"
               value={announcementForm.bgColor}
               onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, bgColor: event.target.value }))}
               className="h-8"
             />
           </label>
           <label className="flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm">
-            <span className="text-muted-foreground">Text</span>
+            <span className="text-muted-foreground">{t("admin.adsContentCms.announcements.labels.text")}</span>
             <input
               type="color"
               value={announcementForm.textColor}
@@ -7721,6 +7762,7 @@ function AdsContentSection({
               className="h-8 w-8 rounded border border-border"
             />
             <Input
+              dir="ltr"
               value={announcementForm.textColor}
               onChange={(event) => onAnnouncementFormChange((current) => ({ ...current, textColor: event.target.value }))}
               className="h-8"
@@ -7728,48 +7770,52 @@ function AdsContentSection({
           </label>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className={cn("flex items-center gap-3", isRtl && "flex-row-reverse")}>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Active</span>
+            <span className="text-xs text-muted-foreground">{t("admin.adsContentCms.announcements.labels.active")}</span>
             <Switch
               checked={announcementForm.isActive}
               onCheckedChange={(checked) => onAnnouncementFormChange((current) => ({ ...current, isActive: checked }))}
             />
           </div>
-          <div className="ml-auto grid grid-cols-2 gap-2">
+          <div className={cn("ml-auto grid grid-cols-2 gap-2", isRtl && "ml-0 mr-auto")}>
             <Button variant="hero" className="rounded-md" onClick={onSaveAnnouncement} disabled={isSavingAnnouncement}>
-              {isSavingAnnouncement ? "Saving..." : announcementForm.id ? "Update Announcement" : "Add Announcement"}
+              {isSavingAnnouncement
+                ? t("admin.common.saving")
+                : announcementForm.id
+                  ? t("admin.adsContentCms.announcements.labels.updateAnnouncement")
+                  : t("admin.adsContentCms.announcements.labels.addAnnouncement")}
             </Button>
-            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>Reset</Button>
+            <Button variant="outline" className="rounded-md" onClick={onResetAnnouncementForm}>{t("admin.adsContentCms.announcements.labels.reset")}</Button>
           </div>
         </div>
 
         <div className="space-y-2 rounded-md border border-border p-3">
-          <h4 className="text-xs font-semibold text-foreground">Configured Announcements</h4>
+          <h4 className={cn("text-xs font-semibold text-foreground", isRtl && "text-right")}>{t("admin.adsContentCms.announcements.labels.configuredAnnouncements")}</h4>
           {isLoading ? (
-            <AppEmptyState title="Loading announcements..." subtitle="Fetching content entries." className="py-5" />
+            <AppEmptyState title={t("admin.adsContentCms.announcements.loadingTitle")} subtitle={t("admin.adsContentCms.announcements.loadingSubtitle")} className="py-5" />
           ) : announcements.length === 0 ? (
-            <AppEmptyState title="No announcements yet" subtitle="Create the first scheduled announcement." className="py-5" />
+            <AppEmptyState title={t("admin.adsContentCms.announcements.emptyTitle")} subtitle={t("admin.adsContentCms.announcements.emptySubtitle")} className="py-5" />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Message / Title</TableHead>
-                  <TableHead>Window</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[190px]">Actions</TableHead>
+                  <TableHead>{t("admin.adsContentCms.announcements.labels.messageTitle")}</TableHead>
+                  <TableHead>{t("admin.adsContentCms.campaigns.table.window")}</TableHead>
+                  <TableHead>{t("admin.adsContentCms.campaigns.table.status")}</TableHead>
+                  <TableHead className="w-[190px]">{t("admin.adsContentCms.campaigns.table.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {announcements.map((announcement) => {
                   const state = getScheduleState(announcement.start_date, announcement.end_date);
                   const badgeLabel = !announcement.is_active
-                    ? "Disabled"
+                    ? t("admin.adsContentCms.announcements.labels.disabled")
                     : state === "scheduled"
-                      ? "Scheduled"
+                      ? t("admin.adsContentCms.campaigns.status.scheduled")
                       : state === "expired"
-                        ? "Expired"
-                        : "Active";
+                        ? t("admin.adsContentCms.campaigns.status.expired")
+                        : t("admin.adsContentCms.campaigns.status.active");
                   return (
                     <TableRow key={announcement.id}>
                       <TableCell>
@@ -7777,13 +7823,13 @@ function AdsContentSection({
                           <p className="text-sm font-semibold text-foreground">{announcement.title}</p>
                           <div className="inline-flex flex-wrap items-center gap-1 rounded-md px-2 py-1 text-xs" style={{ backgroundColor: announcement.bg_color, color: announcement.text_color }}>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_ar ?? []).length} AR Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_ar ?? []).length, lang: "AR" })}
                             </Badge>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_fr ?? []).length} FR Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_fr ?? []).length, lang: "FR" })}
                             </Badge>
                             <Badge variant="outline" className="border-transparent bg-background/70 text-foreground">
-                              {(announcement.messages_en ?? []).length} EN Messages
+                              {t("admin.adsContentCms.announcements.messageCount", { count: (announcement.messages_en ?? []).length, lang: "EN" })}
                             </Badge>
                           </div>
                         </div>
@@ -7791,12 +7837,12 @@ function AdsContentSection({
                       <TableCell>{formatDateTime(announcement.start_date)} → {formatDateTime(announcement.end_date)}</TableCell>
                       <TableCell><Badge variant="outline">{badgeLabel}</Badge></TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => onEditAnnouncement(announcement)}><Pencil className="size-3" />Edit</Button>
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button size="sm" variant="outline" onClick={() => onEditAnnouncement(announcement)}><Pencil className="size-3" />{t("admin.adsContentCms.campaigns.actions.edit")}</Button>
                           <Button size="sm" variant="outline" onClick={() => onToggleAnnouncementActive(announcement)}>
-                            {announcement.is_active ? "Pause" : "Activate"}
+                            {announcement.is_active ? t("admin.adsContentCms.campaigns.actions.pause") : t("admin.adsContentCms.announcements.labels.activate")}
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => onDeleteAnnouncement(announcement.id)}><Trash2 className="size-3" />Delete</Button>
+                          <Button size="sm" variant="destructive" onClick={() => onDeleteAnnouncement(announcement.id)}><Trash2 className="size-3" />{t("admin.adsContentCms.campaigns.actions.delete")}</Button>
                         </div>
                       </TableCell>
                     </TableRow>
