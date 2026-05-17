@@ -771,7 +771,7 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
 
       const { data: updated, error } = await (supabaseAdmin as any)
         .from("orders")
-        .update({ cyclist_id: cyclist.id, status: "delivering" })
+        .update({ cyclist_id: cyclist.id, status: "in_delivery" })
         .eq("id", data.orderId)
         .eq("status", "ready")
         .in("neighborhood_id", coverageNeighborhoodIds)
@@ -981,7 +981,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         .select("id, cyclist_id, status, payment_method, order_category, subscription_id, customer_user_id")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivering")
+        .in("status", ["in_delivery", "delivering"])
         .maybeSingle();
 
       if (orderError) {
@@ -1010,7 +1010,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         })
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivering");
+        .in("status", ["in_delivery", "delivering"]);
 
       if (error) {
         throw new Error(error.message);
