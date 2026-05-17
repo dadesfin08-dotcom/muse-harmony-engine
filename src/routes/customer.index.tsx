@@ -2212,7 +2212,7 @@ function Index() {
             <div className="px-4 pb-6 pt-2">
               <Link
                 to="/customer/all-products"
-                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
+                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100 font-serif"
               >
                 {t("home.view_all_products")}
               </Link>
