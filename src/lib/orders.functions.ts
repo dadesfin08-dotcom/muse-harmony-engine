@@ -1371,7 +1371,10 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         localizedNeighborhoodName,
         localizedCommuneName,
       ].filter((part) => part.length > 0);
-      const customerAddress = customerAddressParts.length > 0 ? Array.from(new Set(customerAddressParts)).join("، ") : "-";
+      const customerAddress =
+        customerAddressParts.length > 0
+          ? Array.from(new Set(customerAddressParts)).join(preferredLocale === "ar" ? "، " : ", ")
+          : "-";
 
       const computedSubtotalMad = items.reduce((sum, item) => sum + Number(item.lineTotalMad ?? 0), 0);
       const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
