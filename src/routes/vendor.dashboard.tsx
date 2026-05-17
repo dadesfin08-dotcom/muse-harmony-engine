@@ -95,7 +95,7 @@ import {
   type ThermalReceiptOrder,
 } from "@/components/ThermalReceipt";
 import { useAppLanguage } from "@/hooks/use-localization";
-import { withLocale } from "@/lib/localization";
+import { getLocalizedValue, withLocale } from "@/lib/localization";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
 type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
@@ -209,6 +209,7 @@ type DashboardOrder = {
     unitPriceMad: number;
     imageUrl?: string | null;
     brandName?: string | null;
+    categoryLabel?: string | null;
     measurementValue?: number | null;
     measurementUnit?: string | null;
   }>;
@@ -404,6 +405,38 @@ function VendorDashboardPage() {
   };
 
   const dateFnsLocale = activeLanguage === "ar" ? arSA : activeLanguage === "fr" ? fr : enUS;
+
+  const localizeMeasurementUnit = (value: string | null | undefined) => {
+    const normalized = value?.trim().toLowerCase();
+    if (!normalized) return "";
+
+    if (normalized === "kg" || normalized === "kilogram" || normalized === "kilograms") {
+      return t("vendorDashboard.packOrder.units.kg", { defaultValue: "Kg" });
+    }
+    if (normalized === "liter" || normalized === "litre" || normalized === "liters" || normalized === "litres" || normalized === "l") {
+      return t("vendorDashboard.packOrder.units.liter", { defaultValue: "Liter" });
+    }
+    if (normalized === "piece" || normalized === "pcs" || normalized === "pc") {
+      return t("vendorDashboard.packOrder.units.piece", { defaultValue: "Piece" });
+    }
+    if (normalized === "pack") {
+      return t("vendorDashboard.packOrder.units.pack", { defaultValue: "Pack" });
+    }
+    if (normalized === "gram" || normalized === "grams" || normalized === "g") {
+      return t("vendorDashboard.packOrder.units.gram", { defaultValue: "Gram" });
+    }
+    if (normalized === "bunch") {
+      return t("vendorDashboard.packOrder.units.bunch", { defaultValue: "Bunch" });
+    }
+    if (normalized === "tray") {
+      return t("vendorDashboard.packOrder.units.tray", { defaultValue: "Tray" });
+    }
+    if (normalized === "box") {
+      return t("vendorDashboard.packOrder.units.box", { defaultValue: "Box" });
+    }
+
+    return value?.trim() ?? "";
+  };
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
@@ -810,6 +843,23 @@ function VendorDashboardPage() {
         items: Array.isArray(row.order_items)
           ? row.order_items.map((item) => ({
               ...item,
+              name: getLocalizedValue((item as { name?: unknown }).name, activeLanguage, ""),
+              selectedVariant: getLocalizedValue(
+                (item as { selectedVariant?: unknown }).selectedVariant,
+                activeLanguage,
+                "",
+              ) || null,
+              brandName: getLocalizedValue((item as { brandName?: unknown }).brandName, activeLanguage, "") || null,
+              categoryLabel:
+                getLocalizedValue((item as { categoryLabel?: unknown }).categoryLabel, activeLanguage, "") ||
+                getLocalizedValue((item as { categoryName?: unknown }).categoryName, activeLanguage, "") ||
+                getLocalizedValue((item as { category?: unknown }).category, activeLanguage, "") ||
+                null,
+              measurementUnit: getLocalizedValue(
+                (item as { measurementUnit?: unknown }).measurementUnit,
+                activeLanguage,
+                "",
+              ) || null,
               imageUrl:
                 typeof (item as { imageUrl?: unknown }).imageUrl === "string"
                   ? ((item as { imageUrl?: string }).imageUrl ?? null)
@@ -1894,9 +1944,10 @@ function VendorDashboardPage() {
                           const normalizedBrand = item.brandName?.trim();
                           const normalizedMeasurement =
                             item.measurementValue != null && Number.isFinite(item.measurementValue) && item.measurementUnit?.trim()
-                              ? `${item.measurementValue} ${item.measurementUnit.trim()}`
+                              ? `${item.measurementValue} ${localizeMeasurementUnit(item.measurementUnit)}`
                               : null;
                           const normalizedVariant = item.selectedVariant?.trim();
+                          const normalizedCategory = item.categoryLabel?.trim();
 
                           return (
                             <>
@@ -1911,6 +1962,11 @@ function VendorDashboardPage() {
                                   <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                     <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
                                     <span dir="ltr">{normalizedMeasurement}</span>
+                                  </span>
+                                ) : null}
+                                {normalizedCategory ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 shadow-sm">
+                                    {normalizedCategory}
                                   </span>
                                 ) : null}
                               </div>
