@@ -1798,8 +1798,8 @@ function VendorDashboardPage() {
           }
         }}
       >
-        <DialogContent className="w-[96vw] max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
-          <DialogHeader>
+        <DialogContent className="flex h-[90vh] max-h-[90vh] w-[96vw] max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="text-xl font-bold tracking-tight">{`Pack Order ${packingOrder ? shortOrderId(packingOrder.id) : ""}`}</DialogTitle>
             <DialogDescription>
               Check every item to fill the bag and unlock the final confirmation.
@@ -1825,15 +1825,16 @@ function VendorDashboardPage() {
           </DialogHeader>
 
           {packingOrder ? (
-            <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
-              <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
-                {packingOrder.deliveryNotes?.trim() ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 border-l-4 border-l-amber-500">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">Special instruction</p>
-                    <p className="mt-1 text-base text-amber-900">{packingOrder.deliveryNotes.trim()}</p>
-                  </div>
-                ) : null}
-                {packingOrder.items.map((item, index) => {
+            <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[1.2fr_1fr]">
+              <div className="relative flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-muted/20 p-3">
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pe-1">
+                  {packingOrder.deliveryNotes?.trim() ? (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 border-l-4 border-l-amber-500">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-900/80">Special instruction</p>
+                      <p className="mt-1 text-base text-amber-900">{packingOrder.deliveryNotes.trim()}</p>
+                    </div>
+                  ) : null}
+                  {packingOrder.items.map((item, index) => {
                   const itemKey = getOrderItemKey(packingOrder.id, item, index);
                   const checked = !!packingProgressByOrder[packingOrder.id]?.[itemKey];
 
@@ -1918,9 +1919,11 @@ function VendorDashboardPage() {
                     </label>
                   );
                 })}
+                </div>
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 h-8 rounded-b-lg bg-gradient-to-t from-muted/20 to-transparent" />
               </div>
 
-              <div className="rounded-xl border border-border bg-muted/10 p-4">
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-border bg-muted/10 p-4">
                 <div
                   className={cn(
                     "relative mx-auto h-72 w-48 overflow-hidden rounded-[1.5rem_1.5rem_1rem_1rem] border-2 border-border bg-background shadow-sm",
@@ -1962,7 +1965,7 @@ function VendorDashboardPage() {
             </div>
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <div className="flex w-full items-center justify-between gap-3">
               <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Packed by: {packedByName}</p>
               <div className="flex items-center gap-2">
