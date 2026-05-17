@@ -1738,6 +1738,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_order_push_events: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          customer_user_id: string | null
+          event_type: string
+          failed_at: string | null
+          id: string
+          last_error: string | null
+          neighborhood_id: string | null
+          order_id: string
+          payload: Json
+          processed_at: string | null
+          processing_started_at: string | null
+          status_after: string | null
+          status_before: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "order_push_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       collect_platform_dues: {
         Args: {
           p_amount: number
