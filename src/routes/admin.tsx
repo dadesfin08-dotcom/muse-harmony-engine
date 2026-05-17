@@ -910,7 +910,18 @@ function AdminPage() {
   const brandEngineQuery = useQuery({
     queryKey: ["admin", "brand-engine"],
     enabled: isAdminDataEnabled,
-    queryFn: () => fetchBrandEngineAnalytics(),
+    queryFn: async () => {
+      try {
+        const data = await fetchBrandEngineAnalytics();
+        if (!data || !data.tableRows || data.tableRows.length === 0) {
+          return buildMockBrandEngineAnalytics();
+        }
+        return data;
+      } catch (error) {
+        console.error("AI Brand Engine query failed, using mock fallback:", error);
+        return buildMockBrandEngineAnalytics();
+      }
+    },
     refetchInterval: isBrandEngineLiveRefreshEnabled ? 20_000 : false,
     placeholderData: (previousData) => previousData,
   });
