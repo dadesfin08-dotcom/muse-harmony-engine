@@ -909,7 +909,7 @@ function AdminPage() {
   });
   const brandEngineQuery = useQuery({
     queryKey: ["admin", "brand-engine"],
-    enabled: isAdminDataEnabled,
+    enabled: true,
     queryFn: async () => {
       try {
         const data = await fetchBrandEngineAnalytics();
