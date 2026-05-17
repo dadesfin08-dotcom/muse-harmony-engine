@@ -180,9 +180,11 @@ type DashboardOrder = {
   deliveryNotes: string;
   paymentMethod: "COD" | "Carnet";
   status:
+    | "pending"
     | "new"
     | "preparing"
     | "ready"
+    | "in_delivery"
     | "in_transit"
     | "delivering"
     | "delivered"
@@ -215,23 +217,19 @@ type DashboardOrder = {
 };
 
 function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
-  if (status === "picked_up" || status === "in_transit") {
-    return "in_transit";
+  if (status === "picked_up" || status === "in_transit" || status === "in_delivery" || status === "delivering") {
+    return "in_delivery";
   }
 
-  if (
-    status === "new" ||
-    status === "preparing" ||
-    status === "ready" ||
-    status === "delivering" ||
-    status === "delivered" ||
-    status === "delivered_cash_with_cyclist" ||
-    status === "cash_transferred_to_vendor"
-  ) {
+  if (status === "pending" || status === "new") {
+    return "pending";
+  }
+
+  if (status === "preparing" || status === "ready" || status === "delivered" || status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
     return status;
   }
 
-  return "new";
+  return "pending";
 }
 
 type InventoryItem = {
