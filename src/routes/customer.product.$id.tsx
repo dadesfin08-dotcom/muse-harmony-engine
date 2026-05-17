@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -16,11 +18,17 @@ const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 type AppLanguage = "en" | "fr" | "ar";
 
 export const Route = createFileRoute("/customer/product/$id")({
+  validateSearch: zodValidator(
+    z.object({
+      deal: fallback(z.boolean(), false).default(false),
+    }),
+  ),
   component: ProductDetailPage,
 });
 
 function ProductDetailPage() {
   const { id } = Route.useParams();
+  const { deal } = Route.useSearch();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
@@ -46,12 +54,13 @@ function ProductDetailPage() {
   }, []);
 
   const productQuery = useQuery({
-    queryKey: ["product-detail", id, neighborhoodId],
+    queryKey: ["product-detail", id, neighborhoodId, deal],
     queryFn: () =>
       fetchProductDetail({
         data: {
           productId: id,
           neighborhoodId,
+          preferFlashDeal: deal,
         },
       }),
   });

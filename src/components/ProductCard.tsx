@@ -20,6 +20,7 @@ type ProductCardProps = {
   productVariants?: string[];
   addLabel: string;
   isFlashDeal?: boolean;
+  flashDealContext?: boolean;
   oldPrice?: number | null;
   discountPercent?: number;
   onAdd: (selectedVariant?: string | null) => void;
@@ -40,6 +41,7 @@ export function ProductCard({
   productVariants = [],
   addLabel,
   isFlashDeal = false,
+  flashDealContext = false,
   oldPrice,
   discountPercent = 0,
   onAdd,
@@ -81,7 +83,12 @@ export function ProductCard({
         isFlashDeal ? "rounded-3xl pb-1" : "rounded-xl",
       )}
     >
-      <Link to="/customer/product/$id" params={{ id }} className={cn("block", isFlashDeal ? "" : "px-3 pt-3")}>
+      <Link
+        to="/customer/product/$id"
+        params={{ id }}
+        search={(prev: Record<string, unknown>) => (flashDealContext ? { ...prev, deal: true } : prev)}
+        className={cn("block", isFlashDeal ? "" : "px-3 pt-3")}
+      >
         <div className={cn("relative aspect-square w-full overflow-hidden", isFlashDeal ? "rounded-t-2xl" : "rounded-2xl bg-gray-50")}>
           <img
             src={imageUrl || fallbackProductImage}
@@ -137,7 +144,12 @@ export function ProductCard({
           </span>
         </div>
 
-        <Link to="/customer/product/$id" params={{ id }} className="block w-full min-w-0">
+        <Link
+          to="/customer/product/$id"
+          params={{ id }}
+          search={(prev: Record<string, unknown>) => (flashDealContext ? { ...prev, deal: true } : prev)}
+          className="block w-full min-w-0"
+        >
           <h2 title={name} className="w-full text-base font-bold line-clamp-2 h-[3.5rem] leading-snug pb-1">
             {name}
           </h2>

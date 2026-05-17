@@ -78,6 +78,7 @@ const customerCatalogInputSchema = z.object({
 const customerProductDetailInputSchema = z.object({
   productId: z.string().uuid(),
   neighborhoodId: z.string().uuid().nullable().optional(),
+  preferFlashDeal: z.boolean().optional().default(false),
 });
 
 const brandSuggestionsInputSchema = z.object({
@@ -1862,22 +1863,44 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         }
       }
 
-      const productQuery = (supabaseAdmin as any)
-        .from("vendor_products")
-        .select(
-          "vendor_id, vendor_price, is_available, is_flash_sale, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
-        )
-        .eq("master_product_id", data.productId)
-        .eq("is_available", true)
-        .eq("master_products.is_active", true)
-        .limit(1)
-        .maybeSingle();
+      const buildProductQuery = () => {
+        const query = (supabaseAdmin as any)
+          .from("vendor_products")
+          .select(
+            "vendor_id, vendor_price, is_available, is_flash_sale, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          )
+          .eq("master_product_id", data.productId)
+          .eq("is_available", true)
+          .eq("master_products.is_active", true)
+          .limit(1);
 
-      if (vendorIds) {
-        productQuery.in("vendor_id", vendorIds);
+        if (vendorIds) {
+          query.in("vendor_id", vendorIds);
+        }
+
+        return query;
+      };
+
+      const nowIso = new Date().toISOString();
+      let row: any = null;
+      let error: any = null;
+
+      if (data.preferFlashDeal) {
+        const preferredResult = await buildProductQuery()
+          .eq("is_flash_sale", true)
+          .gt("flash_sale_end_time", nowIso)
+          .order("flash_sale_end_time", { ascending: true })
+          .maybeSingle();
+
+        row = preferredResult.data;
+        error = preferredResult.error;
       }
 
-      const { data: row, error } = await productQuery;
+      if (!row && !error) {
+        const fallbackResult = await buildProductQuery().maybeSingle();
+        row = fallbackResult.data;
+        error = fallbackResult.error;
+      }
 
       if (error) {
         throw new Error(error.message);
