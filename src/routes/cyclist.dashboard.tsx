@@ -140,6 +140,10 @@ function CyclistDashboardPage() {
   const availableRuns = dashboardQuery.data?.availableRuns ?? [];
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
   const pendingSettlements = dashboardQuery.data?.pendingSettlements ?? [];
+  const visibilityHints = dashboardQuery.data?.visibilityHints ?? {
+    assignedToOtherCyclistCount: 0,
+    unsupportedStatusCount: 0,
+  };
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
 
   useEffect(() => {
@@ -587,7 +591,17 @@ function CyclistDashboardPage() {
                   className="border-border/70 bg-card"
               />
             ) : availableMarketplaceRuns.length === 0 ? (
-              <EmptyState label={t("cyclist.noReadyDeliveries")} />
+              <EmptyState
+                label={t("cyclist.noReadyDeliveries")}
+                hints={[
+                  visibilityHints.assignedToOtherCyclistCount > 0
+                    ? t("cyclist.hiddenAssignedOther", { count: visibilityHints.assignedToOtherCyclistCount })
+                    : null,
+                  visibilityHints.unsupportedStatusCount > 0
+                    ? t("cyclist.hiddenUnsupportedStatus", { count: visibilityHints.unsupportedStatusCount })
+                    : null,
+                ].filter((value): value is string => Boolean(value))}
+              />
             ) : (
               availableMarketplaceRuns.map((order) => (
                   <motion.div key={order.id} variants={listItemVariants}>
@@ -1123,15 +1137,28 @@ function PlatformPackOrderCard({
   );
 }
 
-function EmptyState({ label }: { label: string }) {
+function EmptyState({ label, hints = [] }: { label: string; hints?: string[] }) {
   const { t } = useTranslation();
 
   return (
-    <AppEmptyState
-      title={label}
-      subtitle={t("cyclist.autoAppearSubtitle")}
-      icon={PackageOpen}
-      className="rounded-2xl border-border/70 bg-card [&_span]:h-14 [&_span]:w-14 [&_span]:bg-muted [&_span]:text-muted-foreground"
-    />
+    <div className="space-y-2">
+      <AppEmptyState
+        title={label}
+        subtitle={t("cyclist.autoAppearSubtitle")}
+        icon={PackageOpen}
+        className="rounded-2xl border-border/70 bg-card [&_span]:h-14 [&_span]:w-14 [&_span]:bg-muted [&_span]:text-muted-foreground"
+      />
+
+      {hints.length > 0 ? (
+        <div className="rounded-xl border border-border/70 bg-card px-3 py-2">
+          <p className="text-xs font-semibold text-foreground">{t("cyclist.visibilityHintsTitle")}</p>
+          <ul className="mt-1 list-disc space-y-1 ps-4 text-xs text-muted-foreground">
+            {hints.map((hint) => (
+              <li key={hint}>{hint}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }

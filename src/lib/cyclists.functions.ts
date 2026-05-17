@@ -85,6 +85,7 @@ type CommuneRow = {
 
 type OrderRow = {
   id: string;
+  cyclist_id?: string | null;
   customer_user_id?: string | null;
   subscription_id?: string | null;
   order_category?: "MARKETPLACE" | "PLATFORM_SUBSCRIPTION" | string | null;
@@ -427,7 +428,14 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         new Set(((coverageRows ?? []) as CyclistCoverageRow[]).map((row) => row.neighborhood_id)),
       );
 
-      const [availableResult, assignedReadyResult, activeResult, deliveredResult, pendingSettlementResult] = await Promise.all([
+      const [
+        availableResult,
+        assignedReadyResult,
+        activeResult,
+        deliveredResult,
+        pendingSettlementResult,
+        visibilityRowsResult,
+      ] = await Promise.all([
         coverageNeighborhoodIds.length
           ? (supabaseAdmin as any)
               .from("orders")
@@ -466,6 +474,14 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           .eq("cyclist_id", cyclist.id)
           .eq("status", "delivered_cash_with_cyclist")
           .eq("vendor_settlement_status", "pending"),
+        coverageNeighborhoodIds.length
+          ? (supabaseAdmin as any)
+              .from("orders")
+              .select("status, cyclist_id, order_category")
+              .in("neighborhood_id", coverageNeighborhoodIds)
+              .order("created_at", { ascending: false })
+              .limit(600)
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
       const availableRows = availableResult.data;
@@ -478,6 +494,8 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
       const deliveredError = deliveredResult.error;
       const pendingSettlementRows = pendingSettlementResult.data;
       const pendingSettlementError = pendingSettlementResult.error;
+      const visibilityRows = visibilityRowsResult.data;
+      const visibilityRowsError = visibilityRowsResult.error;
 
       if (availableError) {
         throw new Error(availableError.message);
@@ -493,6 +511,43 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
       }
       if (pendingSettlementError) {
         throw new Error(pendingSettlementError.message);
+      }
+      if (visibilityRowsError) {
+        throw new Error(visibilityRowsError.message);
+      }
+
+      const lifecycleStatusesVisibleToCyclist = new Set([
+        "ready",
+        "in_delivery",
+        "delivering",
+        "delivered",
+        "delivered_cash_with_cyclist",
+        "cash_transferred_to_vendor",
+      ]);
+
+      let assignedToOtherCyclistCount = 0;
+      let unsupportedStatusCount = 0;
+      for (const row of (visibilityRows ?? []) as Array<{
+        status?: string | null;
+        cyclist_id?: string | null;
+        order_category?: string | null;
+      }>) {
+        const orderCategory = String(row.order_category ?? "").trim().toUpperCase();
+        if (orderCategory === "PLATFORM_SUBSCRIPTION") {
+          continue;
+        }
+
+        const normalizedStatus = String(row.status ?? "").trim().toLowerCase();
+        const assignedCyclistId = row.cyclist_id ? String(row.cyclist_id).trim() : "";
+
+        if (normalizedStatus === "ready" && assignedCyclistId && assignedCyclistId !== cyclist.id) {
+          assignedToOtherCyclistCount += 1;
+          continue;
+        }
+
+        if (!lifecycleStatusesVisibleToCyclist.has(normalizedStatus)) {
+          unsupportedStatusCount += 1;
+        }
       }
 
       const pendingRows = (pendingSettlementRows ?? []) as Array<{
@@ -714,6 +769,10 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         availableRuns: safeAvailableRows.map(mapOrder),
         activeDeliveries: activeOrderRows.map(mapOrder),
         pendingSettlements,
+        visibilityHints: {
+          assignedToOtherCyclistCount,
+          unsupportedStatusCount,
+        },
         totalCashCollectedMad,
       };
     } catch (error) {
