@@ -374,8 +374,10 @@ function Index() {
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
+  const [isSubInteracting, setIsSubInteracting] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const subScrollRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
   const bottomPromoAutoplayRef = useRef(
@@ -1034,6 +1036,23 @@ function Index() {
 
     return () => clearInterval(interval);
   }, [isInteracting]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (subScrollRef.current && !isSubInteracting) {
+        const { scrollLeft, scrollWidth, clientWidth } = subScrollRef.current;
+        const cardWidth = 280 + 16;
+
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          subScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          subScrollRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+        }
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isSubInteracting]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -2266,7 +2285,14 @@ function Index() {
               subtitle="New prepaid savings packs will appear here soon."
             />
           ) : (
-            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+              ref={subScrollRef}
+              className="flex flex-row overflow-x-auto gap-4 pb-4 pt-2 scrollbar-hide snap-x snap-mandatory w-full"
+              onMouseEnter={() => setIsSubInteracting(true)}
+              onMouseLeave={() => setIsSubInteracting(false)}
+              onTouchStart={() => setIsSubInteracting(true)}
+              onTouchEnd={() => setIsSubInteracting(false)}
+            >
               {platformPacks.map((pack) => {
                 const packSubscriptionState = activeOrPendingSubscriptionByPackId.get(pack.id) ?? null;
                 const completedDeliveries = Math.max(0, Number(packSubscriptionState?.completedDeliveries ?? 0));
@@ -2275,7 +2301,7 @@ function Index() {
                 return (
                 <article
                   key={pack.id}
-                  className="surface-panel min-w-[260px] max-w-[300px] flex-1 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  className="w-[280px] sm:w-[320px] flex-shrink-0 snap-center h-full surface-panel overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
                 >
                   <button
                     type="button"
