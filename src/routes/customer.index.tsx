@@ -1057,6 +1057,22 @@ function Index() {
   }, [isSubInteracting]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      if (bannerScrollRef.current && !isBannerInteracting) {
+        const { scrollLeft, scrollWidth, clientWidth } = bannerScrollRef.current;
+
+        if (scrollLeft + clientWidth >= scrollWidth - 5) {
+          bannerScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          bannerScrollRef.current.scrollBy({ left: clientWidth, behavior: "smooth" });
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isBannerInteracting]);
+
+  useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
     if (!persistedCustomerSession) {
       return;
