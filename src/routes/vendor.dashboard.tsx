@@ -1774,11 +1774,35 @@ function VendorDashboardPage() {
             <DialogDescription>
               Check every item to fill the bag and unlock the final confirmation.
             </DialogDescription>
+            {packingOrder ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-1 text-foreground">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium">{packingOrder.customerName}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span dir="ltr">{packingOrder.customerPhone || "—"}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 font-semibold text-amber-800">
+                  <Clock3 className="h-3.5 w-3.5" />
+                  Deadline {packingDeadlineLabel}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-foreground">
+                  <ShoppingBag className="h-3.5 w-3.5 text-muted-foreground" />
+                  {packingBagsCount} {packingBagsCount === 1 ? "bag" : "bags"} · ~{packingEstimatedWeightKg.toFixed(1)} kg
+                </span>
+              </div>
+            ) : null}
           </DialogHeader>
 
           {packingOrder ? (
             <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
               <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
+                {packingOrder.deliveryNotes?.trim() ? (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+                    <p className="text-xs font-semibold text-amber-900">Special instruction</p>
+                    <p className="mt-1 text-sm text-amber-800">{packingOrder.deliveryNotes.trim()}</p>
+                  </div>
+                ) : null}
                 {packingOrder.items.map((item, index) => {
                   const itemKey = getOrderItemKey(packingOrder.id, item, index);
                   const checked = !!packingProgressByOrder[packingOrder.id]?.[itemKey];
@@ -1820,36 +1844,30 @@ function VendorDashboardPage() {
                               : null;
                           const normalizedVariant = item.selectedVariant?.trim();
 
-                          if (!normalizedBrand && !normalizedMeasurement && !normalizedVariant) {
-                            return null;
-                          }
-
                           return (
-                            <div className="mt-1 flex flex-row items-center gap-2 whitespace-nowrap overflow-hidden">
+                            <>
                               {normalizedBrand ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 shadow-sm">
-                                  <Tag className="me-1 h-3 w-3 text-slate-500" aria-hidden="true" />
-                                  <span>الماركة: {normalizedBrand}</span>
-                                </span>
-                              ) : null}
-                              {normalizedMeasurement ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 shadow-sm">
-                                  <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
-                                  <span>
-                                    الحجم: <span dir="ltr">{normalizedMeasurement}</span>
+                                <div className="mt-1">
+                                  <span className="inline-flex shrink-0 items-center rounded-md border border-pink-200 bg-pink-50 px-2 py-0.5 text-[11px] font-medium text-pink-700 shadow-sm">
+                                    <Tag className="me-1 h-3 w-3 text-pink-500" aria-hidden="true" />
+                                    {normalizedBrand}
                                   </span>
-                                </span>
+                                </div>
                               ) : null}
-                              {normalizedVariant ? (
-                                <span className="inline-flex shrink-0 items-center rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 shadow-sm">
-                                  <Sparkles className="me-1 h-3 w-3 text-violet-500" aria-hidden="true" />
-                                  <span>النوع: {normalizedVariant}</span>
-                                </span>
-                              ) : null}
-                            </div>
+                              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                {normalizedMeasurement ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 shadow-sm">
+                                    <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
+                                    <span dir="ltr">{normalizedMeasurement}</span>
+                                  </span>
+                                ) : null}
+                                <span>Unit: {Number(item.unitPriceMad ?? 0).toFixed(2)} MAD</span>
+                                <span>Qty: {item.quantity}</span>
+                                {normalizedVariant ? <span>Variant: {normalizedVariant}</span> : null}
+                              </div>
+                            </>
                           );
                         })()}
-                        <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <Checkbox
                         className="h-6 w-6"
@@ -1885,6 +1903,22 @@ function VendorDashboardPage() {
                 <p className="mt-3 text-center text-sm text-muted-foreground">
                   {packedItemsCount}/{totalPackingItems} items packed
                 </p>
+
+                <div className="mt-4 space-y-2">
+                  <div className="rounded-lg border border-border bg-background px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Costs</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      Subtotal: {Number(packingOrder.subtotalBasePriceMad ?? 0).toFixed(2)} MAD
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-background px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Packed by</p>
+                    <p className="text-sm font-semibold text-foreground">{packedByName}</p>
+                  </div>
+                </div>
               </div>
             </div>
           ) : null}
@@ -1908,7 +1942,9 @@ function VendorDashboardPage() {
               disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
               onClick={handleConfirmPackedOrder}
             >
-              {packingOrderId && isUpdating === packingOrderId ? "Updating..." : "Confirm & Mark Ready"}
+              {packingOrderId && isUpdating === packingOrderId
+                ? "Updating..."
+                : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
             </Button>
           </DialogFooter>
         </DialogContent>
