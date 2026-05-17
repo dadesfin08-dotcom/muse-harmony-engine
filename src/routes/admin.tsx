@@ -5679,6 +5679,16 @@ function AIBrandEngineSection({
     ? new Date(analytics.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
     : "--";
 
+  const derivedKpis = {
+    activeTrendingBrands: rows.filter((row) => row.score >= (analytics?.threshold ?? 120) && !row.isBlacklisted).length,
+    conversionVelocity: rows.length ? rows.reduce((sum, row) => sum + row.trendingVelocity, 0) / rows.length : 0,
+    expiringSoon: rows.filter((row) => {
+      const hoursLeft = (new Date(row.activeUntil).getTime() - Date.now()) / (1000 * 60 * 60);
+      return hoursLeft > 0 && hoursLeft < 6;
+    }).length,
+    discoveryRate: rows.length ? (rows.filter((row) => !row.isTrending).length / rows.length) * 100 : 0,
+  };
+
   const kpiCards: Array<{
     title: string;
     value: number;
@@ -5688,26 +5698,26 @@ function AIBrandEngineSection({
   }> = [
     {
       title: "Active Trending Brands",
-      value: analytics?.kpis.activeTrendingBrands ?? 0,
+      value: derivedKpis.activeTrendingBrands,
       sub: `Score > ${analytics?.threshold ?? 0}`,
       icon: TrendingUp,
     },
     {
       title: "Conversion Velocity",
-      value: analytics?.kpis.conversionVelocity ?? 0,
+      value: derivedKpis.conversionVelocity,
       sub: "Average growth of top brands",
       icon: Zap,
       formatter: (value: number) => formatPercent(value),
     },
     {
       title: "Expiring Soon",
-      value: analytics?.kpis.expiringSoon ?? 0,
+      value: derivedKpis.expiringSoon,
       sub: "Boost ending in < 6h",
       icon: AlertCircle,
     },
     {
       title: "Discovery Rate",
-      value: analytics?.kpis.discoveryRate ?? 0,
+      value: derivedKpis.discoveryRate,
       sub: "Share of orders from discovery pool",
       icon: Sparkles,
       formatter: (value: number) => formatPercent(value),
