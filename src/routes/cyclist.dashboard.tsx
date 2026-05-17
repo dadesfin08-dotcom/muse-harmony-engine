@@ -143,6 +143,7 @@ function CyclistDashboardPage() {
   const visibilityHints = dashboardQuery.data?.visibilityHints ?? {
     assignedToOtherCyclistCount: 0,
     unsupportedStatusCount: 0,
+    unsupportedStatuses: [] as Array<{ status: string; count: number }>,
   };
   const hasActiveDeliveryLock = activeDeliveries.length > 0;
 
@@ -600,6 +601,12 @@ function CyclistDashboardPage() {
                   visibilityHints.unsupportedStatusCount > 0
                     ? t("cyclist.hiddenUnsupportedStatus", { count: visibilityHints.unsupportedStatusCount })
                     : null,
+                  ...visibilityHints.unsupportedStatuses.map(({ status, count }) =>
+                    t("cyclist.hiddenUnsupportedStatusByType", {
+                      count,
+                      status: t(`cyclist.statusLabel.${status}`, { defaultValue: status }),
+                    }),
+                  ),
                 ].filter((value): value is string => Boolean(value))}
               />
             ) : (
