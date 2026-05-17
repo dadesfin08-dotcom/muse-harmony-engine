@@ -2393,7 +2393,7 @@ function Index() {
                       </span>
                     </div>
 
-                    <div className="mt-2 flex justify-end">
+                    <div className="mt-2 flex items-center justify-center">
                       {cartQty > 0 ? (
                         <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-1 leading-none">
                           <button
