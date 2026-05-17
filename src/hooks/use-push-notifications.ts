@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import {
   getPushClientConfig,
+  processOrderPushQueue,
   registerPushSubscription,
 } from "@/lib/push-notifications.functions";
 import {
@@ -20,9 +21,15 @@ type UsePushNotificationsOptions = {
   locationLabel?: string | null;
 };
 
+function normalizeRole(value: unknown): PushRole {
+  const raw = String(value ?? "").toLowerCase();
+  return raw === "cyclist" || raw === "rider" ? "cyclist" : "customer";
+}
+
 export function usePushNotifications(options: UsePushNotificationsOptions) {
   const fetchPushConfig = useServerFn(getPushClientConfig);
   const registerSubscriptionFn = useServerFn(registerPushSubscription);
+  const processQueueFn = useServerFn(processOrderPushQueue);
 
   const canAttemptRegistration = useMemo(
     () => options.enabled && !!options.userId && isPushSupported(),
@@ -68,6 +75,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
             endpoint,
             p256dh,
             auth,
+            locationLabel: options.locationLabel ?? null,
           },
         });
       } catch (error) {
@@ -80,32 +88,55 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
     return () => {
       cancelled = true;
     };
-  }, [canAttemptRegistration, fetchPushConfig, options.role, options.userId, registerSubscriptionFn]);
+  }, [
+    canAttemptRegistration,
+    fetchPushConfig,
+    options.locationLabel,
+    options.role,
+    options.userId,
+    registerSubscriptionFn,
+  ]);
 
   useEffect(() => {
     if (!canAttemptRegistration) return;
 
-    const handleMessage = (event: MessageEvent) => {
-      const messageType = (event.data as { type?: string } | null)?.type;
-      if (messageType !== "PUSH_NOTIFICATION_CLICK") return;
+    const intervalId = window.setInterval(() => {
+      void processQueueFn({ data: { limit: 20 } }).catch((error) => {
+        console.error("Order push queue processing failed:", error);
+      });
+    }, 4000);
 
-      const pushData = (event.data as { payload?: any })?.payload;
-      if (!pushData?.title) return;
+    return () => window.clearInterval(intervalId);
+  }, [canAttemptRegistration, processQueueFn]);
 
-      if (options.role === "cyclist") {
-        toast(pushData.title, {
-          description: pushData.body,
+  useEffect(() => {
+    if (!canAttemptRegistration) return;
+
+    const showToast = (payload: any) => {
+      if (!payload?.title) return;
+
+      const payloadRole = normalizeRole(payload.role ?? options.role);
+
+      if (payloadRole === "cyclist") {
+        toast(payload.title, {
+          description: payload.body,
           className:
-            "top-0 right-0 flex fixed md:max-w-[420px] md:top-4 md:right-4 bg-emerald-600 text-white border-none shadow-2xl",
+            "fixed top-[max(env(safe-area-inset-top),0.5rem)] right-2 left-auto md:max-w-[420px] bg-emerald-600 text-white border-none shadow-2xl",
           duration: 10000,
         });
         return;
       }
 
-      toast(pushData.title, {
-        description: pushData.body,
+      toast(payload.title, {
+        description: payload.body,
         duration: 8000,
       });
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      const type = (event.data as { type?: string } | null)?.type;
+      if (type !== "PUSH_NOTIFICATION_CLICK" && type !== "PUSH_RECEIVED") return;
+      showToast((event.data as { payload?: any } | null)?.payload);
     };
 
     navigator.serviceWorker.addEventListener("message", handleMessage);

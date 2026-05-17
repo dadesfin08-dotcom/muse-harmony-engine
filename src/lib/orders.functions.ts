@@ -6,7 +6,7 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { sendPushToCyclistsByNeighborhood, sendPushToUser } from "@/lib/push-notifications.server";
+import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
   .string()
@@ -595,29 +595,10 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
           }
         }
 
-        void sendPushToCyclistsByNeighborhood(data.neighborhoodId, {
-          title: "New delivery request",
-          body: `${data.customerName} placed a new order ready for dispatch soon.`,
-          role: "cyclist",
-          url: "/cyclist/dashboard",
-          orderId: insertedOrderId,
-          locationLabel: data.neighborhoodId,
-          eventType: "order_created",
-        }).catch((notificationError) => {
-          console.error("Cyclist push dispatch failed:", notificationError);
-        });
       }
 
-      void sendPushToUser("customer", customerUserId, {
-        title: "Order confirmed",
-        body: "Your order has been received and will be prepared shortly.",
-        role: "customer",
-        url: "/customer#orders",
-        orderId: insertedOrderIds[0],
-        locationLabel: data.neighborhoodId,
-        eventType: "order_created",
-      }).catch((notificationError) => {
-        console.error("Customer push dispatch failed:", notificationError);
+      void processPendingOrderPushEvents(30).catch((pushQueueError) => {
+        console.error("Push queue processing after order creation failed:", pushQueueError);
       });
 
       return { id: insertedOrderIds[0] as string, orderIds: insertedOrderIds };
@@ -1129,26 +1110,9 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
         throw new Error(updateError.message);
       }
 
-      const customerUserId =
-        typeof (order as { customer_user_id?: string | null }).customer_user_id === "string"
-          ? (order as { customer_user_id: string }).customer_user_id
-          : null;
-
-      if (customerUserId) {
-        void sendPushToUser("customer", customerUserId, {
-          title: data.nextStatus === "ready" ? "Order ready" : "Order update",
-          body:
-            data.nextStatus === "ready"
-              ? "Your order is now ready and will be picked up for delivery."
-              : "Your order is being prepared.",
-          role: "customer",
-          url: "/customer#orders",
-          orderId: data.orderId,
-          eventType: `order_${data.nextStatus}`,
-        }).catch((notificationError) => {
-          console.error("Customer status push failed:", notificationError);
-        });
-      }
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after vendor status update failed:", pushQueueError);
+      });
 
       return { ok: true };
     } catch (error) {

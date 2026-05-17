@@ -6,54 +6,80 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+function normalizeRole(value) {
+  const raw = String(value || "").toLowerCase();
+  return raw === "cyclist" || raw === "rider" ? "cyclist" : "customer";
+}
+
+function buildFallbackPayload() {
+  return {
+    title: "تحديث بخصوص طلبك",
+    body: "هناك تحديث جديد لحالة الطلب داخل التطبيق.",
+    url: "/customer#orders",
+    role: "customer",
+    tag: `push-${Date.now()}`,
+  };
+}
+
 self.addEventListener("push", (event) => {
-  let payload = {};
+  let incoming = buildFallbackPayload();
+
   try {
-    payload = event.data ? event.data.json() : {};
+    if (event.data) {
+      incoming = { ...incoming, ...event.data.json() };
+    }
   } catch {
-    payload = { title: "New update", body: "You have a new notification." };
+    incoming = buildFallbackPayload();
   }
 
-  const role = payload.role === "cyclist" ? "cyclist" : "customer";
-  const icon = payload.icon || (role === "cyclist" ? "/icons/push-rider-192.png" : "/icons/push-customer-192.png");
-  const badge = payload.badge || "/icons/badge-72.png";
+  const role = normalizeRole(incoming.role);
+  const icon =
+    incoming.icon || (role === "cyclist" ? "/icons/push-rider-192.png" : "/icons/push-customer-192.png");
+  const badge = incoming.badge || "/icons/badge-72.png";
 
-  const options = {
-    body: payload.body || "",
+  const payload = {
+    ...incoming,
+    role,
     icon,
     badge,
-    data: {
-      url: payload.url || "/",
-      role,
-      orderId: payload.orderId || null,
-      locationLabel: payload.locationLabel || null,
-      eventType: payload.eventType || null,
-      title: payload.title || "Notification",
-      body: payload.body || "",
-      icon,
-      badge,
-    },
-    vibrate: role === "cyclist" ? [100, 50, 100] : [80, 40, 80],
-    requireInteraction: role === "cyclist",
-    renotify: true,
-    tag: payload.orderId ? `order-${payload.orderId}` : `push-${Date.now()}`,
+    url: incoming.url || (role === "cyclist" ? "/cyclist/dashboard" : "/customer#orders"),
+    tag: incoming.tag || (incoming.orderId ? `order-${incoming.orderId}` : `push-${Date.now()}`),
   };
 
-  event.waitUntil(self.registration.showNotification(payload.title || "Notification", options));
+  const options = {
+    body: payload.body,
+    icon: payload.icon,
+    badge: payload.badge,
+    tag: payload.tag,
+    renotify: true,
+    requireInteraction: role === "cyclist",
+    data: payload,
+    vibrate: role === "cyclist" ? [100, 50, 100] : [80, 40, 80],
+  };
+
+  event.waitUntil(
+    self.registration
+      .showNotification(payload.title || "Notification", options)
+      .then(() => self.clients.matchAll({ type: "window", includeUncontrolled: true }))
+      .then((windowClients) => {
+        windowClients.forEach((client) => {
+          client.postMessage({ type: "PUSH_RECEIVED", payload });
+        });
+      }),
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+
+  const payload = event.notification.data || {};
+  const targetUrl = payload.url || "/";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.postMessage({
-            type: "PUSH_NOTIFICATION_CLICK",
-            payload: event.notification.data || {},
-          });
+          client.postMessage({ type: "PUSH_NOTIFICATION_CLICK", payload });
           return client.focus().then(() => client.navigate(targetUrl));
         }
       }
@@ -61,6 +87,7 @@ self.addEventListener("notificationclick", (event) => {
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl);
       }
+
       return undefined;
     }),
   );

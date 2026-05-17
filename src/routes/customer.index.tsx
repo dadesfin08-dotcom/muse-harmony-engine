@@ -579,6 +579,7 @@ function Index() {
     enabled: Boolean(customerSession?.phoneNumber),
     role: "customer",
     userId: pushCustomerId,
+    locationLabel: selectedNeighborhoodOption?.name ?? selectedNeighborhoodId ?? null,
   });
 
   useEffect(() => {
