@@ -575,7 +575,7 @@ function VendorDashboardPage() {
             return;
           }
 
-          if (inserted?.status !== "new" || !inserted?.id) {
+          if (!(inserted?.status === "pending" || inserted?.status === "new") || !inserted?.id) {
             return;
           }
 
@@ -639,7 +639,7 @@ function VendorDashboardPage() {
                             search: (prev: VendorDashboardSearch) => ({
                               ...prev,
                               tab: "live",
-                              sub: "new",
+                              sub: "pending",
                             }),
                             replace: true,
                           });
@@ -812,10 +812,10 @@ function VendorDashboardPage() {
 
   const queue = useMemo(
     () => ({
-      new: orders.filter((order) => order.status === "new"),
+      pending: orders.filter((order) => order.status === "pending" || order.status === "new"),
       preparing: orders.filter((order) => order.status === "preparing"),
       ready: orders.filter((order) => order.status === "ready"),
-      inDelivery: orders.filter((order) => order.status === "in_transit" || order.status === "delivering"),
+      inDelivery: orders.filter((order) => order.status === "in_delivery" || order.status === "in_transit" || order.status === "delivering"),
       delivered: orders.filter((order) => order.status === "delivered"),
     }),
     [orders],
@@ -890,7 +890,7 @@ function VendorDashboardPage() {
       return normalizedDate >= startOfMonth.getTime() && normalizedDate <= endOfMonth.getTime();
     };
 
-    const pendingOrders = queue.new.length + queue.preparing.length;
+    const pendingOrders = queue.pending.length + queue.preparing.length;
     const deliveredInFilter = orders.filter(
       (order) =>
         (order.status === "delivered" ||
