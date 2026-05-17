@@ -149,6 +149,11 @@ function ProductDetailPage() {
     return cartItems.find((item) => (item.cartItemId || item.id) === cartItemId)?.quantity ?? 0;
   }, [cartItemId, cartItems, product]);
 
+  const displayPrice = Number(
+    product?.isFlashSaleActive ? (product?.finalFlashSalePrice ?? product?.finalVendorPrice ?? product?.vendorPrice ?? 0) : (product?.finalVendorPrice ?? product?.vendorPrice ?? 0),
+  );
+  const oldPrice = Number(product?.finalVendorPrice ?? product?.vendorPrice ?? 0);
+
   const addToCart = () => {
     if (!product) return;
 
@@ -160,7 +165,7 @@ function ProductDetailPage() {
       selectedVariant: normalizedVariant,
       brandName: product.brand || null,
       measurementValue: product.measurementValue ?? null,
-      price: Number(product.finalVendorPrice ?? product.vendorPrice ?? 0),
+      price: Number(product.isFlashSaleActive ? (product.finalFlashSalePrice ?? product.finalVendorPrice ?? product.vendorPrice ?? 0) : (product.finalVendorPrice ?? product.vendorPrice ?? 0)),
       basePrice: Number(product.vendorPrice ?? 0),
       measurementUnit: product.measurementUnit,
       image: product.imageUrl || fallbackProductImage,
@@ -334,7 +339,14 @@ function ProductDetailPage() {
             <h1 className="text-pretty break-words text-2xl font-black leading-tight text-slate-900">{localizedName}</h1>
 
             <div className="flex items-end gap-3">
-              <p className="text-3xl font-black text-emerald-600">{Number(product.finalVendorPrice ?? product.vendorPrice ?? 0)} MAD</p>
+              {product.isFlashSaleActive ? (
+                <>
+                  <p className="text-3xl font-black text-red-600">{displayPrice.toFixed(2)} MAD</p>
+                  <p className="text-base font-semibold text-slate-400 line-through">{oldPrice.toFixed(2)} MAD</p>
+                </>
+              ) : (
+                <p className="text-3xl font-black text-emerald-600">{displayPrice.toFixed(2)} MAD</p>
+              )}
               <p className="inline-flex items-center gap-1.5 pb-1 text-sm font-medium text-slate-500">
                 <Package className="size-4" />
                 {measurementText}

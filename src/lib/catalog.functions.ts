@@ -1865,7 +1865,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, is_flash_sale, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -1888,6 +1888,15 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       }
 
       const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
+      const flashEndTimeMs = row.flash_sale_end_time ? new Date(row.flash_sale_end_time).getTime() : Number.NaN;
+      const isFlashSaleActive =
+        row.is_flash_sale === true &&
+        row.flash_sale_price != null &&
+        Number.isFinite(flashEndTimeMs) &&
+        flashEndTimeMs > Date.now();
+      const flashPricing = isFlashSaleActive
+        ? await calculateFinalPrice(Number(row.flash_sale_price ?? 0), true)
+        : null;
 
       return {
         id: row.master_products.id,
@@ -1917,6 +1926,10 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         popularityScore: Number(row.master_products.popularity_score ?? 0),
         vendorPrice: Number(row.vendor_price ?? 0),
         finalVendorPrice: pricing.finalPrice,
+        flashSalePrice: row.flash_sale_price != null ? Number(row.flash_sale_price) : null,
+        finalFlashSalePrice: flashPricing?.finalPrice ?? null,
+        flashSaleEndTime: row.flash_sale_end_time ?? null,
+        isFlashSaleActive,
         isAvailable: row.is_available,
       };
     } catch (error) {
