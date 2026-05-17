@@ -83,7 +83,6 @@ import Autoplay from "embla-carousel-autoplay";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProductCard } from "@/components/ProductCard";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -376,9 +375,6 @@ function Index() {
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
-  const flashDealsAutoplayRef = useRef(
-    Autoplay({ delay: 3200, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
-  );
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
