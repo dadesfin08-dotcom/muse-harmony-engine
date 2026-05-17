@@ -9,8 +9,8 @@ import {
   localizeText,
   resolveAppLanguage,
   type LocalizedTextValue,
-  type NamespacedTranslationKey,
 } from "@/lib/localization";
+import type { TranslationNamespace, TranslationSchema } from "@/lib/i18n";
 
 export function useAppLanguage() {
   const { i18n } = useTranslation();
@@ -51,12 +51,13 @@ export function useLocalizedText() {
   return getLocalizedText;
 }
 
-export function useNamespacedT<N extends string>(namespace: N) {
+type NamespaceKey<N extends TranslationNamespace> = keyof TranslationSchema[N] & string;
+
+export function useNamespacedT<N extends TranslationNamespace>(namespace: N) {
   const { t } = useTranslation();
 
   return useCallback(
-    (key: NamespacedTranslationKey, options?: Record<string, unknown>) =>
-      t(`${namespace}.${key}` as `${N}.${string}`, options),
+    (key: NamespaceKey<N>, options?: Record<string, unknown>) => t(`${namespace}.${key}`, options),
     [namespace, t],
   );
 }
