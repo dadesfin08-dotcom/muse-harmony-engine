@@ -2894,13 +2894,17 @@ function Index() {
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
               }}
             >
-              <div className="relative shrink-0 border-b border-border/60 bg-background px-6 pb-4 pt-2">
+              <div
+                className="relative shrink-0 border-b border-border/60 bg-background px-6 pb-4"
+                style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+              >
                 <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" aria-hidden="true" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-4 top-1.5 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
+                  style={{ top: "max(0.375rem, env(safe-area-inset-top))" }}
                   onClick={() => setIsCustomerAuthModalOpen(false)}
                   aria-label="Close login prompt"
                 >
