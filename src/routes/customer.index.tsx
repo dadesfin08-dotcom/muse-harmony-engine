@@ -386,6 +386,12 @@ function Index() {
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
 
+  const getScrollTravelDistance = (element: HTMLDivElement) => {
+    const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
+    const traveled = Math.min(maxScroll, Math.abs(element.scrollLeft));
+    return { maxScroll, traveled };
+  };
+
   const getLocalizedText = ({
     en,
     fr,
@@ -1025,52 +1031,58 @@ function Index() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (scrollContainerRef.current && !isInteracting) {
-        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        const { scrollWidth, clientWidth } = scrollContainerRef.current;
+        const { traveled } = getScrollTravelDistance(scrollContainerRef.current);
         const cardWidth = 180 + 12;
+        const scrollStep = isArabic ? -cardWidth : cardWidth;
 
-        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+        if (traveled + clientWidth >= scrollWidth - 10) {
           scrollContainerRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
-          scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+          scrollContainerRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
         }
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isInteracting]);
+  }, [isArabic, isInteracting]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (subScrollRef.current && !isSubInteracting) {
-        const { scrollLeft, scrollWidth, clientWidth } = subScrollRef.current;
+        const { scrollWidth, clientWidth } = subScrollRef.current;
+        const { traveled } = getScrollTravelDistance(subScrollRef.current);
         const cardWidth = 280 + 16;
+        const scrollStep = isArabic ? -cardWidth : cardWidth;
 
-        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+        if (traveled + clientWidth >= scrollWidth - 10) {
           subScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
-          subScrollRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+          subScrollRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
         }
       }
     }, 3500);
 
     return () => clearInterval(interval);
-  }, [isSubInteracting]);
+  }, [isArabic, isSubInteracting]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (bannerScrollRef.current && !isBannerInteracting) {
-        const { scrollLeft, scrollWidth, clientWidth } = bannerScrollRef.current;
+        const { scrollWidth, clientWidth } = bannerScrollRef.current;
+        const { traveled } = getScrollTravelDistance(bannerScrollRef.current);
+        const scrollStep = isArabic ? -clientWidth : clientWidth;
 
-        if (scrollLeft + clientWidth >= scrollWidth - 5) {
+        if (traveled + clientWidth >= scrollWidth - 5) {
           bannerScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
-          bannerScrollRef.current.scrollBy({ left: clientWidth, behavior: "smooth" });
+          bannerScrollRef.current.scrollBy({ left: scrollStep, behavior: "smooth" });
         }
       }
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [isBannerInteracting]);
+  }, [isArabic, isBannerInteracting]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
