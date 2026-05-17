@@ -489,6 +489,7 @@ const resources = {
               nameEn: "e.g. Vegetables",
               nameFr: "e.g. Légumes",
               nameAr: "مثال: خضروات",
+              imageUrl: "https://...",
             },
           },
           saved: {
@@ -1754,6 +1755,7 @@ const resources = {
               nameEn: "ex. Vegetables",
               nameFr: "ex. Légumes",
               nameAr: "مثال: خضروات",
+              imageUrl: "https://...",
             },
           },
           saved: {
@@ -2967,6 +2969,7 @@ const resources = {
               nameEn: "مثال: Vegetables",
               nameFr: "مثال: Légumes",
               nameAr: "مثال: خضروات",
+              imageUrl: "https://...",
             },
           },
           saved: {
