@@ -242,8 +242,13 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
 type InventoryItem = {
   id: string;
   name: string;
-  category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+  nameFr?: string | null;
+  nameAr?: string | null;
+  category?: string;
+  productVariants?: string[];
+  measurementValue?: number | null;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
+  measurementUnitLabel?: string;
   imageUrl?: string | null;
   vendorPrice: number;
   isAvailable: boolean;
@@ -463,8 +468,8 @@ function VendorDashboardPage() {
   });
 
   const inventoryQuery = useQuery({
-    queryKey: ["vendor", "inventory"],
-    queryFn: () => fetchInventoryData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryKey: ["vendor", "inventory", activeLanguage],
+    queryFn: () => fetchInventoryData({ data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }) }),
     placeholderData: (previousData) => previousData,
     enabled: hasValidVendorPhoneSession,
   });
@@ -1112,7 +1117,11 @@ function VendorDashboardPage() {
       ((inventoryQuery.data?.products ?? []) as Array<{
         id: string;
         name: string;
-        category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+        nameFr?: string | null;
+        nameAr?: string | null;
+        category?: string;
+        productVariants?: string[];
+        measurementValue?: number | null;
         measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         imageUrl?: string | null;
         vendorPrice: number;
@@ -1122,11 +1131,19 @@ function VendorDashboardPage() {
         flashSaleEndTime?: string | null;
       }>).map((item) => ({
         ...item,
+        name: getLocalizedValue({ en: item.name, fr: item.nameFr, ar: item.nameAr }, activeLanguage, item.name),
+        category: localizeCategoryLabel(item.category) || item.category,
+        productVariants: Array.isArray(item.productVariants)
+          ? item.productVariants
+              .map((variant) => getLocalizedValue(variant, activeLanguage, variant).trim())
+              .filter((variant) => variant.length > 0)
+          : [],
+        measurementUnitLabel: localizeMeasurementUnit(item.measurementUnit),
         isFlashSale: item.isFlashSale ?? false,
         flashSalePrice: item.flashSalePrice ?? null,
         flashSaleEndTime: item.flashSaleEndTime ?? null,
       })),
-    [inventoryQuery.data],
+    [activeLanguage, inventoryQuery.data],
   );
 
   useEffect(() => {
