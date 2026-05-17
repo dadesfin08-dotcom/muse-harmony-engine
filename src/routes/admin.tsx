@@ -3157,17 +3157,17 @@ function AdminPage() {
 
   const saveAd = async () => {
     if (!adForm.campaignName.trim()) {
-      toast.error("Campaign name is required.");
+      toast.error(t("admin.adsContentCms.validation.campaignNameRequired"));
       return;
     }
 
     if (!adForm.imageAr.trim() && !adForm.imageFr.trim() && !adForm.imageEn.trim()) {
-      toast.error("Add at least one localized image URL.");
+      toast.error(t("admin.adsContentCms.validation.atLeastOneImageRequired"));
       return;
     }
 
     if (adForm.startDate && adForm.endDate && new Date(adForm.endDate).getTime() < new Date(adForm.startDate).getTime()) {
-      toast.error("Expiration date must be after start date.");
+      toast.error(t("admin.adsContentCms.validation.expirationAfterStart"));
       return;
     }
 
@@ -3201,7 +3201,7 @@ function AdminPage() {
             isActive: adForm.isActive,
           },
         });
-        toast.success("Campaign updated.");
+        toast.success(t("admin.adsContentCms.toast.campaignUpdated"));
       } else {
         await createSiteAdInDatabase({
           data: {
@@ -3217,14 +3217,14 @@ function AdminPage() {
             isActive: adForm.isActive,
           },
         });
-        toast.success("Campaign created.");
+        toast.success(t("admin.adsContentCms.toast.campaignCreated"));
       }
 
       await siteAdsQuery.refetch();
       resetAdForm();
     } catch (error) {
       console.error("Failed to save ad:", error);
-      toast.error("Failed to save ad.");
+      toast.error(t("admin.adsContentCms.toast.campaignSaveFailed"));
     } finally {
       setIsSavingAd(false);
     }
@@ -3233,7 +3233,7 @@ function AdminPage() {
   const saveAnnouncement = async () => {
     const normalizedTitle = announcementForm.title.trim();
     if (!normalizedTitle) {
-      toast.error("Announcement title is required.");
+      toast.error(t("admin.adsContentCms.validation.announcementTitleRequired"));
       return;
     }
 
@@ -3242,7 +3242,7 @@ function AdminPage() {
     const normalizedMessagesAr = announcementForm.messagesAr.map((value) => value.trim()).filter(Boolean);
 
     if (normalizedMessagesAr.length === 0 && normalizedMessagesFr.length === 0 && normalizedMessagesEn.length === 0) {
-      toast.error("Add at least one localized announcement message.");
+      toast.error(t("admin.adsContentCms.validation.atLeastOneAnnouncementMessage"));
       return;
     }
 
@@ -3251,7 +3251,7 @@ function AdminPage() {
       announcementForm.endDate &&
       new Date(announcementForm.endDate).getTime() < new Date(announcementForm.startDate).getTime()
     ) {
-      toast.error("Expiration date must be after start date.");
+      toast.error(t("admin.adsContentCms.validation.expirationAfterStart"));
       return;
     }
 
@@ -3272,7 +3272,7 @@ function AdminPage() {
             textColor: announcementForm.textColor.trim() || "#000000",
           },
         });
-        toast.success("Announcement updated.");
+        toast.success(t("admin.adsContentCms.toast.announcementUpdated"));
       } else {
         await createAnnouncementInDatabase({
           data: {
@@ -3287,14 +3287,14 @@ function AdminPage() {
             textColor: announcementForm.textColor.trim() || "#000000",
           },
         });
-        toast.success("Announcement created.");
+        toast.success(t("admin.adsContentCms.toast.announcementCreated"));
       }
 
       await announcementsQuery.refetch();
       resetAnnouncementForm();
     } catch (error) {
       console.error("Failed to save announcement:", error);
-      toast.error("Failed to save announcement.");
+      toast.error(t("admin.adsContentCms.toast.announcementSaveFailed"));
     } finally {
       setIsSavingAnnouncement(false);
     }
