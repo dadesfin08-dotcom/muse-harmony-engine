@@ -26,6 +26,12 @@ export type LocalizedTextValue = {
   ar?: string | null;
 };
 
+type LocalizedRecordLike = {
+  en?: unknown;
+  fr?: unknown;
+  ar?: unknown;
+};
+
 export function isSupportedLanguage(value: string | null | undefined): value is AppLanguage {
   if (!value) return false;
   return (supportedLanguages as readonly string[]).includes(value);
@@ -77,6 +83,62 @@ export function localizeText(
   if (language === "ar") return normalized.ar || normalized.fr || normalized.en || fallback;
   if (language === "fr") return normalized.fr || normalized.en || normalized.ar || fallback;
   return normalized.en || normalized.fr || normalized.ar || fallback;
+}
+
+function toNormalizedString(value: unknown): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return "";
+}
+
+/**
+ * Resolves a locale-aware value from either a plain string/number
+ * or a multilingual object shape: { en, fr, ar }.
+ */
+export function getLocalizedValue(
+  value: unknown,
+  language: AppLanguage,
+  fallback = "",
+): string {
+  if (value == null) {
+    return fallback;
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const normalized = toNormalizedString(value);
+    return normalized || fallback;
+  }
+
+  if (typeof value === "object") {
+    const localized = value as LocalizedRecordLike;
+    const resolved = localizeText(
+      language,
+      {
+        ar: toNormalizedString(localized.ar),
+        fr: toNormalizedString(localized.fr),
+        en: toNormalizedString(localized.en),
+      },
+      fallback,
+    );
+
+    if (resolved) {
+      return resolved;
+    }
+
+    const firstAvailable = Object.values(localized)
+      .map((candidate) => toNormalizedString(candidate))
+      .find((candidate) => candidate.length > 0);
+
+    return firstAvailable || fallback;
+  }
+
+  return fallback;
 }
 
 export function withLocale<TInput extends object>(language: AppLanguage, input: TInput): TInput & { locale: AppLanguage } {
