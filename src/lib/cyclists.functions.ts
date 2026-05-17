@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z.string().trim().regex(/^\+212[0-9]{9}$/);
 
@@ -784,6 +785,10 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
         throw new Error("Delivery was already accepted by another cyclist.");
       }
 
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after cyclist accept failed:", pushQueueError);
+      });
+
       return { ok: true };
     } catch (error) {
       console.error("acceptDeliveryRun failed:", error);
@@ -915,6 +920,10 @@ export const getCyclistEarningsHistory = createServerFn({ method: "POST" })
       if (error) {
         throw new Error(error.message);
       }
+
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after delivery completion failed:", pushQueueError);
+      });
 
       const deliveries = ((rows ?? []) as Array<{ id: string; delivered_at: string | null; delivery_fee: number }>).map(
         (row) => ({
