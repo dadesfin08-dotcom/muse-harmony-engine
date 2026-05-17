@@ -5,11 +5,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppLanguage } from "@/hooks/use-localization";
+import { withLocale } from "@/lib/localization";
 import { formatMoroccoPhoneForPayload, normalizeMoroccoPhoneInput } from "@/lib/morocco-phone";
 import { getVendorCarnetData } from "@/lib/carnet.functions";
 import {
@@ -23,6 +26,8 @@ export const Route = createFileRoute("/vendor/wallet")({
 });
 
 function VendorWalletPage() {
+  const { t } = useTranslation();
+  const { language: activeLanguage } = useAppLanguage();
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
@@ -55,7 +60,10 @@ function VendorWalletPage() {
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
     enabled: Boolean(normalizedVendorPhoneNumber),
-    queryFn: () => fetchDashboard({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryFn: () =>
+      fetchDashboard({
+        data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }),
+      }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
