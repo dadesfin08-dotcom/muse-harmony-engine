@@ -6,7 +6,8 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
-import { localizeText, resolveAppLanguage, type AppLanguage } from "@/lib/localization";
+import type { AppLanguage } from "@/lib/i18n";
+import { localizeText, resolveAppLanguage } from "@/lib/localization";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
