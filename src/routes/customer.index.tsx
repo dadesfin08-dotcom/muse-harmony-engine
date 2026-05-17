@@ -376,6 +376,8 @@ function Index() {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
+  const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
+  const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
@@ -1083,6 +1085,42 @@ function Index() {
 
     return () => clearInterval(interval);
   }, [isArabic, isBannerInteracting]);
+
+  useEffect(() => {
+    if (!isMobile || !isCustomerAuthModalOpen || typeof window === "undefined") {
+      setAuthKeyboardInset(0);
+      setAuthSheetMaxHeight(null);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+
+    const syncSheetViewport = () => {
+      const layoutHeight = window.innerHeight;
+      const visualHeight = viewport?.height ?? layoutHeight;
+      const visualTop = viewport?.offsetTop ?? 0;
+      const keyboardInset = Math.max(0, layoutHeight - (visualHeight + visualTop));
+      const topGap = Math.round(layoutHeight * 0.15);
+      const boundedHeight = Math.max(320, Math.round(visualHeight - topGap));
+
+      setAuthKeyboardInset(Math.round(keyboardInset));
+      setAuthSheetMaxHeight(boundedHeight);
+    };
+
+    syncSheetViewport();
+
+    if (!viewport) {
+      return;
+    }
+
+    viewport.addEventListener("resize", syncSheetViewport);
+    viewport.addEventListener("scroll", syncSheetViewport);
+
+    return () => {
+      viewport.removeEventListener("resize", syncSheetViewport);
+      viewport.removeEventListener("scroll", syncSheetViewport);
+    };
+  }, [isCustomerAuthModalOpen, isMobile]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -2819,7 +2857,13 @@ function Index() {
       {isCustomerAuthModalOpen ? (
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
-            <DrawerContent className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl border-border bg-background shadow-2xl sm:max-h-[90vh]">
+            <DrawerContent
+              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out sm:max-h-[90vh]"
+              style={{
+                maxHeight: authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
+                paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
+              }}
+            >
               <div className="relative shrink-0 border-b border-border/60 px-6 pb-3 pt-2">
                 <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" aria-hidden="true" />
                 <Button
@@ -2834,7 +2878,7 @@ function Index() {
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2">
+              <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out">
                 <div className="flex flex-col gap-5">
                 <div className="pt-2 text-center">
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
