@@ -807,7 +807,19 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       ),
     ) as string[];
 
-    let productDetailsMap = new Map<
+    const orderItemProductIds = Array.from(
+      new Set(
+        (orders ?? []).flatMap((order: any) =>
+          Array.isArray(order?.order_items)
+            ? order.order_items
+                .map((item: any) => (typeof item?.productId === "string" ? item.productId.trim() : null))
+                .filter(Boolean)
+            : [],
+        ),
+      ),
+    ) as string[];
+
+    let productDetailsByName = new Map<
       string,
       {
         imageUrl: string | null;
@@ -816,19 +828,47 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         measurementUnit: string | null;
       }
     >();
-    if (orderItemNames.length > 0) {
-      const { data: products, error: productsError } = await (supabaseAdmin as any)
-        .from("master_products")
-        .select("product_name, image_url, measurement_value, measurement_unit, brand_id")
-        .in("product_name", orderItemNames);
-
-      if (productsError) {
-        throw new Error(productsError.message);
+    let productDetailsById = new Map<
+      string,
+      {
+        imageUrl: string | null;
+        brandName: string | null;
+        measurementValue: number | null;
+        measurementUnit: string | null;
       }
+    >();
+    if (orderItemNames.length > 0 || orderItemProductIds.length > 0) {
+      const [productsByNameRes, productsByIdRes] = await Promise.all([
+        orderItemNames.length > 0
+          ? (supabaseAdmin as any)
+              .from("master_products")
+              .select("id, product_name, image_url, measurement_value, measurement_unit, brand_id")
+              .in("product_name", orderItemNames)
+          : Promise.resolve({ data: [], error: null }),
+        orderItemProductIds.length > 0
+          ? (supabaseAdmin as any)
+              .from("master_products")
+              .select("id, product_name, image_url, measurement_value, measurement_unit, brand_id")
+              .in("id", orderItemProductIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (productsByNameRes.error) {
+        throw new Error(productsByNameRes.error.message);
+      }
+
+      if (productsByIdRes.error) {
+        throw new Error(productsByIdRes.error.message);
+      }
+
+      const products = [
+        ...((productsByNameRes.data ?? []) as Array<any>),
+        ...((productsByIdRes.data ?? []) as Array<any>),
+      ];
 
       const brandIds = Array.from(
         new Set(
-          (products ?? [])
+          products
             .map((product: any) => (typeof product?.brand_id === "string" ? product.brand_id : null))
             .filter((value: string | null): value is string => Boolean(value)),
         ),
@@ -849,31 +889,36 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         ),
       );
 
-      productDetailsMap = new Map(
-        (products ?? [])
-          .filter((product: any) => typeof product?.product_name === "string")
-          .map((product: any) => {
-            const brand = typeof product?.brand_id === "string" ? brandsById.get(product.brand_id) : undefined;
-            const brandName = localizedName(brand);
+      const toProductDetails = (product: any) => {
+        const brand = typeof product?.brand_id === "string" ? brandsById.get(product.brand_id) : undefined;
+        const brandName = localizedName(brand);
 
-            return [
-              product.product_name.trim().toLowerCase(),
-              {
-                imageUrl: product.image_url ?? null,
-                brandName: brandName || null,
-                measurementValue:
-                  typeof product?.measurement_value === "number"
-                    ? product.measurement_value
-                    : typeof product?.measurement_value === "string"
-                      ? Number(product.measurement_value)
-                      : null,
-                measurementUnit:
-                  typeof product?.measurement_unit === "string" && product.measurement_unit.trim().length > 0
-                    ? product.measurement_unit.trim()
-                    : null,
-              },
-            ];
-          }),
+        return {
+          imageUrl: product.image_url ?? null,
+          brandName: brandName || null,
+          measurementValue:
+            typeof product?.measurement_value === "number"
+              ? product.measurement_value
+              : typeof product?.measurement_value === "string"
+                ? Number(product.measurement_value)
+                : null,
+          measurementUnit:
+            typeof product?.measurement_unit === "string" && product.measurement_unit.trim().length > 0
+              ? product.measurement_unit.trim()
+              : null,
+        };
+      };
+
+      productDetailsByName = new Map(
+        products
+          .filter((product: any) => typeof product?.product_name === "string")
+          .map((product: any) => [product.product_name.trim().toLowerCase(), toProductDetails(product)]),
+      );
+
+      productDetailsById = new Map(
+        products
+          .filter((product: any) => typeof product?.id === "string")
+          .map((product: any) => [product.id, toProductDetails(product)]),
       );
     }
 
@@ -1013,8 +1058,11 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     const hydratedOrders = (orders ?? []).map((order: any) => {
       const items = Array.isArray(order?.order_items)
         ? order.order_items.map((item: any) => {
-            const productDetails =
-              typeof item?.name === "string" ? productDetailsMap.get(item.name.trim().toLowerCase()) : undefined;
+            const productDetailsByItemId =
+              typeof item?.productId === "string" ? productDetailsById.get(item.productId.trim()) : undefined;
+            const productDetailsByItemName =
+              typeof item?.name === "string" ? productDetailsByName.get(item.name.trim().toLowerCase()) : undefined;
+            const productDetails = productDetailsByItemId ?? productDetailsByItemName;
 
             return {
               ...item,
