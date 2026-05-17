@@ -2108,17 +2108,17 @@ function VendorDashboardPage() {
               </div>
 
               {isLedgerInitialLoading ? (
-                <EmptyState label="Loading ledger history..." />
+                <EmptyState label={t("vendorDashboard.ledger.loadingHistory")} />
               ) : ledgerTransactions.length === 0 ? (
-                <EmptyState label="No transactions found for this customer." />
+                <EmptyState label={t("vendorDashboard.ledger.noTransactions")} />
               ) : (
                 <div className="max-h-[360px] overflow-auto rounded-xl border border-border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>{t("vendorDashboard.ledger.date")}</TableHead>
+                        <TableHead>{t("vendorDashboard.ledger.descriptionColumn")}</TableHead>
+                        <TableHead className="text-right">{t("vendorDashboard.ledger.amount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2198,9 +2198,9 @@ function VendorDashboardPage() {
                                                 <p className="truncate font-medium text-foreground">
                                                   {item.quantity}x {item.name}
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  Unit: {item.unitPriceMad.toFixed(2)} MAD
-                                                </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                   {t("vendorDashboard.ledger.unit")} {item.unitPriceMad.toFixed(2)} MAD
+                                                 </p>
                                               </div>
                                                 <p className="shrink-0 font-semibold text-foreground">
                                                   {roundMoney(Number(item.quantity ?? 0) * Number(item.unitPriceMad ?? 0)).toFixed(2)} MAD
@@ -2211,9 +2211,7 @@ function VendorDashboardPage() {
                                           <div className="border-t border-gray-200 my-2" />
 
                                           <div className="flex items-center justify-between gap-3 py-1">
-                                            <p className="text-gray-500 text-sm">
-                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
-                                            </p>
+                                              <p className="text-gray-500 text-sm">{t("vendorDashboard.ledger.deliveryFeeToCyclist")}</p>
                                             <p className="shrink-0 font-semibold text-foreground">
                                               {orderDeliveryFeeMad.toFixed(2)} MAD
                                             </p>
@@ -2221,12 +2219,10 @@ function VendorDashboardPage() {
                                         </div>
                                       ) : (
                                         <div className="space-y-1">
-                                          <p>No item details available for this order.</p>
+                                          <p>{t("vendorDashboard.ledger.noItemDetails")}</p>
                                           <div className="border-t border-gray-200 my-2" />
                                           <div className="flex items-center justify-between gap-3 py-1">
-                                            <p className="text-gray-500 text-sm">
-                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
-                                            </p>
+                                            <p className="text-gray-500 text-sm">{t("vendorDashboard.ledger.deliveryFeeToCyclist")}</p>
                                             <p className="shrink-0 font-semibold text-foreground">
                                               {orderDeliveryFeeMad.toFixed(2)} MAD
                                             </p>
@@ -2247,7 +2243,7 @@ function VendorDashboardPage() {
               )}
             </div>
           ) : (
-            <EmptyState label="Customer not found." />
+            <EmptyState label={t("vendorDashboard.ledger.customerNotFound")} />
           )}
         </DialogContent>
       </Dialog>
@@ -2256,6 +2252,7 @@ function VendorDashboardPage() {
 }
 
 function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (view: MainView) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="md:hidden">
       <div className="grid w-full grid-cols-4 items-center gap-1 rounded-2xl border border-border bg-card p-1 shadow-sm">
@@ -2266,7 +2263,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("orders")}
         >
           <ShoppingBag className="size-4" />
-          Live Orders
+          {t("vendorDashboard.nav.liveOrders")}
         </Button>
         <Button
           type="button"
@@ -2275,7 +2272,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("history")}
         >
           <History className="size-4" />
-          History
+          {t("vendorDashboard.nav.history")}
         </Button>
         <Button
           type="button"
@@ -2284,7 +2281,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("inventory")}
         >
           <Boxes className="size-4" />
-          Store Inventory
+          {t("vendorDashboard.nav.inventory")}
         </Button>
         <Button
           type="button"
@@ -2293,7 +2290,7 @@ function ViewSwitcherMobile({ value, onChange }: { value: MainView; onChange: (v
           onClick={() => onChange("flashSales")}
         >
           <Zap className="size-4" />
-          Flash Sales
+          {t("vendorDashboard.nav.flashSales")}
         </Button>
       </div>
     </div>
