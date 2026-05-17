@@ -2023,7 +2023,7 @@ function Index() {
 
         <section className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight font-serif">
+            <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
             </h2>
             <div className="flex items-center gap-3">
@@ -2097,7 +2097,7 @@ function Index() {
 
         <section className="mx-auto mt-5 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-lg font-semibold tracking-tight text-foreground font-serif">
+            <Link to="/customer/all-products" className="text-xl font-bold text-foreground md:text-2xl">
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
@@ -2153,11 +2153,11 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem] font-serif">{product.name}</h3>
+                    <h3 className="w-full line-clamp-2 min-h-[2.75rem] text-base font-semibold leading-snug">{product.name}</h3>
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-3xl font-extrabold text-[#2A7543]">
+                    <p className="text-3xl font-bold tracking-tight text-[#2A7543]">
                       {product.price} <span className="text-sm font-medium">MAD</span>
                     </p>
 
@@ -2212,7 +2212,7 @@ function Index() {
             <div className="px-4 pb-6 pt-2">
               <Link
                 to="/customer/all-products"
-                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100 font-serif"
+                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
               >
                 {t("home.view_all_products")}
               </Link>
@@ -2230,7 +2230,7 @@ function Index() {
 
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="line-clamp-1 text-foreground font-serif text-xl font-bold text-center shadow-lg">
+            <h2 className="line-clamp-1 text-xl font-bold text-foreground md:text-2xl">
               <Sparkles className="size-4 text-primary" />
               Saving Subscriptions / باكات التوفير
             </h2>
@@ -2337,7 +2337,7 @@ function Index() {
         {flashDeals.length > 0 ? (
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-3 sm:px-6">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="line-clamp-1 text-foreground font-serif text-xl font-bold text-center shadow-lg">
+            <h2 className="line-clamp-1 text-xl font-bold text-foreground md:text-2xl">
               <Flame className="size-4 text-destructive" />
               {t("flashDeals.title")}
             </h2>
