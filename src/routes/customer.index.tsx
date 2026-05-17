@@ -579,7 +579,6 @@ function Index() {
     enabled: Boolean(customerSession?.phoneNumber),
     role: "customer",
     userId: pushCustomerId,
-    locationLabel: selectedLocationLabel,
   });
 
   useEffect(() => {
