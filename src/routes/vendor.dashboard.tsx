@@ -203,6 +203,7 @@ type DashboardOrder = {
   subtotalBasePriceMad: number;
   itemCount: number;
   items: Array<{
+    productId?: string | null;
     name: string;
     selectedVariant?: string | null;
     quantity: number;
@@ -824,7 +825,7 @@ function VendorDashboardPage() {
         specificAddress: typeof row.specific_address === "string" ? row.specific_address : null,
         neighborhoodName: typeof row.neighborhood_name === "string" ? row.neighborhood_name : "-",
         communeName: typeof row.commune_name === "string" ? row.commune_name : "-",
-        deliveryNotes: row.delivery_notes,
+        deliveryNotes: getLocalizedValue((row as { delivery_notes?: unknown }).delivery_notes, activeLanguage, ""),
         paymentMethod: row.payment_method,
         status: normalizeVendorLiveStatus(row.status),
         deliveryFeeMad: roundMoney(Number(row.delivery_fee ?? 0)),
@@ -3654,10 +3655,10 @@ function shortOrderId(id: string) {
 
 function getOrderItemKey(
   orderId: string,
-  item: { name: string; quantity: number; unitPriceMad: number },
+  item: { productId?: string | null; name: string; quantity: number; unitPriceMad: number },
   index: number,
 ) {
-  return `${orderId}:${item.name}:${item.quantity}:${item.unitPriceMad}:${index}`;
+  return `${orderId}:${item.productId || item.name}:${item.quantity}:${item.unitPriceMad}:${index}`;
 }
 
 function elapsedLabel(createdAt: string, nowTick: number) {
