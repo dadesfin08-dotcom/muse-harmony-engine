@@ -9086,6 +9086,9 @@ function OrdersSection({
   onAutoDispatch: (orderId: string) => Promise<void>;
   isAssigning: boolean;
 }) {
+  const { t } = useTranslation();
+  const { intlLocale, isRtl } = useAppLanguage();
+
   const statusBadgeClass: Record<string, string> = {
     new: "bg-chart-4/15 text-chart-4",
     preparing: "bg-highlight/25 text-highlight-foreground",
@@ -9095,87 +9098,111 @@ function OrdersSection({
     cancelled: "bg-destructive/15 text-destructive",
   };
 
+  const formatMad = (value: number, fractionDigits: number) =>
+    `${new Intl.NumberFormat(intlLocale, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(value)} MAD`;
+
+  const orderStatusLabel = (
+    status:
+      | "new"
+      | "preparing"
+      | "ready"
+      | "delivering"
+      | "delivered"
+      | "delivered_cash_with_cyclist"
+      | "cash_transferred_to_vendor"
+      | "cancelled",
+  ) => t(`admin.ordersMonitoring.statuses.${status}`);
+
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load global orders.
+        {t("admin.ordersMonitoring.loadError")}
       </section>
     );
   }
 
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
-      <div className="flex items-center justify-between gap-3">
+    <section dir={isRtl ? "rtl" : "ltr"} className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div className={cn("flex items-center justify-between gap-3", isRtl && "flex-row-reverse")}>
         <div>
-          <h2 className="text-base font-semibold text-foreground">Global Orders Monitoring</h2>
-          <p className="text-sm text-muted-foreground">Live marketplace orders with vendor attribution.</p>
+          <h2 className={cn("text-base font-semibold text-foreground", isRtl ? "text-right" : "text-left")}>{t("admin.ordersMonitoring.title")}</h2>
+          <p className={cn("text-sm text-muted-foreground", isRtl ? "text-right" : "text-left")}>{t("admin.ordersMonitoring.subtitle")}</p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(event) =>
-            onStatusFilterChange(
-              event.target.value as
-                | "all"
-                | "new"
-                | "preparing"
-                | "ready"
-                | "delivering"
-                | "delivered"
-                | "delivered_cash_with_cyclist"
-                | "cash_transferred_to_vendor",
-            )
-          }
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-        >
-          <option value="all">All statuses</option>
-          <option value="new">New</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="delivering">Dispatched</option>
-          <option value="delivered">Delivered</option>
-          <option value="delivered_cash_with_cyclist">Delivered (Cash with Cyclist)</option>
-          <option value="cash_transferred_to_vendor">Cash Transferred to Vendor</option>
-        </select>
-        <select
-          value={categoryFilter}
-          onChange={(event) => onCategoryFilterChange(event.target.value as "all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION")}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-        >
-          <option value="all">All categories</option>
-          <option value="MARKETPLACE">Marketplace</option>
-          <option value="PLATFORM_SUBSCRIPTION">Platform Subscription</option>
-        </select>
+        <div className={cn("flex items-center gap-3", isRtl && "flex-row-reverse")}>
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              onStatusFilterChange(
+                event.target.value as
+                  | "all"
+                  | "new"
+                  | "preparing"
+                  | "ready"
+                  | "delivering"
+                  | "delivered"
+                  | "delivered_cash_with_cyclist"
+                  | "cash_transferred_to_vendor",
+              )
+            }
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          >
+            <option value="all">{t("admin.ordersMonitoring.filters.allStatuses")}</option>
+            <option value="new">{t("admin.ordersMonitoring.statuses.new")}</option>
+            <option value="preparing">{t("admin.ordersMonitoring.statuses.preparing")}</option>
+            <option value="ready">{t("admin.ordersMonitoring.statuses.ready")}</option>
+            <option value="delivering">{t("admin.ordersMonitoring.statuses.delivering")}</option>
+            <option value="delivered">{t("admin.ordersMonitoring.statuses.delivered")}</option>
+            <option value="delivered_cash_with_cyclist">{t("admin.ordersMonitoring.statuses.delivered_cash_with_cyclist")}</option>
+            <option value="cash_transferred_to_vendor">{t("admin.ordersMonitoring.statuses.cash_transferred_to_vendor")}</option>
+          </select>
+          <select
+            value={categoryFilter}
+            onChange={(event) => onCategoryFilterChange(event.target.value as "all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION")}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+          >
+            <option value="all">{t("admin.ordersMonitoring.filters.allCategories")}</option>
+            <option value="MARKETPLACE">{t("admin.ordersMonitoring.categories.marketplace")}</option>
+            <option value="PLATFORM_SUBSCRIPTION">{t("admin.ordersMonitoring.categories.platformSubscription")}</option>
+          </select>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full min-w-[1180px] text-left text-sm">
+        <table className={cn("w-full min-w-[1180px] text-sm", isRtl ? "text-right" : "text-left")}>
           <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">Order ID</th>
-              <th className="px-4 py-3">Date & Time</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Vendor</th>
-              <th className="px-4 py-3">Customer Phone</th>
-              <th className="px-4 py-3">Total Price</th>
-              <th className="px-4 py-3">Cash to Collect</th>
-              <th className="px-4 py-3">Cyclist</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.orderId")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.dateTime")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.category")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.vendor")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.customerPhone")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.totalPrice")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.cashToCollect")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.cyclist")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.status")}</th>
+              <th className="px-4 py-3">{t("admin.ordersMonitoring.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  <AppEmptyState title="Loading orders..." subtitle="Fetching order history for selected filters." className="border-0 bg-transparent py-2" />
+                  <AppEmptyState
+                    title={t("admin.ordersMonitoring.empty.loadingTitle")}
+                    subtitle={t("admin.ordersMonitoring.empty.loadingSubtitle")}
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-4 py-12 text-center text-sm text-muted-foreground">
                   <AppEmptyState
-                    title="No orders found for the selected filter."
-                    subtitle="Try switching period or order status."
+                    title={t("admin.ordersMonitoring.empty.noOrdersTitle")}
+                    subtitle={t("admin.ordersMonitoring.empty.noOrdersSubtitle")}
                     className="border-0 bg-transparent py-2"
                   />
                 </td>
@@ -9184,26 +9211,30 @@ function OrdersSection({
               orders.map((order) => (
                 <tr key={order.id} className="border-t border-border bg-card">
                   <td className="px-4 py-3 font-medium text-foreground">#{order.id.slice(0, 8)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{new Date(order.createdAt).toLocaleString(intlLocale)}</td>
                   <td className="px-4 py-3">
-                    <Badge variant="outline">{order.orderCategory === "PLATFORM_SUBSCRIPTION" ? "Platform Subscription" : "Marketplace"}</Badge>
+                    <Badge variant="outline">
+                      {order.orderCategory === "PLATFORM_SUBSCRIPTION"
+                        ? t("admin.ordersMonitoring.categories.platformSubscription")
+                        : t("admin.ordersMonitoring.categories.marketplace")}
+                    </Badge>
                   </td>
                   <td className="px-4 py-3 text-foreground">{order.vendorName}</td>
                   <td className="px-4 py-3 text-muted-foreground">{order.customerPhone}</td>
-                  <td className="px-4 py-3 font-medium text-foreground">{Math.round(order.totalPrice)} MAD</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{formatMad(Math.round(order.totalPrice), 0)}</td>
                   <td className="px-4 py-3">
                     {order.orderCategory === "PLATFORM_SUBSCRIPTION" ? (
-                      <span className="font-medium text-success">0.00 MAD</span>
+                      <span className="font-medium text-success">{formatMad(0, 2)}</span>
                     ) : (
-                      <span className="text-muted-foreground">{Number(order.cashToCollectFromCustomer ?? 0).toFixed(2)} MAD</span>
+                      <span className="text-muted-foreground">{formatMad(Number(order.cashToCollectFromCustomer ?? 0), 2)}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{order.cyclistName ?? "Unassigned"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{order.cyclistName ?? t("admin.ordersMonitoring.labels.unassigned")}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass[order.status] ?? "bg-muted text-muted-foreground"}`}
                     >
-                      {order.status}
+                      {orderStatusLabel(order.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -9217,7 +9248,7 @@ function OrdersSection({
                           }}
                         >
                           <SelectTrigger className="h-8 w-[180px] text-xs">
-                            <SelectValue placeholder="Assign cyclist" />
+                            <SelectValue placeholder={t("admin.ordersMonitoring.actions.assignCyclist")} />
                           </SelectTrigger>
                           <SelectContent>
                             {cyclists.map((cyclist) => (
@@ -9229,11 +9260,11 @@ function OrdersSection({
                         </Select>
                         <Button size="sm" variant="outline" disabled={isAssigning} onClick={() => void onAutoDispatch(order.id)}>
                           <Bike className="size-3.5" />
-                          Auto Dispatch
+                          {t("admin.ordersMonitoring.actions.autoDispatch")}
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Marketplace flow intact</span>
+                      <span className="text-xs text-muted-foreground">{t("admin.ordersMonitoring.actions.marketplaceFlowIntact")}</span>
                     )}
                   </td>
                 </tr>
