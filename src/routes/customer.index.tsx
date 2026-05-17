@@ -2153,7 +2153,7 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem]">{product.name}</h3>
+                    <h3 className="w-full text-base font-bold line-clamp-2 min-h-[2.75rem] font-serif">{product.name}</h3>
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
