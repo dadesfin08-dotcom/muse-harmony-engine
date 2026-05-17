@@ -2032,9 +2032,9 @@ function VendorDashboardPage() {
       >
         <DialogContent className="w-[95vw] max-w-4xl rounded-2xl border border-border bg-card">
           <DialogHeader>
-            <DialogTitle>Customer Ledger</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.ledger.customerLedger")}</DialogTitle>
             <DialogDescription>
-              Detailed credit ledger with all carnet orders and payment events.
+              {t("vendorDashboard.ledger.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -2042,11 +2042,11 @@ function VendorDashboardPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-muted/20 p-3 md:grid-cols-2 xl:grid-cols-5">
                 <div>
-                  <p className="text-xs text-muted-foreground">Customer</p>
-                  <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerName ?? "Unnamed Customer"}</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.customer")}</p>
+                  <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerName ?? t("vendorDashboard.ledger.unnamedCustomer")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.phone")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerPhone}</p>
                 </div>
                 <div>
@@ -2054,11 +2054,11 @@ function VendorDashboardPage() {
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerCin ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Current Debt</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.currentDebt")}</p>
                   <p className="text-sm font-semibold text-destructive">{selectedCarnetCustomer.currentDebt.toFixed(2)} MAD</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Max Limit</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.ledger.maxLimit")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.maxLimit.toFixed(2)} MAD</p>
                 </div>
               </div>
@@ -2068,7 +2068,7 @@ function VendorDashboardPage() {
                   type="number"
                   min="0.01"
                   step="0.01"
-                  placeholder="Payment amount (MAD)"
+                  placeholder={t("vendorDashboard.ledger.paymentAmountPlaceholder")}
                   value={ledgerPaymentAmount}
                   onChange={(event) => setLedgerPaymentAmount(event.target.value)}
                   className="h-10 rounded-xl"
@@ -2080,7 +2080,7 @@ function VendorDashboardPage() {
                   onClick={async () => {
                     const amount = Number(ledgerPaymentAmount);
                     if (Number.isNaN(amount) || amount <= 0) {
-                      toast.error("Enter a valid payment amount.");
+                      toast.error(t("vendorDashboard.ledger.enterValidPaymentAmount"));
                       return;
                     }
 
@@ -2094,16 +2094,16 @@ function VendorDashboardPage() {
                       });
                       setLedgerPaymentAmount("");
                       await Promise.all([carnetQuery.refetch(), ledgerQuery.refetch()]);
-                      toast.success("Payment recorded successfully.");
+                      toast.success(t("vendorDashboard.ledger.paymentRecorded"));
                     } catch (error) {
                       console.error("Failed to record payment:", error);
-                      toast.error(error instanceof Error ? error.message : "Failed to record payment.");
+                      toast.error(error instanceof Error ? error.message : t("vendorDashboard.ledger.paymentRecordFailed"));
                     } finally {
                       setIsRecordingPayment(false);
                     }
                   }}
                 >
-                  {isRecordingPayment ? "Saving..." : "Record Payment"}
+                  {isRecordingPayment ? t("vendorDashboard.actions.saving") : t("vendorDashboard.ledger.recordPayment")}
                 </Button>
               </div>
 
