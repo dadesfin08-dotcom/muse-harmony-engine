@@ -31,6 +31,7 @@ import {
   ArrowRight,
   Flame,
   Clock3,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -2348,21 +2349,30 @@ function Index() {
                 </div>
               </div>
 
-              <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white">
-                <Clock3 className="size-3" />
-                <span>{countdownLabel}</span>
+              <div className="inline-flex items-center gap-2">
+                <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white">
+                  <Clock3 className="size-3" />
+                  <span>{countdownLabel}</span>
+                </div>
+                <Link
+                  to="/customer/flash-deals"
+                  className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
+                >
+                  <span>{t("view_all", "عرض الكل")}</span>
+                  <ChevronLeft className="h-3 w-3 rtl:rotate-180" />
+                </Link>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="flex flex-row overflow-x-auto gap-3 pb-4 pt-1 scrollbar-hide snap-x snap-mandatory">
             {flashDeals.slice(0, 4).map((product) => {
               const cartQty = getCartQuantity(product.id);
 
               return (
                 <article
                   key={`flash-grid-${product.id}`}
-                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_8px_24px_-18px_rgba(15,23,42,0.35)]"
+                  className="w-[160px] sm:w-[180px] flex-shrink-0 snap-start h-full flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_8px_24px_-18px_rgba(15,23,42,0.35)]"
                 >
                   <Link
                     to="/customer/product/$id"
