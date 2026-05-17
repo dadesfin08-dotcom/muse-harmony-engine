@@ -266,12 +266,8 @@ export function CustomerLayout({
       <nav
         className="fixed bottom-0 w-full grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden"
         style={{
-          backgroundColor: "rgba(255, 255, 255, 0.92)",
+          background: "radial-gradient(circle at 50% 0%, transparent 36px, rgba(255, 255, 255, 0.95) 37px)",
           backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          borderTop: "1px solid rgba(148, 163, 184, 0.25)",
-          WebkitMaskImage: "radial-gradient(circle at 50% 0%, transparent 36px, #000 37px)",
-          maskImage: "radial-gradient(circle at 50% 0%, transparent 36px, #000 37px)",
         }}
       >
           <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
@@ -294,15 +290,15 @@ export function CustomerLayout({
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="text-center relative -top-7">
+          <div className="flex items-center justify-center w-full h-full">
             <LanguageSwitcher
               trigger={
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="flex items-center justify-center w-14 h-14 mx-auto bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
+                  className="relative -top-5 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
                 >
-                  <Languages className="w-6 h-6 text-white flex-shrink-0" strokeWidth={2.25} />
+                  <Languages className="size-6" />
                 </button>
               }
             />
