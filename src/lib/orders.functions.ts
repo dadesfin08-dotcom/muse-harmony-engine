@@ -96,6 +96,7 @@ const vendorSettlementSummaryInputSchema = z.object({
 const vendorOrderDetailsInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
   orderId: z.string().uuid(),
+  locale: z.enum(["ar", "fr", "en"]).optional(),
 });
 
 const customerOrderDetailsInputSchema = z.object({
@@ -237,6 +238,7 @@ export type VendorOrderDetails = {
   grandTotalMad: number;
   items: Array<{
     productName: string;
+    selectedVariant?: string | null;
     quantity: number;
     unitPriceMad: number;
     lineTotalMad: number;
