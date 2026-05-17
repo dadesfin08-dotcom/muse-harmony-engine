@@ -6,12 +6,7 @@ import {
   getPushClientConfig,
   registerPushSubscription,
 } from "@/lib/push-notifications.functions";
-import {
-  ensurePushPermission,
-  isPushSupported,
-  urlBase64ToUint8Array,
-  type PushRole,
-} from "@/lib/push-notifications";
+import { isPushSupported, urlBase64ToUint8Array, type PushRole } from "@/lib/push-notifications";
 
 type UsePushNotificationsOptions = {
   enabled: boolean;
@@ -39,8 +34,7 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
         const config = await fetchPushConfig();
         if (!config.enabled || !config.vapidPublicKey) return;
 
-        const permission = await ensurePushPermission();
-        if (permission !== "granted") return;
+        if (Notification.permission !== "granted") return;
 
         const registration = await navigator.serviceWorker.register(config.serviceWorkerPath);
         const existing = await registration.pushManager.getSubscription();
