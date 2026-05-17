@@ -93,6 +93,7 @@ import {
   type ThermalInvoiceSettings,
   type ThermalReceiptOrder,
 } from "@/components/ThermalReceipt";
+import { useAppLanguage } from "@/hooks/use-localization";
 
 type MainView = "orders" | "history" | "inventory" | "flashSales" | "carnet";
 type OrderQueueTab = "pending" | "preparing" | "ready" | "inDelivery";
@@ -263,6 +264,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
 
 function VendorDashboardPage() {
   const { t, i18n } = useTranslation();
+  const { language: activeLanguage, intlLocale } = useAppLanguage();
   const navigate = useNavigate({ from: "/vendor/dashboard" });
   const search = Route.useSearch();
   const queryClient = useQueryClient();
@@ -399,13 +401,7 @@ function VendorDashboardPage() {
     });
   };
 
-  const activeLanguage = (i18n.resolvedLanguage || i18n.language || "en") === "ar"
-    ? "ar"
-    : (i18n.resolvedLanguage || i18n.language || "en") === "fr"
-      ? "fr"
-      : "en";
   const dateFnsLocale = activeLanguage === "ar" ? arSA : activeLanguage === "fr" ? fr : enUS;
-  const intlLocale = activeLanguage === "ar" ? "ar-MA" : activeLanguage === "fr" ? "fr-FR" : "en-US";
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
