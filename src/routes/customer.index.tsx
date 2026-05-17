@@ -920,6 +920,7 @@ function Index() {
   }, [catalogQuery.data, getLocalizedText]);
 
   const displayedProducts = localizedProducts;
+  const teaserProducts = displayedProducts.slice(0, 4);
   const hasMoreProducts = !!catalogQuery.hasNextPage;
 
   const flashDeals = useMemo(() => {
@@ -2108,7 +2109,7 @@ function Index() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {displayedProducts.map((product) => (
+            {teaserProducts.map((product) => (
               <article
                 key={product.id}
                 className="signature-tilt group relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-1 shadow-sm"
@@ -2207,20 +2208,18 @@ function Index() {
             ))}
           </div>
 
-          {displayedProducts.length > 0 && hasMoreProducts ? (
-            <div className="mt-5 flex justify-center">
-              <Button
-                variant="outline"
-                className="rounded-xl px-6"
-                onClick={() => catalogQuery.fetchNextPage()}
-                disabled={catalogQuery.isFetchingNextPage}
+          {teaserProducts.length > 0 ? (
+            <div className="px-4 pb-6 pt-2">
+              <Link
+                to="/customer/all-products"
+                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100"
               >
-                {catalogQuery.isFetchingNextPage ? "..." : t("products.loadMore")}
-              </Button>
+                {t("home.view_all_products")}
+              </Link>
             </div>
           ) : null}
 
-          {displayedProducts.length === 0 ? (
+          {teaserProducts.length === 0 ? (
             <AppEmptyState
               title={t("products.empty")}
               subtitle="Try changing category or search terms."
