@@ -522,6 +522,108 @@ type BrandEngineAnalytics = {
   threshold: number;
 };
 
+const MOCK_BRAND_DATA: Array<{
+  id: string;
+  brand_name: string;
+  current_score: number;
+  active_days: number;
+  trend_status: "Rising" | "Stable" | "Falling";
+  time_decay: "Low" | "Medium" | "High";
+  trending_velocity: number;
+  search_volume: number;
+}> = [
+  {
+    id: "mock-brand-atlas",
+    brand_name: "Atlas Fresh",
+    current_score: 154,
+    active_days: 12,
+    trend_status: "Rising",
+    time_decay: "Low",
+    trending_velocity: 24.8,
+    search_volume: 182,
+  },
+  {
+    id: "mock-brand-casablanca",
+    brand_name: "Casablanca Market",
+    current_score: 131,
+    active_days: 8,
+    trend_status: "Stable",
+    time_decay: "Medium",
+    trending_velocity: 11.2,
+    search_volume: 149,
+  },
+  {
+    id: "mock-brand-sahara",
+    brand_name: "Sahara Select",
+    current_score: 96,
+    active_days: 4,
+    trend_status: "Falling",
+    time_decay: "High",
+    trending_velocity: -6.5,
+    search_volume: 91,
+  },
+];
+
+const buildMockBrandEngineAnalytics = (): BrandEngineAnalytics => {
+  const now = Date.now();
+  const rows: BrandEngineRow[] = MOCK_BRAND_DATA.map((brand, index) => {
+    const activeUntil = new Date(now + brand.active_days * 24 * 60 * 60 * 1000).toISOString();
+    const isTrending = brand.current_score >= 120 && brand.trend_status !== "Falling";
+    const orders24h = Math.max(0, Math.round(brand.current_score / 10) + 2 - index);
+    const cart24h = Math.max(0, Math.round(orders24h * 1.6));
+    const search24h = Math.max(0, Math.round(brand.search_volume));
+    const views24h = Math.max(0, Math.round(search24h * 3.1));
+
+    return {
+      id: brand.id,
+      name: brand.brand_name,
+      logoUrl: null,
+      createdAt: new Date(now - (20 - index) * 24 * 60 * 60 * 1000).toISOString(),
+      score: brand.current_score,
+      activeUntil,
+      activeDays: brand.active_days,
+      isTrending,
+      isBlacklisted: false,
+      manualBoostUntil: null,
+      trendingVelocity: brand.trending_velocity,
+      orders24h,
+      cart24h,
+      search24h,
+      views24h,
+      suspiciousClicks24h: Math.max(0, Math.round(views24h * 0.02)),
+      orderVelocityRatio24h: orders24h > 0 ? Number((brand.trending_velocity / orders24h).toFixed(2)) : 0,
+    };
+  });
+
+  const threshold = 120;
+  const activeTrendingBrands = rows.filter((row) => row.score >= threshold && !row.isBlacklisted).length;
+  const conversionVelocity = rows.length
+    ? rows.reduce((sum, row) => sum + row.trendingVelocity, 0) / rows.length
+    : 0;
+  const expiringSoon = rows.filter((row) => {
+    const msRemaining = new Date(row.activeUntil).getTime() - now;
+    return msRemaining > 0 && msRemaining <= 6 * 60 * 60 * 1000;
+  }).length;
+  const discoveryRate = rows.length ? (rows.filter((row) => !row.isTrending).length / rows.length) * 100 : 0;
+
+  return {
+    kpis: {
+      activeTrendingBrands,
+      conversionVelocity,
+      expiringSoon,
+      discoveryRate,
+    },
+    chartData: rows.map((row) => ({
+      brand: row.name,
+      orderVelocity: Number(row.trendingVelocity.toFixed(1)),
+      searchVolume: row.search24h,
+    })),
+    tableRows: rows,
+    generatedAt: new Date(now).toISOString(),
+    threshold,
+  };
+};
+
 type PlatformPacksAnalytics = {
   generatedAt: string;
   kpis: {
