@@ -2189,7 +2189,7 @@ function LiveOrdersView({
   activeTab: OrderQueueTab;
   onTabChange: (tab: OrderQueueTab) => void;
   queue: {
-    new: DashboardOrder[];
+    pending: DashboardOrder[];
     preparing: DashboardOrder[];
     ready: DashboardOrder[];
     inDelivery: DashboardOrder[];
@@ -2216,14 +2216,14 @@ function LiveOrdersView({
       <Tabs
         value={activeTab}
         onValueChange={(v) =>
-          v === "new" || v === "preparing" || v === "ready" || v === "inDelivery"
+          v === "pending" || v === "preparing" || v === "ready" || v === "inDelivery"
             ? onTabChange(v)
             : undefined
         }
       >
         <TabsList className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-xl">
-          <TabsTrigger value="new" className="rounded-lg">
-            New ({queue.new.length})
+          <TabsTrigger value="pending" className="rounded-lg">
+            Pending ({queue.pending.length})
           </TabsTrigger>
           <TabsTrigger value="preparing" className="rounded-lg">
             Preparing ({queue.preparing.length})
@@ -2236,19 +2236,19 @@ function LiveOrdersView({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="new" className="mt-4">
+        <TabsContent value="pending" className="mt-4">
           {isLoading ? (
             <EmptyState label="Loading live orders..." />
-          ) : queue.new.length === 0 ? (
-            <EmptyState label="No new orders right now." />
+          ) : queue.pending.length === 0 ? (
+            <EmptyState label="No pending orders right now." />
           ) : (
             <div className="max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {queue.new.map((order) => (
+                {queue.pending.map((order) => (
                   <OrderCard
                     key={order.id}
                     order={order}
-                    tab="new"
+                    tab="pending"
                     isUpdating={isUpdating === order.id}
                     onOpenDetails={() => onOpenOrder(order.id)}
                     onAccept={() => onAcceptOrder(order.id)}
