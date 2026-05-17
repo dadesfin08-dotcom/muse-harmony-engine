@@ -81,10 +81,9 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        premiumGrid
-          ? "flex flex-col h-full bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-          : "flex h-full min-h-[320px] flex-col overflow-hidden border border-gray-100 bg-white shadow-sm",
-        isFlashDeal ? "rounded-3xl pb-1" : premiumGrid ? "" : "rounded-xl",
+        "flex flex-col h-full bg-white rounded-2xl overflow-hidden border-transparent ring-1 ring-black/5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08)]",
+        premiumGrid ? "" : "min-h-[320px]",
+        isFlashDeal ? "pb-1" : "",
       )}
     >
       <Link
@@ -96,7 +95,8 @@ export function ProductCard({
         <div
           className={cn(
             "relative w-full aspect-square overflow-hidden",
-            premiumGrid ? "bg-slate-50" : isFlashDeal ? "rounded-t-2xl" : "rounded-2xl bg-gray-50",
+            "bg-slate-50",
+            premiumGrid ? "" : isFlashDeal ? "rounded-t-2xl" : "rounded-2xl",
           )}
         >
           <img
@@ -108,6 +108,7 @@ export function ProductCard({
             )}
             loading="lazy"
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white/70 to-transparent" />
           {isFlashDeal ? (
             <button
               type="button"
@@ -131,11 +132,7 @@ export function ProductCard({
             <select
               value={resolvedVariant ?? ""}
               onChange={(event) => setVariantValue(event.target.value)}
-              className={cn(
-                premiumGrid
-                  ? "appearance-none w-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-full px-3 py-1.5 pr-8 cursor-pointer outline-none transition-colors"
-                  : "appearance-none w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-emerald-500",
-              )}
+              className="appearance-none w-full bg-slate-50/80 backdrop-blur-sm border-0 ring-1 ring-slate-900/5 text-slate-700 text-xs font-semibold rounded-xl px-3 py-1.5 pr-8 cursor-pointer outline-none hover:bg-slate-100 transition-colors"
               aria-label={`Select variant for ${name}`}
             >
               {normalizedVariants.map((variant) => (
@@ -149,14 +146,7 @@ export function ProductCard({
         ) : null}
 
         <div className="flex justify-between items-center w-full mb-1">
-          <span
-            className={cn(
-              "inline-block rounded-sm px-1.5 py-0.5 text-[10px] font-medium",
-              premiumGrid
-                ? "bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wide"
-                : "bg-gray-50 text-gray-400",
-            )}
-          >
+          <span className="inline-block bg-emerald-500/10 text-emerald-700 font-extrabold px-2.5 py-1 rounded-md text-[10px] tracking-widest uppercase border border-emerald-500/10">
             {brand || "—"}
           </span>
 
@@ -234,8 +224,8 @@ export function ProductCard({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
-                  isFlashDeal ? "bg-red-600 hover:bg-red-700" : "bg-[#2A7543] hover:bg-green-800",
+                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-white font-bold rounded-xl px-4 py-2 shadow-lg active:scale-95 transition-all duration-200",
+                  isFlashDeal ? "bg-red-600 shadow-red-600/30 hover:bg-red-700" : "bg-emerald-600 shadow-emerald-600/30 hover:bg-emerald-700",
                 )}
                 onClick={() => onAdd(resolvedVariant)}
               >
