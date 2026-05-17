@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Minus, Package, Plus, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -75,15 +75,32 @@ export function ProductCard({
   const resolvedVariant = normalizedVariants.length > 0 ? variantValue || normalizedVariants[0] : null;
 
   return (
-    <article className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-      <Link to="/customer/product/$id" params={{ id }} className="block px-3 pt-3">
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gray-50">
+    <article
+      className={cn(
+        "flex h-full min-h-[320px] flex-col overflow-hidden border border-gray-100 bg-white shadow-sm",
+        isFlashDeal ? "rounded-3xl pb-1" : "rounded-xl",
+      )}
+    >
+      <Link to="/customer/product/$id" params={{ id }} className={cn("block", isFlashDeal ? "" : "px-3 pt-3")}>
+        <div className={cn("relative aspect-square w-full overflow-hidden", isFlashDeal ? "rounded-t-2xl" : "rounded-2xl bg-gray-50")}>
           <img
             src={imageUrl || fallbackProductImage}
             alt={name}
-            className="h-full w-full object-contain object-center p-2.5"
+            className={cn(
+              "h-full w-full",
+              isFlashDeal ? "object-cover object-center" : "object-contain object-center p-2.5",
+            )}
             loading="lazy"
           />
+          {isFlashDeal ? (
+            <button
+              type="button"
+              aria-label="Wishlist"
+              className="absolute right-2 top-2 inline-flex size-9 items-center justify-center rounded-full bg-white shadow-sm"
+            >
+              <Heart className="size-4 text-teal-700" />
+            </button>
+          ) : null}
           {isFlashDeal && discountPercent > 0 ? (
             <span className="absolute left-2 top-2 inline-flex rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
               -{discountPercent}%
@@ -92,7 +109,7 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col space-y-1.5 p-3 pt-2">
+      <div className={cn("flex flex-1 flex-col space-y-1.5", isFlashDeal ? "h-full p-4" : "p-3 pt-2")}>
         {normalizedVariants.length > 0 ? (
           <select
             value={resolvedVariant ?? ""}
