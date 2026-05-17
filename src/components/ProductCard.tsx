@@ -143,15 +143,17 @@ export function ProductCard({
           </h2>
         </Link>
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1">
-          <div className={cn("flex items-center gap-1.5", isFlashDeal && "flex flex-wrap")}>
-            <p className={cn("text-xl font-extrabold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
-              {Number(price ?? 0)}{" "}
-              <span className={cn("text-xs font-medium", isFlashDeal && "text-gray-800")}>MAD</span>
-            </p>
+        <div className="mt-auto flex w-full flex-row items-end justify-between gap-2 pt-1">
+          <div className="flex min-w-0 flex-col items-start justify-end">
+            <div className="flex items-baseline gap-1">
+              <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
+                {Number(price ?? 0).toFixed(2)}
+              </span>
+              <span className={cn("text-sm font-medium", isFlashDeal && "text-gray-800")}>MAD</span>
+            </div>
 
             {isFlashDeal && oldPrice != null ? (
-              <span className="text-xs text-gray-400 line-through">{Number(oldPrice)} MAD</span>
+              <span className="text-xs text-gray-400 line-through">{Number(oldPrice).toFixed(2)} MAD</span>
             ) : null}
 
             {isFlashDeal && discountPercent > 0 ? (
@@ -164,7 +166,7 @@ export function ProductCard({
           {cartQuantity > 0 ? (
             <div
               className={cn(
-                "flex items-center gap-1 rounded-full px-1.5 py-1",
+                "flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1",
                 isFlashDeal ? "border border-red-200" : "border border-gray-200",
               )}
             >
@@ -196,7 +198,7 @@ export function ProductCard({
             <button
               type="button"
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white transition-colors",
                 isFlashDeal ? "bg-red-600 hover:bg-red-700" : "bg-[#2A7543] hover:bg-green-800",
               )}
               onClick={() => onAdd(resolvedVariant)}
