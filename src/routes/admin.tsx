@@ -3965,7 +3965,7 @@ function AdminPage() {
     <SidebarProvider>
       <div dir={isRtl ? "rtl" : "ltr"} className={cn("flex min-h-screen w-full bg-muted/20", isRtl && "flex-row-reverse") }>
         <AdminSidebar activeTab={tab} isRtl={isRtl} />
-        <SidebarInset className="bg-transparent">
+        <SidebarInset className="min-w-0 bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
             <div className={cn(isRtl && "text-right") }>
