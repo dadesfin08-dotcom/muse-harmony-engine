@@ -3241,7 +3241,7 @@ function OrderCard({
         isInDeliveryTab
           ? "rounded-2xl border border-[#e5e7eb] border-l-4 border-l-[#16a34a] bg-white p-5 shadow-sm"
           : isPreparingTab
-            ? "rounded-2xl border border-[#e5e7eb] border-t-[3px] border-t-[#f59e0b] bg-card p-4 shadow-sm"
+            ? "rounded-2xl border-[0.5px] border-[#e5e7eb] border-t-[3px] border-t-[#f59e0b] bg-white p-4 shadow-sm"
             : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
@@ -3327,7 +3327,7 @@ function OrderCard({
                     </p>
                   </div>
 
-                  <div className="border-t border-dashed border-[#e5e7eb]" />
+                  <div className="border-t-[0.5px] border-dashed border-[#e5e7eb]" />
                 </>
               ) : (
                 <>
