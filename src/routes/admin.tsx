@@ -79,6 +79,7 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { useAppLanguage } from "@/hooks/use-localization";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -285,10 +286,10 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
 ];
 
 const platformPacksNavItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ className?: string }> }> = [
-  { label: "Create Packs", tab: "platform-packs-create", icon: Package },
-  { label: "Pack Orders", tab: "platform-packs-orders", icon: PackageCheck },
-  { label: "Subscribers", tab: "platform-packs-subscribers", icon: Users },
-  { label: "Pack Analytics", tab: "platform-packs-analytics", icon: TrendingUp },
+  { label: "admin.nav.createPacks", tab: "platform-packs-create", icon: Package },
+  { label: "admin.nav.packOrders", tab: "platform-packs-orders", icon: PackageCheck },
+  { label: "admin.nav.subscribers", tab: "platform-packs-subscribers", icon: Users },
+  { label: "admin.nav.packAnalytics", tab: "platform-packs-analytics", icon: TrendingUp },
 ];
 
 const initialVendors: AdminVendorRecord[] = [];
@@ -5339,19 +5340,19 @@ function AdminSidebar({ activeTab }: { activeTab: AdminTab }) {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>{collapsed ? "" : "Platform Packs"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{collapsed ? "" : t("admin.sidebar.platformPacks")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {platformPacksNavItems.map((item) => (
                 <SidebarMenuItem key={item.tab}>
-                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={item.label}>
+                  <SidebarMenuButton asChild isActive={activeTab === item.tab} tooltip={t(item.label)}>
                     <Link
                       to="/admin"
                       search={{ tab: item.tab }}
                       className="flex items-center gap-2 rounded-md hover:bg-sidebar-accent/70"
                     >
                       <item.icon className="size-4" />
-                      {!collapsed ? <span>{item.label}</span> : null}
+                      {!collapsed ? <span>{t(item.label)}</span> : null}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -5373,8 +5374,30 @@ function OverviewSection({
   isLoading: boolean;
   error: Error | null;
 }) {
-  const formatNumber = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-  const formatMad = (value: number) => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)} MAD`;
+  const { t } = useTranslation();
+  const { intlLocale } = useAppLanguage();
+  const formatNumber = (value: number) => new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(value);
+  const formatMad = (value: number) => `${new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(value)} MAD`;
+  const localizedSalesOrdersChartConfig = {
+    orders: {
+      label: t("admin.overview.chart.orders"),
+      color: "oklch(0.58 0.18 275)",
+    },
+    revenue: {
+      label: t("admin.overview.chart.revenue"),
+      color: "oklch(0.66 0.15 160)",
+    },
+  } satisfies ChartConfig;
+  const localizedZonePerformanceChartConfig = {
+    topOrders: {
+      label: t("admin.overview.chart.topZones"),
+      color: "oklch(0.67 0.14 160)",
+    },
+    bottomOrders: {
+      label: t("admin.overview.chart.bottomZones"),
+      color: "oklch(0.73 0.15 72)",
+    },
+  } satisfies ChartConfig;
   const formatDelta = (value: number, format: "integer" | "currency") => {
     const abs = Math.abs(value);
     return format === "currency" ? `${formatMad(abs)}` : formatNumber(abs);
@@ -5383,7 +5406,7 @@ function OverviewSection({
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load dashboard analytics.
+        {t("admin.overview.loadFailed")}
       </section>
     );
   }
@@ -5395,19 +5418,19 @@ function OverviewSection({
     icon: ComponentType<{ className?: string }>;
     tone: "indigo" | "emerald" | "violet" | "amber";
   }> = [
-    { label: "Total Orders", metric: analytics?.kpis.totalOrders ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: PackageCheck, tone: "indigo" },
-    { label: "Active Vendors", metric: analytics?.kpis.activeVendors ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: Store, tone: "emerald" },
+    { label: t("admin.overview.cards.totalOrders"), metric: analytics?.kpis.totalOrders ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: PackageCheck, tone: "indigo" },
+    { label: t("admin.overview.cards.activeVendors"), metric: analytics?.kpis.activeVendors ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: Store, tone: "emerald" },
     {
-      label: "Total Gross Volume",
+      label: t("admin.overview.cards.totalGrossVolume"),
       metric: analytics?.kpis.totalGrossVolume ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" },
       icon: Wallet,
       tone: "violet",
     },
-    { label: "Vendors Revenue", metric: analytics?.kpis.vendorsRevenue ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: CircleDollarSign, tone: "emerald" },
-    { label: "Cyclists Earnings", metric: analytics?.kpis.cyclistsEarnings ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: BikeIcon, tone: "amber" },
+    { label: t("admin.overview.cards.vendorsRevenue"), metric: analytics?.kpis.vendorsRevenue ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: CircleDollarSign, tone: "emerald" },
+    { label: t("admin.overview.cards.cyclistsEarnings"), metric: analytics?.kpis.cyclistsEarnings ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: BikeIcon, tone: "amber" },
     {
-      label: "Platform Profit",
-      subtitle: "Pending Collection / متاح للسحب",
+      label: t("admin.overview.cards.platformProfit"),
+      subtitle: t("admin.overview.cards.platformProfitSubtitle"),
       metric: analytics?.kpis.platformProfit ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" },
       icon: Landmark,
       tone: "indigo",
@@ -5470,7 +5493,7 @@ function OverviewSection({
               <span className={metric.metric.change >= 0 ? "text-success" : "text-accent-foreground"}>
                 {formatDelta(metric.metric.change, metric.metric.format)} ({Math.abs(metric.metric.changePercentage).toFixed(1)}%)
               </span>
-              <span className="text-muted-foreground">vs yesterday</span>
+              <span className="text-muted-foreground">{t("admin.overview.vsYesterday")}</span>
             </div>
           </article>
         ))}
@@ -5479,18 +5502,18 @@ function OverviewSection({
       <section className="grid gap-5 xl:grid-cols-[2fr_1fr]">
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Sales & Orders Trends</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.salesOrdersTrends")}</h2>
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
               <TrendingUp className="size-3.5" />
-              Last 7 days
+              {t("admin.overview.last7Days")}
             </span>
           </div>
           {isLoading ? (
             <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-              Loading trends...
+              {t("admin.overview.loadingTrends")}
             </div>
           ) : (
-            <ChartContainer config={salesOrdersChartConfig} className="h-72 w-full">
+            <ChartContainer config={localizedSalesOrdersChartConfig} className="h-72 w-full">
               <AreaChart data={analytics?.salesOrdersTrends ?? []} margin={{ left: 4, right: 4, top: 6, bottom: 6 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -5506,7 +5529,7 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Delivery Speed by Zone</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.deliverySpeedByZone")}</h2>
             <Gauge className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-2">
@@ -5514,7 +5537,7 @@ function OverviewSection({
               <div key={zone.zone} className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{zone.zone}</p>
-                  <p className="text-xs text-muted-foreground">{zone.deliveries} deliveries</p>
+                  <p className="text-xs text-muted-foreground">{t("admin.overview.deliveriesCount", { count: zone.deliveries })}</p>
                 </div>
                 <span
                   className={cn(
@@ -5524,13 +5547,13 @@ function OverviewSection({
                     zone.performance === "normal" && "bg-muted text-muted-foreground",
                   )}
                 >
-                  {zone.avgMinutes.toFixed(0)} min
+                  {t("admin.overview.minutes", { value: zone.avgMinutes.toFixed(0) })}
                 </span>
               </div>
             ))}
             {!isLoading && (analytics?.deliverySpeedMetrics ?? []).length === 0 ? (
               <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-                Not enough completed deliveries yet.
+                {t("admin.overview.notEnoughDeliveries")}
               </p>
             ) : null}
           </div>
@@ -5540,10 +5563,10 @@ function OverviewSection({
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr_1fr]">
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Zone Performance</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.zonePerformance")}</h2>
             <Building2 className="size-4 text-muted-foreground" />
           </div>
-          <ChartContainer config={zonePerformanceChartConfig} className="h-72 w-full">
+          <ChartContainer config={localizedZonePerformanceChartConfig} className="h-72 w-full">
             <BarChart data={zoneChartData} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="zone" tickLine={false} axisLine={false} />
@@ -5557,7 +5580,7 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Top Neighborhoods</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.topNeighborhoods")}</h2>
             <MapPin className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-2">
@@ -5567,7 +5590,7 @@ function OverviewSection({
                   <p className="text-sm font-semibold text-foreground">{item.neighborhood}</p>
                   <p className="text-xs text-muted-foreground">{item.zone}</p>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">{item.orders} orders</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("admin.overview.ordersCount", { count: item.orders })}</span>
               </div>
             ))}
           </div>
@@ -5575,14 +5598,14 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Top Brands & Categories</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.topBrandsCategories")}</h2>
             <Trophy className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-3">
             <div>
               <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <Clock3 className="size-3.5" />
-                Brands
+                {t("admin.overview.brands")}
               </p>
               <div className="space-y-2">
                 {(analytics?.marketInsights.topBrands ?? []).slice(0, 3).map((item) => (
@@ -5596,13 +5619,13 @@ function OverviewSection({
             <div>
               <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <TrendingDown className="size-3.5" />
-                Categories
+                {t("admin.overview.categories")}
               </p>
               <div className="space-y-2">
                 {(analytics?.marketInsights.topCategories ?? []).slice(0, 3).map((item) => (
                   <div key={item.name} className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
                     <span className="text-sm font-medium text-foreground">{item.name}</span>
-                    <span className="text-xs text-muted-foreground">{item.orders} orders</span>
+                    <span className="text-xs text-muted-foreground">{t("admin.overview.ordersCount", { count: item.orders })}</span>
                   </div>
                 ))}
               </div>
@@ -5643,13 +5666,25 @@ function AIBrandEngineSection({
   onResetScore: (brandId: string) => void;
   onSeedDemoData: () => void;
 }) {
-  const formatScore = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
+  const { t } = useTranslation();
+  const { intlLocale } = useAppLanguage();
+  const formatScore = (value: number) => new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 1 }).format(value);
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const localizedBrandEngineChartConfig = {
+    orderVelocity: {
+      label: t("admin.aiBrandEngine.chart.orderVelocity"),
+      color: "var(--color-chart-1)",
+    },
+    searchVolume: {
+      label: t("admin.aiBrandEngine.chart.searchVolume"),
+      color: "var(--color-chart-4)",
+    },
+  } satisfies ChartConfig;
 
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load AI Brand Engine analytics.
+        {t("admin.aiBrandEngine.loadFailed")}
       </section>
     );
   }
@@ -5677,28 +5712,28 @@ function AIBrandEngineSection({
     formatter?: (value: number) => string;
   }> = [
     {
-      title: "Active Trending Brands",
+      title: t("admin.aiBrandEngine.kpis.activeTrendingBrands"),
       value: derivedKpis.activeTrendingBrands,
-      sub: `Score > ${analytics?.threshold ?? 0}`,
+      sub: t("admin.aiBrandEngine.kpis.activeTrendingBrandsSub", { threshold: analytics?.threshold ?? 0 }),
       icon: TrendingUp,
     },
     {
-      title: "Conversion Velocity",
+      title: t("admin.aiBrandEngine.kpis.conversionVelocity"),
       value: derivedKpis.conversionVelocity,
-      sub: "Average growth of top brands",
+      sub: t("admin.aiBrandEngine.kpis.conversionVelocitySub"),
       icon: Zap,
       formatter: (value: number) => formatPercent(value),
     },
     {
-      title: "Expiring Soon",
+      title: t("admin.aiBrandEngine.kpis.expiringSoon"),
       value: derivedKpis.expiringSoon,
-      sub: "Boost ending in < 6h",
+      sub: t("admin.aiBrandEngine.kpis.expiringSoonSub"),
       icon: AlertCircle,
     },
     {
-      title: "Discovery Rate",
+      title: t("admin.aiBrandEngine.kpis.discoveryRate"),
       value: derivedKpis.discoveryRate,
-      sub: "Share of orders from discovery pool",
+      sub: t("admin.aiBrandEngine.kpis.discoveryRateSub"),
       icon: Sparkles,
       formatter: (value: number) => formatPercent(value),
     },
@@ -5708,15 +5743,19 @@ function AIBrandEngineSection({
     <div className="space-y-5">
       <section className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/90 px-4 py-3 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">Live Refresh</p>
-          <p className="text-xs text-muted-foreground">تحديث دوري لبطاقات العدّادات والمخطط والجدول بدون وميض</p>
+          <p className="text-sm font-semibold text-foreground">{t("admin.aiBrandEngine.liveRefresh")}</p>
+          <p className="text-xs text-muted-foreground">{t("admin.aiBrandEngine.liveRefreshHint")}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" className="h-9 rounded-md" onClick={onSeedDemoData}>
-            Seed Demo Data
+            {t("admin.aiBrandEngine.seedDemoData")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            {liveRefreshEnabled ? (isFetching ? "Syncing..." : "On") : "Off"}
+            {liveRefreshEnabled
+              ? isFetching
+                ? t("admin.aiBrandEngine.syncing")
+                : t("admin.aiBrandEngine.on")
+              : t("admin.aiBrandEngine.off")}
           </span>
           <Switch checked={liveRefreshEnabled} onCheckedChange={onToggleLiveRefresh} />
         </div>
@@ -5748,19 +5787,19 @@ function AIBrandEngineSection({
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Top Brands Momentum</h2>
-              <p className="text-xs text-muted-foreground">Live score velocity and search demand</p>
+              <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.topBrandsMomentum")}</h2>
+              <p className="text-xs text-muted-foreground">{t("admin.aiBrandEngine.topBrandsMomentumHint")}</p>
             </div>
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-              Updated {generatedLabel}
+              {t("admin.aiBrandEngine.updatedAt", { time: generatedLabel })}
             </span>
           </div>
           {isLoading ? (
             <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-              Loading trend signal...
+              {t("admin.aiBrandEngine.loadingTrendSignal")}
             </div>
           ) : (
-            <ChartContainer config={brandEngineChartConfig} className="h-72 w-full">
+            <ChartContainer config={localizedBrandEngineChartConfig} className="h-72 w-full">
               <LineChart data={analytics?.chartData ?? []} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="brand" tickLine={false} axisLine={false} />
@@ -5792,13 +5831,13 @@ function AIBrandEngineSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Rotation Settings</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.rotationSettings")}</h2>
             <Sparkles className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-4">
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Trending Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.trendingPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.trending}%</span>
               </div>
               <Slider
@@ -5811,7 +5850,7 @@ function AIBrandEngineSection({
             </div>
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Mid-Tier Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.midTierPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.midTier}%</span>
               </div>
               <Slider
@@ -5824,7 +5863,7 @@ function AIBrandEngineSection({
             </div>
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Discovery Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.discoveryPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.discovery}%</span>
               </div>
               <Slider
@@ -5836,7 +5875,9 @@ function AIBrandEngineSection({
               />
             </div>
             <div className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground">
-              Total allocation: {rotationRatios.trending + rotationRatios.midTier + rotationRatios.discovery}%
+              {t("admin.aiBrandEngine.totalAllocation", {
+                value: rotationRatios.trending + rotationRatios.midTier + rotationRatios.discovery,
+              })}
             </div>
           </div>
         </article>
@@ -5844,35 +5885,35 @@ function AIBrandEngineSection({
 
       <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Brand Performance</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.brandPerformance")}</h2>
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
             <CalendarDays className="size-3.5" />
-            Time decay tracking
+            {t("admin.aiBrandEngine.timeDecayTracking")}
           </span>
         </div>
         <div className="overflow-x-auto rounded-xl border border-border/70">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Brand</TableHead>
-                <TableHead>Current Score</TableHead>
-                <TableHead>Active Days</TableHead>
-                <TableHead>Trend Status</TableHead>
-                <TableHead className="min-w-[220px]">Time Decay</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.brand")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.currentScore")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.activeDays")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.trendStatus")}</TableHead>
+                <TableHead className="min-w-[220px]">{t("admin.aiBrandEngine.table.timeDecay")}</TableHead>
+                <TableHead className="text-right">{t("admin.aiBrandEngine.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    Loading brand ranking...
+                    {t("admin.aiBrandEngine.table.loading")}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    No brand score data available yet.
+                    {t("admin.aiBrandEngine.table.empty")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -5912,18 +5953,28 @@ function AIBrandEngineSection({
                             trendTone === "red" && "bg-destructive/15 text-destructive",
                           )}
                         >
-                          {trendTone === "green" ? "Healthy" : trendTone === "yellow" ? "Watch" : "Critical"}
+                          {trendTone === "green"
+                            ? t("admin.aiBrandEngine.status.healthy")
+                            : trendTone === "yellow"
+                              ? t("admin.aiBrandEngine.status.watch")
+                              : t("admin.aiBrandEngine.status.critical")}
                         </span>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Decay pressure</span>
+                            <span>{t("admin.aiBrandEngine.table.decayPressure")}</span>
                             <span>{decayPressure.toFixed(0)}%</span>
                           </div>
                           <Progress value={decayPressure} className="h-2" />
                           <p className="text-xs text-muted-foreground">
-                            {row.trendingVelocity < 0 ? `Dropping ${Math.abs(row.trendingVelocity).toFixed(1)} pts/day` : `+${row.trendingVelocity.toFixed(1)} pts/day`}
+                            {row.trendingVelocity < 0
+                              ? t("admin.aiBrandEngine.table.droppingPerDay", {
+                                  value: Math.abs(row.trendingVelocity).toFixed(1),
+                                })
+                              : t("admin.aiBrandEngine.table.risingPerDay", {
+                                  value: row.trendingVelocity.toFixed(1),
+                                })}
                           </p>
                         </div>
                       </TableCell>
@@ -5937,7 +5988,7 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <Zap className="size-3.5" />
-                            Manual Boost
+                            {t("admin.aiBrandEngine.actions.manualBoost")}
                           </Button>
                           <Button
                             variant="outline"
@@ -5947,7 +5998,9 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <Ban className="size-3.5" />
-                            {row.isBlacklisted ? "Unblacklist" : "Blacklist"}
+                            {row.isBlacklisted
+                              ? t("admin.aiBrandEngine.actions.unblacklist")
+                              : t("admin.aiBrandEngine.actions.blacklist")}
                           </Button>
                           <Button
                             variant="outline"
@@ -5957,7 +6010,7 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <AlertCircle className="size-3.5" />
-                            Reset
+                            {t("admin.aiBrandEngine.actions.reset")}
                           </Button>
                         </div>
                       </TableCell>
