@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1439,7 +1440,7 @@ function VendorDashboardPage() {
       });
     } catch (error) {
       console.error("Failed to save flash sale:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to save flash sale.";
+      const errorMessage = error instanceof Error ? error.message : t("vendorDashboard.toasts.flashSaleSaveFailed");
       toast.error(errorMessage, { id: `flash-save-${item.id}` });
       await inventoryQuery.refetch();
     } finally {
@@ -2649,20 +2650,21 @@ function CarnetView({
   onOpenLedger: (customerPhone: string) => void;
   onAddTrustedCustomer: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const showNewCustomerFields = existingCustomerLookup?.found === false;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Carnet (Credit)</h2>
-        <p className="text-xs text-muted-foreground">Manage trusted customers and their credit balances.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.carnet.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.carnet.subtitle")}</p>
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Outstanding Credit (مجموع الكريدي اللي على برا)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.totalOutstandingCredit")}</p>
               <p className="mt-1 text-2xl font-extrabold text-chart-4">{totalOutstandingCreditMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2674,7 +2676,7 @@ function CarnetView({
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Credit Issued Today (كريدي خرج اليوم)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.creditIssuedToday")}</p>
               <p className="mt-1 text-2xl font-extrabold text-foreground">{creditIssuedTodayMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2686,7 +2688,7 @@ function CarnetView({
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Settled Credit (الكريدي المستخلص/المسدد)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.settledCredit")}</p>
               <p className="mt-1 text-2xl font-extrabold text-success">{settledCreditMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2698,7 +2700,7 @@ function CarnetView({
         <article className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Admin Dues in Carnet · مستحقات المنصة من الكريدي</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.adminDues")}</p>
               <p className="mt-1 text-2xl font-extrabold text-destructive">{adminDuesInCarnetMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/40 bg-background text-destructive">
@@ -2711,9 +2713,9 @@ function CarnetView({
       <div className="mb-4 space-y-3 rounded-xl border border-border bg-background p-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
           <div className="flex items-center overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
-            <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
+            <span className="px-3 text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.phonePrefix")}</span>
             <Input
-              placeholder="6XXXXXXXX"
+              placeholder={t("vendorDashboard.carnet.customerPhonePlaceholder")}
               inputMode="numeric"
               value={trustedCustomerPhone}
               onChange={(event) => onPhoneChange(normalizeMoroccoPhoneInput(event.target.value))}
@@ -2724,24 +2726,24 @@ function CarnetView({
             type="number"
             min="0"
             step="0.01"
-            placeholder="Max limit (MAD)"
+            placeholder={t("vendorDashboard.carnet.maxLimitPlaceholder")}
             value={trustedCustomerMaxLimit}
             onChange={(event) => onMaxLimitChange(event.target.value)}
             className="h-10 rounded-xl"
           />
           <Button variant="hero" className="h-10 rounded-xl" onClick={onAddTrustedCustomer} disabled={isSavingCarnet}>
-            {isSavingCarnet ? "Sending..." : "Verify & Add to Carnet"}
+            {isSavingCarnet ? t("vendorDashboard.carnet.sending") : t("vendorDashboard.carnet.verifyAndAddToCarnet")}
           </Button>
         </div>
 
         {existingCustomerLookup ? (
           existingCustomerLookup.found ? (
             <Badge className="w-fit rounded-lg bg-emerald-500/10 text-emerald-700 border-emerald-200">
-              Existing Customer: {existingCustomerLookup.fullName ?? "Unnamed Customer"}
+              {t("vendorDashboard.carnet.existingCustomer")}: {existingCustomerLookup.fullName ?? t("vendorDashboard.carnet.unnamedCustomer")}
             </Badge>
           ) : (
             <Badge variant="secondary" className="w-fit rounded-lg">
-              New Customer
+              {t("vendorDashboard.carnet.newCustomer")}
             </Badge>
           )
         ) : null}
@@ -2749,7 +2751,7 @@ function CarnetView({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {showNewCustomerFields ? (
             <Input
-              placeholder="Full Name *"
+              placeholder={t("vendorDashboard.carnet.fullNamePlaceholder")}
               value={trustedCustomerName}
               onChange={(event) => onNameChange(event.target.value)}
               className="h-10 rounded-xl"
@@ -2758,7 +2760,7 @@ function CarnetView({
             <div className="hidden md:block" />
           )}
           <Input
-            placeholder="CIN / National ID *"
+            placeholder={t("vendorDashboard.carnet.cinPlaceholder")}
             value={trustedCustomerCin}
             onChange={(event) => onCinChange(event.target.value.toUpperCase())}
             className="h-10 rounded-xl"
@@ -2767,15 +2769,15 @@ function CarnetView({
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading carnet customers..." />
+        <EmptyState label={t("vendorDashboard.carnet.loadingCustomers")} />
       ) : customers.length === 0 ? (
-        <EmptyState label="No trusted customers added yet." />
+        <EmptyState label={t("vendorDashboard.carnet.emptyCustomers")} />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="grid grid-cols-[1.2fr_1fr_1fr] items-center gap-2 bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground">
-            <span>Phone</span>
-            <span>Current Debt</span>
-            <span>Max Limit</span>
+            <span>{t("vendorDashboard.carnet.tablePhone")}</span>
+            <span>{t("vendorDashboard.carnet.tableCurrentDebt")}</span>
+            <span>{t("vendorDashboard.carnet.tableMaxLimit")}</span>
           </div>
           <div className="divide-y divide-border">
             {customers.map((customer) => (
