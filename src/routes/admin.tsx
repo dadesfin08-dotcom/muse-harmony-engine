@@ -4172,7 +4172,7 @@ function AdminPage() {
               ) : null}
               {tab === "vendors" ? (
                 <VendorsSection
-                  vendors={vendors}
+                  vendors={localizedVendors}
                   isLoading={dbHealthQuery.isLoading || vendorsQuery.isLoading}
                   onAddVendor={() => setIsVendorPanelOpen(true)}
                   onManageVendor={openManageVendorPanel}
@@ -4181,14 +4181,14 @@ function AdminPage() {
               ) : null}
               {tab === "cyclists" ? (
                 <CyclistsSection
-                  cyclists={cyclists}
+                  cyclists={localizedCyclists}
                   isLoading={dbHealthQuery.isLoading || cyclistsQuery.isLoading}
                   onAddCyclist={() => setIsCyclistPanelOpen(true)}
                 />
               ) : null}
               {tab === "service-zones" ? (
                 <ServiceZonesSection
-                  zones={serviceZones}
+                  zones={localizedServiceZones}
                   isLoading={dbHealthQuery.isLoading || serviceZonesQuery.isLoading}
                   isImporting={isImportingServiceZones}
                   form={serviceZoneForm}
@@ -4200,6 +4200,7 @@ function AdminPage() {
                   onImportCsv={handleServiceZonesCsvUpload}
                   onOpenCommuneProfile={openCommuneProfile}
                   localizeCommuneName={getLocalizedCommuneName}
+                  localizeNeighborhoodName={getLocalizedNeighborhoodName}
                 />
               ) : null}
               {tab === "catalog" ? (
