@@ -184,7 +184,7 @@ function AllProductsPage() {
         ) : null}
       </div>
 
-      <section className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 md:gap-4 p-4">
         {displayedProducts.map((product) => (
           <ProductCard
             key={product.id}
@@ -198,6 +198,7 @@ function AllProductsPage() {
             price={Number(product.finalVendorPrice ?? product.vendorPrice ?? 0)}
             cartQuantity={getCartQuantity(product.id, product.productVariants?.[0] ?? null)}
             selectedVariant={product.productVariants?.[0] ?? null}
+            premiumGrid
             addLabel={t("products.add")}
             onAdd={(selectedVariant) => {
               const normalizedVariant = selectedVariant?.trim() || null;
