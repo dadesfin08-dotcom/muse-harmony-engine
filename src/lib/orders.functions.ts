@@ -1268,26 +1268,6 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
         throw new Error(communeQuery.error.message);
       }
 
-      const addressParts = [
-        typeof profileQuery.data?.address === "string" ? profileQuery.data.address.trim() : "",
-        typeof neighborhoodQuery.data?.name_ar === "string"
-          ? neighborhoodQuery.data.name_ar.trim()
-          : typeof neighborhoodQuery.data?.name_fr === "string"
-            ? neighborhoodQuery.data.name_fr.trim()
-            : typeof neighborhoodQuery.data?.name_en === "string"
-              ? neighborhoodQuery.data.name_en.trim()
-              : "",
-        typeof communeQuery.data?.name_ar === "string"
-          ? communeQuery.data.name_ar.trim()
-          : typeof communeQuery.data?.name_fr === "string"
-            ? communeQuery.data.name_fr.trim()
-            : typeof communeQuery.data?.name_en === "string"
-              ? communeQuery.data.name_en.trim()
-              : "",
-      ].filter((part) => part.length > 0);
-
-      const customerAddress = addressParts.length > 0 ? Array.from(new Set(addressParts)).join("، ") : "-";
-
       const rawItems = Array.isArray(orderRow.order_items) ? orderRow.order_items : [];
 
       const productIds = Array.from(
