@@ -253,10 +253,10 @@ export const Route = createFileRoute("/vendor/dashboard")({
   validateSearch: zodValidator(vendorDashboardSearchSchema),
   head: () => ({
     meta: [
-      { title: "Vendor Dashboard | Bzaf Fresh" },
+      { title: i18n.t("vendorDashboard.meta.title") },
       {
         name: "description",
-        content: "Vendor operations dashboard for live order fulfillment and inventory control.",
+        content: i18n.t("vendorDashboard.meta.description"),
       },
     ],
   }),
@@ -1308,7 +1308,7 @@ function VendorDashboardPage() {
       ...current,
       [orderId]: true,
     }));
-    toast.success("Order removed from your active queue.");
+    toast.success(t("vendorDashboard.toasts.orderRemovedFromQueue"));
   };
 
   const persistInventoryItem = async (item: InventoryItem, vendorPrice: number, isAvailable: boolean) => {
@@ -1326,7 +1326,7 @@ function VendorDashboardPage() {
       toast.success(t("vendorDashboard.toasts.inventoryUpdated"));
     } catch (error) {
       console.error("Failed to save inventory item:", error);
-      toast.error("Failed to save inventory item.");
+      toast.error(t("vendorDashboard.toasts.saveInventoryFailed"));
     } finally {
       setIsSavingInventoryFor(null);
     }
@@ -1340,7 +1340,7 @@ function VendorDashboardPage() {
 
     const numericPrice = Number(draft.vendorPrice);
     if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      toast.error("Please enter a valid price.");
+      toast.error(t("vendorDashboard.toasts.enterValidPrice"));
       return;
     }
 
@@ -1363,7 +1363,7 @@ function VendorDashboardPage() {
     const numericPrice = Number(draftPrice);
 
     if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      toast.error("Set a valid price before changing stock status.");
+      toast.error(t("vendorDashboard.toasts.setValidPriceBeforeStockChange"));
       return;
     }
 
@@ -1380,23 +1380,23 @@ function VendorDashboardPage() {
     const numericFlashPrice = Number(draft.price);
     if (draft.enabled) {
       if (Number.isNaN(numericFlashPrice) || numericFlashPrice <= 0) {
-        toast.error("Flash sale price must be greater than 0.");
+        toast.error(t("vendorDashboard.toasts.flashPriceGtZero"));
         return;
       }
 
       if (numericFlashPrice >= item.vendorPrice) {
-        toast.error("Flash sale price must be lower than your regular price.");
+        toast.error(t("vendorDashboard.toasts.flashPriceLowerThanRegular"));
         return;
       }
 
       if (!draft.endAt) {
-        toast.error("Please choose when the flash sale ends.");
+        toast.error(t("vendorDashboard.toasts.chooseFlashEndTime"));
         return;
       }
 
       const endTime = new Date(draft.endAt);
       if (Number.isNaN(endTime.getTime()) || endTime.getTime() <= Date.now()) {
-        toast.error("Flash sale end time must be in the future.");
+        toast.error(t("vendorDashboard.toasts.flashEndTimeFuture"));
         return;
       }
     }
@@ -1415,13 +1415,13 @@ function VendorDashboardPage() {
     );
 
     if (!isValidMoroccoPhone(normalizeMoroccoPhoneInput(activeVendorPhone))) {
-      toast.error("Vendor session missing. Please log in again.");
+      toast.error(t("vendorDashboard.toasts.vendorSessionMissing"));
       return;
     }
 
     try {
       setIsSavingFlashFor(item.id);
-      toast.loading("Saving flash sale...", { id: `flash-save-${item.id}` });
+      toast.loading(t("vendorDashboard.toasts.savingFlashSale"), { id: `flash-save-${item.id}` });
       await saveFlashSale({
         data: {
           phoneNumber: normalizedActiveVendorPhone,
@@ -1432,7 +1432,9 @@ function VendorDashboardPage() {
         },
       });
       await inventoryQuery.refetch();
-      toast.success(draft.enabled ? "Flash sale saved." : "Flash sale disabled.", {
+      toast.success(
+        draft.enabled ? t("vendorDashboard.toasts.flashSaleSaved") : t("vendorDashboard.toasts.flashSaleDisabled"),
+        {
         id: `flash-save-${item.id}`,
       });
     } catch (error) {
@@ -1624,23 +1626,23 @@ function VendorDashboardPage() {
                 }}
                 onAddTrustedCustomer={async () => {
                   if (!isTrustedCustomerPhoneValid) {
-                    toast.error("Enter a valid customer phone number.");
+                    toast.error(t("vendorDashboard.carnet.enterValidCustomerPhone"));
                     return;
                   }
 
                   const maxLimit = Number(trustedCustomerMaxLimit);
                   if (Number.isNaN(maxLimit) || maxLimit < 0) {
-                    toast.error("Enter a valid max credit limit.");
+                    toast.error(t("vendorDashboard.carnet.enterValidMaxCreditLimit"));
                     return;
                   }
 
                   if (existingCustomerLookup?.found === false && trustedCustomerName.trim().length === 0) {
-                    toast.error("Full name is required for new customers.");
+                    toast.error(t("vendorDashboard.carnet.fullNameRequiredForNewCustomer"));
                     return;
                   }
 
                   if (!/^[A-Za-z0-9-]{4,30}$/.test(trustedCustomerCin.trim())) {
-                    toast.error("CIN must be 4-30 letters, numbers, or hyphens.");
+                    toast.error(t("vendorDashboard.carnet.cinValidation"));
                     return;
                   }
 
@@ -1648,7 +1650,7 @@ function VendorDashboardPage() {
                     (customer) => customer.customerPhone === trustedCustomerFullPhone,
                   );
                   if (existingInCarnet) {
-                    toast.error("This customer is already in your carnet list.");
+                    toast.error(t("vendorDashboard.carnet.customerAlreadyInCarnet"));
                     return;
                   }
 
@@ -2050,7 +2052,7 @@ function VendorDashboardPage() {
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerPhone}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">CIN</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.carnet.cin")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerCin ?? "—"}</p>
                 </div>
                 <div>
