@@ -5374,8 +5374,30 @@ function OverviewSection({
   isLoading: boolean;
   error: Error | null;
 }) {
-  const formatNumber = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
-  const formatMad = (value: number) => `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)} MAD`;
+  const { t } = useTranslation();
+  const { intlLocale } = useAppLanguage();
+  const formatNumber = (value: number) => new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(value);
+  const formatMad = (value: number) => `${new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(value)} MAD`;
+  const localizedSalesOrdersChartConfig = {
+    orders: {
+      label: t("admin.overview.chart.orders"),
+      color: "oklch(0.58 0.18 275)",
+    },
+    revenue: {
+      label: t("admin.overview.chart.revenue"),
+      color: "oklch(0.66 0.15 160)",
+    },
+  } satisfies ChartConfig;
+  const localizedZonePerformanceChartConfig = {
+    topOrders: {
+      label: t("admin.overview.chart.topZones"),
+      color: "oklch(0.67 0.14 160)",
+    },
+    bottomOrders: {
+      label: t("admin.overview.chart.bottomZones"),
+      color: "oklch(0.73 0.15 72)",
+    },
+  } satisfies ChartConfig;
   const formatDelta = (value: number, format: "integer" | "currency") => {
     const abs = Math.abs(value);
     return format === "currency" ? `${formatMad(abs)}` : formatNumber(abs);
@@ -5384,7 +5406,7 @@ function OverviewSection({
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load dashboard analytics.
+        {t("admin.overview.loadFailed")}
       </section>
     );
   }
@@ -5396,19 +5418,19 @@ function OverviewSection({
     icon: ComponentType<{ className?: string }>;
     tone: "indigo" | "emerald" | "violet" | "amber";
   }> = [
-    { label: "Total Orders", metric: analytics?.kpis.totalOrders ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: PackageCheck, tone: "indigo" },
-    { label: "Active Vendors", metric: analytics?.kpis.activeVendors ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: Store, tone: "emerald" },
+    { label: t("admin.overview.cards.totalOrders"), metric: analytics?.kpis.totalOrders ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: PackageCheck, tone: "indigo" },
+    { label: t("admin.overview.cards.activeVendors"), metric: analytics?.kpis.activeVendors ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "integer" }, icon: Store, tone: "emerald" },
     {
-      label: "Total Gross Volume",
+      label: t("admin.overview.cards.totalGrossVolume"),
       metric: analytics?.kpis.totalGrossVolume ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" },
       icon: Wallet,
       tone: "violet",
     },
-    { label: "Vendors Revenue", metric: analytics?.kpis.vendorsRevenue ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: CircleDollarSign, tone: "emerald" },
-    { label: "Cyclists Earnings", metric: analytics?.kpis.cyclistsEarnings ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: BikeIcon, tone: "amber" },
+    { label: t("admin.overview.cards.vendorsRevenue"), metric: analytics?.kpis.vendorsRevenue ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: CircleDollarSign, tone: "emerald" },
+    { label: t("admin.overview.cards.cyclistsEarnings"), metric: analytics?.kpis.cyclistsEarnings ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" }, icon: BikeIcon, tone: "amber" },
     {
-      label: "Platform Profit",
-      subtitle: "Pending Collection / متاح للسحب",
+      label: t("admin.overview.cards.platformProfit"),
+      subtitle: t("admin.overview.cards.platformProfitSubtitle"),
       metric: analytics?.kpis.platformProfit ?? { value: 0, previousValue: 0, change: 0, changePercentage: 0, format: "currency" },
       icon: Landmark,
       tone: "indigo",
@@ -5471,7 +5493,7 @@ function OverviewSection({
               <span className={metric.metric.change >= 0 ? "text-success" : "text-accent-foreground"}>
                 {formatDelta(metric.metric.change, metric.metric.format)} ({Math.abs(metric.metric.changePercentage).toFixed(1)}%)
               </span>
-              <span className="text-muted-foreground">vs yesterday</span>
+              <span className="text-muted-foreground">{t("admin.overview.vsYesterday")}</span>
             </div>
           </article>
         ))}
@@ -5480,18 +5502,18 @@ function OverviewSection({
       <section className="grid gap-5 xl:grid-cols-[2fr_1fr]">
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Sales & Orders Trends</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.salesOrdersTrends")}</h2>
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
               <TrendingUp className="size-3.5" />
-              Last 7 days
+              {t("admin.overview.last7Days")}
             </span>
           </div>
           {isLoading ? (
             <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-              Loading trends...
+              {t("admin.overview.loadingTrends")}
             </div>
           ) : (
-            <ChartContainer config={salesOrdersChartConfig} className="h-72 w-full">
+            <ChartContainer config={localizedSalesOrdersChartConfig} className="h-72 w-full">
               <AreaChart data={analytics?.salesOrdersTrends ?? []} margin={{ left: 4, right: 4, top: 6, bottom: 6 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -5507,7 +5529,7 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Delivery Speed by Zone</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.deliverySpeedByZone")}</h2>
             <Gauge className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-2">
@@ -5515,7 +5537,7 @@ function OverviewSection({
               <div key={zone.zone} className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/20 px-3 py-2">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{zone.zone}</p>
-                  <p className="text-xs text-muted-foreground">{zone.deliveries} deliveries</p>
+                  <p className="text-xs text-muted-foreground">{t("admin.overview.deliveriesCount", { count: zone.deliveries })}</p>
                 </div>
                 <span
                   className={cn(
@@ -5525,13 +5547,13 @@ function OverviewSection({
                     zone.performance === "normal" && "bg-muted text-muted-foreground",
                   )}
                 >
-                  {zone.avgMinutes.toFixed(0)} min
+                  {t("admin.overview.minutes", { value: zone.avgMinutes.toFixed(0) })}
                 </span>
               </div>
             ))}
             {!isLoading && (analytics?.deliverySpeedMetrics ?? []).length === 0 ? (
               <p className="rounded-xl border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground">
-                Not enough completed deliveries yet.
+                {t("admin.overview.notEnoughDeliveries")}
               </p>
             ) : null}
           </div>
@@ -5541,10 +5563,10 @@ function OverviewSection({
       <section className="grid gap-5 xl:grid-cols-[1.2fr_1fr_1fr]">
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Zone Performance</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.zonePerformance")}</h2>
             <Building2 className="size-4 text-muted-foreground" />
           </div>
-          <ChartContainer config={zonePerformanceChartConfig} className="h-72 w-full">
+          <ChartContainer config={localizedZonePerformanceChartConfig} className="h-72 w-full">
             <BarChart data={zoneChartData} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="zone" tickLine={false} axisLine={false} />
@@ -5558,7 +5580,7 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Top Neighborhoods</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.topNeighborhoods")}</h2>
             <MapPin className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-2">
@@ -5568,7 +5590,7 @@ function OverviewSection({
                   <p className="text-sm font-semibold text-foreground">{item.neighborhood}</p>
                   <p className="text-xs text-muted-foreground">{item.zone}</p>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">{item.orders} orders</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("admin.overview.ordersCount", { count: item.orders })}</span>
               </div>
             ))}
           </div>
@@ -5576,14 +5598,14 @@ function OverviewSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Top Brands & Categories</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.overview.topBrandsCategories")}</h2>
             <Trophy className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-3">
             <div>
               <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <Clock3 className="size-3.5" />
-                Brands
+                {t("admin.overview.brands")}
               </p>
               <div className="space-y-2">
                 {(analytics?.marketInsights.topBrands ?? []).slice(0, 3).map((item) => (
@@ -5597,13 +5619,13 @@ function OverviewSection({
             <div>
               <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <TrendingDown className="size-3.5" />
-                Categories
+                {t("admin.overview.categories")}
               </p>
               <div className="space-y-2">
                 {(analytics?.marketInsights.topCategories ?? []).slice(0, 3).map((item) => (
                   <div key={item.name} className="flex items-center justify-between rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
                     <span className="text-sm font-medium text-foreground">{item.name}</span>
-                    <span className="text-xs text-muted-foreground">{item.orders} orders</span>
+                    <span className="text-xs text-muted-foreground">{t("admin.overview.ordersCount", { count: item.orders })}</span>
                   </div>
                 ))}
               </div>
