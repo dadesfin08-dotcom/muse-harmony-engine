@@ -99,7 +99,6 @@ type OrderRow = {
   status:
     | "ready"
     | "in_delivery"
-    | "delivering"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor"
@@ -460,7 +459,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           .select(
             "id, customer_user_id, subscription_id, order_category, customer_name, customer_phone, cash_to_collect_from_customer, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
           )
-          .in("status", ["in_delivery", "delivering"])
+          .in("status", ["in_delivery"])
           .eq("cyclist_id", cyclist.id)
           .order("created_at", { ascending: false }),
         (supabaseAdmin as any)
@@ -519,7 +518,6 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
       const lifecycleStatusesVisibleToCyclist = new Set([
         "ready",
         "in_delivery",
-        "delivering",
         "delivered",
         "delivered_cash_with_cyclist",
         "cash_transferred_to_vendor",
@@ -809,7 +807,7 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
         .from("orders")
         .select("id", { count: "exact", head: true })
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["ready", "in_delivery", "delivering"]);
+        .in("status", ["ready", "in_delivery"]);
 
       if (activeOrderCountError) {
         throw new Error(activeOrderCountError.message);
@@ -1058,7 +1056,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         .select("id, cyclist_id, status, payment_method, order_category, subscription_id, customer_user_id")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["in_delivery", "delivering"])
+        .in("status", ["in_delivery"])
         .maybeSingle();
 
       if (orderError) {
@@ -1087,7 +1085,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         })
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
-        .in("status", ["in_delivery", "delivering"]);
+        .in("status", ["in_delivery"]);
 
       if (error) {
         throw new Error(error.message);
