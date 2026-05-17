@@ -414,10 +414,10 @@ function VendorWalletPage() {
       <Dialog open={isVendorHandoverQrOpen} onOpenChange={setIsVendorHandoverQrOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Vendor Handover QR · رمز تسليم للتاجر</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.vendorHandoverQrTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-center">
-            <p className="text-sm text-muted-foreground">Cyclist scans this for settlement transition.</p>
+            <p className="text-sm text-muted-foreground">{t("vendorDashboard.cash.vendorHandoverQrHint")}</p>
             <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
               {vendorHandoverQrPayload ? <QRCodeSVG value={vendorHandoverQrPayload} size={220} includeMargin /> : null}
             </div>
@@ -428,7 +428,7 @@ function VendorWalletPage() {
       <Dialog open={isPlatformScannerOpen} onOpenChange={setIsPlatformScannerOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Admin QR · مسح رمز مسؤول المنصة</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.scanAdminQrTitle")}</DialogTitle>
           </DialogHeader>
           <div id="vendor-platform-payment-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
         </DialogContent>
@@ -437,15 +437,21 @@ function VendorWalletPage() {
       <Dialog open={Boolean(pendingScannedPayment)} onOpenChange={(open) => (!open ? setPendingScannedPayment(null) : undefined)}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Confirm Payment · تأكيد الدفع</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.confirmPaymentTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p>
-              Pay <span className="font-semibold">{Number(pendingScannedPayment?.amount ?? 0).toFixed(2)} MAD</span> to Platform Admin?
+              {t("vendorDashboard.cash.confirmPaymentPrompt", {
+                amount: Number(pendingScannedPayment?.amount ?? 0).toFixed(2),
+              })}
             </p>
-            <p className="text-muted-foreground">Timestamp: {pendingScannedPayment?.timestamp ?? "--"}</p>
+            <p className="text-muted-foreground">
+              {t("vendorDashboard.cash.timestamp")}: {pendingScannedPayment?.timestamp ?? "--"}
+            </p>
             <Button className="w-full" onClick={() => void handleConfirmPlatformPayment()} disabled={isSubmittingPlatformPayment}>
-              {isSubmittingPlatformPayment ? "Processing..." : "Confirm Payment"}
+              {isSubmittingPlatformPayment
+                ? t("vendorDashboard.cash.processing")
+                : t("vendorDashboard.cash.confirmPayment")}
             </Button>
           </div>
         </DialogContent>
