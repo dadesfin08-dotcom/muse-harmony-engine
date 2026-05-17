@@ -22,6 +22,8 @@ import {
   upsertCustomerProfile,
 } from "@/lib/orders.functions";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
+import { useAppLanguage } from "@/hooks/use-localization";
+import { localizeText } from "@/lib/localization";
 
 export const Route = createFileRoute("/customer/platform-packs/$packId")({
   component: PlatformPackDetailsPage,
@@ -41,7 +43,8 @@ const CUSTOMER_SESSION_STORAGE_KEY = "bzaf.customerSession";
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
 function PlatformPackDetailsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { packId } = Route.useParams();
   const navigate = useNavigate({ from: "/customer/platform-packs/$packId" });
   const queryClient = useQueryClient();
@@ -55,8 +58,6 @@ function PlatformPackDetailsPage() {
   const [subscriptionStartDate, setSubscriptionStartDate] = useState("");
   const [subscriptionDeliveryTime, setSubscriptionDeliveryTime] = useState("");
   const [subscriptionNotes, setSubscriptionNotes] = useState("");
-
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as "en" | "fr" | "ar";
 
   const fetchPackDetails = useServerFn(getPlatformPackDetails);
   const fetchCustomerSubscriptions = useServerFn(getCustomerSubscriptions);
@@ -240,9 +241,7 @@ function PlatformPackDetailsPage() {
     const pack = packDetailsQuery.data;
     if (!pack) return "";
 
-    if (language === "ar") return pack.nameAr?.trim() || pack.nameFr?.trim() || pack.name;
-    if (language === "fr") return pack.nameFr?.trim() || pack.name;
-    return pack.name;
+    return localizeText(language, { en: pack.name, fr: pack.nameFr, ar: pack.nameAr }, pack.name);
   }, [language, packDetailsQuery.data]);
 
   const billingLabel = useMemo(() => {

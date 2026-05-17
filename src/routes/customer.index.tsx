@@ -94,6 +94,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -290,8 +291,6 @@ type CheckoutPrefs = {
   neighborhoodLabel: string | null;
 };
 
-type AppLanguage = "en" | "fr" | "ar";
-
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -323,7 +322,9 @@ function useCustomerCarnet(
 }
 
 function Index() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
+  const getLocalizedText = useLocalizedText();
   const navigate = useNavigate({ from: "/customer/" });
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -366,7 +367,6 @@ function Index() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [flashNowMs, setFlashNowMs] = useState(0);
   const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
   const isMobile = useIsMobile();
   const isArabic = language === "ar";
   const [isCategoryTickerPaused, setIsCategoryTickerPaused] = useState(false);
@@ -406,27 +406,10 @@ function Index() {
     setAuthSheetCanScrollDown(maxScroll - topOffset > 6);
   };
 
-  const getLocalizedText = ({
-    en,
-    fr,
-    ar,
-  }: {
-    en: string;
-    fr?: string | null;
-    ar?: string | null;
-  }) => {
-    const normalizedEn = en?.trim() || "";
-    const normalizedFr = fr?.trim() || "";
-    const normalizedAr = ar?.trim() || "";
-
-    if (language === "ar") return normalizedAr || normalizedFr || normalizedEn;
-    if (language === "fr") return normalizedFr || normalizedEn || normalizedAr;
-    return normalizedEn || normalizedFr || normalizedAr;
-  };
   const getLocalizedNeighborhoodName = (zone: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) =>
-    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
+    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr }, zone.name);
   const getLocalizedCommuneName = (zone: { nameEn?: string | null; nameFr?: string | null; nameAr?: string | null; name: string }) =>
-    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr });
+    getLocalizedText({ en: zone.nameEn || zone.name, fr: zone.nameFr, ar: zone.nameAr }, zone.name);
   const getLocalizedDeliveryLabel = () => {
     if (language === "ar") return "ثمن التوصيل";
     if (language === "fr") return "Livraison";

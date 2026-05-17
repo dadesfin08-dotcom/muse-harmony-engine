@@ -6,6 +6,8 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import type { AppLanguage } from "@/lib/i18n";
+import { localizeText, resolveAppLanguage } from "@/lib/localization";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
@@ -181,6 +183,19 @@ export type VendorSettlementSummary = {
 
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+function localizeDbName(
+  language: AppLanguage,
+  row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined,
+): string {
+  if (!row) return "";
+
+  return localizeText(language, {
+    ar: row.name_ar,
+    fr: row.name_fr,
+    en: row.name_en,
+  });
 }
 
 async function getVendorPendingCommissionMad(vendorId: string) {
@@ -786,25 +801,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       throw new Error(ordersError.message);
     }
 
-    const preferredLocale = data.locale ?? "en";
-
-    const localizedName = (
-      row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined,
-    ) => {
-      if (!row) return "";
-
-      const candidatesByLocale: Record<"ar" | "fr" | "en", Array<string | null | undefined>> = {
-        ar: [row.name_ar, row.name_fr, row.name_en],
-        fr: [row.name_fr, row.name_en, row.name_ar],
-        en: [row.name_en, row.name_fr, row.name_ar],
-      };
-
-      for (const candidate of candidatesByLocale[preferredLocale]) {
-        if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
-      }
-
-      return "";
-    };
+    const preferredLocale = resolveAppLanguage(data.locale);
 
     const orderItemNames = Array.from(
       new Set(
@@ -902,7 +899,7 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
 
       const toProductDetails = (product: any) => {
         const brand = typeof product?.brand_id === "string" ? brandsById.get(product.brand_id) : undefined;
-        const brandName = localizedName(brand);
+        const brandName = localizeDbName(preferredLocale, brand);
 
         return {
           imageUrl: product.image_url ?? null,
@@ -1100,8 +1097,8 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         ...order,
         order_items: items,
         specific_address: specificAddress,
-        neighborhood_name: localizedName(neighborhoodRow) || null,
-        commune_name: localizedName(communeRow) || null,
+        neighborhood_name: localizeDbName(preferredLocale, neighborhoodRow) || null,
+        commune_name: localizeDbName(preferredLocale, communeRow) || null,
         cyclist:
           cyclist && typeof cyclist.full_name === "string" && typeof cyclist.phone_number === "string"
             ? {

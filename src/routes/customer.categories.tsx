@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listActiveCategories } from "@/lib/categories.functions";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
+import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
 
@@ -49,12 +50,13 @@ function CategoriesRouteShell() {
 }
 
 function CategoriesPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
+  const getLocalizedText = useLocalizedText();
   const navigate = useNavigate();
   const fetchCategories = useServerFn(listActiveCategories);
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as "en" | "fr" | "ar";
 
   useEffect(() => {
     const raw = window.localStorage.getItem(LOCATION_STORAGE_KEY);
@@ -77,9 +79,10 @@ function CategoriesPage() {
   const categories = (categoriesQuery.data ?? []) as CategoryRow[];
 
   const localizedName = (category: CategoryRow) => {
-    if (language === "ar") return category.name_ar || category.name_en;
-    if (language === "fr") return category.name_fr || category.name_en;
-    return category.name_en;
+    return getLocalizedText(
+      { en: category.name_en, fr: category.name_fr, ar: category.name_ar },
+      category.name_en,
+    );
   };
 
   const sortedCategories = useMemo(() => {

@@ -2203,6 +2203,9 @@ const resources = {
   },
 } as const;
 
+export type TranslationSchema = (typeof resources)["en"]["translation"];
+export type TranslationNamespace = keyof TranslationSchema & string;
+
 function getInitialLanguage(): AppLanguage {
   if (typeof window === "undefined") {
     return "en";

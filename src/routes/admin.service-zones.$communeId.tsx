@@ -26,13 +26,16 @@ import {
   updateCommune,
   updateNeighborhood,
 } from "@/lib/locations.functions";
+import { useAppLanguage } from "@/hooks/use-localization";
+import { localizeText } from "@/lib/localization";
 
 export const Route = createFileRoute("/admin/service-zones/$communeId")({
   component: CommuneProfilePage,
 });
 
 function CommuneProfilePage() {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { communeId } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -51,23 +54,25 @@ function CommuneProfilePage() {
 
   const commune = communeQuery.data;
   const localizedCommuneName = (value: { nameEn: string; nameFr: string | null; nameAr: string | null; name: string }) => {
-    const lang = i18n.resolvedLanguage || i18n.language || "en";
-    if (lang === "ar") return value.nameAr?.trim() || value.nameFr?.trim() || value.nameEn || value.name;
-    if (lang === "fr") return value.nameFr?.trim() || value.nameEn || value.name;
-    return value.nameEn || value.name;
+    return localizeText(
+      language,
+      { en: value.nameEn || value.name, fr: value.nameFr, ar: value.nameAr },
+      value.name,
+    );
   };
   const localizedNeighborhoodName = (neighborhood: { nameEn: string; nameFr: string | null; nameAr: string | null }) => {
-    const lang = i18n.resolvedLanguage || i18n.language || "en";
-    if (lang === "ar") return neighborhood.nameAr?.trim() || neighborhood.nameFr?.trim() || neighborhood.nameEn;
-    if (lang === "fr") return neighborhood.nameFr?.trim() || neighborhood.nameEn;
-    return neighborhood.nameEn;
+    return localizeText(language, {
+      en: neighborhood.nameEn,
+      fr: neighborhood.nameFr,
+      ar: neighborhood.nameAr,
+    });
   };
 
   const sortedNeighborhoods = useMemo(() => {
     return [...(commune?.neighborhoods ?? [])].sort((a, b) =>
       localizedNeighborhoodName(a).localeCompare(localizedNeighborhoodName(b)),
     );
-  }, [commune?.neighborhoods, i18n.language, i18n.resolvedLanguage]);
+  }, [commune?.neighborhoods, language]);
 
   const [isEditingCommuneName, setIsEditingCommuneName] = useState(false);
   const [communeNameEnDraft, setCommuneNameEnDraft] = useState("");

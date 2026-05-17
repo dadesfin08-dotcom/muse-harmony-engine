@@ -1,9 +1,10 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Check, Languages } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 import type { AppLanguage } from "@/lib/i18n";
+import { useAppLanguage } from "@/hooks/use-localization";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -19,16 +20,12 @@ type LanguageSwitcherProps = {
 };
 
 export function LanguageSwitcher({ className, trigger }: LanguageSwitcherProps) {
-  const { i18n, t } = useTranslation();
+  const { t } = useTranslation();
+  const { language: activeLanguage, setLanguage } = useAppLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeLanguage = useMemo(
-    () => (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage,
-    [i18n.language, i18n.resolvedLanguage],
-  );
-
   const handleLanguageSelect = (nextLanguage: AppLanguage) => {
-    void i18n.changeLanguage(nextLanguage);
+    void setLanguage(nextLanguage);
     setIsOpen(false);
   };
 
