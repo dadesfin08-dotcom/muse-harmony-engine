@@ -4466,7 +4466,7 @@ function AdminPage() {
                           onChange={(event) => toggleVendorNeighborhood(neighborhood.id, event.target.checked)}
                           className="h-4 w-4 accent-primary"
                         />
-                        <span className="text-foreground">{neighborhood.name}</span>
+                        <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                       </label>
                     );
                   })
@@ -4483,7 +4483,7 @@ function AdminPage() {
                         onClick={() => toggleVendorNeighborhood(neighborhood.id, false)}
                         className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
                       >
-                        {neighborhood.name} ×
+                        {getLocalizedNeighborhoodName(neighborhood)} ×
                       </button>
                     ))}
                 </div>
@@ -4603,7 +4603,7 @@ function AdminPage() {
                           onChange={(event) => toggleCyclistNeighborhood(neighborhood.id, event.target.checked)}
                           className="h-4 w-4 accent-primary"
                         />
-                        <span className="text-foreground">{neighborhood.name}</span>
+                        <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                       </label>
                     );
                   })
