@@ -263,7 +263,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
 });
 
 function VendorDashboardPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { language: activeLanguage, intlLocale } = useAppLanguage();
   const navigate = useNavigate({ from: "/vendor/dashboard" });
   const search = Route.useSearch();
