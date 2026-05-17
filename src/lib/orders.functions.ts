@@ -56,6 +56,7 @@ const createPlatformSubscriptionOrderInputSchema = z.object({
 
 const vendorDashboardInputSchema = z.object({
   phoneNumber: moroccoPhoneSchema,
+  locale: z.enum(["ar", "fr", "en"]).optional(),
 });
 
 const updateOrderStatusInputSchema = z.object({
@@ -785,13 +786,23 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       throw new Error(ordersError.message);
     }
 
+    const preferredLocale = data.locale ?? "en";
+
     const localizedName = (
       row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined,
     ) => {
       if (!row) return "";
-      if (typeof row.name_ar === "string" && row.name_ar.trim().length > 0) return row.name_ar.trim();
-      if (typeof row.name_fr === "string" && row.name_fr.trim().length > 0) return row.name_fr.trim();
-      if (typeof row.name_en === "string" && row.name_en.trim().length > 0) return row.name_en.trim();
+
+      const candidatesByLocale: Record<"ar" | "fr" | "en", Array<string | null | undefined>> = {
+        ar: [row.name_ar, row.name_fr, row.name_en],
+        fr: [row.name_fr, row.name_en, row.name_ar],
+        en: [row.name_en, row.name_fr, row.name_ar],
+      };
+
+      for (const candidate of candidatesByLocale[preferredLocale]) {
+        if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
+      }
+
       return "";
     };
 
