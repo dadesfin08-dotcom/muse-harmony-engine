@@ -2097,7 +2097,7 @@ function Index() {
 
         <section className="mx-auto mt-5 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-lg font-semibold tracking-tight text-foreground">
+            <Link to="/customer/all-products" className="text-lg font-semibold tracking-tight text-foreground font-serif">
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
