@@ -1214,6 +1214,22 @@ function VendorDashboardPage() {
     const estimatedBags = Math.ceil(packingEstimatedWeightKg / 4);
     return Math.max(1, estimatedBags || 1);
   }, [packingEstimatedWeightKg, packingOrder]);
+  const packingSubtotalMad = useMemo(() => {
+    if (!packingOrder) return 0;
+
+    return roundMoney(
+      packingOrder.items.reduce((sum, item) => {
+        const unitPrice = Number(item.unitPriceMad ?? 0);
+        const quantity = Number((item as { qty?: number }).qty ?? item.quantity ?? 0);
+
+        if (!Number.isFinite(unitPrice) || !Number.isFinite(quantity) || quantity <= 0) {
+          return sum;
+        }
+
+        return sum + unitPrice * quantity;
+      }, 0),
+    );
+  }, [packingOrder]);
   const packedByName = useMemo(() => {
     if (typeof window === "undefined") {
       return vendorStoreName;
@@ -1907,7 +1923,7 @@ function VendorDashboardPage() {
                   <div className="rounded-lg border border-border bg-background px-3 py-2">
                     <p className="text-xs text-muted-foreground">Costs</p>
                     <p className="text-sm font-semibold text-foreground">
-                      Subtotal: {Number(packingOrder.subtotalBasePriceMad ?? 0).toFixed(2)} MAD
+                      Subtotal: {packingSubtotalMad.toFixed(2)} MAD
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
