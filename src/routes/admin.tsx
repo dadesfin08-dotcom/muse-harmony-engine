@@ -4243,6 +4243,8 @@ function AdminPage() {
               {tab === "categories" ? (
                 <CategoriesSection
                   categories={categories}
+                  activeLanguage={activeLanguage}
+                  isRtl={isRtl}
                   isLoading={dbHealthQuery.isLoading || categoriesQuery.isLoading}
                   form={categoryForm}
                   onFormChange={setCategoryForm}
