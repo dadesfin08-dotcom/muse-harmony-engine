@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -234,6 +235,7 @@ import { supabase } from "@/integrations/supabase/client";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { CATEGORY_ICON_OPTIONS, CategoryIcon, type CategoryIconName } from "@/lib/lucide-category-icons";
 import { cn } from "@/lib/utils";
+import { getLocalizedCommuneName as resolveLocalizedCommuneName, getLocalizedNeighborhoodName as resolveLocalizedNeighborhoodName } from "@/lib/location-localization";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
