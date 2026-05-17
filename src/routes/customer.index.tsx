@@ -709,7 +709,7 @@ function Index() {
       trackedOrderStatusRef.current = { orderId: activeOrder.id, status: activeOrder.status };
 
       if (
-        ["delivering", "out_for_delivery", "picked_up", "on_the_way", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"].includes(
+        ["in_delivery", "delivering", "out_for_delivery", "picked_up", "on_the_way", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"].includes(
           String(activeOrder.status ?? "").toLowerCase(),
         )
       ) {
@@ -1397,7 +1397,7 @@ function Index() {
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
     { label: "Order Placed", statuses: ["pending", "new"] },
     { label: "Preparing", statuses: ["preparing", "accepted", "processing"] },
-    { label: "Out for Delivery", statuses: ["out_for_delivery", "picked_up", "on_the_way", "delivering"] },
+    { label: "Out for Delivery", statuses: ["in_delivery", "out_for_delivery", "picked_up", "on_the_way", "delivering"] },
     {
       label: "Delivered",
       statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
