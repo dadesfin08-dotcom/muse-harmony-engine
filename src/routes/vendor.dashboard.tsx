@@ -621,7 +621,7 @@ function VendorDashboardPage() {
           if (isSoundEnabled) {
             void playAlertSound({ enabled: true }).then((played) => {
               if (!played && !hasAudioPermissionHintShown) {
-                toast.info("Click the sound icon to allow alerts in your browser.");
+              toast.info(t("vendorDashboard.toasts.enableSoundHint"));
                 setHasAudioPermissionHintShown(true);
               }
             });
@@ -636,9 +636,9 @@ function VendorDashboardPage() {
                     <span className="absolute inset-0 rounded-full border border-success/35 animate-ping" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-foreground">طلب جديد واصل! 🛍️</p>
+                    <p className="text-sm font-semibold text-foreground">{t("vendorDashboard.toasts.newOrderTitle")}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Order {shortOrderId(insertedId)} - {totalMad.toFixed(2)} MAD
+                      {t("vendorDashboard.toasts.orderSummary", { orderId: shortOrderId(insertedId), amount: totalMad.toFixed(2) })}
                     </p>
                     <div className="mt-2">
                       <Button
@@ -657,7 +657,7 @@ function VendorDashboardPage() {
                           toast.dismiss(toastId);
                         }}
                       >
-                        View Order
+                        {t("vendorDashboard.actions.viewOrder")}
                       </Button>
                     </div>
                   </div>
@@ -864,17 +864,17 @@ function VendorDashboardPage() {
     }
 
     if (!nextEnabled) {
-      toast.success("Sounds disabled.");
+      toast.success(t("vendorDashboard.toasts.soundsDisabled"));
       return;
     }
 
     const played = await playAlertSound({ enabled: true });
     if (!played) {
-      toast.error("Browser blocked autoplay. Tap again after interacting with the page.");
+      toast.error(t("vendorDashboard.toasts.autoplayBlocked"));
       return;
     }
 
-    toast.success("Sounds enabled.");
+    toast.success(t("vendorDashboard.toasts.soundsEnabled"));
   };
 
   const quickStats = useMemo(() => {
@@ -1011,7 +1011,7 @@ function VendorDashboardPage() {
     },
     onPrintError: () => {
       setPrintOrder(null);
-      toast.error("Failed to open printer dialog.");
+      toast.error(t("vendorDashboard.toasts.printFailed"));
     },
   });
 
@@ -1023,7 +1023,7 @@ function VendorDashboardPage() {
     const timer = window.setTimeout(() => {
       const receiptNode = receiptPrintRef.current;
       if (!receiptNode || !receiptNode.textContent?.trim()) {
-        toast.error("Receipt is not ready yet. Please try again.");
+      toast.error(t("vendorDashboard.toasts.receiptNotReady"));
         setPrintOrder(null);
         return;
       }
@@ -1118,11 +1118,11 @@ function VendorDashboardPage() {
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "preparing" } });
       await dashboardQuery.refetch();
-      toast.success("Order moved to preparing.");
+      toast.success(t("vendorDashboard.toasts.movedToPreparing"));
     } catch (error) {
       console.error("Failed to accept order:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update order status.");
+      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
     } finally {
       setIsUpdating(null);
     }
@@ -1147,7 +1147,7 @@ function VendorDashboardPage() {
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "ready" } });
       await dashboardQuery.refetch();
-      toast.success("Order marked as ready.");
+      toast.success(t("vendorDashboard.toasts.markedReady"));
 
       if (orderForReceipt) {
         setPrintOrder({
@@ -1159,7 +1159,7 @@ function VendorDashboardPage() {
     } catch (error) {
       console.error("Failed to mark order as ready:", error);
       await dashboardQuery.refetch();
-      toast.error("Failed to update order status.");
+      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
       return false;
     } finally {
       setIsUpdating(null);
@@ -1169,7 +1169,7 @@ function VendorDashboardPage() {
   const handleOpenPackingModal = (orderId: string) => {
     const targetOrder = orders.find((order) => order.id === orderId);
     if (!targetOrder || targetOrder.items.length === 0) {
-      toast.error("This order has no items to pack.");
+      toast.error(t("vendorDashboard.toasts.noItemsToPack"));
       return;
     }
 
@@ -1323,7 +1323,7 @@ function VendorDashboardPage() {
         },
       });
       await inventoryQuery.refetch();
-      toast.success("Inventory updated.");
+      toast.success(t("vendorDashboard.toasts.inventoryUpdated"));
     } catch (error) {
       console.error("Failed to save inventory item:", error);
       toast.error("Failed to save inventory item.");
