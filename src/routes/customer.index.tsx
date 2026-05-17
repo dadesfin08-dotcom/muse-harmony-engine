@@ -512,7 +512,8 @@ function Index() {
     queryKey: ["customer", "orders", customerSession?.phoneNumber ?? null],
     queryFn: () => fetchCustomerOrders({ data: { phoneNumber: customerSession!.phoneNumber } }),
     enabled: !!customerSession?.phoneNumber,
-    refetchInterval: customerSession?.phoneNumber ? 7_000 : false,
+    refetchInterval: customerSession?.phoneNumber ? 5_000 : false,
+    refetchIntervalInBackground: true,
   });
   const customerSubscriptionsQuery = useQuery({
     queryKey: ["customer", "subscriptions", customerSession?.phoneNumber ?? null],
@@ -636,7 +637,25 @@ function Index() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders", filter: `customer_phone=eq.${customerSession.phoneNumber}` },
-        () => {
+        (payload) => {
+          if (payload.eventType === "UPDATE" && payload.new && typeof (payload.new as { id?: unknown }).id === "string") {
+            queryClient.setQueryData(
+              ["customer", "orders", customerSession.phoneNumber],
+              (current: Array<Record<string, unknown>> | undefined) => {
+                if (!Array.isArray(current)) return current;
+                const updatedId = (payload.new as { id: string }).id;
+                return current.map((order) =>
+                  String(order.id ?? "") === updatedId
+                    ? {
+                        ...order,
+                        ...(payload.new as Record<string, unknown>),
+                      }
+                    : order,
+                );
+              },
+            );
+          }
+
           void queryClient.invalidateQueries({ queryKey: ["customer", "orders", customerSession.phoneNumber] });
           void queryClient.invalidateQueries({ queryKey: ["customer", "carnet", customerSession.phoneNumber] });
         },
