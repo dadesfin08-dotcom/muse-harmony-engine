@@ -7,7 +7,7 @@ import {
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
 import type { AppLanguage } from "@/lib/i18n";
-import { localizeText, resolveAppLanguage } from "@/lib/localization";
+import { getLocalizedValue, localizeText, resolveAppLanguage } from "@/lib/localization";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
@@ -830,7 +830,9 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     let productDetailsByName = new Map<
       string,
       {
+        localizedName: string;
         imageUrl: string | null;
+        category: string | null;
         brandName: string | null;
         measurementValue: number | null;
         measurementUnit: string | null;
@@ -839,7 +841,9 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
     let productDetailsById = new Map<
       string,
       {
+        localizedName: string;
         imageUrl: string | null;
+        category: string | null;
         brandName: string | null;
         measurementValue: number | null;
         measurementUnit: string | null;
@@ -850,13 +854,13 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         orderItemNames.length > 0
           ? (supabaseAdmin as any)
               .from("master_products")
-              .select("id, product_name, image_url, measurement_value, measurement_unit, brand_id")
+              .select("id, product_name, name_fr, name_ar, category, image_url, measurement_value, measurement_unit, brand_id")
               .in("product_name", orderItemNames)
           : Promise.resolve({ data: [], error: null }),
         orderItemProductIds.length > 0
           ? (supabaseAdmin as any)
               .from("master_products")
-              .select("id, product_name, image_url, measurement_value, measurement_unit, brand_id")
+              .select("id, product_name, name_fr, name_ar, category, image_url, measurement_value, measurement_unit, brand_id")
               .in("id", orderItemProductIds)
           : Promise.resolve({ data: [], error: null }),
       ]);
@@ -900,9 +904,20 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
       const toProductDetails = (product: any) => {
         const brand = typeof product?.brand_id === "string" ? brandsById.get(product.brand_id) : undefined;
         const brandName = localizeDbName(preferredLocale, brand);
+        const localizedName = localizeText(
+          preferredLocale,
+          {
+            ar: typeof product?.name_ar === "string" ? product.name_ar : null,
+            fr: typeof product?.name_fr === "string" ? product.name_fr : null,
+            en: typeof product?.product_name === "string" ? product.product_name : null,
+          },
+          typeof product?.product_name === "string" ? product.product_name : "",
+        );
 
         return {
+          localizedName,
           imageUrl: product.image_url ?? null,
+          category: typeof product?.category === "string" ? product.category : null,
           brandName: brandName || null,
           measurementValue:
             typeof product?.measurement_value === "number"
@@ -1071,11 +1086,24 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
             const productDetailsByItemName =
               typeof item?.name === "string" ? productDetailsByName.get(item.name.trim().toLowerCase()) : undefined;
             const productDetails = productDetailsByItemId ?? productDetailsByItemName;
+            const localizedName =
+              productDetails?.localizedName || getLocalizedValue(item?.name, preferredLocale, "");
+            const localizedVariant = getLocalizedValue(item?.selectedVariant, preferredLocale, "");
+            const localizedItemBrand =
+              productDetails?.brandName || getLocalizedValue(item?.brandName, preferredLocale, "");
+            const localizedItemCategory =
+              getLocalizedValue(item?.categoryName, preferredLocale, "") ||
+              getLocalizedValue(item?.category, preferredLocale, "") ||
+              productDetails?.category ||
+              null;
 
             return {
               ...item,
+              name: localizedName || (typeof item?.name === "string" ? item.name : ""),
+              selectedVariant: localizedVariant || null,
               imageUrl: productDetails?.imageUrl ?? null,
-              brandName: productDetails?.brandName ?? null,
+              brandName: localizedItemBrand || null,
+              categoryLabel: localizedItemCategory,
               measurementValue: productDetails?.measurementValue ?? null,
               measurementUnit: productDetails?.measurementUnit ?? null,
             };
