@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Minus, Package, Plus, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Package, Plus, ShoppingCart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -98,7 +98,7 @@ export function ProductCard({
               aria-label="Wishlist"
               className="absolute right-2 top-2 inline-flex size-9 items-center justify-center rounded-full bg-white shadow-sm"
             >
-              <ShoppingCart className="size-4 text-red-600" />
+              <Heart className="size-4 text-teal-700" />
             </button>
           ) : null}
           {isFlashDeal && discountPercent > 0 ? (
