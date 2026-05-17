@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -253,10 +254,10 @@ export const Route = createFileRoute("/vendor/dashboard")({
   validateSearch: zodValidator(vendorDashboardSearchSchema),
   head: () => ({
     meta: [
-      { title: "Vendor Dashboard | Bzaf Fresh" },
+      { title: i18n.t("vendorDashboard.meta.title") },
       {
         name: "description",
-        content: "Vendor operations dashboard for live order fulfillment and inventory control.",
+        content: i18n.t("vendorDashboard.meta.description"),
       },
     ],
   }),
@@ -1308,7 +1309,7 @@ function VendorDashboardPage() {
       ...current,
       [orderId]: true,
     }));
-    toast.success("Order removed from your active queue.");
+    toast.success(t("vendorDashboard.toasts.orderRemovedFromQueue"));
   };
 
   const persistInventoryItem = async (item: InventoryItem, vendorPrice: number, isAvailable: boolean) => {
@@ -1326,7 +1327,7 @@ function VendorDashboardPage() {
       toast.success(t("vendorDashboard.toasts.inventoryUpdated"));
     } catch (error) {
       console.error("Failed to save inventory item:", error);
-      toast.error("Failed to save inventory item.");
+      toast.error(t("vendorDashboard.toasts.saveInventoryFailed"));
     } finally {
       setIsSavingInventoryFor(null);
     }
@@ -1340,7 +1341,7 @@ function VendorDashboardPage() {
 
     const numericPrice = Number(draft.vendorPrice);
     if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      toast.error("Please enter a valid price.");
+      toast.error(t("vendorDashboard.toasts.enterValidPrice"));
       return;
     }
 
@@ -1363,7 +1364,7 @@ function VendorDashboardPage() {
     const numericPrice = Number(draftPrice);
 
     if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      toast.error("Set a valid price before changing stock status.");
+      toast.error(t("vendorDashboard.toasts.setValidPriceBeforeStockChange"));
       return;
     }
 
@@ -1380,23 +1381,23 @@ function VendorDashboardPage() {
     const numericFlashPrice = Number(draft.price);
     if (draft.enabled) {
       if (Number.isNaN(numericFlashPrice) || numericFlashPrice <= 0) {
-        toast.error("Flash sale price must be greater than 0.");
+        toast.error(t("vendorDashboard.toasts.flashPriceGtZero"));
         return;
       }
 
       if (numericFlashPrice >= item.vendorPrice) {
-        toast.error("Flash sale price must be lower than your regular price.");
+        toast.error(t("vendorDashboard.toasts.flashPriceLowerThanRegular"));
         return;
       }
 
       if (!draft.endAt) {
-        toast.error("Please choose when the flash sale ends.");
+        toast.error(t("vendorDashboard.toasts.chooseFlashEndTime"));
         return;
       }
 
       const endTime = new Date(draft.endAt);
       if (Number.isNaN(endTime.getTime()) || endTime.getTime() <= Date.now()) {
-        toast.error("Flash sale end time must be in the future.");
+        toast.error(t("vendorDashboard.toasts.flashEndTimeFuture"));
         return;
       }
     }
@@ -1415,13 +1416,13 @@ function VendorDashboardPage() {
     );
 
     if (!isValidMoroccoPhone(normalizeMoroccoPhoneInput(activeVendorPhone))) {
-      toast.error("Vendor session missing. Please log in again.");
+      toast.error(t("vendorDashboard.toasts.vendorSessionMissing"));
       return;
     }
 
     try {
       setIsSavingFlashFor(item.id);
-      toast.loading("Saving flash sale...", { id: `flash-save-${item.id}` });
+      toast.loading(t("vendorDashboard.toasts.savingFlashSale"), { id: `flash-save-${item.id}` });
       await saveFlashSale({
         data: {
           phoneNumber: normalizedActiveVendorPhone,
@@ -1432,12 +1433,15 @@ function VendorDashboardPage() {
         },
       });
       await inventoryQuery.refetch();
-      toast.success(draft.enabled ? "Flash sale saved." : "Flash sale disabled.", {
-        id: `flash-save-${item.id}`,
-      });
+      toast.success(
+        draft.enabled ? t("vendorDashboard.toasts.flashSaleSaved") : t("vendorDashboard.toasts.flashSaleDisabled"),
+        {
+          id: `flash-save-${item.id}`,
+        },
+      );
     } catch (error) {
       console.error("Failed to save flash sale:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to save flash sale.";
+      const errorMessage = error instanceof Error ? error.message : t("vendorDashboard.toasts.flashSaleSaveFailed");
       toast.error(errorMessage, { id: `flash-save-${item.id}` });
       await inventoryQuery.refetch();
     } finally {
@@ -1624,23 +1628,23 @@ function VendorDashboardPage() {
                 }}
                 onAddTrustedCustomer={async () => {
                   if (!isTrustedCustomerPhoneValid) {
-                    toast.error("Enter a valid customer phone number.");
+                    toast.error(t("vendorDashboard.carnet.enterValidCustomerPhone"));
                     return;
                   }
 
                   const maxLimit = Number(trustedCustomerMaxLimit);
                   if (Number.isNaN(maxLimit) || maxLimit < 0) {
-                    toast.error("Enter a valid max credit limit.");
+                    toast.error(t("vendorDashboard.carnet.enterValidMaxCreditLimit"));
                     return;
                   }
 
                   if (existingCustomerLookup?.found === false && trustedCustomerName.trim().length === 0) {
-                    toast.error("Full name is required for new customers.");
+                    toast.error(t("vendorDashboard.carnet.fullNameRequiredForNewCustomer"));
                     return;
                   }
 
                   if (!/^[A-Za-z0-9-]{4,30}$/.test(trustedCustomerCin.trim())) {
-                    toast.error("CIN must be 4-30 letters, numbers, or hyphens.");
+                    toast.error(t("vendorDashboard.carnet.cinValidation"));
                     return;
                   }
 
@@ -1648,7 +1652,7 @@ function VendorDashboardPage() {
                     (customer) => customer.customerPhone === trustedCustomerFullPhone,
                   );
                   if (existingInCarnet) {
-                    toast.error("This customer is already in your carnet list.");
+                    toast.error(t("vendorDashboard.carnet.customerAlreadyInCarnet"));
                     return;
                   }
 
@@ -2050,7 +2054,7 @@ function VendorDashboardPage() {
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerPhone}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">CIN</p>
+                  <p className="text-xs text-muted-foreground">{t("vendorDashboard.carnet.cin")}</p>
                   <p className="text-sm font-medium text-foreground">{selectedCarnetCustomer.customerCin ?? "—"}</p>
                 </div>
                 <div>
@@ -2647,20 +2651,21 @@ function CarnetView({
   onOpenLedger: (customerPhone: string) => void;
   onAddTrustedCustomer: () => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const showNewCustomerFields = existingCustomerLookup?.found === false;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Carnet (Credit)</h2>
-        <p className="text-xs text-muted-foreground">Manage trusted customers and their credit balances.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.carnet.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.carnet.subtitle")}</p>
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Outstanding Credit (مجموع الكريدي اللي على برا)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.totalOutstandingCredit")}</p>
               <p className="mt-1 text-2xl font-extrabold text-chart-4">{totalOutstandingCreditMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2672,7 +2677,7 @@ function CarnetView({
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Credit Issued Today (كريدي خرج اليوم)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.creditIssuedToday")}</p>
               <p className="mt-1 text-2xl font-extrabold text-foreground">{creditIssuedTodayMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2684,7 +2689,7 @@ function CarnetView({
         <article className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Settled Credit (الكريدي المستخلص/المسدد)</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.settledCredit")}</p>
               <p className="mt-1 text-2xl font-extrabold text-success">{settledCreditMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
@@ -2696,7 +2701,7 @@ function CarnetView({
         <article className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Admin Dues in Carnet · مستحقات المنصة من الكريدي</p>
+              <p className="text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.adminDues")}</p>
               <p className="mt-1 text-2xl font-extrabold text-destructive">{adminDuesInCarnetMad.toFixed(2)} MAD</p>
             </div>
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/40 bg-background text-destructive">
@@ -2709,9 +2714,9 @@ function CarnetView({
       <div className="mb-4 space-y-3 rounded-xl border border-border bg-background p-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
           <div className="flex items-center overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
-            <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
+            <span className="px-3 text-sm font-medium text-muted-foreground">{t("vendorDashboard.carnet.phonePrefix")}</span>
             <Input
-              placeholder="6XXXXXXXX"
+              placeholder={t("vendorDashboard.carnet.customerPhonePlaceholder")}
               inputMode="numeric"
               value={trustedCustomerPhone}
               onChange={(event) => onPhoneChange(normalizeMoroccoPhoneInput(event.target.value))}
@@ -2722,24 +2727,24 @@ function CarnetView({
             type="number"
             min="0"
             step="0.01"
-            placeholder="Max limit (MAD)"
+            placeholder={t("vendorDashboard.carnet.maxLimitPlaceholder")}
             value={trustedCustomerMaxLimit}
             onChange={(event) => onMaxLimitChange(event.target.value)}
             className="h-10 rounded-xl"
           />
           <Button variant="hero" className="h-10 rounded-xl" onClick={onAddTrustedCustomer} disabled={isSavingCarnet}>
-            {isSavingCarnet ? "Sending..." : "Verify & Add to Carnet"}
+            {isSavingCarnet ? t("vendorDashboard.carnet.sending") : t("vendorDashboard.carnet.verifyAndAddToCarnet")}
           </Button>
         </div>
 
         {existingCustomerLookup ? (
           existingCustomerLookup.found ? (
             <Badge className="w-fit rounded-lg bg-emerald-500/10 text-emerald-700 border-emerald-200">
-              Existing Customer: {existingCustomerLookup.fullName ?? "Unnamed Customer"}
+              {t("vendorDashboard.carnet.existingCustomer")}: {existingCustomerLookup.fullName ?? t("vendorDashboard.carnet.unnamedCustomer")}
             </Badge>
           ) : (
             <Badge variant="secondary" className="w-fit rounded-lg">
-              New Customer
+              {t("vendorDashboard.carnet.newCustomer")}
             </Badge>
           )
         ) : null}
@@ -2747,7 +2752,7 @@ function CarnetView({
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {showNewCustomerFields ? (
             <Input
-              placeholder="Full Name *"
+              placeholder={t("vendorDashboard.carnet.fullNamePlaceholder")}
               value={trustedCustomerName}
               onChange={(event) => onNameChange(event.target.value)}
               className="h-10 rounded-xl"
@@ -2756,7 +2761,7 @@ function CarnetView({
             <div className="hidden md:block" />
           )}
           <Input
-            placeholder="CIN / National ID *"
+            placeholder={t("vendorDashboard.carnet.cinPlaceholder")}
             value={trustedCustomerCin}
             onChange={(event) => onCinChange(event.target.value.toUpperCase())}
             className="h-10 rounded-xl"
@@ -2765,15 +2770,15 @@ function CarnetView({
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading carnet customers..." />
+        <EmptyState label={t("vendorDashboard.carnet.loadingCustomers")} />
       ) : customers.length === 0 ? (
-        <EmptyState label="No trusted customers added yet." />
+        <EmptyState label={t("vendorDashboard.carnet.emptyCustomers")} />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="grid grid-cols-[1.2fr_1fr_1fr] items-center gap-2 bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground">
-            <span>Phone</span>
-            <span>Current Debt</span>
-            <span>Max Limit</span>
+            <span>{t("vendorDashboard.carnet.tablePhone")}</span>
+            <span>{t("vendorDashboard.carnet.tableCurrentDebt")}</span>
+            <span>{t("vendorDashboard.carnet.tableMaxLimit")}</span>
           </div>
           <div className="divide-y divide-border">
             {customers.map((customer) => (
@@ -2812,6 +2817,7 @@ function StoreInventoryView({
   onSave: (item: InventoryItem) => Promise<void>;
   onQuickToggle: (item: InventoryItem, checked: boolean) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "in-stock" | "out-of-stock" | "unpriced">("all");
@@ -2851,14 +2857,14 @@ function StoreInventoryView({
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Store Inventory</h2>
-        <p className="text-xs text-muted-foreground">Set your live prices and control product availability instantly.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.inventory.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.inventory.subtitle")}</p>
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading inventory..." />
+        <EmptyState label={t("vendorDashboard.inventory.loading")} />
       ) : items.length === 0 ? (
-        <EmptyState label="No master products available yet." />
+        <EmptyState label={t("vendorDashboard.inventory.empty")} />
       ) : (
         <>
           <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-background p-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
@@ -2867,7 +2873,7 @@ function StoreInventoryView({
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search products by name"
+                placeholder={t("vendorDashboard.inventory.searchPlaceholder")}
                 className="h-10 rounded-xl pl-9"
               />
             </div>
@@ -2877,7 +2883,7 @@ function StoreInventoryView({
               onChange={(event) => setCategoryFilter(event.target.value)}
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t("vendorDashboard.inventory.allCategories")}</option>
               {categoryOptions.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -2890,17 +2896,17 @@ function StoreInventoryView({
               onChange={(event) => setStatusFilter(event.target.value as "all" | "in-stock" | "out-of-stock" | "unpriced")}
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
             >
-              <option value="all">All</option>
-              <option value="in-stock">In Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
-              <option value="unpriced">Unpriced</option>
+              <option value="all">{t("vendorDashboard.inventory.filters.all")}</option>
+              <option value="in-stock">{t("vendorDashboard.inventory.filters.inStock")}</option>
+              <option value="out-of-stock">{t("vendorDashboard.inventory.filters.outOfStock")}</option>
+              <option value="unpriced">{t("vendorDashboard.inventory.filters.unpriced")}</option>
             </select>
           </div>
 
-          <p className="mb-3 text-xs text-muted-foreground">Showing {filteredItems.length} products</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t("vendorDashboard.inventory.showingProducts", { count: filteredItems.length })}</p>
 
           {filteredItems.length === 0 ? (
-            <EmptyState label="No products found matching your criteria." />
+            <EmptyState label={t("vendorDashboard.inventory.noMatchingProducts")} />
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {filteredItems.map((item) => {
@@ -2943,7 +2949,7 @@ function StoreInventoryView({
 
                   <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2 py-1.5">
                     <span className="text-xs font-medium text-foreground">
-                      {draft.isAvailable ? "In Stock" : "Out of Stock"}
+                      {draft.isAvailable ? t("vendorDashboard.inventory.status.inStock") : t("vendorDashboard.inventory.status.outOfStock")}
                     </span>
                     <Switch checked={draft.isAvailable} onCheckedChange={(checked) => onQuickToggle(item, checked)} />
                   </div>
@@ -2951,7 +2957,7 @@ function StoreInventoryView({
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Your Price (MAD)</label>
+                    <label className="text-xs text-muted-foreground">{t("vendorDashboard.inventory.yourPrice")}</label>
                     <Input
                       type="number"
                       min="0"
@@ -2969,7 +2975,7 @@ function StoreInventoryView({
                           },
                         }))
                       }
-                      placeholder="0.00"
+                      placeholder={t("vendorDashboard.common.pricePlaceholder")}
                       className="h-10 rounded-xl"
                     />
                   </div>
@@ -2980,7 +2986,7 @@ function StoreInventoryView({
                     onClick={() => onSave(item)}
                     disabled={isSavingInventoryFor === item.id}
                   >
-                    {isSavingInventoryFor === item.id ? "Saving..." : "Save"}
+                    {isSavingInventoryFor === item.id ? t("vendorDashboard.actions.saving") : t("vendorDashboard.actions.save")}
                   </Button>
                 </div>
               </article>
@@ -3009,6 +3015,7 @@ function FlashSalesView({
   onDraftChange: Dispatch<SetStateAction<Record<string, { enabled: boolean; price: string; endAt: string }>>>;
   onSaveFlash: (item: InventoryItem) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredItems = useMemo(() => {
@@ -3024,14 +3031,14 @@ function FlashSalesView({
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Flash Sales</h2>
-        <p className="text-xs text-muted-foreground">Enable limited-time deals to boost conversions.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.flashSales.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.subtitle")}</p>
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading flash sale products..." />
+        <EmptyState label={t("vendorDashboard.flashSales.loading")} />
       ) : filteredItems.length === 0 ? (
-        <EmptyState label="No in-stock priced products available for flash sales." />
+        <EmptyState label={t("vendorDashboard.flashSales.empty")} />
       ) : (
         <>
           <div className="mb-4 rounded-xl border border-border bg-background p-3">
@@ -3040,7 +3047,7 @@ function FlashSalesView({
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search products by name"
+                placeholder={t("vendorDashboard.flashSales.searchPlaceholder")}
                 className="h-10 rounded-xl pl-9"
               />
             </div>
@@ -3086,12 +3093,12 @@ function FlashSalesView({
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Regular: {item.vendorPrice.toFixed(2)} MAD</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t("vendorDashboard.flashSales.regularPrice", { price: item.vendorPrice.toFixed(2) })}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2 py-1.5">
-                      <span className="text-xs font-medium text-foreground">{draft.enabled ? "Active" : "Inactive"}</span>
+                      <span className="text-xs font-medium text-foreground">{draft.enabled ? t("vendorDashboard.flashSales.active") : t("vendorDashboard.flashSales.inactive")}</span>
                       <Switch
                         checked={draft.enabled}
                         onCheckedChange={(checked) =>
@@ -3113,7 +3120,7 @@ function FlashSalesView({
 
                   <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Flash Price (MAD)</label>
+                      <label className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.flashPrice")}</label>
                       <Input
                         type="number"
                         min="0"
@@ -3132,7 +3139,7 @@ function FlashSalesView({
                             },
                           }))
                         }
-                        placeholder="0.00"
+                        placeholder={t("vendorDashboard.common.pricePlaceholder")}
                         className={cn(
                           "h-10 rounded-xl",
                           isFlashPriceInvalid &&
@@ -3141,12 +3148,12 @@ function FlashSalesView({
                         disabled={!draft.enabled}
                       />
                       {isFlashPriceInvalid ? (
-                        <p className="text-xs text-destructive">Flash price must be less than the regular price.</p>
+                        <p className="text-xs text-destructive">{t("vendorDashboard.toasts.flashPriceLowerThanRegular")}</p>
                       ) : null}
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Ends At</label>
+                      <label className="text-xs text-muted-foreground">{t("vendorDashboard.flashSales.endsAt")}</label>
                       <Input
                         type="datetime-local"
                         value={draft.endAt ? new Date(draft.endAt).toISOString().slice(0, 16) : ""}
@@ -3175,7 +3182,7 @@ function FlashSalesView({
                     onClick={() => onSaveFlash(item)}
                     disabled={isSavingFlashFor === item.id || !canSaveFlashSale}
                   >
-                    {isSavingFlashFor === item.id ? "Saving..." : "Save Flash Sale"}
+                    {isSavingFlashFor === item.id ? t("vendorDashboard.actions.saving") : t("vendorDashboard.flashSales.save")}
                   </Button>
                 </article>
               );
@@ -3208,11 +3215,12 @@ function OrderCard({
   onMarkReady?: () => void;
   timeTick: number;
 }) {
+  const { t } = useTranslation();
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
   const isInDeliveryTab = tab === "inDelivery";
-  const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
+  const customerOrAreaLabel = order.customerName?.trim() || destination || t("vendorDashboard.common.destinationUnavailable");
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
@@ -3235,14 +3243,14 @@ function OrderCard({
       <article className="rounded-xl border border-border bg-card p-3 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-base font-semibold text-foreground">Order {shortId}</p>
+            <p className="text-base font-semibold text-foreground">{t("vendorDashboard.common.order")} {shortId}</p>
             <p className="mt-1 text-xs text-muted-foreground">{elapsed}</p>
           </div>
-          <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Delivered</Badge>
+          <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">{t("vendorDashboard.status.delivered")}</Badge>
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Customer</p>
+            <p className="text-xs text-muted-foreground">{t("vendorDashboard.common.customer")}</p>
             <p className="text-sm font-medium text-foreground">{order.customerName}</p>
           </div>
           <p className="text-base font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
@@ -3273,7 +3281,7 @@ function OrderCard({
             <div className="flex w-full items-center justify-between gap-3">
               <span className="inline-flex h-7 items-center gap-2 rounded-full bg-[#dcfce7] px-3 text-xs font-medium text-[#15803d]" dir="rtl">
                 <span className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
-                <span>في الطريق / In Delivery</span>
+                <span>{t("vendorDashboard.status.inDelivery")}</span>
               </span>
               <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
@@ -3284,7 +3292,7 @@ function OrderCard({
             <div className="flex w-full items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-[20px] bg-[#fef9c3] px-[10px] py-[3px] text-[11px] font-medium text-[#b45309]">
                 <span className="h-[14px] w-[14px] shrink-0 animate-spin rounded-full border-2 border-[#f59e0b] border-t-transparent" />
-                <span>Preparing</span>
+                <span>{t("vendorDashboard.status.preparing")}</span>
               </span>
               <p className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
@@ -3306,11 +3314,11 @@ function OrderCard({
           <>
             <div className="grid w-full grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Customer</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{t("vendorDashboard.common.customer")}</p>
                 <p className="truncate text-[15px] font-medium text-foreground">{customerOrAreaLabel}</p>
               </div>
               <div className="space-y-1 text-right">
-                <p className="text-right text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Total</p>
+                <p className="text-right text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{t("vendorDashboard.common.total")}</p>
                 <p className="whitespace-nowrap text-right text-[15px] font-bold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
@@ -3323,11 +3331,11 @@ function OrderCard({
                 <>
                   <div className="grid w-full grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Order</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{t("vendorDashboard.common.order")}</p>
                       <p className="text-lg font-semibold text-foreground">{shortId}</p>
                     </div>
                     <div className="space-y-1 text-right">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Total</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{t("vendorDashboard.common.total")}</p>
                       <p className="text-lg font-semibold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
                     </div>
                   </div>
@@ -3340,7 +3348,7 @@ function OrderCard({
 
                     <p className="inline-flex w-full items-center gap-1.5 text-[12px] text-muted-foreground">
                       <MapPin className="size-3.5 shrink-0 text-[#16a34a]" />
-                      <span className="truncate">{destination || "Destination unavailable"}</span>
+                      <span className="truncate">{destination || t("vendorDashboard.common.destinationUnavailable")}</span>
                     </p>
                   </div>
 
@@ -3360,7 +3368,7 @@ function OrderCard({
 
                   <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
                     <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{destination || "Destination unavailable"}</span>
+                     <span className="truncate">{destination || t("vendorDashboard.common.destinationUnavailable")}</span>
                   </p>
                 </>
               )}
@@ -3410,7 +3418,7 @@ function OrderCard({
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
-                  {isInDeliveryTab ? "للتوصيل المكلف" : "Driver / الليفرور"}
+                  {isInDeliveryTab ? t("vendorDashboard.driver.assignedForDelivery") : t("vendorDashboard.driver.label")}
                 </p>
               </div>
             </div>
@@ -3425,10 +3433,10 @@ function OrderCard({
                 <a
                   href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
                   onClick={(e) => e.stopPropagation()}
-                  aria-label={`Contact driver ${driver.name}`}
+                  aria-label={t("vendorDashboard.driver.contactAria", { name: driver.name })}
                 >
                   <Users className="h-3.5 w-3.5" />
-                  Contact
+                  {t("vendorDashboard.driver.contact")}
                 </a>
               </Button>
             ) : (
@@ -3438,7 +3446,7 @@ function OrderCard({
                     href={`tel:${driverPhoneForCall}`}
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-100"
-                    aria-label={`Call driver ${driver.name}`}
+                     aria-label={t("vendorDashboard.driver.callAria", { name: driver.name })}
                   >
                     <Phone className="h-4 w-4" />
                   </a>
@@ -3451,7 +3459,7 @@ function OrderCard({
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-700 shadow-sm transition hover:bg-green-100"
-                    aria-label={`WhatsApp driver ${driver.name}`}
+                     aria-label={t("vendorDashboard.driver.whatsappAria", { name: driver.name })}
                   >
                     <MessageSquare className="h-4 w-4" />
                   </a>
@@ -3475,17 +3483,21 @@ function OrderCard({
         onClick={onOpenDetails}
       >
         {isInDeliveryTab || isPreparingTab ? <Eye className="mr-1.5 h-4 w-4" /> : null}
-        {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
+        {tab === "ready"
+          ? order.cyclist
+            ? t("vendorDashboard.actions.viewAndProcess")
+            : t("vendorDashboard.actions.assignDriver")
+          : t("vendorDashboard.actions.viewAndProcess")}
       </Button>
 
       {tab === "pending" ? (
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="soft" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
             <BadgeCheck className="size-4" />
-            {isUpdating ? "Updating..." : "Accept"}
+            {isUpdating ? t("vendorDashboard.actions.updating") : t("vendorDashboard.actions.accept")}
           </Button>
           <Button variant="outline" className="h-10 w-full rounded-xl" onClick={onReject} disabled={isUpdating}>
-            Reject
+            {t("vendorDashboard.actions.reject")}
           </Button>
         </div>
       ) : null}
@@ -3498,7 +3510,7 @@ function OrderCard({
           disabled={isUpdating}
         >
           <Truck className="size-4" />
-          {isUpdating ? "Opening..." : "Ready for Pickup"}
+          {isUpdating ? t("vendorDashboard.actions.opening") : t("vendorDashboard.actions.readyForPickup")}
         </Button>
       ) : null}
     </article>
@@ -3542,33 +3554,35 @@ function QuickStatCard({
 }
 
 function EmptyState({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
-    <AppEmptyState title={label} subtitle="Data will appear here as soon as it becomes available." />
+    <AppEmptyState title={label} subtitle={t("vendorDashboard.common.emptyStateSubtitle")} />
   );
 }
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
+  const { t } = useTranslation();
   if (tab === "pending") {
-    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">Pending</Badge>;
+    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">{t("vendorDashboard.status.pending")}</Badge>;
   }
 
   if (tab === "preparing") {
     return (
       <Badge className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent/20 px-2.5 py-0.5 text-foreground hover:bg-accent/20">
         <Package className="h-3.5 w-3.5 shrink-0" />
-        <span>Preparing</span>
+        <span>{t("vendorDashboard.status.preparing")}</span>
       </Badge>
     );
   }
 
   if (tab === "inDelivery") {
-    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">In Delivery</Badge>;
+    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">{t("vendorDashboard.status.inDelivery")}</Badge>;
   }
 
   return status === "ready" ? (
-    <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Ready</Badge>
+    <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">{t("vendorDashboard.status.ready")}</Badge>
   ) : (
-    <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">Active</Badge>
+    <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">{t("vendorDashboard.status.active")}</Badge>
   );
 }
 
