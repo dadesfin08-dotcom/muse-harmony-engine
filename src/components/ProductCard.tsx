@@ -81,8 +81,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        "flex flex-col h-full bg-white rounded-2xl overflow-hidden border-transparent ring-1 ring-black/5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08)]",
-        premiumGrid ? "" : "min-h-[320px]",
+        "flex flex-col h-full min-h-[320px] bg-white rounded-2xl overflow-hidden border-transparent ring-1 ring-black/5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08)]",
         isFlashDeal ? "pb-1" : "",
       )}
     >
@@ -127,8 +126,9 @@ export function ProductCard({
       </Link>
 
       <div className={cn("flex flex-col flex-1 p-3", isFlashDeal ? "h-full p-4" : premiumGrid ? "" : "pt-2") }>
-        {normalizedVariants.length > 0 ? (
-          <div className="relative mb-2">
+        <div className="mb-2 min-h-8">
+          {normalizedVariants.length > 0 ? (
+            <div className="relative">
             <select
               value={resolvedVariant ?? ""}
               onChange={(event) => setVariantValue(event.target.value)}
@@ -142,8 +142,9 @@ export function ProductCard({
               ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" />
-          </div>
-        ) : null}
+            </div>
+          ) : null}
+        </div>
 
         <div className="flex justify-between items-center w-full mb-1">
           <span className="inline-block bg-emerald-500/10 text-emerald-700 font-extrabold px-2.5 py-1 rounded-md text-[10px] tracking-widest uppercase border border-emerald-500/10">
