@@ -3238,20 +3238,19 @@ function OrderCard({
       className={cn(
         "flex h-full min-h-[200px] flex-col transition hover:shadow-md",
         isInDeliveryTab
-          ? "rounded-[24px] border border-border/80 bg-card p-5 shadow-[0_16px_40px_-26px_rgba(16,24,40,0.2)] sm:rounded-[26px] sm:p-6"
+          ? "rounded-2xl border border-[#e5e7eb] border-l-4 border-l-[#16a34a] bg-white p-5 shadow-sm"
           : "rounded-xl border border-border bg-card p-4 shadow-sm",
       )}
     >
       <div className={cn("flex-1 space-y-2.5", isInDeliveryTab ? "flex flex-col gap-4 space-y-0" : "")}> 
         <div className={cn("flex w-full items-start justify-between gap-2", !isInDeliveryTab ? "mb-3 flex flex-row items-center justify-end gap-2" : "") }>
           {isInDeliveryTab ? (
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-2.5 text-xs font-semibold text-primary" dir="rtl">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                <span>في الطريق</span>
-                <Bike className="h-3.5 w-3.5" />
+            <div className="flex w-full items-center justify-between gap-3">
+              <span className="inline-flex h-7 items-center gap-2 rounded-full bg-[#dcfce7] px-3 text-xs font-medium text-[#15803d]" dir="rtl">
+                <span className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
+                <span>في الطريق / In Delivery</span>
               </span>
-              <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-gray-500">
+              <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
                 <span className="max-w-[130px] truncate whitespace-nowrap">{elapsed}</span>
               </p>
@@ -3271,15 +3270,15 @@ function OrderCard({
           <>
             <div className="grid w-full grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-xs text-gray-500">Customer</p>
-                <p className="truncate text-base font-semibold text-foreground">{customerOrAreaLabel}</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Customer</p>
+                <p className="truncate text-[15px] font-medium text-foreground">{customerOrAreaLabel}</p>
               </div>
               <div className="space-y-1 text-right">
-                <p className="text-right text-xs text-gray-500">Total</p>
-                <p className="whitespace-nowrap text-right text-lg font-bold text-emerald-600">{order.totalMad.toFixed(2)} MAD</p>
+                <p className="text-right text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Total</p>
+                <p className="whitespace-nowrap text-right text-[15px] font-bold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
-            <div className="my-0.5 border-t-2 border-dashed border-border/70" />
+            <div className="my-0.5 border-t border-dashed border-[#e5e7eb]" />
           </>
         ) : (
           <>
@@ -3340,7 +3339,7 @@ function OrderCard({
                 <p
                   className={cn(
                     "font-medium text-muted-foreground",
-                    isInDeliveryTab ? "truncate text-xs text-gray-500" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
+                    isInDeliveryTab ? "truncate text-xs" : "text-[10px] font-bold uppercase tracking-wide text-emerald-600",
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
@@ -3353,7 +3352,8 @@ function OrderCard({
               <Button
                 asChild
                 size="sm"
-                className="shrink-0 bg-emerald-700 px-3 text-xs text-white hover:bg-emerald-700/90"
+                variant="outline"
+                className="h-9 shrink-0 rounded-full border-[#16a34a] bg-transparent px-3 text-xs font-medium text-[#16a34a] hover:bg-transparent"
               >
                 <a
                   href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
@@ -3400,7 +3400,7 @@ function OrderCard({
         className={cn(
           "mt-2 w-full rounded-[16px]",
           isInDeliveryTab
-            ? "h-12 bg-gradient-to-r from-primary via-primary to-success text-sm font-semibold shadow-[0_20px_34px_-24px_rgba(14,116,144,0.7)] hover:shadow-[0_24px_42px_-24px_rgba(14,116,144,0.78)]"
+            ? "h-11 rounded-full bg-[#16a34a] text-sm font-medium text-white shadow-none hover:bg-[#15803d]"
             : "h-10 rounded-xl",
         )}
         onClick={onOpenDetails}
