@@ -262,6 +262,7 @@ export const Route = createFileRoute("/vendor/dashboard")({
 });
 
 function VendorDashboardPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate({ from: "/vendor/dashboard" });
   const search = Route.useSearch();
   const queryClient = useQueryClient();
@@ -398,9 +399,15 @@ function VendorDashboardPage() {
     });
   };
 
+  const activeLanguage = (i18n.resolvedLanguage || i18n.language || "en") === "ar"
+    ? "ar"
+    : (i18n.resolvedLanguage || i18n.language || "en") === "fr"
+      ? "fr"
+      : "en";
+
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryFn: () => fetchDashboardData({ data: { phoneNumber: normalizedVendorPhoneNumber, locale: activeLanguage } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
     enabled: hasValidVendorPhoneSession,
@@ -436,10 +443,10 @@ function VendorDashboardPage() {
 
   useEffect(() => {
     if (hasValidVendorPhoneSession) return;
-    toast.error("Vendor session invalid. Please log in again.");
+    toast.error(t("vendorDashboard.toasts.invalidSession"));
     clearRoleSessions();
     void navigate({ to: "/vendor/login" });
-  }, [hasValidVendorPhoneSession, navigate]);
+  }, [hasValidVendorPhoneSession, navigate, t]);
 
   const isDashboardInitialLoading = dashboardQuery.isLoading && !dashboardQuery.data;
   const isInventoryInitialLoading = inventoryQuery.isLoading && !inventoryQuery.data;
