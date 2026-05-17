@@ -48,6 +48,7 @@ export const useCustomerCartStore = create<CustomerCartState>()(
                 (cartItem.cartItemId || cartItem.id) === itemKey
                   ? {
                       ...cartItem,
+                      ...item,
                       quantity: cartItem.quantity + 1,
                     }
                   : cartItem,
