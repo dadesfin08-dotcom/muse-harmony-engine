@@ -5666,13 +5666,25 @@ function AIBrandEngineSection({
   onResetScore: (brandId: string) => void;
   onSeedDemoData: () => void;
 }) {
-  const formatScore = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
+  const { t } = useTranslation();
+  const { intlLocale } = useAppLanguage();
+  const formatScore = (value: number) => new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 1 }).format(value);
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const localizedBrandEngineChartConfig = {
+    orderVelocity: {
+      label: t("admin.aiBrandEngine.chart.orderVelocity"),
+      color: "var(--color-chart-1)",
+    },
+    searchVolume: {
+      label: t("admin.aiBrandEngine.chart.searchVolume"),
+      color: "var(--color-chart-4)",
+    },
+  } satisfies ChartConfig;
 
   if (error) {
     return (
       <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-5 text-destructive shadow-sm">
-        Failed to load AI Brand Engine analytics.
+        {t("admin.aiBrandEngine.loadFailed")}
       </section>
     );
   }
@@ -5700,28 +5712,28 @@ function AIBrandEngineSection({
     formatter?: (value: number) => string;
   }> = [
     {
-      title: "Active Trending Brands",
+      title: t("admin.aiBrandEngine.kpis.activeTrendingBrands"),
       value: derivedKpis.activeTrendingBrands,
-      sub: `Score > ${analytics?.threshold ?? 0}`,
+      sub: t("admin.aiBrandEngine.kpis.activeTrendingBrandsSub", { threshold: analytics?.threshold ?? 0 }),
       icon: TrendingUp,
     },
     {
-      title: "Conversion Velocity",
+      title: t("admin.aiBrandEngine.kpis.conversionVelocity"),
       value: derivedKpis.conversionVelocity,
-      sub: "Average growth of top brands",
+      sub: t("admin.aiBrandEngine.kpis.conversionVelocitySub"),
       icon: Zap,
       formatter: (value: number) => formatPercent(value),
     },
     {
-      title: "Expiring Soon",
+      title: t("admin.aiBrandEngine.kpis.expiringSoon"),
       value: derivedKpis.expiringSoon,
-      sub: "Boost ending in < 6h",
+      sub: t("admin.aiBrandEngine.kpis.expiringSoonSub"),
       icon: AlertCircle,
     },
     {
-      title: "Discovery Rate",
+      title: t("admin.aiBrandEngine.kpis.discoveryRate"),
       value: derivedKpis.discoveryRate,
-      sub: "Share of orders from discovery pool",
+      sub: t("admin.aiBrandEngine.kpis.discoveryRateSub"),
       icon: Sparkles,
       formatter: (value: number) => formatPercent(value),
     },
@@ -5731,15 +5743,19 @@ function AIBrandEngineSection({
     <div className="space-y-5">
       <section className="flex items-center justify-between rounded-2xl border border-border/70 bg-card/90 px-4 py-3 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)] backdrop-blur">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">Live Refresh</p>
-          <p className="text-xs text-muted-foreground">تحديث دوري لبطاقات العدّادات والمخطط والجدول بدون وميض</p>
+          <p className="text-sm font-semibold text-foreground">{t("admin.aiBrandEngine.liveRefresh")}</p>
+          <p className="text-xs text-muted-foreground">{t("admin.aiBrandEngine.liveRefreshHint")}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" className="h-9 rounded-md" onClick={onSeedDemoData}>
-            Seed Demo Data
+            {t("admin.aiBrandEngine.seedDemoData")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            {liveRefreshEnabled ? (isFetching ? "Syncing..." : "On") : "Off"}
+            {liveRefreshEnabled
+              ? isFetching
+                ? t("admin.aiBrandEngine.syncing")
+                : t("admin.aiBrandEngine.on")
+              : t("admin.aiBrandEngine.off")}
           </span>
           <Switch checked={liveRefreshEnabled} onCheckedChange={onToggleLiveRefresh} />
         </div>
@@ -5771,19 +5787,19 @@ function AIBrandEngineSection({
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Top Brands Momentum</h2>
-              <p className="text-xs text-muted-foreground">Live score velocity and search demand</p>
+              <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.topBrandsMomentum")}</h2>
+              <p className="text-xs text-muted-foreground">{t("admin.aiBrandEngine.topBrandsMomentumHint")}</p>
             </div>
             <span className="inline-flex items-center rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
-              Updated {generatedLabel}
+              {t("admin.aiBrandEngine.updatedAt", { time: generatedLabel })}
             </span>
           </div>
           {isLoading ? (
             <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-              Loading trend signal...
+              {t("admin.aiBrandEngine.loadingTrendSignal")}
             </div>
           ) : (
-            <ChartContainer config={brandEngineChartConfig} className="h-72 w-full">
+            <ChartContainer config={localizedBrandEngineChartConfig} className="h-72 w-full">
               <LineChart data={analytics?.chartData ?? []} margin={{ left: 4, right: 4, top: 8, bottom: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="brand" tickLine={false} axisLine={false} />
@@ -5815,13 +5831,13 @@ function AIBrandEngineSection({
 
         <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Rotation Settings</h2>
+            <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.rotationSettings")}</h2>
             <Sparkles className="size-4 text-muted-foreground" />
           </div>
           <div className="space-y-4">
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Trending Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.trendingPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.trending}%</span>
               </div>
               <Slider
@@ -5834,7 +5850,7 @@ function AIBrandEngineSection({
             </div>
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Mid-Tier Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.midTierPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.midTier}%</span>
               </div>
               <Slider
@@ -5847,7 +5863,7 @@ function AIBrandEngineSection({
             </div>
             <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-foreground">Discovery Pool</span>
+                <span className="font-medium text-foreground">{t("admin.aiBrandEngine.discoveryPool")}</span>
                 <span className="text-muted-foreground">{rotationRatios.discovery}%</span>
               </div>
               <Slider
@@ -5859,7 +5875,9 @@ function AIBrandEngineSection({
               />
             </div>
             <div className="rounded-xl border border-border/70 bg-background px-3 py-2 text-xs text-muted-foreground">
-              Total allocation: {rotationRatios.trending + rotationRatios.midTier + rotationRatios.discovery}%
+              {t("admin.aiBrandEngine.totalAllocation", {
+                value: rotationRatios.trending + rotationRatios.midTier + rotationRatios.discovery,
+              })}
             </div>
           </div>
         </article>
@@ -5867,35 +5885,35 @@ function AIBrandEngineSection({
 
       <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-[0_10px_30px_-22px_oklch(0.45_0.03_240/0.45)]">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Brand Performance</h2>
+          <h2 className="text-base font-semibold text-foreground">{t("admin.aiBrandEngine.brandPerformance")}</h2>
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
             <CalendarDays className="size-3.5" />
-            Time decay tracking
+            {t("admin.aiBrandEngine.timeDecayTracking")}
           </span>
         </div>
         <div className="overflow-x-auto rounded-xl border border-border/70">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Brand</TableHead>
-                <TableHead>Current Score</TableHead>
-                <TableHead>Active Days</TableHead>
-                <TableHead>Trend Status</TableHead>
-                <TableHead className="min-w-[220px]">Time Decay</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.brand")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.currentScore")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.activeDays")}</TableHead>
+                <TableHead>{t("admin.aiBrandEngine.table.trendStatus")}</TableHead>
+                <TableHead className="min-w-[220px]">{t("admin.aiBrandEngine.table.timeDecay")}</TableHead>
+                <TableHead className="text-right">{t("admin.aiBrandEngine.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    Loading brand ranking...
+                    {t("admin.aiBrandEngine.table.loading")}
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    No brand score data available yet.
+                    {t("admin.aiBrandEngine.table.empty")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -5935,18 +5953,28 @@ function AIBrandEngineSection({
                             trendTone === "red" && "bg-destructive/15 text-destructive",
                           )}
                         >
-                          {trendTone === "green" ? "Healthy" : trendTone === "yellow" ? "Watch" : "Critical"}
+                          {trendTone === "green"
+                            ? t("admin.aiBrandEngine.status.healthy")
+                            : trendTone === "yellow"
+                              ? t("admin.aiBrandEngine.status.watch")
+                              : t("admin.aiBrandEngine.status.critical")}
                         </span>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span>Decay pressure</span>
+                            <span>{t("admin.aiBrandEngine.table.decayPressure")}</span>
                             <span>{decayPressure.toFixed(0)}%</span>
                           </div>
                           <Progress value={decayPressure} className="h-2" />
                           <p className="text-xs text-muted-foreground">
-                            {row.trendingVelocity < 0 ? `Dropping ${Math.abs(row.trendingVelocity).toFixed(1)} pts/day` : `+${row.trendingVelocity.toFixed(1)} pts/day`}
+                            {row.trendingVelocity < 0
+                              ? t("admin.aiBrandEngine.table.droppingPerDay", {
+                                  value: Math.abs(row.trendingVelocity).toFixed(1),
+                                })
+                              : t("admin.aiBrandEngine.table.risingPerDay", {
+                                  value: row.trendingVelocity.toFixed(1),
+                                })}
                           </p>
                         </div>
                       </TableCell>
@@ -5960,7 +5988,7 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <Zap className="size-3.5" />
-                            Manual Boost
+                            {t("admin.aiBrandEngine.actions.manualBoost")}
                           </Button>
                           <Button
                             variant="outline"
@@ -5970,7 +5998,9 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <Ban className="size-3.5" />
-                            {row.isBlacklisted ? "Unblacklist" : "Blacklist"}
+                            {row.isBlacklisted
+                              ? t("admin.aiBrandEngine.actions.unblacklist")
+                              : t("admin.aiBrandEngine.actions.blacklist")}
                           </Button>
                           <Button
                             variant="outline"
@@ -5980,7 +6010,7 @@ function AIBrandEngineSection({
                             disabled={isActionLoading}
                           >
                             <AlertCircle className="size-3.5" />
-                            Reset
+                            {t("admin.aiBrandEngine.actions.reset")}
                           </Button>
                         </div>
                       </TableCell>
