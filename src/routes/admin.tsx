@@ -6298,6 +6298,7 @@ function ServiceZonesSection({
   onImportCsv,
   onOpenCommuneProfile,
   localizeCommuneName,
+  localizeNeighborhoodName,
 }: {
   zones: ServiceZoneTree;
   isLoading: boolean;
@@ -6331,13 +6332,11 @@ function ServiceZonesSection({
   onImportCsv: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onOpenCommuneProfile: (communeId: string) => void;
   localizeCommuneName: (commune: ServiceZoneTree[number]) => string;
+  localizeNeighborhoodName: (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => string;
 }) {
   const { t } = useTranslation();
   const formatNeighborhoodLabel = (neighborhood: ServiceZoneTree[number]["neighborhoods"][number]) => {
-    const labels = [neighborhood.nameEn, neighborhood.nameFr, neighborhood.nameAr]
-      .map((value) => value?.trim())
-      .filter((value): value is string => Boolean(value));
-    return Array.from(new Set(labels)).join(" / ");
+    return localizeNeighborhoodName(neighborhood);
   };
 
   return (
