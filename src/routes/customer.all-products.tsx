@@ -12,10 +12,9 @@ import { ProductCard } from "@/components/ProductCard";
 import { getCustomerCatalogByNeighborhood } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
+import { useLocalizedText } from "@/hooks/use-localization";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
-
-type AppLanguage = "en" | "fr" | "ar";
 
 type CatalogProduct = {
   id: string;
@@ -39,8 +38,8 @@ export const Route = createFileRoute("/customer/all-products")({
 });
 
 function AllProductsPage() {
-  const { t, i18n } = useTranslation();
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
+  const { t } = useTranslation();
+  const getLocalizedText = useLocalizedText();
   const [search, setSearch] = useState("");
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const fetchCatalogByNeighborhood = useServerFn(getCustomerCatalogByNeighborhood);
@@ -80,20 +79,13 @@ function AllProductsPage() {
     const rows = (catalogQuery.data?.pages.flatMap((page) => page.items ?? []) ?? []) as CatalogProduct[];
     return rows.map((item) => ({
       ...item,
-      localizedBrand:
-        language === "ar"
-          ? item.brandNameAr || item.brandNameEn || item.brand || ""
-          : language === "fr"
-            ? item.brandNameFr || item.brandNameEn || item.brand || ""
-            : item.brandNameEn || item.brand || "",
-      localizedName:
-        language === "ar"
-          ? item.nameAr || item.name
-          : language === "fr"
-            ? item.nameFr || item.name
-            : item.name,
+      localizedBrand: getLocalizedText(
+        { en: item.brandNameEn || item.brand || "", fr: item.brandNameFr, ar: item.brandNameAr },
+        item.brand || "",
+      ),
+      localizedName: getLocalizedText({ en: item.name, fr: item.nameFr, ar: item.nameAr }, item.name),
     }));
-  }, [catalogQuery.data, language]);
+  }, [catalogQuery.data, getLocalizedText]);
 
   const normalizedSearch = search.trim().toLowerCase();
   const searchActive = normalizedSearch.length >= 3;
