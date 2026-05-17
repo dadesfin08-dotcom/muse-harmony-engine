@@ -13,10 +13,10 @@ import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { cn } from "@/lib/utils";
 import { resolveProductDetailPricing } from "@/lib/flash-pricing";
+import { useAppLanguage } from "@/hooks/use-localization";
+import { localizeText } from "@/lib/localization";
 
 const LOCATION_STORAGE_KEY = "bzaf_fresh_location";
-
-type AppLanguage = "en" | "fr" | "ar";
 
 export const Route = createFileRoute("/customer/product/$id")({
   validateSearch: zodValidator(
@@ -31,9 +31,8 @@ function ProductDetailPage() {
   const { id } = Route.useParams();
   const { deal } = Route.useSearch();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
-  const isRtl = i18n.dir(language) === "rtl";
+  const { t } = useTranslation();
+  const { language, isRtl } = useAppLanguage();
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const fetchProductDetail = useServerFn(getCustomerProductDetail);
@@ -85,15 +84,16 @@ function ProductDetailPage() {
 
   const localizedName = useMemo(() => {
     if (!product) return "";
-    if (language === "ar") return product.nameAr || product.name;
-    if (language === "fr") return product.nameFr || product.name;
-    return product.name;
+    return localizeText(language, { en: product.name, fr: product.nameFr, ar: product.nameAr }, product.name);
   }, [product, language]);
 
   const composedProductLabel = useMemo(() => {
     if (!product) return "";
-    const localizedProductName =
-      language === "ar" ? product.nameAr || product.name : language === "fr" ? product.nameFr || product.name : product.name;
+    const localizedProductName = localizeText(
+      language,
+      { en: product.name, fr: product.nameFr, ar: product.nameAr },
+      product.name,
+    );
     const brand = product.brand?.trim();
     const quantity = product.measurementValue != null ? `${product.measurementValue}` : null;
     const unit = product.measurementUnit || t("productDetail.unitFallback");
@@ -147,7 +147,7 @@ function ProductDetailPage() {
     measurementValue?: number | null;
     measurementUnit: string;
   }) => {
-    const localized = language === "ar" ? item.nameAr || item.name : language === "fr" ? item.nameFr || item.name : item.name;
+    const localized = localizeText(language, { en: item.name, fr: item.nameFr, ar: item.nameAr }, item.name);
     const head = item.brand?.trim() ? `${item.brand} ${localized}` : localized;
     return `${head} - ${item.measurementValue != null ? `${item.measurementValue} ` : ""}${item.measurementUnit}`;
   };
