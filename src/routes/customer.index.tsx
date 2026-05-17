@@ -2137,7 +2137,7 @@ function Index() {
 
                 <div className="p-3">
                   <div className="flex flex-row justify-between items-center w-full mb-2">
-                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs text-green-800 font-bold">
                       {getLocalizedText({
                         en: product.brandNameEn || product.brand || "",
                         fr: product.brandNameFr || product.brandNameEn || product.brand || "",
