@@ -1928,10 +1928,11 @@ function VendorDashboardPage() {
                     <p className="text-xs text-muted-foreground">
                       Delivery fee: {Number(packingOrder.deliveryFeeMad ?? 0).toFixed(2)} MAD
                     </p>
-                  </div>
-                  <div className="rounded-lg border border-border bg-background px-3 py-2">
-                    <p className="text-xs text-muted-foreground">Packed by</p>
-                    <p className="text-sm font-semibold text-foreground">{packedByName}</p>
+                    <div className="mt-2 border-t border-border pt-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        Grand Total: {(packingSubtotalMad + Number(packingOrder.deliveryFeeMad ?? 0)).toFixed(2)} MAD
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1939,28 +1940,33 @@ function VendorDashboardPage() {
           ) : null}
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => {
-                setPackingOrderId(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="hero"
-              className={cn(
-                "rounded-xl",
-                isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
-              )}
-              disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
-              onClick={handleConfirmPackedOrder}
-            >
-              {packingOrderId && isUpdating === packingOrderId
-                ? "Updating..."
-                : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
-            </Button>
+            <div className="flex w-full items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">Packed by: {packedByName}</p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setPackingOrderId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="hero"
+                  className={cn(
+                    "rounded-xl",
+                    isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
+                  )}
+                  disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
+                  onClick={handleConfirmPackedOrder}
+                >
+                  {packingOrderId && isUpdating === packingOrderId
+                    ? "Updating..."
+                    : `Confirm & Mark Ready (${packedItemsCount}/${totalPackingItems})`}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
