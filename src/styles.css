@@ -1,6 +1,6 @@
 @import "tailwindcss" source(none);
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=Almarai:wght@300;400;700;800&family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap");
 @source "../src";
 
 @custom-variant dark (&:is(.dark *));
@@ -20,10 +20,12 @@
  */
 
 @theme inline {
-  --font-headline: "Cairo", "Almarai", sans-serif;
-  --font-ui: "Readex Pro", "Cairo", sans-serif;
-  --font-body: "Almarai", "Readex Pro", sans-serif;
-  --font-latin: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-sans: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-arabic: "Cairo", "Segoe UI", sans-serif;
+  --font-headline: var(--font-sans);
+  --font-ui: var(--font-sans);
+  --font-body: var(--font-sans);
+  --font-latin: var(--font-sans);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -214,7 +216,18 @@
   }
 
   html[dir="rtl"] {
+    --font-headline: var(--font-arabic);
+    --font-ui: var(--font-arabic);
+    --font-body: var(--font-arabic);
     text-align: right;
+  }
+
+  html[dir="rtl"] h1,
+  html[dir="rtl"] h2,
+  html[dir="rtl"] h3,
+  html[dir="rtl"] .tracking-tight,
+  html[dir="rtl"] :where([data-metric], [data-order-id], [data-price], .metric-value, .order-id, .price-value) {
+    letter-spacing: 0 !important;
   }
 
   html[lang="ar"] {
