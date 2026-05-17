@@ -2908,7 +2908,19 @@ function Index() {
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out">
+              <div className="pointer-events-none absolute inset-x-0 top-[54px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/95 via-background/60 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollDown ? 1 : 0 }} />
+
+              <div
+                ref={authSheetScrollRef}
+                onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
+                className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out"
+                style={{
+                  paddingBottom: authKeyboardInset > 0 ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))` : undefined,
+                  WebkitOverflowScrolling: "touch",
+                  scrollBehavior: "smooth",
+                }}
+              >
                 <div className="flex flex-col gap-5">
                 <div className="pt-2 text-center">
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
