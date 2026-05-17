@@ -3214,11 +3214,12 @@ function OrderCard({
   onMarkReady?: () => void;
   timeTick: number;
 }) {
+  const { t } = useTranslation();
   const shortId = shortOrderId(order.id);
   const elapsed = elapsedLabel(order.createdAt, timeTick);
   const destination = [order.neighborhoodName, order.communeName].filter(Boolean).join(", ");
   const isInDeliveryTab = tab === "inDelivery";
-  const customerOrAreaLabel = order.customerName?.trim() || destination || "Destination unavailable";
+  const customerOrAreaLabel = order.customerName?.trim() || destination || t("vendorDashboard.common.destinationUnavailable");
   const cyclistNameInitials = order.cyclist?.name
     ? order.cyclist.name
         .split(" ")
@@ -3241,14 +3242,14 @@ function OrderCard({
       <article className="rounded-xl border border-border bg-card p-3 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-base font-semibold text-foreground">Order {shortId}</p>
+            <p className="text-base font-semibold text-foreground">{t("vendorDashboard.common.order")} {shortId}</p>
             <p className="mt-1 text-xs text-muted-foreground">{elapsed}</p>
           </div>
-          <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Delivered</Badge>
+          <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">{t("vendorDashboard.status.delivered")}</Badge>
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Customer</p>
+            <p className="text-xs text-muted-foreground">{t("vendorDashboard.common.customer")}</p>
             <p className="text-sm font-medium text-foreground">{order.customerName}</p>
           </div>
           <p className="text-base font-bold text-primary">{order.totalMad.toFixed(2)} MAD</p>
@@ -3279,7 +3280,7 @@ function OrderCard({
             <div className="flex w-full items-center justify-between gap-3">
               <span className="inline-flex h-7 items-center gap-2 rounded-full bg-[#dcfce7] px-3 text-xs font-medium text-[#15803d]" dir="rtl">
                 <span className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse" />
-                <span>في الطريق / In Delivery</span>
+                <span>{t("vendorDashboard.status.inDelivery")}</span>
               </span>
               <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
@@ -3290,7 +3291,7 @@ function OrderCard({
             <div className="flex w-full items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-[20px] bg-[#fef9c3] px-[10px] py-[3px] text-[11px] font-medium text-[#b45309]">
                 <span className="h-[14px] w-[14px] shrink-0 animate-spin rounded-full border-2 border-[#f59e0b] border-t-transparent" />
-                <span>Preparing</span>
+                <span>{t("vendorDashboard.status.preparing")}</span>
               </span>
               <p className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground">
                 <Clock3 className="h-3.5 w-3.5" />
@@ -3312,11 +3313,11 @@ function OrderCard({
           <>
             <div className="grid w-full grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Customer</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{t("vendorDashboard.common.customer")}</p>
                 <p className="truncate text-[15px] font-medium text-foreground">{customerOrAreaLabel}</p>
               </div>
               <div className="space-y-1 text-right">
-                <p className="text-right text-[11px] uppercase tracking-[0.05em] text-muted-foreground">Total</p>
+                <p className="text-right text-[11px] uppercase tracking-[0.05em] text-muted-foreground">{t("vendorDashboard.common.total")}</p>
                 <p className="whitespace-nowrap text-right text-[15px] font-bold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
               </div>
             </div>
@@ -3329,11 +3330,11 @@ function OrderCard({
                 <>
                   <div className="grid w-full grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Order</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{t("vendorDashboard.common.order")}</p>
                       <p className="text-lg font-semibold text-foreground">{shortId}</p>
                     </div>
                     <div className="space-y-1 text-right">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Total</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{t("vendorDashboard.common.total")}</p>
                       <p className="text-lg font-semibold text-[#16a34a]">{order.totalMad.toFixed(2)} MAD</p>
                     </div>
                   </div>
@@ -3346,7 +3347,7 @@ function OrderCard({
 
                     <p className="inline-flex w-full items-center gap-1.5 text-[12px] text-muted-foreground">
                       <MapPin className="size-3.5 shrink-0 text-[#16a34a]" />
-                      <span className="truncate">{destination || "Destination unavailable"}</span>
+                      <span className="truncate">{destination || t("vendorDashboard.common.destinationUnavailable")}</span>
                     </p>
                   </div>
 
@@ -3366,7 +3367,7 @@ function OrderCard({
 
                   <p className="inline-flex w-full items-center gap-2 text-sm text-foreground">
                     <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{destination || "Destination unavailable"}</span>
+                     <span className="truncate">{destination || t("vendorDashboard.common.destinationUnavailable")}</span>
                   </p>
                 </>
               )}
@@ -3416,7 +3417,7 @@ function OrderCard({
                   )}
                   dir={isInDeliveryTab ? "rtl" : undefined}
                 >
-                  {isInDeliveryTab ? "للتوصيل المكلف" : "Driver / الليفرور"}
+                  {isInDeliveryTab ? t("vendorDashboard.driver.assignedForDelivery") : t("vendorDashboard.driver.label")}
                 </p>
               </div>
             </div>
@@ -3431,10 +3432,10 @@ function OrderCard({
                 <a
                   href={driverPhoneForCall ? `tel:${driverPhoneForCall}` : undefined}
                   onClick={(e) => e.stopPropagation()}
-                  aria-label={`Contact driver ${driver.name}`}
+                  aria-label={t("vendorDashboard.driver.contactAria", { name: driver.name })}
                 >
                   <Users className="h-3.5 w-3.5" />
-                  Contact
+                  {t("vendorDashboard.driver.contact")}
                 </a>
               </Button>
             ) : (
@@ -3444,7 +3445,7 @@ function OrderCard({
                     href={`tel:${driverPhoneForCall}`}
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 shadow-sm transition hover:bg-emerald-100"
-                    aria-label={`Call driver ${driver.name}`}
+                     aria-label={t("vendorDashboard.driver.callAria", { name: driver.name })}
                   >
                     <Phone className="h-4 w-4" />
                   </a>
@@ -3457,7 +3458,7 @@ function OrderCard({
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-green-50 text-green-700 shadow-sm transition hover:bg-green-100"
-                    aria-label={`WhatsApp driver ${driver.name}`}
+                     aria-label={t("vendorDashboard.driver.whatsappAria", { name: driver.name })}
                   >
                     <MessageSquare className="h-4 w-4" />
                   </a>
@@ -3481,17 +3482,21 @@ function OrderCard({
         onClick={onOpenDetails}
       >
         {isInDeliveryTab || isPreparingTab ? <Eye className="mr-1.5 h-4 w-4" /> : null}
-        {tab === "ready" ? (order.cyclist ? "View & Process" : "Assign Driver") : "View & Process"}
+        {tab === "ready"
+          ? order.cyclist
+            ? t("vendorDashboard.actions.viewAndProcess")
+            : t("vendorDashboard.actions.assignDriver")
+          : t("vendorDashboard.actions.viewAndProcess")}
       </Button>
 
       {tab === "pending" ? (
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button variant="soft" className="h-10 w-full rounded-xl" onClick={onAccept} disabled={isUpdating}>
             <BadgeCheck className="size-4" />
-            {isUpdating ? "Updating..." : "Accept"}
+            {isUpdating ? t("vendorDashboard.actions.updating") : t("vendorDashboard.actions.accept")}
           </Button>
           <Button variant="outline" className="h-10 w-full rounded-xl" onClick={onReject} disabled={isUpdating}>
-            Reject
+            {t("vendorDashboard.actions.reject")}
           </Button>
         </div>
       ) : null}
@@ -3504,7 +3509,7 @@ function OrderCard({
           disabled={isUpdating}
         >
           <Truck className="size-4" />
-          {isUpdating ? "Opening..." : "Ready for Pickup"}
+          {isUpdating ? t("vendorDashboard.actions.opening") : t("vendorDashboard.actions.readyForPickup")}
         </Button>
       ) : null}
     </article>
@@ -3548,33 +3553,35 @@ function QuickStatCard({
 }
 
 function EmptyState({ label }: { label: string }) {
+  const { t } = useTranslation();
   return (
-    <AppEmptyState title={label} subtitle="Data will appear here as soon as it becomes available." />
+    <AppEmptyState title={label} subtitle={t("vendorDashboard.common.emptyStateSubtitle")} />
   );
 }
 
 function OrderStatusBadge({ tab, status }: { tab: OrderQueueTab; status: DashboardOrder["status"] }) {
+  const { t } = useTranslation();
   if (tab === "pending") {
-    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">Pending</Badge>;
+    return <Badge className="rounded-md bg-chart-4/15 text-chart-4 hover:bg-chart-4/15">{t("vendorDashboard.status.pending")}</Badge>;
   }
 
   if (tab === "preparing") {
     return (
       <Badge className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent/20 px-2.5 py-0.5 text-foreground hover:bg-accent/20">
         <Package className="h-3.5 w-3.5 shrink-0" />
-        <span>Preparing</span>
+        <span>{t("vendorDashboard.status.preparing")}</span>
       </Badge>
     );
   }
 
   if (tab === "inDelivery") {
-    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">In Delivery</Badge>;
+    return <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">{t("vendorDashboard.status.inDelivery")}</Badge>;
   }
 
   return status === "ready" ? (
-    <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">Ready</Badge>
+    <Badge className="rounded-md bg-success/15 text-success hover:bg-success/15">{t("vendorDashboard.status.ready")}</Badge>
   ) : (
-    <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">Active</Badge>
+    <Badge className="rounded-md bg-primary/15 text-primary hover:bg-primary/15">{t("vendorDashboard.status.active")}</Badge>
   );
 }
 
