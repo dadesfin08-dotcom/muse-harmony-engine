@@ -379,7 +379,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           role: "customer",
           url: template.customer.url,
           orderId: event.order_id,
-          locationLabel: event.neighborhood_id,
+          locationLabel: event.neighborhood_id ?? undefined,
           eventType: template.customer.eventType,
           tag: `order-${event.order_id}-${template.customer.eventType}`,
         });
