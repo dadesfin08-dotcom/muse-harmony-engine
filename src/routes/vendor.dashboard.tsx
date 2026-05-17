@@ -35,6 +35,7 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,11 +72,13 @@ import { getVendorDashboardData, updateVendorOrderStatus } from "@/lib/orders.fu
 import { getInvoiceSettings } from "@/lib/invoice-settings.functions";
 import { playAlertSound } from "@/lib/sound-alerts";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { clearRoleSessions } from "@/lib/operational-auth";
 import { formatDistanceToNow } from "date-fns";
+import { arSA, enUS, fr } from "date-fns/locale";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_MESSAGE,
