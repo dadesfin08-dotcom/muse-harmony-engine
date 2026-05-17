@@ -1447,7 +1447,7 @@ function VendorDashboardPage() {
 
   const handleLogout = async () => {
     clearRoleSessions();
-    toast.success("Logged out successfully.");
+    toast.success(t("vendorDashboard.toasts.loggedOut"));
     await navigate({ to: "/vendor/login" });
   };
 
@@ -1463,70 +1463,73 @@ function VendorDashboardPage() {
                 </span>
                 <div>
                   <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">{vendorStoreName}</h1>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Vendor Operations Dashboard</p>
+                  <p className="text-xs text-muted-foreground sm:text-sm">{t("vendorDashboard.header.subtitle")}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
+                <LanguageSwitcher className="rounded-xl" />
                 <Button
                   size="icon"
                   variant="soft"
                   className="rounded-xl"
                   onClick={handleToggleSounds}
-                  aria-label={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
-                  title={isSoundEnabled ? "Disable Sounds" : "Enable Sounds"}
+                  aria-label={isSoundEnabled ? t("vendorDashboard.header.disableSounds") : t("vendorDashboard.header.enableSounds")}
+                  title={isSoundEnabled ? t("vendorDashboard.header.disableSounds") : t("vendorDashboard.header.enableSounds")}
                 >
                   {isSoundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
                 </Button>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 shadow-sm">
-                  <span className="text-xs text-muted-foreground sm:text-sm">{isOnline ? "Online" : "Offline"}</span>
+                  <span className="text-xs text-muted-foreground sm:text-sm">
+                    {isOnline ? t("vendorDashboard.header.online") : t("vendorDashboard.header.offline")}
+                  </span>
                   <Switch checked={isOnline} onCheckedChange={setIsOnline} />
                 </div>
                 <Button variant="soft" className="rounded-xl" onClick={handleLogout}>
                   <LogOut className="size-4" />
-                  Logout
+                  {t("vendorDashboard.header.logout")}
                 </Button>
                 <Button variant="soft" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
                   <Wallet className="size-4" />
-                  Wallet
+                  {t("vendorDashboard.header.wallet")}
                 </Button>
                 <Button variant="default" className="rounded-xl" onClick={() => navigate({ to: "/vendor/wallet" })}>
                   <QrCode className="size-4" />
-                  Pay Admin via QR · أداء مستحقات التطبيق
+                  {t("vendorDashboard.header.payAdmin")}
                 </Button>
               </div>
             </div>
 
             <section className="space-y-3">
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <span className="text-xs font-medium text-muted-foreground">KPI Period</span>
+                <span className="text-xs font-medium text-muted-foreground">{t("vendorDashboard.kpi.period")}</span>
                 <select
                   value={kpiFilter}
                   onChange={(event) => setKpiFilter(event.target.value as HistoryFilter)}
                   className="h-9 rounded-lg border border-input bg-background px-3 text-xs outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                 >
-                  <option value="today">Today</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="all">All Time</option>
+                  <option value="today">{t("vendorDashboard.filters.today")}</option>
+                  <option value="week">{t("vendorDashboard.filters.week")}</option>
+                  <option value="month">{t("vendorDashboard.filters.month")}</option>
+                  <option value="all">{t("vendorDashboard.filters.all")}</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <QuickStatCard label="Pending Orders" value={String(quickStats.pendingOrders)} icon={Clock3} />
+              <QuickStatCard label={t("vendorDashboard.kpi.pendingOrders")} value={String(quickStats.pendingOrders)} icon={Clock3} />
               <QuickStatCard
-                label="إجمالي النقد المستلم"
+                label={t("vendorDashboard.kpi.cashInHand")}
                 value={`${quickStats.totalCashInHandMad.toFixed(2)} MAD`}
                 icon={Banknote}
               />
               <QuickStatCard
-                label="صافي أرباحي"
+                label={t("vendorDashboard.kpi.netProfit")}
                 value={`${quickStats.myNetProfitMad.toFixed(2)} MAD`}
                 tone="success"
                 icon={BookUser}
               />
               <QuickStatCard
-                label="مستحقات المنصة"
+                label={t("vendorDashboard.kpi.platformDues")}
                 value={`${quickStats.platformDuesMad.toFixed(2)} MAD`}
                 tone="danger"
                 icon={History}
@@ -1544,31 +1547,31 @@ function VendorDashboardPage() {
           <aside className="hidden md:block">
             <div className="sticky top-36 space-y-1 rounded-2xl border border-border bg-card p-2 shadow-sm">
               <ViewNavButton
-                label="Live Orders"
+                label={t("vendorDashboard.nav.liveOrders")}
                 icon={ShoppingBag}
                 active={mainView === "orders"}
                 onClick={() => setMainView("orders")}
               />
               <ViewNavButton
-                label="Store Inventory"
+                label={t("vendorDashboard.nav.inventory")}
                 icon={Package}
                 active={mainView === "inventory"}
                 onClick={() => setMainView("inventory")}
               />
               <ViewNavButton
-                label="Flash Sales"
+                label={t("vendorDashboard.nav.flashSales")}
                 icon={Zap}
                 active={mainView === "flashSales"}
                 onClick={() => setMainView("flashSales")}
               />
               <ViewNavButton
-                label="Carnet (Credit)"
+                label={t("vendorDashboard.nav.carnet")}
                 icon={BookUser}
                 active={mainView === "carnet"}
                 onClick={() => setMainView("carnet")}
               />
               <ViewNavButton
-                label="Order History"
+                label={t("vendorDashboard.nav.history")}
                 icon={History}
                 active={mainView === "history"}
                 onClick={() => setMainView("history")}
