@@ -132,7 +132,7 @@ export function ProductCard({
             <select
               value={resolvedVariant ?? ""}
               onChange={(event) => setVariantValue(event.target.value)}
-              className="appearance-none w-full bg-slate-50/80 backdrop-blur-sm border-0 ring-1 ring-slate-900/5 text-slate-700 text-xs font-semibold rounded-xl px-3 py-1.5 pr-8 cursor-pointer outline-none hover:bg-slate-100 transition-colors"
+              className="appearance-none w-full bg-slate-50/80 backdrop-blur-sm border-0 ring-1 ring-slate-900/5 text-slate-700 text-xs font-semibold leading-none rounded-xl px-3 py-1.5 pr-8 cursor-pointer outline-none hover:bg-slate-100 transition-colors"
               aria-label={`Select variant for ${name}`}
             >
               {normalizedVariants.map((variant) => (
@@ -147,11 +147,11 @@ export function ProductCard({
         </div>
 
         <div className="flex justify-between items-center w-full mb-1">
-          <span className="inline-block bg-emerald-500/10 text-emerald-700 font-extrabold px-2.5 py-1 rounded-md text-[10px] tracking-widest uppercase border border-emerald-500/10">
+          <span className="inline-block rounded-md border border-emerald-500/10 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-extrabold uppercase leading-none tracking-widest text-emerald-700">
             {brand || "—"}
           </span>
 
-          <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-0.5 text-xs text-gray-400">
+          <span className="inline-flex shrink-0 items-center gap-0.5 rounded-sm bg-gray-50 px-1.5 py-1 text-xs leading-none text-gray-400">
             <Package className="size-3" />
             {measurementValue != null ? `${measurementValue} ` : ""}
             {measurementUnit}
@@ -193,14 +193,14 @@ export function ProductCard({
             {cartQuantity > 0 ? (
               <div
                 className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1",
+                  "flex shrink-0 items-center gap-1 rounded-full px-1.5 py-1 leading-none",
                   isFlashDeal ? "border border-red-200" : "border border-gray-200",
                 )}
               >
                 <button
                   type="button"
                   className={cn(
-                    "inline-flex size-6 items-center justify-center rounded-full",
+                    "inline-flex size-6 items-center justify-center rounded-full leading-none",
                     isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
                   )}
                   onClick={() => onDecrease(resolvedVariant)}
@@ -212,7 +212,7 @@ export function ProductCard({
                 <button
                   type="button"
                   className={cn(
-                    "inline-flex size-6 items-center justify-center rounded-full",
+                    "inline-flex size-6 items-center justify-center rounded-full leading-none",
                     isFlashDeal ? "bg-red-50 text-red-600" : "bg-gray-100 text-[#2A7543]",
                   )}
                   onClick={() => onIncrease(resolvedVariant)}
@@ -225,7 +225,7 @@ export function ProductCard({
               <button
                 type="button"
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-white font-bold rounded-xl px-4 py-2 shadow-lg active:scale-95 transition-all duration-200",
+                  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-bold leading-none text-white shadow-lg transition-all duration-200 active:scale-95",
                   isFlashDeal ? "bg-red-600 shadow-red-600/30 hover:bg-red-700" : "bg-emerald-600 shadow-emerald-600/30 hover:bg-emerald-700",
                 )}
                 onClick={() => onAdd(resolvedVariant)}
