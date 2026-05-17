@@ -4769,7 +4769,7 @@ function AdminPage() {
                                 onChange={(event) => toggleManageVendorNeighborhood(neighborhood.id, event.target.checked)}
                                 className="h-4 w-4 accent-primary"
                               />
-                              <span className="text-foreground">{neighborhood.name}</span>
+                              <span className="text-foreground">{getLocalizedNeighborhoodName(neighborhood)}</span>
                             </label>
                           );
                         })
@@ -4786,7 +4786,7 @@ function AdminPage() {
                               onClick={() => toggleManageVendorNeighborhood(neighborhood.id, false)}
                               className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground"
                             >
-                              {neighborhood.name} ×
+                              {getLocalizedNeighborhoodName(neighborhood)} ×
                             </button>
                           ))}
                       </div>
