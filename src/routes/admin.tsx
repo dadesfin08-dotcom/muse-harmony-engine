@@ -5647,6 +5647,7 @@ function AIBrandEngineSection({
   onManualBoost,
   onToggleBlacklist,
   onResetScore,
+  onSeedDemoData,
 }: {
   analytics: BrandEngineAnalytics | undefined;
   isLoading: boolean;
@@ -5660,6 +5661,7 @@ function AIBrandEngineSection({
   onManualBoost: (brandId: string) => void;
   onToggleBlacklist: (brandId: string, blacklisted: boolean) => void;
   onResetScore: (brandId: string) => void;
+  onSeedDemoData: () => void;
 }) {
   const formatScore = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
@@ -5720,6 +5722,9 @@ function AIBrandEngineSection({
           <p className="text-xs text-muted-foreground">تحديث دوري لبطاقات العدّادات والمخطط والجدول بدون وميض</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-9 rounded-md" onClick={onSeedDemoData}>
+            Seed Demo Data
+          </Button>
           <span className="text-xs text-muted-foreground">
             {liveRefreshEnabled ? (isFetching ? "Syncing..." : "On") : "Off"}
           </span>
