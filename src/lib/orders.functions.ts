@@ -128,12 +128,12 @@ type OrderRow = {
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
     | "picked_up"
     | "in_transit"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
@@ -208,10 +208,10 @@ export type VendorOrderDetails = {
   specialInstructions: string;
   paymentMethod: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
@@ -231,10 +231,10 @@ export type CustomerOrderDetails = {
   id: string;
   paymentMethod: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor"
