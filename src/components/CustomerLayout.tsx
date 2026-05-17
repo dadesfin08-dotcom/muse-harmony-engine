@@ -266,8 +266,12 @@ export function CustomerLayout({
       <nav
         className="fixed bottom-0 w-full grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden"
         style={{
-          background: "radial-gradient(circle at 50% 0%, transparent 36px, rgba(255, 255, 255, 0.95) 37px)",
+          backgroundColor: "rgba(255, 255, 255, 0.92)",
           backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          borderTop: "1px solid rgba(148, 163, 184, 0.25)",
+          WebkitMaskImage: "radial-gradient(circle at 50% 0%, transparent 36px, #000 37px)",
+          maskImage: "radial-gradient(circle at 50% 0%, transparent 36px, #000 37px)",
         }}
       >
           <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
