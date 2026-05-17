@@ -170,7 +170,7 @@ export function ProductCard({
           </h2>
         </Link>
 
-        <div className="flex flex-row justify-between items-center w-full mt-auto gap-2">
+        <div className="flex flex-row flex-wrap justify-between items-center w-full mt-auto gap-2">
           <div className="flex min-w-0 flex-1 flex-col items-start justify-end">
             <div className="flex flex-wrap items-baseline gap-1">
               <span className={cn("text-lg font-bold", isFlashDeal ? "text-red-600" : "text-[#2A7543]")}>
