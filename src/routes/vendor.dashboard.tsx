@@ -2816,6 +2816,7 @@ function StoreInventoryView({
   onSave: (item: InventoryItem) => Promise<void>;
   onQuickToggle: (item: InventoryItem, checked: boolean) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "in-stock" | "out-of-stock" | "unpriced">("all");
@@ -2855,14 +2856,14 @@ function StoreInventoryView({
   return (
     <section className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-foreground">Store Inventory</h2>
-        <p className="text-xs text-muted-foreground">Set your live prices and control product availability instantly.</p>
+        <h2 className="text-base font-semibold text-foreground">{t("vendorDashboard.inventory.title")}</h2>
+        <p className="text-xs text-muted-foreground">{t("vendorDashboard.inventory.subtitle")}</p>
       </div>
 
       {isLoading ? (
-        <EmptyState label="Loading inventory..." />
+        <EmptyState label={t("vendorDashboard.inventory.loading")} />
       ) : items.length === 0 ? (
-        <EmptyState label="No master products available yet." />
+        <EmptyState label={t("vendorDashboard.inventory.empty")} />
       ) : (
         <>
           <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-background p-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
@@ -2871,7 +2872,7 @@ function StoreInventoryView({
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search products by name"
+                placeholder={t("vendorDashboard.inventory.searchPlaceholder")}
                 className="h-10 rounded-xl pl-9"
               />
             </div>
@@ -2881,7 +2882,7 @@ function StoreInventoryView({
               onChange={(event) => setCategoryFilter(event.target.value)}
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
             >
-              <option value="all">All Categories</option>
+              <option value="all">{t("vendorDashboard.inventory.allCategories")}</option>
               {categoryOptions.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -2894,17 +2895,17 @@ function StoreInventoryView({
               onChange={(event) => setStatusFilter(event.target.value as "all" | "in-stock" | "out-of-stock" | "unpriced")}
               className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
             >
-              <option value="all">All</option>
-              <option value="in-stock">In Stock</option>
-              <option value="out-of-stock">Out of Stock</option>
-              <option value="unpriced">Unpriced</option>
+              <option value="all">{t("vendorDashboard.inventory.filters.all")}</option>
+              <option value="in-stock">{t("vendorDashboard.inventory.filters.inStock")}</option>
+              <option value="out-of-stock">{t("vendorDashboard.inventory.filters.outOfStock")}</option>
+              <option value="unpriced">{t("vendorDashboard.inventory.filters.unpriced")}</option>
             </select>
           </div>
 
-          <p className="mb-3 text-xs text-muted-foreground">Showing {filteredItems.length} products</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t("vendorDashboard.inventory.showingProducts", { count: filteredItems.length })}</p>
 
           {filteredItems.length === 0 ? (
-            <EmptyState label="No products found matching your criteria." />
+            <EmptyState label={t("vendorDashboard.inventory.noMatchingProducts")} />
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {filteredItems.map((item) => {
@@ -2947,7 +2948,7 @@ function StoreInventoryView({
 
                   <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-2 py-1.5">
                     <span className="text-xs font-medium text-foreground">
-                      {draft.isAvailable ? "In Stock" : "Out of Stock"}
+                      {draft.isAvailable ? t("vendorDashboard.inventory.status.inStock") : t("vendorDashboard.inventory.status.outOfStock")}
                     </span>
                     <Switch checked={draft.isAvailable} onCheckedChange={(checked) => onQuickToggle(item, checked)} />
                   </div>
@@ -2955,7 +2956,7 @@ function StoreInventoryView({
 
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Your Price (MAD)</label>
+                    <label className="text-xs text-muted-foreground">{t("vendorDashboard.inventory.yourPrice")}</label>
                     <Input
                       type="number"
                       min="0"
@@ -2973,7 +2974,7 @@ function StoreInventoryView({
                           },
                         }))
                       }
-                      placeholder="0.00"
+                      placeholder={t("vendorDashboard.common.pricePlaceholder")}
                       className="h-10 rounded-xl"
                     />
                   </div>
@@ -2984,7 +2985,7 @@ function StoreInventoryView({
                     onClick={() => onSave(item)}
                     disabled={isSavingInventoryFor === item.id}
                   >
-                    {isSavingInventoryFor === item.id ? "Saving..." : "Save"}
+                    {isSavingInventoryFor === item.id ? t("vendorDashboard.actions.saving") : t("vendorDashboard.actions.save")}
                   </Button>
                 </div>
               </article>
