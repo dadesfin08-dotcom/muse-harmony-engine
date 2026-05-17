@@ -538,7 +538,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             neighborhood_id: data.neighborhoodId,
             delivery_notes: data.deliveryNotes,
             payment_method: data.paymentMethod,
-            status: "new",
+            status: "pending",
             delivery_fee: row.deliveryFee,
             subtotal_base_price: roundMoney(row.subtotalBasePrice),
             platform_profit: row.platformProfit,
@@ -586,7 +586,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             amount: row.orderTotalWithDelivery,
             metadata: {
               source: "order_creation",
-              status: "new",
+              status: "pending",
             },
           });
 
@@ -1094,7 +1094,7 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
 
       const currentStatus = (order as { status: string }).status;
       const allowed =
-        (currentStatus === "new" && data.nextStatus === "preparing") ||
+        (currentStatus === "pending" && data.nextStatus === "preparing") ||
         (currentStatus === "preparing" && data.nextStatus === "ready");
 
       if (!allowed) {
