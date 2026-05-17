@@ -427,7 +427,7 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         new Set(((coverageRows ?? []) as CyclistCoverageRow[]).map((row) => row.neighborhood_id)),
       );
 
-      const [availableResult, activeResult, deliveredResult, pendingSettlementResult] = await Promise.all([
+      const [availableResult, assignedReadyResult, activeResult, deliveredResult, pendingSettlementResult] = await Promise.all([
         coverageNeighborhoodIds.length
           ? (supabaseAdmin as any)
               .from("orders")
@@ -439,6 +439,14 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
               .is("cyclist_id", null)
               .order("created_at", { ascending: false })
           : Promise.resolve({ data: [], error: null }),
+        (supabaseAdmin as any)
+          .from("orders")
+          .select(
+            "id, customer_user_id, subscription_id, order_category, customer_name, customer_phone, cash_to_collect_from_customer, delivery_notes, payment_method, delivery_fee, total_price, status, order_items, neighborhood_id, delivery_auth_code, created_at",
+          )
+          .eq("status", "ready")
+          .eq("cyclist_id", cyclist.id)
+          .order("created_at", { ascending: false }),
         (supabaseAdmin as any)
           .from("orders")
           .select(
@@ -462,6 +470,8 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       const availableRows = availableResult.data;
       const availableError = availableResult.error;
+      const assignedReadyRows = assignedReadyResult.data;
+      const assignedReadyError = assignedReadyResult.error;
       const activeRows = activeResult.data;
       const activeError = activeResult.error;
       const deliveredRows = deliveredResult.data;
@@ -471,6 +481,9 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       if (availableError) {
         throw new Error(availableError.message);
+      }
+      if (assignedReadyError) {
+        throw new Error(assignedReadyError.message);
       }
       if (activeError) {
         throw new Error(activeError.message);
@@ -525,7 +538,12 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
 
       const activeOrderRows = (activeRows ?? []) as OrderRow[];
       const shouldLockAvailableRuns = activeOrderRows.length > 0;
-      const safeAvailableRows = shouldLockAvailableRuns ? [] : ((availableRows ?? []) as OrderRow[]);
+      const combinedAvailableRows = [
+        ...((availableRows ?? []) as OrderRow[]),
+        ...((assignedReadyRows ?? []) as OrderRow[]),
+      ];
+      const dedupedAvailableRows = Array.from(new Map(combinedAvailableRows.map((row) => [row.id, row])).values());
+      const safeAvailableRows = shouldLockAvailableRuns ? [] : dedupedAvailableRows;
 
       const allRows = [...safeAvailableRows, ...activeOrderRows];
       const uniquePhones = Array.from(new Set(allRows.map((row) => row.customer_phone).filter(Boolean)));
