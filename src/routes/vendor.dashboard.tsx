@@ -1436,8 +1436,9 @@ function VendorDashboardPage() {
       toast.success(
         draft.enabled ? t("vendorDashboard.toasts.flashSaleSaved") : t("vendorDashboard.toasts.flashSaleDisabled"),
         {
-        id: `flash-save-${item.id}`,
-      });
+          id: `flash-save-${item.id}`,
+        },
+      );
     } catch (error) {
       console.error("Failed to save flash sale:", error);
       const errorMessage = error instanceof Error ? error.message : t("vendorDashboard.toasts.flashSaleSaveFailed");
