@@ -2203,6 +2203,21 @@ const resources = {
   },
 } as const;
 
+type Primitive = string | number | boolean | null | undefined;
+
+type DotPrefix<T extends string> = T extends "" ? "" : `.${T}`;
+
+type NestedObjectPaths<T> = T extends Primitive
+  ? ""
+  : {
+      [K in keyof T & string]: T[K] extends Primitive
+        ? K
+        : `${K}${DotPrefix<NestedObjectPaths<T[K]>>}`;
+    }[keyof T & string];
+
+export type TranslationSchema = (typeof resources)["en"]["translation"];
+export type TranslationKey = NestedObjectPaths<TranslationSchema>;
+
 function getInitialLanguage(): AppLanguage {
   if (typeof window === "undefined") {
     return "en";
