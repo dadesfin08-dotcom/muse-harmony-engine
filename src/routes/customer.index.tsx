@@ -1038,6 +1038,23 @@ function Index() {
   }, [isInteracting]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      if (subScrollRef.current && !isSubInteracting) {
+        const { scrollLeft, scrollWidth, clientWidth } = subScrollRef.current;
+        const cardWidth = 280 + 16;
+
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          subScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          subScrollRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+        }
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isSubInteracting]);
+
+  useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
     if (!persistedCustomerSession) {
       return;
