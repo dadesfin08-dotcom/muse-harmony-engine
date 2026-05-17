@@ -28,6 +28,7 @@ import {
   ClipboardList,
   BookOpen,
   Share2,
+  ArrowRight,
   Flame,
   Clock3,
 } from "lucide-react";
@@ -2212,9 +2213,10 @@ function Index() {
             <div className="px-4 pb-6 pt-2">
               <Link
                 to="/customer/all-products"
-                className="flex w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 py-2.5 text-sm font-bold leading-tight text-emerald-700 transition-colors hover:bg-emerald-100"
+                className="group relative flex w-full items-center justify-center rounded-2xl border border-emerald-100 bg-white py-4 text-[15px] font-bold text-emerald-600 shadow-[0_4px_14px_0_rgba(16,185,129,0.08)] transition-all duration-300 hover:bg-emerald-50 hover:shadow-[0_8px_25px_-4px_rgba(16,185,129,0.15)] active:scale-[0.98]"
               >
-                {t("home.view_all_products")}
+                <span>{t("home.view_all_products")}</span>
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 rtl:ml-0 rtl:mr-2 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
               </Link>
             </div>
           ) : null}
