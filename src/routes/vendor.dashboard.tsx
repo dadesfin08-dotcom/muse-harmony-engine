@@ -438,8 +438,14 @@ function VendorDashboardPage() {
     return value?.trim() ?? "";
   };
 
+  const localizeCategoryLabel = (value: unknown) => {
+    const localized = getLocalizedValue(value, activeLanguage, "").trim();
+    if (!localized) return "";
+    return t(`categoryNames.${localized}`, { defaultValue: localized });
+  };
+
   const dashboardQuery = useQuery({
-    queryKey: ["vendor", "dashboard"],
+    queryKey: ["vendor", "dashboard", activeLanguage],
     queryFn: () =>
       fetchDashboardData({
         data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }),
@@ -851,9 +857,9 @@ function VendorDashboardPage() {
               ) || null,
               brandName: getLocalizedValue((item as { brandName?: unknown }).brandName, activeLanguage, "") || null,
               categoryLabel:
-                getLocalizedValue((item as { categoryLabel?: unknown }).categoryLabel, activeLanguage, "") ||
-                getLocalizedValue((item as { categoryName?: unknown }).categoryName, activeLanguage, "") ||
-                getLocalizedValue((item as { category?: unknown }).category, activeLanguage, "") ||
+                localizeCategoryLabel((item as { categoryLabel?: unknown }).categoryLabel) ||
+                localizeCategoryLabel((item as { categoryName?: unknown }).categoryName) ||
+                localizeCategoryLabel((item as { category?: unknown }).category) ||
                 null,
               measurementUnit: getLocalizedValue(
                 (item as { measurementUnit?: unknown }).measurementUnit,
@@ -880,7 +886,7 @@ function VendorDashboardPage() {
         createdAt: row.created_at,
       }))
       .filter((order) => !rejectedOrderIds[order.id]);
-  }, [dashboardQuery.data, rejectedOrderIds]);
+  }, [activeLanguage, dashboardQuery.data, rejectedOrderIds, t]);
 
   const queue = useMemo(
     () => ({
