@@ -1911,12 +1911,19 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
       }
 
       const pricing = await calculateFinalPrice(Number(row.vendor_price ?? 0), true);
-      const flashEndTimeMs = row.flash_sale_end_time ? new Date(row.flash_sale_end_time).getTime() : Number.NaN;
+      const currentUtcMs = Date.parse(nowIso);
+      const flashEndTimeRaw = typeof row.flash_sale_end_time === "string" ? row.flash_sale_end_time.trim() : "";
+      const flashEndTimeIso = flashEndTimeRaw
+        ? /([zZ]|[+-]\d{2}:\d{2})$/.test(flashEndTimeRaw)
+          ? flashEndTimeRaw
+          : `${flashEndTimeRaw}Z`
+        : "";
+      const flashEndTimeMs = flashEndTimeIso ? Date.parse(flashEndTimeIso) : Number.NaN;
       const isFlashSaleActive =
         row.is_flash_sale === true &&
         row.flash_sale_price != null &&
         Number.isFinite(flashEndTimeMs) &&
-        flashEndTimeMs > Date.now();
+        flashEndTimeMs > currentUtcMs;
       const flashPricing = isFlashSaleActive
         ? await calculateFinalPrice(Number(row.flash_sale_price ?? 0), true)
         : null;
