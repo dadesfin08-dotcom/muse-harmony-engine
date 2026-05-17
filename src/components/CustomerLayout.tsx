@@ -263,7 +263,13 @@ export function CustomerLayout({
     <>
       <main className="pb-24 md:pb-0">{children}</main>
 
-      <nav className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-200 grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden">
+      <nav
+        className="fixed bottom-0 w-full grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden"
+        style={{
+          background: "radial-gradient(circle at 50% 0%, transparent 36px, rgba(255, 255, 255, 0.95) 37px)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
           <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
@@ -290,7 +296,7 @@ export function CustomerLayout({
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="relative -top-6 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
+                  className="relative -top-5 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
                 >
                   <Languages className="size-6" />
                 </button>
