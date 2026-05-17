@@ -58,7 +58,7 @@ function VendorWalletPage() {
   const submitVendorQrPayment = useServerFn(recordVendorQrPayment);
 
   const dashboardQuery = useQuery({
-    queryKey: ["vendor", "dashboard"],
+    queryKey: ["vendor", "dashboard", activeLanguage],
     enabled: Boolean(normalizedVendorPhoneNumber),
     queryFn: () =>
       fetchDashboard({
@@ -243,7 +243,7 @@ function VendorWalletPage() {
           });
       }
     };
-  }, [isPlatformScannerOpen, vendorId]);
+  }, [isPlatformScannerOpen, t, vendorId]);
 
   const handleConfirmPlatformPayment = async () => {
     if (!pendingScannedPayment || isSubmittingPlatformPayment) return;
@@ -400,7 +400,7 @@ function VendorWalletPage() {
                   key={order.id}
                   type="button"
                   onClick={() => navigate({ to: "/vendor/order/$orderId", params: { orderId: order.id } })}
-                  className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left transition-colors hover:bg-muted/40"
+                  className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-start transition-colors hover:bg-muted/40"
                 >
                   <span className="text-sm text-foreground">{t("vendorDashboard.orders.orderNumber", { id: order.id.slice(0, 8) })}</span>
                   <span className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</span>
