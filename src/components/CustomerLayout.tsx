@@ -294,15 +294,15 @@ export function CustomerLayout({
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="flex items-center justify-center w-full h-full">
+          <div className="text-center relative -top-7">
             <LanguageSwitcher
               trigger={
                 <button
                   type="button"
                   aria-label={t("language.label")}
-                  className="relative -top-5 flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
+                  className="flex items-center justify-center w-14 h-14 mx-auto bg-emerald-500 text-white rounded-full border-4 border-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
                 >
-                  <Languages className="size-6" />
+                  <Languages className="w-6 h-6 text-white flex-shrink-0" strokeWidth={2.25} />
                 </button>
               }
             />
