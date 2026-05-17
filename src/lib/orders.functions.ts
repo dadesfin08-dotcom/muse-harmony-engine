@@ -128,12 +128,12 @@ type OrderRow = {
   delivery_notes: string;
   payment_method: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
     | "picked_up"
     | "in_transit"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
@@ -208,10 +208,10 @@ export type VendorOrderDetails = {
   specialInstructions: string;
   paymentMethod: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
@@ -231,10 +231,10 @@ export type CustomerOrderDetails = {
   id: string;
   paymentMethod: "COD" | "Carnet";
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor"
@@ -538,7 +538,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             neighborhood_id: data.neighborhoodId,
             delivery_notes: data.deliveryNotes,
             payment_method: data.paymentMethod,
-            status: "new",
+            status: "pending",
             delivery_fee: row.deliveryFee,
             subtotal_base_price: roundMoney(row.subtotalBasePrice),
             platform_profit: row.platformProfit,
@@ -586,7 +586,7 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
             amount: row.orderTotalWithDelivery,
             metadata: {
               source: "order_creation",
-              status: "new",
+              status: "pending",
             },
           });
 
@@ -1094,7 +1094,7 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
 
       const currentStatus = (order as { status: string }).status;
       const allowed =
-        (currentStatus === "new" && data.nextStatus === "preparing") ||
+        (currentStatus === "pending" && data.nextStatus === "preparing") ||
         (currentStatus === "preparing" && data.nextStatus === "ready");
 
       if (!allowed) {
@@ -1282,7 +1282,7 @@ export const getVendorOrderDetails = createServerFn({ method: "POST" })
             ? orderRow.delivery_notes.trim()
             : "None",
         paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
-        status: (orderRow.status ?? "new") as "new" | "preparing" | "ready" | "delivering" | "delivered",
+        status: (orderRow.status ?? "pending") as VendorOrderDetails["status"],
         createdAt: String(orderRow.created_at ?? new Date().toISOString()),
         deliveryFeeMad,
         subtotalMad,
@@ -1401,7 +1401,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
       const computedSubtotalMad = items.reduce((sum, item) => sum + Number(item.lineTotalMad ?? 0), 0);
       const subtotalMad = roundMoney(Number(orderRow.total_price ?? computedSubtotalMad));
       const deliveryFeeMad = roundMoney(Number(orderRow.delivery_fee ?? 0));
-      const normalizedStatus = String(orderRow.status ?? "new").toLowerCase();
+      const normalizedStatus = String(orderRow.status ?? "pending").toLowerCase();
       const neighborhoodQuery =
         typeof (orderRow as { neighborhood_id?: unknown }).neighborhood_id === "string"
           ? await (supabaseAdmin as any)
@@ -1448,7 +1448,7 @@ export const getCustomerOrderDetails = createServerFn({ method: "POST" })
       return {
         id: String(orderRow.id),
         paymentMethod: (orderRow.payment_method ?? "COD") as "COD" | "Carnet",
-        status: (normalizedStatus === "cancelled" ? "cancelled" : orderRow.status ?? "new") as CustomerOrderDetails["status"],
+        status: (normalizedStatus === "cancelled" ? "cancelled" : orderRow.status ?? "pending") as CustomerOrderDetails["status"],
         deliveryAuthCode:
           typeof (orderRow as { delivery_auth_code?: unknown }).delivery_auth_code === "string"
             ? ((orderRow as { delivery_auth_code: string }).delivery_auth_code ?? null)
