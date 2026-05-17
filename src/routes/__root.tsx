@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
 
-import i18n, { LANGUAGE_STORAGE_KEY } from "@/lib/i18n";
+import i18n from "@/lib/i18n";
 import { applyLanguageToDocument, persistLanguagePreference, resolveAppLanguage } from "@/lib/localization";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
