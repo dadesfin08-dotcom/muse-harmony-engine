@@ -264,7 +264,7 @@ function VendorDashboardPage() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(true);
-  const [kpiFilter, setKpiFilter] = useState<HistoryFilter>("today");
+  const [kpiFilter, setKpiFilter] = useState<HistoryFilter>("all");
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("today");
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [inventoryDraft, setInventoryDraft] = useState<
