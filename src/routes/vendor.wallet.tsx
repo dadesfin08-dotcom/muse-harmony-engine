@@ -5,11 +5,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppLanguage } from "@/hooks/use-localization";
+import { withLocale } from "@/lib/localization";
 import { formatMoroccoPhoneForPayload, normalizeMoroccoPhoneInput } from "@/lib/morocco-phone";
 import { getVendorCarnetData } from "@/lib/carnet.functions";
 import {
@@ -23,6 +26,8 @@ export const Route = createFileRoute("/vendor/wallet")({
 });
 
 function VendorWalletPage() {
+  const { t } = useTranslation();
+  const { language: activeLanguage } = useAppLanguage();
   const navigate = useNavigate({ from: "/vendor/wallet" });
   const queryClient = useQueryClient();
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
@@ -53,9 +58,12 @@ function VendorWalletPage() {
   const submitVendorQrPayment = useServerFn(recordVendorQrPayment);
 
   const dashboardQuery = useQuery({
-    queryKey: ["vendor", "dashboard"],
+    queryKey: ["vendor", "dashboard", activeLanguage],
     enabled: Boolean(normalizedVendorPhoneNumber),
-    queryFn: () => fetchDashboard({ data: { phoneNumber: normalizedVendorPhoneNumber } }),
+    queryFn: () =>
+      fetchDashboard({
+        data: withLocale(activeLanguage, { phoneNumber: normalizedVendorPhoneNumber }),
+      }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
@@ -189,18 +197,18 @@ function VendorWalletPage() {
               };
 
               if (raw.action !== "platform_commission_payment") {
-                toast.error("Invalid QR action.");
+                toast.error(t("vendorDashboard.cash.toasts.invalidQrAction"));
                 return;
               }
 
               if (raw.vendor_id !== vendorId) {
-                toast.error("This QR is not assigned to your vendor account.");
+                toast.error(t("vendorDashboard.cash.toasts.qrVendorMismatch"));
                 return;
               }
 
               const amount = Number(raw.amount ?? 0);
               if (!Number.isFinite(amount) || amount <= 0) {
-                toast.error("Invalid payment amount in QR payload.");
+                toast.error(t("vendorDashboard.cash.toasts.invalidQrAmount"));
                 return;
               }
 
@@ -211,14 +219,14 @@ function VendorWalletPage() {
               });
               setIsPlatformScannerOpen(false);
             } catch {
-              toast.error("Invalid payment QR payload.");
+              toast.error(t("vendorDashboard.cash.toasts.invalidQrPayload"));
             }
           },
           () => undefined,
         );
       } catch (error) {
         console.error("Vendor platform scanner failed:", error);
-        toast.error("Unable to open QR scanner.");
+        toast.error(t("vendorDashboard.cash.toasts.unableToOpenQrScanner"));
       }
     };
 
@@ -235,7 +243,7 @@ function VendorWalletPage() {
           });
       }
     };
-  }, [isPlatformScannerOpen, vendorId]);
+  }, [isPlatformScannerOpen, t, vendorId]);
 
   const handleConfirmPlatformPayment = async () => {
     if (!pendingScannedPayment || isSubmittingPlatformPayment) return;
@@ -243,7 +251,7 @@ function VendorWalletPage() {
     setIsSubmittingPlatformPayment(true);
     try {
       if (!vendorId || !normalizedVendorPhoneNumber) {
-        toast.error("Vendor session missing. Please log in again.");
+        toast.error(t("vendorDashboard.cash.toasts.vendorSessionMissing"));
         return;
       }
 
@@ -265,10 +273,10 @@ function VendorWalletPage() {
       setPendingScannedPayment(null);
       await queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
       await queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-      toast.success("Payment confirmed successfully!");
+      toast.success(t("vendorDashboard.cash.toasts.paymentConfirmed"));
     } catch (error) {
       console.error("Ledger Insert Failed:", error);
-      toast.error("Failed to process payment. Check your connection.");
+      toast.error(t("vendorDashboard.cash.toasts.paymentFailed"));
     } finally {
       setIsSubmittingPlatformPayment(false);
     }
@@ -282,8 +290,8 @@ function VendorWalletPage() {
             <ArrowLeft className="size-4" />
           </Button>
           <div className="text-center">
-            <h1 className="text-sm font-bold tracking-tight text-foreground">Cash Reconciliation</h1>
-            <p className="text-xs text-muted-foreground">تسوية واستلام النقود</p>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">{t("vendorDashboard.cash.reconciliationTitle")}</h1>
+            <p className="text-xs text-muted-foreground">{t("vendorDashboard.cash.reconciliationSubtitle")}</p>
           </div>
           <span className="w-9" />
         </header>
@@ -292,13 +300,13 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="size-4 text-primary" />
-              Unsettled Cash with Cyclists · نقود غير مسواة
+              {t("vendorDashboard.cash.unsettledCashWithCyclists")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{formatMad(summary?.unsettledCashWithCyclistsMad)}</p>
             <p className="text-xs text-muted-foreground">
-              Cyclists with pending remittance: {hasSummary ? summary?.pendingCyclistCount ?? 0 : "--"}
+              {t("vendorDashboard.cash.pendingRemittanceCyclists", { count: hasSummary ? summary?.pendingCyclistCount ?? 0 : "--" })}
             </p>
           </CardContent>
         </Card>
@@ -307,20 +315,20 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="size-4 text-primary" />
-              Cash Breakdown · تفصيل النقد
+              {t("vendorDashboard.finance.cashBreakdown")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
-              <p className="text-xs text-muted-foreground">إجمالي النقد المستلم · Total Cash in Hand</p>
+              <p className="text-xs text-muted-foreground">{t("vendorDashboard.finance.totalCashInHand")}</p>
               <p className="text-2xl font-semibold text-foreground">{formatCashBreakdownMad(cashBreakdown.totalCashInHandMad)}</p>
             </div>
             <div className="rounded-lg border border-success/30 bg-success/10 px-3 py-2">
-              <p className="text-xs text-muted-foreground">صافي أرباحي · My Net Profit</p>
+              <p className="text-xs text-muted-foreground">{t("vendorDashboard.finance.myNetProfit")}</p>
               <p className="text-xl font-semibold text-success">{formatCashBreakdownMad(cashBreakdown.myNetProfitMad)}</p>
             </div>
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
-              <p className="text-xs text-muted-foreground">مستحقات المنصة · Platform Dues</p>
+              <p className="text-xs text-muted-foreground">{t("vendorDashboard.finance.platformDues")}</p>
               <p className="text-xl font-semibold text-destructive">{formatCashBreakdownMad(cashBreakdown.platformDuesMad)}</p>
             </div>
             <Button
@@ -329,14 +337,14 @@ function VendorWalletPage() {
               onClick={() => {
                 const platformDuesMad = Number(cashBreakdown.platformDuesMad ?? 0);
                 if (!Number.isFinite(platformDuesMad) || platformDuesMad <= 0) {
-                  toast.info("No platform dues pending right now.");
+                  toast.info(t("vendorDashboard.cash.toasts.noPlatformDues"));
                   return;
                 }
                 setIsPlatformScannerOpen(true);
               }}
             >
               <QrCode className="size-4" />
-              Pay Admin via QR · أداء مستحقات المنصة
+              {t("vendorDashboard.cash.payAdminViaQr")}
             </Button>
           </CardContent>
         </Card>
@@ -345,24 +353,24 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Wallet className="size-4 text-primary" />
-              Owed to Cyclist · مستحقات التوصيل
+              {t("vendorDashboard.finance.owedToCyclist")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{formatMad(summary?.owedToCyclistMad)}</p>
-            <p className="text-xs text-muted-foreground">Pending credit/carnet delivery fees.</p>
+            <p className="text-xs text-muted-foreground">{t("vendorDashboard.finance.pendingDeliveryFees")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Total Received Today · مجموع المستلم اليوم</CardTitle>
+            <CardTitle className="text-base">{t("vendorDashboard.cash.totalReceivedToday")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-2xl font-semibold">{formatMad(summary?.totalReceivedTodayMad)}</p>
             <Button className="w-full" onClick={() => setIsVendorHandoverQrOpen(true)}>
               <QrCode className="size-4" />
-              Show Vendor Handover QR · عرض رمز تسليم النقد
+              {t("vendorDashboard.cash.showVendorHandoverQr")}
             </Button>
           </CardContent>
         </Card>
@@ -371,7 +379,7 @@ function VendorWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="size-4 text-primary" />
-              Lifetime Earnings · إجمالي الأرباح منذ البداية
+              {t("vendorDashboard.cash.lifetimeEarnings")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -381,20 +389,20 @@ function VendorWalletPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Delivered Orders · الطلبات المسلمة</CardTitle>
+            <CardTitle className="text-base">{t("vendorDashboard.orders.deliveredOrders")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {deliveredOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No delivered orders yet.</p>
+              <p className="text-sm text-muted-foreground">{t("vendorDashboard.orders.noDeliveredOrders")}</p>
             ) : (
               deliveredOrders.map((order) => (
                 <button
                   key={order.id}
                   type="button"
                   onClick={() => navigate({ to: "/vendor/order/$orderId", params: { orderId: order.id } })}
-                  className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left transition-colors hover:bg-muted/40"
+                  className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-start transition-colors hover:bg-muted/40"
                 >
-                  <span className="text-sm text-foreground">Order #{order.id.slice(0, 8)}</span>
+                  <span className="text-sm text-foreground">{t("vendorDashboard.orders.orderNumber", { id: order.id.slice(0, 8) })}</span>
                   <span className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</span>
                 </button>
               ))
@@ -406,10 +414,10 @@ function VendorWalletPage() {
       <Dialog open={isVendorHandoverQrOpen} onOpenChange={setIsVendorHandoverQrOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Vendor Handover QR · رمز تسليم للتاجر</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.vendorHandoverQrTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-center">
-            <p className="text-sm text-muted-foreground">Cyclist scans this for settlement transition.</p>
+            <p className="text-sm text-muted-foreground">{t("vendorDashboard.cash.vendorHandoverQrHint")}</p>
             <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
               {vendorHandoverQrPayload ? <QRCodeSVG value={vendorHandoverQrPayload} size={220} includeMargin /> : null}
             </div>
@@ -420,7 +428,7 @@ function VendorWalletPage() {
       <Dialog open={isPlatformScannerOpen} onOpenChange={setIsPlatformScannerOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Scan Admin QR · مسح رمز مسؤول المنصة</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.scanAdminQrTitle")}</DialogTitle>
           </DialogHeader>
           <div id="vendor-platform-payment-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
         </DialogContent>
@@ -429,15 +437,21 @@ function VendorWalletPage() {
       <Dialog open={Boolean(pendingScannedPayment)} onOpenChange={(open) => (!open ? setPendingScannedPayment(null) : undefined)}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Confirm Payment · تأكيد الدفع</DialogTitle>
+            <DialogTitle>{t("vendorDashboard.cash.confirmPaymentTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <p>
-              Pay <span className="font-semibold">{Number(pendingScannedPayment?.amount ?? 0).toFixed(2)} MAD</span> to Platform Admin?
+              {t("vendorDashboard.cash.confirmPaymentPrompt", {
+                amount: Number(pendingScannedPayment?.amount ?? 0).toFixed(2),
+              })}
             </p>
-            <p className="text-muted-foreground">Timestamp: {pendingScannedPayment?.timestamp ?? "--"}</p>
+            <p className="text-muted-foreground">
+              {t("vendorDashboard.cash.timestamp")}: {pendingScannedPayment?.timestamp ?? "--"}
+            </p>
             <Button className="w-full" onClick={() => void handleConfirmPlatformPayment()} disabled={isSubmittingPlatformPayment}>
-              {isSubmittingPlatformPayment ? "Processing..." : "Confirm Payment"}
+              {isSubmittingPlatformPayment
+                ? t("vendorDashboard.cash.processing")
+                : t("vendorDashboard.cash.confirmPayment")}
             </Button>
           </div>
         </DialogContent>
