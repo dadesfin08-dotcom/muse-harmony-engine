@@ -378,7 +378,10 @@ function Index() {
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
   const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
+  const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
+  const [authSheetCanScrollDown, setAuthSheetCanScrollDown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const authSheetScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
   const bannerScrollRef = useRef<HTMLDivElement>(null);
@@ -392,6 +395,14 @@ function Index() {
     const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
     const traveled = Math.min(maxScroll, Math.abs(element.scrollLeft));
     return { maxScroll, traveled };
+  };
+
+  const updateAuthSheetScrollState = (element: HTMLDivElement | null) => {
+    if (!element) return;
+    const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
+    const topOffset = element.scrollTop;
+    setAuthSheetCanScrollUp(topOffset > 6);
+    setAuthSheetCanScrollDown(maxScroll - topOffset > 6);
   };
 
   const getLocalizedText = ({
@@ -1090,6 +1101,8 @@ function Index() {
     if (!isMobile || !isCustomerAuthModalOpen || typeof window === "undefined") {
       setAuthKeyboardInset(0);
       setAuthSheetMaxHeight(null);
+      setAuthSheetCanScrollUp(false);
+      setAuthSheetCanScrollDown(false);
       return;
     }
 
@@ -1121,6 +1134,23 @@ function Index() {
       viewport.removeEventListener("scroll", syncSheetViewport);
     };
   }, [isCustomerAuthModalOpen, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile || !isCustomerAuthModalOpen) return;
+
+    const scrollElement = authSheetScrollRef.current;
+    if (!scrollElement) return;
+
+    const syncGlow = () => updateAuthSheetScrollState(scrollElement);
+    syncGlow();
+    scrollElement.addEventListener("scroll", syncGlow, { passive: true });
+    window.addEventListener("resize", syncGlow);
+
+    return () => {
+      scrollElement.removeEventListener("scroll", syncGlow);
+      window.removeEventListener("resize", syncGlow);
+    };
+  }, [authKeyboardInset, authStep, customerPanelView, customerSession, isCustomerAuthModalOpen, isMobile]);
 
   useEffect(() => {
     const persistedCustomerSession = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
@@ -2878,7 +2908,19 @@ function Index() {
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out">
+              <div className="pointer-events-none absolute inset-x-0 top-[54px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/95 via-background/60 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollDown ? 1 : 0 }} />
+
+              <div
+                ref={authSheetScrollRef}
+                onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
+                className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out"
+                style={{
+                  paddingBottom: authKeyboardInset > 0 ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))` : undefined,
+                  WebkitOverflowScrolling: "touch",
+                  scrollBehavior: "smooth",
+                }}
+              >
                 <div className="flex flex-col gap-5">
                 <div className="pt-2 text-center">
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
