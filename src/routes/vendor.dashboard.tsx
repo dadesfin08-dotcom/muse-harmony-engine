@@ -2913,7 +2913,11 @@ function StoreInventoryView({
       const parsedDraftPrice = Number(draft.vendorPrice);
       const effectivePrice = Number.isNaN(parsedDraftPrice) ? 0 : parsedDraftPrice;
 
-      const matchesSearch = !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery);
+      const matchesSearch =
+        !normalizedQuery ||
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        (item.category ?? "").toLowerCase().includes(normalizedQuery) ||
+        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery));
       const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
       const matchesStatus =
         statusFilter === "all"
@@ -2943,12 +2947,12 @@ function StoreInventoryView({
         <>
           <div className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-border bg-background p-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder={t("vendorDashboard.inventory.searchPlaceholder")}
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl ps-9"
               />
             </div>
 
@@ -3015,7 +3019,7 @@ function StoreInventoryView({
                           </Badge>
                         ) : null}
                         <Badge variant="outline" className="rounded-md">
-                          {item.measurementUnit}
+                          {item.measurementUnitLabel || item.measurementUnit}
                         </Badge>
                       </div>
                     </div>
@@ -3098,7 +3102,12 @@ function FlashSalesView({
       if (!item.isAvailable || item.vendorPrice <= 0) {
         return false;
       }
-      return !normalizedQuery || item.name.toLowerCase().includes(normalizedQuery);
+      return (
+        !normalizedQuery ||
+        item.name.toLowerCase().includes(normalizedQuery) ||
+        (item.category ?? "").toLowerCase().includes(normalizedQuery) ||
+        (item.productVariants ?? []).some((variant) => variant.toLowerCase().includes(normalizedQuery)
+      );
     });
   }, [items, searchTerm]);
 
@@ -3117,12 +3126,12 @@ function FlashSalesView({
         <>
           <div className="mb-4 rounded-xl border border-border bg-background p-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder={t("vendorDashboard.flashSales.searchPlaceholder")}
-                className="h-10 rounded-xl pl-9"
+                className="h-10 rounded-xl ps-9"
               />
             </div>
           </div>
@@ -3167,6 +3176,16 @@ function FlashSalesView({
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {item.category ? (
+                            <Badge variant="outline" className="rounded-md">
+                              {item.category}
+                            </Badge>
+                          ) : null}
+                          <Badge variant="outline" className="rounded-md">
+                            {item.measurementUnitLabel || item.measurementUnit}
+                          </Badge>
+                        </div>
                         <p className="mt-1 text-xs text-muted-foreground">{t("vendorDashboard.flashSales.regularPrice", { price: item.vendorPrice.toFixed(2) })}</p>
                       </div>
                     </div>
