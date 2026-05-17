@@ -83,7 +83,6 @@ import Autoplay from "embla-carousel-autoplay";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProductCard } from "@/components/ProductCard";
 import productDairyImage from "@/assets/product-dairy.jpg";
 import productKhobzImage from "@/assets/product-khobz.jpg";
 import productMintTeaImage from "@/assets/product-mint-tea.jpg";
@@ -376,9 +375,6 @@ function Index() {
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
-  const flashDealsAutoplayRef = useRef(
-    Autoplay({ delay: 3200, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
-  );
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
@@ -2338,96 +2334,104 @@ function Index() {
 
         {flashDeals.length > 0 ? (
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-3 sm:px-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="line-clamp-1 text-xl font-bold text-foreground md:text-2xl">
-              <Flame className="size-4 text-destructive" />
-              {t("flashDeals.title")}
-            </h2>
-            <div className="inline-flex items-center gap-2">
-              <Link
-                to="/customer/flash-deals"
-                className="text-xs font-semibold text-primary underline-offset-2 hover:underline"
-              >
-                {t("categories.viewAll", { defaultValue: "View All" })}
-              </Link>
-              <div className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
-                <Clock3 className="size-3.5" />
-                <span>{t("flashDeals.endsIn")}: {countdownLabel}</span>
+          <div className="mb-3 overflow-hidden rounded-2xl border border-red-900/20 bg-gradient-to-r from-red-950 via-red-900 to-red-800 p-3 text-white shadow-[0_10px_26px_-16px_rgba(127,29,29,0.55)]">
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-2.5">
+                <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/10 backdrop-blur-sm">
+                  <span className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/15 to-transparent" />
+                  <ShieldCheck className="relative size-4 text-white" />
+                  <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
+                </span>
+                <div className="leading-tight">
+                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">HAMZET AL-YAWM</h2>
+                  <p className="text-[10px] font-medium uppercase text-white/85">FRESH DAILY FLASH DEALS</p>
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white">
+                <Clock3 className="size-3" />
+                <span>{countdownLabel}</span>
               </div>
             </div>
           </div>
 
-          <Carousel
-            opts={{ loop: flashDeals.length > 1, align: "start", skipSnaps: false, dragFree: false }}
-            plugins={flashDeals.length > 1 ? [flashDealsAutoplayRef.current] : []}
-            className="mb-5"
-            onPointerDownCapture={() => {
-              try {
-                flashDealsAutoplayRef.current.stop();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-            onPointerUpCapture={() => {
-              try {
-                flashDealsAutoplayRef.current.play();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-            onTouchStartCapture={() => {
-              try {
-                flashDealsAutoplayRef.current.stop();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-            onTouchEndCapture={() => {
-              try {
-                flashDealsAutoplayRef.current.play();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-            onMouseEnter={() => {
-              try {
-                flashDealsAutoplayRef.current.stop();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-            onMouseLeave={() => {
-              try {
-                flashDealsAutoplayRef.current.play();
-              } catch {
-                // ignore autoplay lifecycle race conditions
-              }
-            }}
-          >
-            <CarouselContent className="-ml-0 items-stretch gap-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {flashDeals.map((product) => (
-                <CarouselItem key={`flash-${product.id}`} className="basis-[170px] pl-0 h-full">
-                  <ProductCard
-                    id={product.id}
-                    name={product.name}
-                    brand={t("flashDeals.title", { defaultValue: "Flash Deal" })}
-                    measurementUnit={product.measurementUnit}
-                    imageUrl={product.image}
-                    productVariants={[]}
-                    price={Number(product.dealPrice ?? 0)}
-                    oldPrice={Number(product.price ?? 0)}
-                    discountPercent={product.discountPercent}
-                    isFlashDeal
-                    cartQuantity={getCartQuantity(product.id)}
-                    addLabel={t("products.add")}
-                    onAdd={() => addFlashDealToCart(product)}
-                    onIncrease={() => increaseItem(product.id)}
-                    onDecrease={() => decreaseItem(product.id)}
-                  />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {flashDeals.slice(0, 4).map((product) => {
+              const cartQty = getCartQuantity(product.id);
+
+              return (
+                <article
+                  key={`flash-grid-${product.id}`}
+                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_8px_24px_-18px_rgba(15,23,42,0.35)]"
+                >
+                  <Link
+                    to="/customer/product/$id"
+                    params={{ id: product.id }}
+                    search={(prev: Record<string, unknown>) => ({ ...prev, deal: true })}
+                    className="block"
+                  >
+                    <div className="aspect-square w-full bg-muted/35 p-2">
+                      <img
+                        src={product.image}
+                        alt={product.alt}
+                        className="h-full w-full rounded-xl object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  </Link>
+
+                  <div className="flex flex-1 flex-col p-2.5">
+                    <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-foreground">{product.name}</h3>
+
+                    <div className="mt-1.5 flex items-baseline gap-1">
+                      <span className="text-base font-bold tracking-tight text-[#2A7543]">
+                        {Number(product.dealPrice ?? 0).toFixed(2)}
+                      </span>
+                      <span className="text-[11px] font-bold text-[#2A7543]">MAD</span>
+                      <span className="text-[11px] text-muted-foreground line-through">
+                        {Number(product.price ?? 0).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex justify-end">
+                      {cartQty > 0 ? (
+                        <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-1 leading-none">
+                          <button
+                            type="button"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground leading-none"
+                            onClick={() => decreaseItem(product.id)}
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="size-3.5" />
+                          </button>
+                          <span className="min-w-5 text-center text-xs font-semibold text-foreground">{cartQty}</span>
+                          <button
+                            type="button"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground leading-none"
+                            onClick={() => increaseItem(product.id)}
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="size-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#2A7543] px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all hover:bg-[#23663A] active:scale-[0.98]"
+                          onClick={() => addFlashDealToCart(product)}
+                        >
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
+                            <Plus className="size-3" />
+                          </span>
+                          {t("products.add")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
 
           {!isBottomPromoDismissed ? (
             <div className="relative mb-20 overflow-hidden rounded-2xl border border-success/30 bg-card">
