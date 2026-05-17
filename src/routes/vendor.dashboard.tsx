@@ -1954,7 +1954,6 @@ function VendorDashboardPage() {
                               ? `${item.measurementValue} ${localizeMeasurementUnit(item.measurementUnit)}`
                               : null;
                           const normalizedVariant = item.selectedVariant?.trim();
-                          const normalizedCategory = item.categoryLabel?.trim();
 
                           return (
                             <>
@@ -1969,11 +1968,6 @@ function VendorDashboardPage() {
                                   <span className="inline-flex shrink-0 items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                     <Scale className="me-1 h-3 w-3 text-blue-500" aria-hidden="true" />
                                     <span dir="ltr">{normalizedMeasurement}</span>
-                                  </span>
-                                ) : null}
-                                {normalizedCategory ? (
-                                  <span className="inline-flex shrink-0 items-center rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 shadow-sm">
-                                    {normalizedCategory}
                                   </span>
                                 ) : null}
                               </div>
