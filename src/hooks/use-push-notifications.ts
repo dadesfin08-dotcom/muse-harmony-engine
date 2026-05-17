@@ -54,6 +54,10 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
         const config = await fetchPushConfig();
         if (!config.enabled || !config.vapidPublicKey) return;
 
+        const vapidStorageKey = "push_vapid_public_key";
+        const previousVapidKey = window.localStorage.getItem(vapidStorageKey);
+        const vapidKeyChanged = !!previousVapidKey && previousVapidKey !== config.vapidPublicKey;
+
         const permission = await ensurePushPermission();
         if (permission !== "granted") return;
 
@@ -61,6 +65,11 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
         const expectedServerKey = urlBase64ToUint8Array(config.vapidPublicKey);
 
         let subscription = await registration.pushManager.getSubscription();
+        if (subscription && vapidKeyChanged) {
+          await subscription.unsubscribe();
+          subscription = null;
+        }
+
         if (subscription?.options?.applicationServerKey) {
           const currentServerKey = new Uint8Array(subscription.options.applicationServerKey);
           const sameVapidKey = areUint8ArraysEqual(currentServerKey, expectedServerKey);
@@ -97,6 +106,8 @@ export function usePushNotifications(options: UsePushNotificationsOptions) {
             locationLabel: options.locationLabel ?? null,
           },
         });
+
+        window.localStorage.setItem(vapidStorageKey, config.vapidPublicKey);
       } catch (error) {
         console.error("Push registration failed:", error);
       }
