@@ -6,6 +6,7 @@ import {
   formatMoroccoPhoneForPayload,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import { localizeText, resolveAppLanguage, type AppLanguage } from "@/lib/localization";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z
@@ -181,6 +182,19 @@ export type VendorSettlementSummary = {
 
 function roundMoney(value: number) {
   return Math.round(Number(value ?? 0) * 100) / 100;
+}
+
+function localizeDbName(
+  language: AppLanguage,
+  row: { name_ar?: string | null; name_fr?: string | null; name_en?: string | null } | null | undefined,
+): string {
+  if (!row) return "";
+
+  return localizeText(language, {
+    ar: row.name_ar,
+    fr: row.name_fr,
+    en: row.name_en,
+  });
 }
 
 async function getVendorPendingCommissionMad(vendorId: string) {
