@@ -184,7 +184,7 @@ function AllProductsPage() {
         ) : null}
       </div>
 
-      <section className="grid grid-cols-2 gap-3 md:gap-4 p-4">
+      <section className="grid grid-cols-2 items-stretch gap-3 p-4 sm:grid-cols-3 md:gap-4 lg:grid-cols-4">
         {displayedProducts.map((product) => (
           <ProductCard
             key={product.id}
