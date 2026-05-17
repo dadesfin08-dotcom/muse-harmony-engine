@@ -25,6 +25,7 @@ import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 import appI18n from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -120,6 +121,12 @@ function CyclistDashboardPage() {
   const acceptRun = useServerFn(acceptDeliveryRun);
   const completeCustomerDelivery = useServerFn(completeCustomerDeliveryByOrder);
   const settleVendorHandover = useServerFn(settleVendorCashHandover);
+
+  usePushNotifications({
+    enabled: Boolean(session?.cyclistId),
+    role: "cyclist",
+    userId: session?.cyclistId ?? null,
+  });
 
   const dashboardQuery = useQuery({
     queryKey: ["cyclist", "dashboard", session?.cyclistId ?? null],

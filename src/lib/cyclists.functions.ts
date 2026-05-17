@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendPushToUser } from "@/lib/push-notifications.server";
 
 const moroccoPhoneSchema = z.string().trim().regex(/^\+212[0-9]{9}$/);
 
@@ -784,6 +785,30 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
         throw new Error("Delivery was already accepted by another cyclist.");
       }
 
+      const { data: orderForPush } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("customer_user_id")
+        .eq("id", data.orderId)
+        .maybeSingle();
+
+      const customerUserId =
+        typeof (orderForPush as { customer_user_id?: string | null } | null)?.customer_user_id === "string"
+          ? String((orderForPush as { customer_user_id: string }).customer_user_id)
+          : null;
+
+      if (customerUserId) {
+        void sendPushToUser("customer", customerUserId, {
+          title: "Courier assigned",
+          body: "A rider accepted your order and is starting delivery.",
+          role: "customer",
+          url: "/customer#orders",
+          orderId: data.orderId,
+          eventType: "order_delivering",
+        }).catch((notificationError) => {
+          console.error("Customer accept-delivery push failed:", notificationError);
+        });
+      }
+
       return { ok: true };
     } catch (error) {
       console.error("acceptDeliveryRun failed:", error);
@@ -967,7 +992,7 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
     try {
       const { data: order, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, cyclist_id, status, payment_method, order_category, subscription_id")
+        .select("id, cyclist_id, status, payment_method, order_category, subscription_id, customer_user_id")
         .eq("id", data.orderId)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivering")
@@ -1033,6 +1058,24 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         if (subscriptionProgressError) {
           throw new Error(subscriptionProgressError.message ?? "Failed to update subscription completion progress.");
         }
+      }
+
+      const customerUserId =
+        typeof (order as { customer_user_id?: string | null }).customer_user_id === "string"
+          ? (order as { customer_user_id: string }).customer_user_id
+          : null;
+
+      if (customerUserId) {
+        void sendPushToUser("customer", customerUserId, {
+          title: "Order delivered",
+          body: "Your order has been delivered successfully.",
+          role: "customer",
+          url: "/customer#orders",
+          orderId: data.orderId,
+          eventType: "order_delivered",
+        }).catch((notificationError) => {
+          console.error("Customer delivered push failed:", notificationError);
+        });
       }
 
       return { ok: true, nextStatus };
