@@ -404,6 +404,8 @@ function VendorDashboardPage() {
     : (i18n.resolvedLanguage || i18n.language || "en") === "fr"
       ? "fr"
       : "en";
+  const dateFnsLocale = activeLanguage === "ar" ? arSA : activeLanguage === "fr" ? fr : enUS;
+  const intlLocale = activeLanguage === "ar" ? "ar-MA" : activeLanguage === "fr" ? "fr-FR" : "en-US";
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
