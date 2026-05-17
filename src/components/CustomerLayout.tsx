@@ -274,8 +274,8 @@ export function CustomerLayout({
               }}
             />
 
-            <div className="relative z-10 grid h-[76px] grid-cols-5 items-end px-3 pb-2">
-          <Link to="/" className="flex flex-col items-center justify-center gap-1 text-primary">
+            <div className="relative z-10 flex h-[76px] items-end gap-2 overflow-x-auto whitespace-nowrap px-2 pb-2 scrollbar-hide">
+          <Link to="/" className="flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-primary">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
           </Link>
@@ -289,13 +289,13 @@ export function CustomerLayout({
                 void navigate({ to: "/customer/categories" });
               }
             }}
-            className="flex flex-col items-center justify-center gap-1 text-muted-foreground"
+            className="flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-muted-foreground"
           >
             <Search className="size-5" />
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="relative z-20 flex items-end justify-center">
+          <div className="relative z-20 flex min-w-[74px] flex-shrink-0 items-end justify-center">
             <LanguageSwitcher
               trigger={
                 <button
@@ -313,7 +313,7 @@ export function CustomerLayout({
           <button
             type="button"
             onClick={openCart}
-            className="relative flex flex-col items-center justify-center gap-1 text-muted-foreground"
+            className="relative flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 text-muted-foreground"
             aria-label={cartLabel}
           >
             <span className="relative">
@@ -330,7 +330,7 @@ export function CustomerLayout({
             onClick={() => {
               setIsProfileHubOpen(true);
             }}
-            className={`flex flex-col items-center justify-center gap-1 ${
+            className={`flex min-w-[62px] flex-shrink-0 flex-col items-center justify-center gap-1 ${
               isProfileHubOpen ||
               isCustomerAuthModalOpen ||
               customerPanelView === "profile" ||
