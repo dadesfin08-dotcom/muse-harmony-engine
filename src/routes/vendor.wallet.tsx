@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
@@ -33,7 +33,7 @@ function VendorWalletPage() {
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
   const [isPlatformScannerOpen, setIsPlatformScannerOpen] = useState(false);
   const [isSubmittingPlatformPayment, setIsSubmittingPlatformPayment] = useState(false);
-  const vendorClearanceToastLockRef = useRef(false);
+  const [clearancePollStartedAt, setClearancePollStartedAt] = useState<string | null>(null);
   const [pendingScannedPayment, setPendingScannedPayment] = useState<{
     amount: number;
     timestamp: string;
