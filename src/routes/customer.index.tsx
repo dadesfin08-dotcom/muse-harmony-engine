@@ -1814,16 +1814,18 @@ function Index() {
 
     syncSheetViewport();
 
-    if (!viewport) {
-      return;
+    if (viewport) {
+      viewport.addEventListener("resize", syncSheetViewport);
+      viewport.addEventListener("scroll", syncSheetViewport);
     }
-
-    viewport.addEventListener("resize", syncSheetViewport);
-    viewport.addEventListener("scroll", syncSheetViewport);
+    window.addEventListener("resize", syncSheetViewport);
 
     return () => {
-      viewport.removeEventListener("resize", syncSheetViewport);
-      viewport.removeEventListener("scroll", syncSheetViewport);
+      if (viewport) {
+        viewport.removeEventListener("resize", syncSheetViewport);
+        viewport.removeEventListener("scroll", syncSheetViewport);
+      }
+      window.removeEventListener("resize", syncSheetViewport);
     };
   }, [isCustomerAuthModalOpen, isMobile, customerPanelView]);
 
@@ -3103,7 +3105,7 @@ function Index() {
           ) : null}
         </div>
 
-        <footer className="sticky bottom-0 z-50 shrink-0 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur md:px-5 md:py-3.5">
+        <footer className="sticky bottom-0 z-50 shrink-0 border-t border-border/60 bg-background/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur md:px-5 md:py-3.5">
           {supportImageDataUrl ? (
             <div className="relative mb-2 overflow-hidden rounded-xl border border-border">
               <img src={supportImageDataUrl} alt="attachment preview" className="max-h-32 w-full object-cover" />
@@ -4395,9 +4397,9 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out ${
+              className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl ${
                 customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
-              }`}
+              } ${customerPanelView === "support" ? "transition-none" : "transition-[max-height,padding-bottom] duration-300 ease-out"}`}
               style={{
                 height: isSupportPanelActive ? (supportViewportHeight ? `${supportViewportHeight}px` : "100dvh") : undefined,
                 maxHeight: isSupportPanelActive
