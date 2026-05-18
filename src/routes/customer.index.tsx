@@ -1843,6 +1843,28 @@ function Index() {
       tag: ad.campaign_type === "NEWS" ? "Featured" : "AD",
     })) || [];
   const displayAdSlides = dynamicAdSlides.length > 0 ? dynamicAdSlides : adSlides;
+  const activeHeroSection = activeHeroSectionQuery.data as any;
+  const localizedHeroBadge = getLocalizedText(
+    { en: activeHeroSection?.badge_en ?? activeHeroSection?.greeting_en, fr: activeHeroSection?.badge_fr ?? activeHeroSection?.greeting_fr, ar: activeHeroSection?.badge_ar ?? activeHeroSection?.greeting_ar },
+    activeHeroSection?.badge_en ?? activeHeroSection?.greeting_en ?? "Bicycle delivery across Morocco",
+  );
+  const localizedHeroTitle = getLocalizedText(
+    { en: activeHeroSection?.title_en ?? activeHeroSection?.headline_en, fr: activeHeroSection?.title_fr ?? activeHeroSection?.headline_fr, ar: activeHeroSection?.title_ar ?? activeHeroSection?.headline_ar },
+    activeHeroSection?.title_en ?? activeHeroSection?.headline_en ?? "Fresh groceries, delivered in 15 min",
+  );
+  const localizedHeroSubtitle = getLocalizedText(
+    { en: activeHeroSection?.subtitle_en ?? activeHeroSection?.description_en, fr: activeHeroSection?.subtitle_fr ?? activeHeroSection?.description_fr, ar: activeHeroSection?.subtitle_ar ?? activeHeroSection?.description_ar },
+    activeHeroSection?.subtitle_en ?? activeHeroSection?.description_en ?? "Local produce, fast riders, and trusted vendors near you.",
+  );
+  const localizedHeroCta = getLocalizedText(
+    { en: activeHeroSection?.cta_text_en, fr: activeHeroSection?.cta_text_fr, ar: activeHeroSection?.cta_text_ar },
+    activeHeroSection?.cta_text_en ?? "Start shopping",
+  );
+  const localizedHeroDeliveryTiming = getLocalizedText(
+    { en: activeHeroSection?.delivery_timing_en, fr: activeHeroSection?.delivery_timing_fr, ar: activeHeroSection?.delivery_timing_ar },
+    activeHeroSection?.delivery_timing_en ?? "Avg. delivery: 18 min",
+  );
+  const heroImageUrl = activeHeroSection?.image_url || fallbackProductImage;
 
   const saveLocationSelection = async () => {
     if (!selectedCommuneId || !selectedNeighborhoodId) {
@@ -2109,17 +2131,16 @@ function Index() {
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
           <article className="relative mx-auto mb-6 w-full max-w-[336px] overflow-visible px-1 pb-10 pt-1 md:hidden">
             <img
-              src={fallbackProductImage}
+              src={heroImageUrl}
               alt="Fresh groceries"
               className="pointer-events-none absolute right-1 top-0 h-[88px] w-[88px] rounded-2xl object-cover opacity-95"
               loading="lazy"
             />
-            <p className="max-w-[58%] text-[13px] font-medium text-foreground">Good morning, 👋</p>
+            <p className="max-w-[58%] text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
             <h1 className="mt-0.5 max-w-[68%] text-balance text-[1.62rem] font-bold leading-[1.04] text-foreground">
-              Fresh groceries,
-              <span className="block text-[1.44rem] leading-[1.06] text-primary">delivered in 15 min</span>
+              {localizedHeroTitle}
             </h1>
-            <p className="mt-1.5 max-w-[66%] text-[11px] leading-4 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-1.5 max-w-[66%] text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
 
             <div ref={searchContainerRef} className="absolute inset-x-2 -bottom-5 z-20">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
@@ -2202,20 +2223,29 @@ function Index() {
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
-              Bicycle delivery across Morocco
+              {localizedHeroBadge}
             </p>
             <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
-              Daily groceries delivered in minutes, cleanly and reliably.
+              {localizedHeroTitle}
             </h1>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Fresh essentials from bakery to vegetables, delivered by local bicycle couriers for a
-              faster and zero-emission Moroccan city experience.
+              {localizedHeroSubtitle}
             </p>
             <div className="flex items-center gap-3 pt-1">
-              <Button variant="hero" size="xl" className="rounded-2xl">
-                Start shopping
+              <Button
+                variant="hero"
+                size="xl"
+                className="rounded-2xl"
+                onClick={() => {
+                  const target = activeHeroSection?.cta_link;
+                  if (typeof target === "string" && target.startsWith("/")) {
+                    void navigate({ to: target as "/customer" });
+                  }
+                }}
+              >
+                {localizedHeroCta}
               </Button>
-              <span className="text-sm font-medium text-muted-foreground">Avg. delivery: 18 min</span>
+              <span className="text-sm font-medium text-muted-foreground">{localizedHeroDeliveryTiming}</span>
             </div>
           </div>
 
