@@ -27,6 +27,7 @@ type CustomerRow = {
   full_name: string | null;
   address: string | null;
   neighborhood_id: string | null;
+  status: "active" | "vip" | "warning" | "suspicious" | "blocked" | null;
 };
 
 type LegacyCustomerRow = {
@@ -114,7 +115,7 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
     try {
       const { data: profile, error } = await (supabaseAdmin as any)
         .from("profiles")
-        .select("id, phone, full_name, address, neighborhood_id")
+        .select("id, phone, full_name, address, neighborhood_id, status")
         .eq("phone", data.phoneNumber)
         .maybeSingle();
 
@@ -144,6 +145,7 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
           address: profileRow?.address ?? null,
           savedInstructions: legacyRow?.saved_instructions ?? null,
           neighborhoodId: profileRow?.neighborhood_id ?? legacyRow?.neighborhood_id ?? null,
+          status: profileRow?.status ?? "active",
         };
       }
 
