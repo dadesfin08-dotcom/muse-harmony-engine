@@ -1059,7 +1059,7 @@ function AdminPage() {
   const [adminSupportIsSending, setAdminSupportIsSending] = useState(false);
   const adminSupportTicketsQuery = useQuery({
     queryKey: ["admin", "support", "tickets", adminSupportStatusFilter, adminSupportSearch],
-    enabled: isAdminDataEnabled,
+    enabled: isAdminDataEnabled && tab === "support",
     queryFn: () =>
       fetchAdminSupportTickets({
         data: {
@@ -1092,7 +1092,7 @@ function AdminPage() {
     adminSupportTickets.find((ticket) => ticket.id === adminSupportActiveTicketId) ?? null;
   const adminSupportMessagesQuery = useQuery({
     queryKey: ["admin", "support", "messages", adminSupportActiveTicketId],
-    enabled: isAdminDataEnabled && !!adminSupportActiveTicketId,
+    enabled: isAdminDataEnabled && tab === "support" && !!adminSupportActiveTicketId,
     queryFn: () =>
       fetchAdminSupportMessages({
         data: {

@@ -71,6 +71,37 @@ const updateTicketStatusInputSchema = z.object({
   status: supportStatusSchema,
 });
 
+async function markCustomerMessagesDeliveredForSupport(ticketId?: string) {
+  let query = (supabaseAdmin as any)
+    .from("support_messages")
+    .update({ delivered_at: new Date().toISOString() })
+    .eq("sender_type", "user")
+    .is("delivered_at", null);
+
+  if (ticketId) {
+    query = query.eq("ticket_id", ticketId);
+  }
+
+  const { error } = await query;
+  if (error) throw new Error(error.message);
+}
+
+async function markCustomerMessagesReadForSupport(ticketId: string) {
+  const timestamp = new Date().toISOString();
+
+  const { error } = await (supabaseAdmin as any)
+    .from("support_messages")
+    .update({
+      delivered_at: timestamp,
+      read_at: timestamp,
+    })
+    .eq("ticket_id", ticketId)
+    .eq("sender_type", "user")
+    .is("read_at", null);
+
+  if (error) throw new Error(error.message);
+}
+
 async function resolveProfileByPhone(phoneNumber: string) {
   const { data, error } = await (supabaseAdmin as any)
     .from("profiles")
@@ -232,7 +263,7 @@ export const listCustomerSupportMessages = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await (supabaseAdmin as any)
       .from("support_messages")
-      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at")
+      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at, delivered_at, read_at")
       .eq("ticket_id", data.ticketId)
       .order("created_at", { ascending: true });
 
@@ -246,6 +277,8 @@ export const listCustomerSupportMessages = createServerFn({ method: "POST" })
       message: String(row.message),
       imageUrl: row.image_url ? String(row.image_url) : null,
       createdAt: String(row.created_at),
+      deliveredAt: row.delivered_at ? String(row.delivered_at) : null,
+      readAt: row.read_at ? String(row.read_at) : null,
     }));
   });
 
@@ -277,7 +310,7 @@ export const sendCustomerSupportMessage = createServerFn({ method: "POST" })
         message: data.message,
         image_url: uploadedImageUrl,
       })
-      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at")
+      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at, delivered_at, read_at")
       .single();
 
     if (error) throw new Error(error.message);
@@ -292,12 +325,16 @@ export const sendCustomerSupportMessage = createServerFn({ method: "POST" })
       message: String(insertedRow.message),
       imageUrl: insertedRow.image_url ? String(insertedRow.image_url) : null,
       createdAt: String(insertedRow.created_at),
+      deliveredAt: insertedRow.delivered_at ? String(insertedRow.delivered_at) : null,
+      readAt: insertedRow.read_at ? String(insertedRow.read_at) : null,
     };
   });
 
 export const listAdminSupportTickets = createServerFn({ method: "POST" })
   .inputValidator((input) => listAdminTicketsInputSchema.parse(input ?? {}))
   .handler(async ({ data }) => {
+    await markCustomerMessagesDeliveredForSupport();
+
     let query = (supabaseAdmin as any)
       .from("support_tickets")
       .select("id, user_id, subject, category, message, image_url, status, created_at, updated_at, last_reply_at, last_sender_type, order_id")
@@ -381,9 +418,11 @@ export const listAdminSupportTickets = createServerFn({ method: "POST" })
 export const listAdminSupportMessages = createServerFn({ method: "POST" })
   .inputValidator((input) => adminTicketMessagesInputSchema.parse(input))
   .handler(async ({ data }) => {
+    await markCustomerMessagesReadForSupport(data.ticketId);
+
     const { data: rows, error } = await (supabaseAdmin as any)
       .from("support_messages")
-      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at")
+      .select("id, ticket_id, sender_type, sender_id, message, image_url, created_at, delivered_at, read_at")
       .eq("ticket_id", data.ticketId)
       .order("created_at", { ascending: true });
 
@@ -397,6 +436,8 @@ export const listAdminSupportMessages = createServerFn({ method: "POST" })
       message: String(row.message),
       imageUrl: row.image_url ? String(row.image_url) : null,
       createdAt: String(row.created_at),
+      deliveredAt: row.delivered_at ? String(row.delivered_at) : null,
+      readAt: row.read_at ? String(row.read_at) : null,
     }));
   });
 

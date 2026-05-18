@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bike,
   Check,
+  CheckCheck,
   Search,
   Loader2,
   ShoppingCart,
@@ -3041,8 +3042,13 @@ function Index() {
 
                 const message = entry.message!;
                 const isMine = message.senderType === "user";
-                const hasAdminReplyAfter =
-                  isMine && supportMessages.some((row) => row.senderType === "admin" && new Date(row.createdAt) > new Date(message.createdAt));
+                const messageStatus = isMine
+                  ? !message.deliveredAt
+                    ? "sent"
+                    : !message.readAt
+                      ? "delivered"
+                      : "read"
+                  : null;
 
                 return (
                   <motion.div
@@ -3053,7 +3059,7 @@ function Index() {
                     className={`flex ${isMine ? (isArabic ? "justify-start" : "justify-end") : isArabic ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[88%] space-y-1.5 rounded-3xl px-3.5 py-3 shadow-sm sm:max-w-[80%] ${
+                      className={`max-w-[88%] space-y-2 rounded-3xl px-3.5 py-3 shadow-sm sm:max-w-[80%] ${
                         isMine
                           ? "border border-success/30 bg-success/15 text-foreground shadow-[0_10px_25px_-18px_hsl(var(--success)/0.95)]"
                           : "border border-border/60 bg-card text-foreground"
@@ -3063,9 +3069,21 @@ function Index() {
                       {message.imageUrl ? (
                         <img src={message.imageUrl} alt="support attachment" className="max-h-44 w-full rounded-xl object-cover" loading="lazy" />
                       ) : null}
-                      <div className={`flex items-center gap-1.5 text-[10px] font-medium tabular-nums ${isMine ? "text-foreground/65" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
+                      <div
+                        className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] font-medium tabular-nums ${
+                          isMine ? "text-foreground/65" : "text-muted-foreground"
+                        } ${isArabic ? "flex-row-reverse" : ""}`}
+                      >
                         <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-                        {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
+                        {isMine && messageStatus ? (
+                          <span
+                            className={`inline-flex items-center ${messageStatus === "read" ? "text-primary" : "text-muted-foreground"}`}
+                            aria-label={messageStatus}
+                            title={messageStatus}
+                          >
+                            {messageStatus === "sent" ? <Check className="h-3.5 w-3.5" /> : <CheckCheck className="h-3.5 w-3.5" />}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </motion.div>
