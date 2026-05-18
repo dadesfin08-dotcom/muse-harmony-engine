@@ -335,6 +335,29 @@ export const listAdminSupportTickets = createServerFn({ method: "POST" })
       ]),
     );
 
+    const orderIds = Array.from(
+      new Set(((tickets ?? []) as Array<any>).map((row) => row.order_id).filter(Boolean) as string[]),
+    );
+
+    const { data: orderRows, error: orderError } = orderIds.length
+      ? await (supabaseAdmin as any)
+          .from("orders")
+          .select("id, status")
+          .in("id", orderIds)
+      : { data: [], error: null };
+
+    if (orderError) throw new Error(orderError.message);
+
+    const orderMap = new Map(
+      ((orderRows ?? []) as Array<any>).map((row) => [
+        String(row.id),
+        {
+          status: String(row.status ?? "pending"),
+          pickupCode: `#${String(row.id).slice(-4).toUpperCase()}`,
+        },
+      ]),
+    );
+
     return ((tickets ?? []) as Array<any>).map((row) => ({
       id: String(row.id),
       userId: String(row.user_id),
@@ -350,6 +373,8 @@ export const listAdminSupportTickets = createServerFn({ method: "POST" })
       lastReplyAt: row.last_reply_at ? String(row.last_reply_at) : null,
       lastSenderType: row.last_sender_type ? String(row.last_sender_type) : null,
       orderId: row.order_id ? String(row.order_id) : null,
+      orderStatus: row.order_id ? orderMap.get(String(row.order_id))?.status ?? null : null,
+      pickupCode: row.order_id ? orderMap.get(String(row.order_id))?.pickupCode ?? null : null,
     }));
   });
 

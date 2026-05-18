@@ -704,6 +704,10 @@ function Index() {
     refetchInterval: customerSession?.phoneNumber && supportActiveTicketId ? 4_000 : false,
     refetchIntervalInBackground: true,
   });
+  const supportTickets = supportTicketsQuery.data ?? [];
+  const supportMessages = supportMessagesQuery.data ?? [];
+  const supportActiveTicket = supportTickets.find((ticket) => ticket.id === supportActiveTicketId) ?? null;
+  const supportUnreadCount = supportTickets.filter((ticket) => ticket.lastSenderType === "admin" && ticket.status === "open").length;
   const predictiveSearchQuery = useQuery({
     queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
     queryFn: () =>
@@ -781,6 +785,46 @@ function Index() {
       void supabase.removeChannel(announcementsChannel);
     };
   }, [queryClient]);
+
+  useEffect(() => {
+    if (customerPanelView !== "support") return;
+    if (supportActiveTicketId) return;
+    if (supportTickets.length === 0) return;
+    setSupportActiveTicketId(supportTickets[0]?.id ?? null);
+  }, [customerPanelView, supportActiveTicketId, supportTickets]);
+
+  useEffect(() => {
+    if (customerPanelView !== "support" || !customerSession?.phoneNumber) return;
+
+    const ticketsChannel = supabase
+      .channel(`customer-support-tickets-${customerSession.phoneNumber}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["customer", "support", "tickets", customerSession.phoneNumber] });
+      })
+      .subscribe();
+
+    const messagesChannel = supabase
+      .channel(`customer-support-messages-${customerSession.phoneNumber}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["customer", "support", "tickets", customerSession.phoneNumber] });
+        if (supportActiveTicketId) {
+          void queryClient.invalidateQueries({
+            queryKey: ["customer", "support", "messages", customerSession.phoneNumber, supportActiveTicketId],
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ticketsChannel);
+      void supabase.removeChannel(messagesChannel);
+    };
+  }, [customerPanelView, customerSession?.phoneNumber, queryClient, supportActiveTicketId]);
+
+  useEffect(() => {
+    if (!supportMessagesScrollRef.current) return;
+    supportMessagesScrollRef.current.scrollTop = supportMessagesScrollRef.current.scrollHeight;
+  }, [supportMessages, supportIsTyping]);
 
   useEffect(() => {
     if (!customerSession?.phoneNumber) return;
