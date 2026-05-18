@@ -2864,6 +2864,183 @@ function Index() {
     void navigate({ to: "/customer/product/$id", params: { id: productId } });
   };
 
+  const renderSupportPanel = () => {
+    const supportTitle = language === "ar" ? "مركز الدعم" : language === "fr" ? "Centre d’assistance" : "Support Center";
+    const supportSubtitle =
+      language === "ar"
+        ? "دردشة مباشرة مع فريق الدعم"
+        : language === "fr"
+          ? "Chat en direct avec l’équipe support"
+          : "Live chat with the support team";
+
+    return (
+      <div className="space-y-3">
+        <section className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur">
+          <div className={`flex items-start justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <div className={isArabic ? "text-right" : "text-left"}>
+              <p className="text-sm font-semibold text-foreground">{supportTitle}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{supportSubtitle}</p>
+            </div>
+            {supportUnreadCount > 0 ? (
+              <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge>
+            ) : null}
+          </div>
+          {supportContext?.orderId ? (
+            <div className={`mt-3 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
+              <Badge variant="outline" className="rounded-full">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
+              {supportContext.pickupCode ? <Badge className="rounded-full bg-primary/10 text-primary">{supportContext.pickupCode}</Badge> : null}
+              {supportActiveTicket?.orderStatus ? <Badge variant="secondary" className="rounded-full">{supportActiveTicket.orderStatus}</Badge> : null}
+            </div>
+          ) : null}
+        </section>
+
+        {supportTickets.length > 0 ? (
+          <section className="space-y-2 rounded-2xl border border-border bg-background/70 p-3">
+            <div className={`flex gap-2 overflow-x-auto ${isArabic ? "flex-row-reverse" : ""}`}>
+              {supportTickets.map((ticket) => (
+                <button
+                  key={ticket.id}
+                  type="button"
+                  onClick={() => setSupportActiveTicketId(ticket.id)}
+                  className={`min-w-fit rounded-full border px-3 py-1.5 text-xs transition ${
+                    supportActiveTicketId === ticket.id
+                      ? "border-primary/40 bg-primary/12 text-primary"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
+                >
+                  {ticket.subject}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="rounded-2xl border border-border bg-card p-3">
+          <div ref={supportMessagesScrollRef} className="max-h-[38vh] space-y-3 overflow-y-auto pr-1">
+            {supportMessagesQuery.isLoading ? (
+              <AppEmptyState title={language === "ar" ? "جاري تحميل المحادثة..." : language === "fr" ? "Chargement de la conversation..." : "Loading conversation..."} className="p-4" />
+            ) : supportMessagesWithDateMarkers.length === 0 ? (
+              <AppEmptyState
+                title={language === "ar" ? "ابدأ محادثة جديدة" : language === "fr" ? "Commencez une nouvelle conversation" : "Start a new conversation"}
+                subtitle={language === "ar" ? "أرسل رسالتك الأولى وسيتم الرد عليك فورًا." : language === "fr" ? "Envoyez votre premier message et nous répondrons rapidement." : "Send your first message and we will reply quickly."}
+                className="p-4"
+              />
+            ) : (
+              <>
+                {supportHasAdminUnread ? (
+                  <div className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-center text-[11px] font-medium text-primary">
+                    {language === "ar" ? "رسائل جديدة" : language === "fr" ? "Nouveaux messages" : "Unread replies"}
+                  </div>
+                ) : null}
+                {supportMessagesWithDateMarkers.map((entry) => {
+                  if (entry.type === "date") {
+                    return (
+                      <div key={entry.key} className="text-center text-[11px] text-muted-foreground">
+                        <span className="rounded-full border border-border bg-background px-2.5 py-1">{entry.label}</span>
+                      </div>
+                    );
+                  }
+
+                  const message = entry.message!;
+                  const isMine = message.senderType === "user";
+                  const hasAdminReplyAfter =
+                    isMine && supportMessages.some((row) => row.senderType === "admin" && new Date(row.createdAt) > new Date(message.createdAt));
+
+                  return (
+                    <motion.div
+                      key={entry.key}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className={`flex ${isMine ? (isArabic ? "justify-start" : "justify-end") : isArabic ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`max-w-[82%] space-y-1 rounded-2xl px-3 py-2 ${isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                        <p className="whitespace-pre-wrap break-words text-sm">{message.message}</p>
+                        {message.imageUrl ? (
+                          <img src={message.imageUrl} alt="support attachment" className="max-h-40 w-full rounded-xl object-cover" loading="lazy" />
+                        ) : null}
+                        <div className={`flex items-center gap-1 text-[10px] ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
+                          <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+                          {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </>
+            )}
+
+            {supportIsTyping ? (
+              <div className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
+                <Loader2 className="size-3 animate-spin" />
+                {language === "ar" ? "يتم الإرسال..." : language === "fr" ? "Envoi..." : "Sending..."}
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="sticky bottom-0 space-y-2 rounded-2xl border border-border bg-background/95 p-3 backdrop-blur">
+          {supportImageDataUrl ? (
+            <div className="relative overflow-hidden rounded-xl border border-border">
+              <img src={supportImageDataUrl} alt="attachment preview" className="max-h-36 w-full object-cover" />
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute right-2 top-2 h-7 w-7 rounded-full"
+                onClick={() => setSupportImageDataUrl(null)}
+                aria-label="Remove attachment"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+
+          <div className={`flex items-end gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-background hover:bg-muted">
+              <Paperclip className="h-4 w-4" />
+              <input type="file" accept="image/*" className="hidden" onChange={handleSupportAttachmentChange} />
+            </label>
+            <Textarea
+              value={supportMessageInput}
+              onChange={(event) => setSupportMessageInput(event.target.value)}
+              placeholder={language === "ar" ? "اكتب رسالتك..." : language === "fr" ? "Écrivez votre message..." : "Write your message..."}
+              rows={2}
+              className={`min-h-[44px] max-h-32 resize-none rounded-2xl ${isArabic ? "text-right" : "text-left"}`}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendSupportMessageNow();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="hero"
+              size="icon"
+              className="h-10 w-10 rounded-full"
+              disabled={isSupportAttachmentUploading || supportIsTyping || (!supportMessageInput.trim() && !supportImageDataUrl)}
+              onClick={() => void sendSupportMessageNow()}
+            >
+              {isSupportAttachmentUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+              <Button type="button" size="sm" variant={supportPriority === "high" ? "default" : "soft"} className="h-8 rounded-full px-3" onClick={() => setSupportPriority(supportPriority === "high" ? "normal" : "high")}>
+                {language === "ar" ? "أولوية عالية" : language === "fr" ? "Priorité haute" : "High priority"}
+              </Button>
+            </div>
+            <Button variant="soft" className="h-8 rounded-full px-3 text-xs" onClick={() => setCustomerPanelView("account")}>
+              {customerUiCopy.backToAccount}
+            </Button>
+          </div>
+        </section>
+      </div>
+    );
+  };
+
   return (
     <>
       <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
