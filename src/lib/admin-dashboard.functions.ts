@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { evaluateCustomerBehavior } from "@/utils/customerAlgorithm";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
@@ -330,6 +331,7 @@ type AdminCustomerProfileRow = {
   cod_rejections: number;
   admin_notes: string | null;
   lifetime_value: number | null;
+  system_tags: string[] | null;
 };
 
 type AdminCustomerOrderAggregateRow = {
@@ -1454,7 +1456,7 @@ export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, subscription_id")
+      .select("id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1493,6 +1495,10 @@ export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
       throw new Error(error?.message ?? "Failed to assign cyclist to subscription order.");
     }
 
+    if (typeof currentOrder.customer_user_id === "string" && currentOrder.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(currentOrder.customer_user_id);
+    }
+
     return { ok: true };
   });
 
@@ -1501,7 +1507,7 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, neighborhood_id, subscription_id")
+      .select("id, neighborhood_id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1578,6 +1584,10 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
       throw new Error(updateError?.message ?? "Failed to auto-dispatch subscription order.");
     }
 
+    if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(order.customer_user_id);
+    }
+
     return { ok: true, cyclistId: selectedCyclistId };
   });
 
@@ -1586,7 +1596,7 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, subscription_id")
+      .select("id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1653,6 +1663,10 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
       if (subscriptionUpdateError) {
         throw new Error(subscriptionUpdateError.message ?? "Failed to update subscription completion progress.");
       }
+    }
+
+    if (typeof currentOrder.customer_user_id === "string" && currentOrder.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(currentOrder.customer_user_id);
     }
 
     return { ok: true, status: updated.status };
@@ -2469,7 +2483,7 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
     let profilesQuery = (supabaseAdmin as any)
       .from("profiles")
       .select(
-        "id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value",
+        "id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value, system_tags",
         { count: "exact" },
       );
 
@@ -2584,6 +2598,7 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
           strikes: Number(profile.strikes ?? 0),
           codRejections: Number(profile.cod_rejections ?? 0),
           adminNotes: profile.admin_notes ?? "",
+          systemTags: Array.isArray(profile.system_tags) ? profile.system_tags : [],
         };
       }),
     };
@@ -2595,7 +2610,7 @@ export const getAdminCustomerProfile = createServerFn({ method: "POST" })
     const [profileRes, ordersRes] = await Promise.all([
       (supabaseAdmin as any)
         .from("profiles")
-        .select("id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value")
+        .select("id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value, system_tags")
         .eq("id", data.customerId)
         .maybeSingle(),
       (supabaseAdmin as any)
@@ -2632,6 +2647,7 @@ export const getAdminCustomerProfile = createServerFn({ method: "POST" })
       strikes: Number(profile.strikes ?? 0),
       codRejections: Number(profile.cod_rejections ?? 0),
       adminNotes: profile.admin_notes ?? "",
+      systemTags: Array.isArray(profile.system_tags) ? profile.system_tags : [],
       lifetimeValue,
       metrics: {
         totalSpent: lifetimeValue,
@@ -2667,14 +2683,7 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
       ? 0
       : Math.max(0, currentStrikes + Number(data.strikesDelta ?? 0));
 
-    const patch: Record<string, unknown> = {
-      status: data.status,
-      strikes: nextStrikes,
-    };
-
-    if (data.riskScore) {
-      patch.risk_score = data.riskScore;
-    }
+    const patch: Record<string, unknown> = { strikes: nextStrikes };
 
     if (data.addCodRejection) {
       patch.cod_rejections = Number(existingProfile.cod_rejections ?? 0) + 1;
@@ -2685,6 +2694,8 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
     if (error) {
       throw new Error(error.message);
     }
+
+    await evaluateCustomerBehavior(data.customerId);
 
     return { ok: true };
   });

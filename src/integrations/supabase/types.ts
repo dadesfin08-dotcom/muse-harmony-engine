@@ -1332,6 +1332,7 @@ export type Database = {
           risk_score: Database["public"]["Enums"]["customer_risk_score"]
           status: Database["public"]["Enums"]["customer_status"]
           strikes: number
+          system_tags: string[]
           updated_at: string
         }
         Insert: {
@@ -1350,6 +1351,7 @@ export type Database = {
           risk_score?: Database["public"]["Enums"]["customer_risk_score"]
           status?: Database["public"]["Enums"]["customer_status"]
           strikes?: number
+          system_tags?: string[]
           updated_at?: string
         }
         Update: {
@@ -1368,6 +1370,7 @@ export type Database = {
           risk_score?: Database["public"]["Enums"]["customer_risk_score"]
           status?: Database["public"]["Enums"]["customer_status"]
           strikes?: number
+          system_tags?: string[]
           updated_at?: string
         }
         Relationships: [

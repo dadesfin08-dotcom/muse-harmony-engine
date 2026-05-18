@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
+import { evaluateCustomerBehavior, evaluateCustomersBehavior } from "@/utils/customerAlgorithm";
 
 const moroccoPhoneSchema = z.string().trim().regex(/^\+212[0-9]{9}$/);
 
@@ -1045,6 +1046,17 @@ export const markDeliveryAsDelivered = createServerFn({ method: "POST" })
         throw new Error("Delivery not found or already completed.");
       }
 
+      const deliveredOrderId = String(rpcResult[0].order_id);
+      const { data: deliveredOrder } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("customer_user_id")
+        .eq("id", deliveredOrderId)
+        .maybeSingle();
+
+      if (typeof deliveredOrder?.customer_user_id === "string" && deliveredOrder.customer_user_id.length > 0) {
+        await evaluateCustomerBehavior(deliveredOrder.customer_user_id);
+      }
+
       return { ok: true };
     } catch (error) {
       console.error("markDeliveryAsDelivered failed:", error);
@@ -1096,6 +1108,10 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
         throw new Error(error.message);
       }
 
+      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+        await evaluateCustomerBehavior(order.customer_user_id);
+      }
+
       if (isPlatformSubscriptionOrder && typeof order.subscription_id === "string" && order.subscription_id.length > 0) {
         const { data: subscriptionRow, error: progressError } = await (supabaseAdmin as any)
           .from("platform_subscriptions")
@@ -1139,7 +1155,7 @@ export const settleVendorCashHandover = createServerFn({ method: "POST" })
     try {
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, total_price")
+        .select("id, total_price, customer_user_id")
         .eq("cyclist_id", data.cyclistId)
         .eq("vendor_id", data.vendorId)
         .eq("status", "delivered_cash_with_cyclist");
@@ -1148,7 +1164,7 @@ export const settleVendorCashHandover = createServerFn({ method: "POST" })
         throw new Error(pendingError.message);
       }
 
-      const rows = (pendingRows ?? []) as Array<{ id: string; total_price: number }>;
+      const rows = (pendingRows ?? []) as Array<{ id: string; total_price: number; customer_user_id: string | null }>;
       if (rows.length === 0) {
         return { settledOrdersCount: 0, settledCashMad: 0 };
       }
@@ -1171,6 +1187,8 @@ export const settleVendorCashHandover = createServerFn({ method: "POST" })
       if (updateError) {
         throw new Error(updateError.message);
       }
+
+      await evaluateCustomersBehavior(rows.map((row) => String(row.customer_user_id ?? "")));
 
       return {
         settledOrdersCount: orderIds.length,

@@ -24,6 +24,7 @@ export type AdminCustomerRow = {
   strikes: number;
   codRejections: number;
   adminNotes: string;
+  systemTags: string[];
 };
 
 function formatMad(value: number, locale: string) {
@@ -43,6 +44,14 @@ const riskDotClass: Record<AdminCustomerRow["riskScore"], string> = {
   medium: "bg-accent",
   high: "bg-destructive",
 };
+
+function getSystemTagTone(tag: string) {
+  if (tag === "عميل موثوق") return "bg-success/15 text-success border-success/30";
+  if (tag === "عميل نشيط") return "bg-primary/15 text-primary border-primary/30";
+  if (tag === "إلغاء متكرر") return "bg-accent/20 text-accent-foreground border-accent/40";
+  if (tag === "سبام" || tag === "رفض COD") return "bg-destructive/15 text-destructive border-destructive/30";
+  return "bg-muted text-muted-foreground border-border";
+}
 
 type Props = {
   customers: AdminCustomerRow[];
@@ -171,6 +180,15 @@ export function CustomerTable(props: Props) {
                   <TableCell className="font-medium">{formatMad(customer.ltvMad, intlLocale)}</TableCell>
                   <TableCell>
                     <Badge variant={statusBadgeVariant[customer.status]}>{localizedStatus(customer.status)}</Badge>
+                    {customer.systemTags.length > 0 ? (
+                      <div className={cn("mt-2 flex flex-wrap gap-1", isRtl && "justify-end") }>
+                        {customer.systemTags.map((tag) => (
+                          <Badge key={`${customer.id}-${tag}`} variant="outline" className={cn("text-[10px]", getSystemTagTone(tag))}>
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-2">
