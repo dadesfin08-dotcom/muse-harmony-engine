@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 
 type Profile = {
   id: string;
@@ -62,11 +63,15 @@ export function CustomerDrawer({
   onAction: (action: "vip" | "warning" | "suspend" | "block") => void;
 }) {
   const { intlLocale, isRtl } = useAppLanguage();
+  const { t } = useTranslation();
+  const localizedStatus = (status: Profile["status"]) => t(`admin.customersCrm.status.${status}`);
+  const localizedRisk = (risk: Profile["riskScore"]) => t(`admin.customersCrm.risk.${risk}`);
+  const localizedOrderStatus = (status: string) => t(`admin.ordersMonitoring.statuses.${status}`, { defaultValue: status });
   const strikeSuggestion = profile
     ? profile.strikes >= 5
-      ? "Suggested action: Block"
+      ? t("admin.customersCrm.drawer.suggestedBlock")
       : profile.strikes >= 3
-        ? "Suggested action: Suspend"
+        ? t("admin.customersCrm.drawer.suggestedSuspend")
         : null
     : null;
 
@@ -88,43 +93,43 @@ export function CustomerDrawer({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align={isRtl ? "start" : "end"}>
-                    <DropdownMenuItem onClick={() => onAction("vip")}>Mark as VIP</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAction("warning")}>Add Warning</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAction("suspend")}>Suspend Account</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAction("block")}>Block Account</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction("vip")}>{t("admin.customersCrm.actions.markVip")}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction("warning")}>{t("admin.customersCrm.actions.addWarning")}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction("suspend")}>{t("admin.customersCrm.actions.suspend")}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction("block")}>{t("admin.customersCrm.actions.block")}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className={cn("mt-2 flex items-center gap-2", isRtl && "justify-end")}>
-                <Badge variant="secondary">{profile.status}</Badge>
-                <Badge variant={profile.riskScore === "high" ? "destructive" : "outline"}>{profile.riskScore}</Badge>
+                <Badge variant="secondary">{localizedStatus(profile.status)}</Badge>
+                <Badge variant={profile.riskScore === "high" ? "destructive" : "outline"}>{localizedRisk(profile.riskScore)}</Badge>
               </div>
             </SheetHeader>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Metric label="Total Spent" value={formatMad(profile.metrics.totalSpent, intlLocale)} />
-              <Metric label="AOV" value={formatMad(profile.metrics.averageOrderValue, intlLocale)} />
-              <Metric label="Total Orders" value={String(profile.metrics.totalOrders)} />
-              <Metric label="Cancellation Rate" value={`${profile.metrics.cancellationRate.toFixed(1)}%`} />
-              <Metric label="COD Rejections" value={String(profile.metrics.codRejections)} />
-              <Metric label="Strikes" value={String(profile.strikes)} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.totalSpent")} value={formatMad(profile.metrics.totalSpent, intlLocale)} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.averageOrderValue")} value={formatMad(profile.metrics.averageOrderValue, intlLocale)} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.totalOrders")} value={String(profile.metrics.totalOrders)} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.cancellationRate")} value={`${profile.metrics.cancellationRate.toFixed(1)}%`} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.codRejections")} value={String(profile.metrics.codRejections)} />
+              <Metric label={t("admin.customersCrm.drawer.metrics.strikes")} value={String(profile.strikes)} />
             </div>
 
             <Tabs defaultValue="risk" className="space-y-4">
               <TabsList className={cn("grid w-full grid-cols-3", isRtl && "text-right")}>
-                <TabsTrigger value="risk">Risk Management</TabsTrigger>
-                <TabsTrigger value="notes">Admin Notes</TabsTrigger>
-                <TabsTrigger value="orders">Order History</TabsTrigger>
+                <TabsTrigger value="risk">{t("admin.customersCrm.drawer.tabs.riskManagement")}</TabsTrigger>
+                <TabsTrigger value="notes">{t("admin.customersCrm.drawer.tabs.adminNotes")}</TabsTrigger>
+                <TabsTrigger value="orders">{t("admin.customersCrm.drawer.tabs.orderHistory")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="risk" className="space-y-3">
                 <div className={cn("flex flex-wrap items-center gap-2", isRtl && "flex-row-reverse justify-end")}>
-                  <Button variant="outline" disabled={isUpdatingState} onClick={() => onAdjustStrike("add")}>+ Add Strike</Button>
+                  <Button variant="outline" disabled={isUpdatingState} onClick={() => onAdjustStrike("add")}>{t("admin.customersCrm.drawer.actions.addStrike")}</Button>
                   <Button variant="outline" disabled={isUpdatingState || profile.strikes <= 0} onClick={() => onAdjustStrike("remove")}>
-                    - Remove Strike
+                    {t("admin.customersCrm.drawer.actions.removeStrike")}
                   </Button>
                   <Button variant="outline" disabled={isUpdatingState || profile.strikes <= 0} onClick={() => onAdjustStrike("reset")}>
-                    Reset
+                    {t("admin.customersCrm.drawer.actions.reset")}
                   </Button>
                 </div>
                 {strikeSuggestion ? <p className="text-sm font-medium text-destructive">{strikeSuggestion}</p> : null}
@@ -132,7 +137,7 @@ export function CustomerDrawer({
 
               <TabsContent value="notes" className="space-y-3">
                 <Textarea value={notesDraft} onChange={(event) => onNotesDraftChange(event.target.value)} className="min-h-28" />
-                <Button onClick={onSaveNotes} disabled={isSavingNotes}>Save Internal Note</Button>
+                <Button onClick={onSaveNotes} disabled={isSavingNotes}>{t("admin.customersCrm.drawer.actions.saveInternalNote")}</Button>
               </TabsContent>
 
               <TabsContent value="orders">
@@ -140,10 +145,10 @@ export function CustomerDrawer({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Order</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Amount</TableHead>
+                        <TableHead>{t("admin.customersCrm.drawer.table.order")}</TableHead>
+                        <TableHead>{t("admin.customersCrm.drawer.table.date")}</TableHead>
+                        <TableHead>{t("admin.customersCrm.drawer.table.status")}</TableHead>
+                        <TableHead>{t("admin.customersCrm.drawer.table.amount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -151,7 +156,7 @@ export function CustomerDrawer({
                         <TableRow key={order.id}>
                           <TableCell>#{order.id.slice(0, 8)}</TableCell>
                           <TableCell>{new Date(order.createdAt).toLocaleDateString(intlLocale)}</TableCell>
-                          <TableCell className="capitalize">{order.status}</TableCell>
+                          <TableCell>{localizedOrderStatus(order.status)}</TableCell>
                           <TableCell>{formatMad(order.amount, intlLocale)}</TableCell>
                         </TableRow>
                       ))}
