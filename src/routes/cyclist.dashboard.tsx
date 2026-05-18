@@ -107,6 +107,22 @@ function CyclistDashboardPage() {
   const qrScannerRef = useRef<any>(null);
   const isVerifyingCodeRef = useRef(false);
   const hasScannedRef = useRef(false);
+
+  const safelyStopAndClearScanner = async (scanner: any) => {
+    if (!scanner) return;
+
+    try {
+      await scanner.stop?.();
+    } catch {
+      // Scanner might already be stopping/stopped.
+    }
+
+    try {
+      await scanner.clear?.();
+    } catch {
+      // Ignore cleanup errors to avoid crashing the scan flow.
+    }
+  };
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -365,12 +381,7 @@ function CyclistDashboardPage() {
     const scanner = qrScannerRef.current;
     qrScannerRef.current = null;
     if (scanner) {
-      void scanner
-        .stop()
-        .catch(() => undefined)
-        .finally(() => {
-          void scanner.clear().catch(() => undefined);
-        });
+      void safelyStopAndClearScanner(scanner);
     }
     setIsScannerOpen(false);
     setScannerStatus(t("cyclist.readyToScan"));
@@ -420,8 +431,7 @@ function CyclistDashboardPage() {
         const scanner = qrScannerRef.current;
         qrScannerRef.current = null;
         if (scanner) {
-          await scanner.stop().catch(() => undefined);
-          await scanner.clear().catch(() => undefined);
+          await safelyStopAndClearScanner(scanner);
         }
         setIsUpdatingOrderId(orderId);
         const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
@@ -440,8 +450,7 @@ function CyclistDashboardPage() {
         const scanner = qrScannerRef.current;
         qrScannerRef.current = null;
         if (scanner) {
-          await scanner.stop().catch(() => undefined);
-          await scanner.clear().catch(() => undefined);
+          await safelyStopAndClearScanner(scanner);
         }
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
@@ -608,12 +617,7 @@ function CyclistDashboardPage() {
       const scanner = qrScannerRef.current;
       qrScannerRef.current = null;
       if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
+        void safelyStopAndClearScanner(scanner);
       }
     };
   }, [isScannerOpen, scannerPaused]);
