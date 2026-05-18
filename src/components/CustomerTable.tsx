@@ -94,7 +94,7 @@ export function CustomerTable(props: Props) {
         <div className={cn("grid w-full gap-2 sm:grid-cols-3", isRtl && "text-right")}>
           <Select value={props.statusFilter} onValueChange={(value) => props.onStatusFilterChange(value as Props["statusFilter"])}>
             <SelectTrigger>
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("admin.customersCrm.filters.status")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("admin.customersCrm.filters.allStatuses")}</SelectItem>
@@ -107,7 +107,7 @@ export function CustomerTable(props: Props) {
           </Select>
           <Select value={props.riskFilter} onValueChange={(value) => props.onRiskFilterChange(value as Props["riskFilter"])}>
             <SelectTrigger>
-              <SelectValue placeholder="Risk" />
+              <SelectValue placeholder={t("admin.customersCrm.filters.risk")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("admin.customersCrm.filters.allRiskLevels")}</SelectItem>
@@ -118,7 +118,7 @@ export function CustomerTable(props: Props) {
           </Select>
           <Select value={props.sortBy} onValueChange={(value) => props.onSortByChange(value as Props["sortBy"])}>
             <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={t("admin.customersCrm.sort.label")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="newest">{t("admin.customersCrm.sort.newest")}</SelectItem>

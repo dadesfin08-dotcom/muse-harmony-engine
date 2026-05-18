@@ -66,6 +66,7 @@ export function CustomerDrawer({
   const { t } = useTranslation();
   const localizedStatus = (status: Profile["status"]) => t(`admin.customersCrm.status.${status}`);
   const localizedRisk = (risk: Profile["riskScore"]) => t(`admin.customersCrm.risk.${risk}`);
+  const localizedOrderStatus = (status: string) => t(`admin.ordersMonitoring.statuses.${status}`, { defaultValue: status });
   const strikeSuggestion = profile
     ? profile.strikes >= 5
       ? t("admin.customersCrm.drawer.suggestedBlock")
@@ -155,7 +156,7 @@ export function CustomerDrawer({
                         <TableRow key={order.id}>
                           <TableCell>#{order.id.slice(0, 8)}</TableCell>
                           <TableCell>{new Date(order.createdAt).toLocaleDateString(intlLocale)}</TableCell>
-                          <TableCell className="capitalize">{order.status}</TableCell>
+                          <TableCell>{localizedOrderStatus(order.status)}</TableCell>
                           <TableCell>{formatMad(order.amount, intlLocale)}</TableCell>
                         </TableRow>
                       ))}
