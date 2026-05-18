@@ -87,102 +87,47 @@ function VendorWalletPage() {
     placeholderData: (previousData) => previousData,
   });
 
-  useEffect(() => {
-    if (!vendorId) return;
+  const clearanceStatusQuery = useQuery({
+    queryKey: ["clearance-status", vendorId, clearancePollStartedAt],
+    enabled: Boolean(isVendorHandoverQrOpen && vendorId && clearancePollStartedAt),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, status, updated_at")
+        .eq("vendor_id", vendorId as string)
+        .in("status", ["cash_transferred_to_vendor", "cleared", "completed"])
+        .gte("updated_at", clearancePollStartedAt as string)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    const channel = supabase
-      .channel(`vendor-wallet-${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 2_000,
+  });
 
   useEffect(() => {
-    if (!isVendorHandoverQrOpen || !vendorId) {
-      vendorClearanceToastLockRef.current = false;
-      return;
+    if (!isVendorHandoverQrOpen) {
+      setClearancePollStartedAt(null);
     }
-
-    console.log("[Vendor QR] Listening for vendor clearance updates on orders table:", vendorId);
-
-    const channel = supabase
-      .channel(`merchant_clearance_sync_${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        (payload) => {
-          console.log("[Vendor QR] Realtime payload:", payload);
-          const oldStatus = String((payload.old as { status?: string } | null)?.status ?? "");
-          const newStatus = String((payload.new as { status?: string } | null)?.status ?? "");
-          const isCashClearanceTransition =
-            newStatus === "cash_transferred_to_vendor" ||
-            (oldStatus === "delivered_cash_with_cyclist" && newStatus === "cash_transferred_to_vendor");
-
-          if (!isCashClearanceTransition || vendorClearanceToastLockRef.current) {
-            return;
-          }
-
-          vendorClearanceToastLockRef.current = true;
-          setIsVendorHandoverQrOpen(false);
-          toast.success("نجاح العملية", {
-            description: "تم استلام النقد من السائق وتحديث محفظتك.",
-          });
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-      vendorClearanceToastLockRef.current = false;
-    };
-  }, [isVendorHandoverQrOpen, normalizedVendorPhoneNumber, queryClient, vendorId]);
+  }, [isVendorHandoverQrOpen]);
 
   useEffect(() => {
-    if (!vendorId) return;
+    if (!isVendorHandoverQrOpen || !clearanceStatusQuery.data) return;
 
-    const channel = supabase
-      .channel(`vendor-ledger-${vendorId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "platform_commission_ledger",
-          filter: `vendor_id=eq.${vendorId}`,
-        },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
-          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
-        },
-      )
-      .subscribe();
+    const status = String(clearanceStatusQuery.data.status ?? "");
+    const isSuccess = ["cleared", "completed", "cash_transferred_to_vendor"].includes(status);
+    if (!isSuccess) return;
 
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
+    setIsVendorHandoverQrOpen(false);
+    toast.success("تم استلام النقد", {
+      description: "تم تحديث محفظتك بنجاح.",
+    });
+    void queryClient.invalidateQueries({ queryKey: ["merchant-wallet"] });
+    void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
+    void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+  }, [clearanceStatusQuery.data, isVendorHandoverQrOpen, normalizedVendorPhoneNumber, queryClient, vendorId]);
 
   const summary = settlementQuery.data;
   const cashBreakdown = useMemo(() => {
