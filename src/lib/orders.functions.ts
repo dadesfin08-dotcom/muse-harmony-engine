@@ -1196,24 +1196,20 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
         throw new Error("Invalid status transition.");
       }
 
-      const { data: updatedOrder, error: updateError } = await (supabaseAdmin as any)
+      const { error: updateError } = await (supabaseAdmin as any)
         .from("orders")
         .update({ status: targetStatus })
         .eq("id", data.orderId)
-        .eq("status", currentStatus)
-        .select("id")
-        .maybeSingle();
+        .eq("status", currentStatus);
 
       if (updateError) {
         throw new Error(updateError.message);
       }
 
-      if (!updatedOrder?.id) {
-        throw new Error("Order status changed. Please refresh and try again.");
-      }
-
       if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
-        await evaluateCustomerBehavior(order.customer_user_id);
+        void evaluateCustomerBehavior(order.customer_user_id).catch((behaviorError) => {
+          console.error("Customer behavior scoring after vendor status update failed:", behaviorError);
+        });
       }
 
       void processPendingOrderPushEvents(20).catch((pushQueueError) => {
