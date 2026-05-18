@@ -111,6 +111,63 @@ export function CustomerLayout({
   );
   const cartLabel = useMemo(() => `${cartCount} item${cartCount === 1 ? "" : "s"}`, [cartCount]);
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+  const language = (i18n.resolvedLanguage || i18n.language || "en") as "ar" | "fr" | "en";
+  const layoutCopy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        profileHub: "حسابي",
+        myOrders: "طلباتي",
+        accountSettings: "إعدادات الحساب",
+        myCarnet: "الكارني ديالي",
+        debtLabel: "الدَّين",
+        cartTitle: "سلّتي",
+        cartSubtitle: "منتج في السلة",
+        subtotal: "المجموع الفرعي",
+        delivery: "التوصيل",
+        total: "الإجمالي",
+        checkout: "إتمام الطلب",
+        carnetDetails: "تفاصيل الكارني",
+        unpaidBalance: "الرصيد غير المؤدى",
+        close: "إغلاق",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        profileHub: "Mon profil",
+        myOrders: "Mes commandes",
+        accountSettings: "Paramètres du compte",
+        myCarnet: "Mon carnet",
+        debtLabel: "Dette",
+        cartTitle: "Mon panier",
+        cartSubtitle: "article(s) dans le panier",
+        subtotal: "Sous-total",
+        delivery: "Livraison",
+        total: "Total",
+        checkout: "Passer au paiement",
+        carnetDetails: "Détails du carnet",
+        unpaidBalance: "Solde impayé",
+        close: "Fermer",
+      };
+    }
+
+    return {
+      profileHub: "Profile Hub",
+      myOrders: "My Orders",
+      accountSettings: "Account Settings",
+      myCarnet: "My Carnet",
+      debtLabel: "Debt",
+      cartTitle: "Your Cart",
+      cartSubtitle: "item(s) in your basket",
+      subtotal: "Subtotal",
+      delivery: "Delivery",
+      total: "Total Price",
+      checkout: "Proceed to Checkout",
+      carnetDetails: "Carnet Details",
+      unpaidBalance: "Total Unpaid Balance",
+      close: "Close",
+    };
+  }, [language]);
 
   const ledgerSections = useMemo(() => {
     const transactions = (customerCarnetOverviewQuery.data?.transactions ?? []) as Array<{
@@ -270,7 +327,7 @@ export function CustomerLayout({
       </main>
 
       <nav
-        className="fixed inset-x-3 bottom-3 z-50 grid h-18 grid-cols-5 items-center justify-items-center rounded-[32px] border border-border/70 bg-card/90 px-1 pb-safe shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-3 bottom-3 z-50 grid h-18 grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1 pb-[max(env(safe-area-inset-bottom),0.35rem)] shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary">
             <House className="size-5" />
@@ -350,7 +407,7 @@ export function CustomerLayout({
             onClick={() => setIsProfileHubOpen(false)}
           />
           <section className="absolute inset-x-0 bottom-0 rounded-t-2xl border border-border bg-background p-4 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
-            <h2 className="text-sm font-semibold text-foreground">Profile Hub</h2>
+            <h2 className={`text-sm font-semibold text-foreground ${isArabic ? "text-right" : "text-left"}`}>{layoutCopy.profileHub}</h2>
             <div className="mt-3 space-y-2">
               <button
                 type="button"
@@ -361,7 +418,7 @@ export function CustomerLayout({
                   <ClipboardList className="size-5" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">My Orders · طلباتي</span>
+                  <span className="block text-sm font-semibold text-foreground">{layoutCopy.myOrders}</span>
                 </span>
               </button>
 
@@ -374,7 +431,7 @@ export function CustomerLayout({
                   <User className="size-5" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">Account Settings · إعدادات الحساب</span>
+                  <span className="block text-sm font-semibold text-foreground">{layoutCopy.accountSettings}</span>
                 </span>
               </button>
 
@@ -395,9 +452,9 @@ export function CustomerLayout({
                     <BookOpen className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1 flex-col">
-                    <span className="block text-sm font-semibold text-foreground">My Carnet · الكارني ديالي</span>
+                    <span className="block text-sm font-semibold text-foreground">{layoutCopy.myCarnet}</span>
                     <div className="text-red-500 font-semibold text-sm mt-1">
-                      Debt: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD
+                      {layoutCopy.debtLabel}: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD
                     </div>
                   </span>
                 </button>
@@ -413,8 +470,8 @@ export function CustomerLayout({
           <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-background shadow-2xl animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between border-b border-border p-5">
               <div>
-                <h2 className="text-left text-xl font-semibold text-foreground">Your Cart</h2>
-                <p className="text-left text-sm text-muted-foreground">{cartLabel} in your basket</p>
+                <h2 className={`text-xl font-semibold text-foreground ${isArabic ? "text-right" : "text-left"}`}>{layoutCopy.cartTitle}</h2>
+                <p className={`text-sm text-muted-foreground ${isArabic ? "text-right" : "text-left"}`}>{cartLabel} {layoutCopy.cartSubtitle}</p>
               </div>
               <button
                 aria-label="Close cart drawer"
@@ -486,15 +543,15 @@ export function CustomerLayout({
                 <div className="border-t border-border p-5">
                   <div className="mb-3 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
+                      <p className="text-sm font-medium text-muted-foreground">{layoutCopy.subtotal}</p>
                       <p className="text-sm font-semibold text-foreground">{cartTotal.toFixed(2)} MAD</p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-muted-foreground">Delivery</p>
+                      <p className="text-sm font-medium text-muted-foreground">{layoutCopy.delivery}</p>
                       <p className="text-sm font-semibold text-foreground">{effectiveDeliveryFee.toFixed(2)} MAD</p>
                     </div>
                     <div className="flex items-center justify-between pt-1">
-                      <p className="text-sm font-medium text-muted-foreground">Total Price</p>
+                      <p className="text-sm font-medium text-muted-foreground">{layoutCopy.total}</p>
                       <p className="text-xl font-semibold text-foreground">{totalWithDelivery.toFixed(2)} MAD</p>
                     </div>
                   </div>
@@ -517,7 +574,7 @@ export function CustomerLayout({
                   <div className="mb-4" />
                   <div>
                     <Button variant="hero" size="lg" className="w-full rounded-xl" onClick={handleCheckout}>
-                      Proceed to Checkout
+                      {layoutCopy.checkout}
                     </Button>
                   </div>
                 </div>
@@ -530,9 +587,9 @@ export function CustomerLayout({
       <Dialog open={isCarnetDialogOpen} onOpenChange={setIsCarnetDialogOpen}>
         <DialogContent className="w-[95vw] max-w-md rounded-2xl border-border bg-background/95 p-0 backdrop-blur-sm">
           <DialogHeader className="border-b border-border px-5 pb-4 pt-5">
-            <DialogTitle>Carnet Details · تفاصيل الكارني</DialogTitle>
+            <DialogTitle>{layoutCopy.carnetDetails}</DialogTitle>
             <DialogDescription className="mt-2 space-y-1 text-left">
-              <p className="text-xs text-muted-foreground">Total Unpaid Balance · الرصيد المتبقي</p>
+              <p className="text-xs text-muted-foreground">{layoutCopy.unpaidBalance}</p>
               <p className="text-2xl font-bold text-destructive">
                 {Number(customerCarnetOverviewQuery.data?.carnet?.currentDebt ?? customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)}
                 <span className="ml-1 text-base font-semibold">MAD</span>
@@ -594,7 +651,7 @@ export function CustomerLayout({
 
           <DialogFooter className="border-t border-border bg-background/95 px-5 py-4">
             <Button className="w-full" onClick={() => setIsCarnetDialogOpen(false)}>
-              Understood / Close · حسناً / إغلاق
+              {layoutCopy.close}
             </Button>
           </DialogFooter>
         </DialogContent>
