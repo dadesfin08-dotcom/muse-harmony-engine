@@ -2624,8 +2624,8 @@ function Index() {
           </div>
         </div>
 
-        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative mx-auto mb-5 w-full overflow-visible px-0 pb-3 pt-1 md:hidden">
+        <section className="mx-auto grid w-full max-w-6xl gap-5 px-4 pt-5 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-9">
+          <article className="relative mx-auto mb-0 w-full overflow-visible px-0 pb-2 pt-0 md:hidden">
             <img
               src={heroImageUrl}
               alt="Fresh groceries"
@@ -2650,7 +2650,7 @@ function Index() {
             <div ref={mobileSearchAnchorRef} className="h-px w-full" />
             <div
               ref={mobileSearchContainerRef}
-              className="relative z-20 mt-2 px-0.5 transition-[transform,opacity] duration-300 ease-out"
+              className="relative z-20 mt-3 px-0.5 transition-[transform,opacity] duration-300 ease-out"
               style={{
                 opacity: isMobileSearchSticky ? 0 : 1,
                 transform: `translateY(${(1 - mobileHeroScrollProgress) * 16}px)`,
@@ -2734,7 +2734,7 @@ function Index() {
             </div>
           </article>
 
-          <div className={`animate-fade-in hidden flex-col justify-center gap-4 md:flex ${isArabic ? "md:order-2 md:items-end md:text-right" : "md:order-1 md:items-start md:text-left"}`}>
+          <div className={`animate-fade-in hidden flex-col justify-center gap-5 md:flex ${isArabic ? "md:order-2 md:items-end md:text-right" : "md:order-1 md:items-start md:text-left"}`}>
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
               {localizedHeroBadge}
@@ -2804,7 +2804,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-5 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
+        <section className="mx-auto mt-7 w-full max-w-6xl px-4 sm:px-6 md:mt-10">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
@@ -2878,8 +2878,8 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
-          <div className="mb-4 flex items-center justify-between">
+        <section className="mx-auto mt-7 w-full max-w-6xl px-4 pb-9 sm:px-6 md:mt-10">
+          <div className="mb-5 flex items-center justify-between">
             <Link to="/customer/all-products" className="text-[clamp(1.06rem,4.45vw,1.35rem)] font-bold leading-tight text-foreground md:text-2xl">
               {t("products.title")}
             </Link>
@@ -2891,7 +2891,7 @@ function Index() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-4.5 lg:grid-cols-4">
             {teaserProducts.map((product) => (
               <article
                 key={product.id}
