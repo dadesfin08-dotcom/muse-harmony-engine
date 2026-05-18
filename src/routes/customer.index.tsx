@@ -1398,19 +1398,28 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "الطلب المقدم", statuses: ["pending", "new"] },
-    { label: "قيد التحضير", statuses: ["preparing", "accepted", "processing"] },
+    { label: "الطلب المقدم", statuses: ["pending"] },
+    { label: "قيد التحضير", statuses: ["preparing"] },
     { label: "تم التجهيز", statuses: ["ready"] },
-    {
-      label: "التوصيل",
-      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
-    },
+    { label: "التوصيل", statuses: ["in_delivery"] },
   ];
 
-  const deliveredStatuses = new Set(statusSteps[3].statuses);
+  const deliveredStatuses = new Set(["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"]);
+
+  const normalizeTimelineStatus = (status: string) => {
+    const normalized = String(status ?? "").trim().toLowerCase();
+
+    if (["new"].includes(normalized)) return "pending";
+    if (["accepted", "processing"].includes(normalized)) return "preparing";
+    if (["in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"].includes(normalized)) {
+      return "in_delivery";
+    }
+
+    return normalized;
+  };
 
   const getOrderStepIndex = (status: string) => {
-    const normalizedStatus = String(status ?? "").trim().toLowerCase();
+    const normalizedStatus = normalizeTimelineStatus(status);
     const index = statusSteps.findIndex((step) => step.statuses.includes(normalizedStatus));
     return index < 0 ? 0 : index;
   };
@@ -1428,11 +1437,11 @@ function Index() {
       const cancellationIndex = cancelledAtStatus ? getOrderStepIndex(cancelledAtStatus) : 0;
       const isCompletedBeforeCancellation = stageIndex < cancellationIndex;
       return {
-        lineClassName: isCompletedBeforeCancellation ? "bg-success" : "bg-destructive",
-        titleClassName: isCompletedBeforeCancellation ? "text-success" : "text-destructive",
+        lineClassName: isCompletedBeforeCancellation ? "bg-success" : "bg-red-500",
+        titleClassName: isCompletedBeforeCancellation ? "text-success" : "text-red-500",
         circleClassName: isCompletedBeforeCancellation
           ? "border-success/30 bg-success/15 text-success"
-          : "border-destructive/30 bg-destructive/15 text-destructive",
+          : "border-red-500 bg-red-50 text-red-500",
         Icon: isCompletedBeforeCancellation ? CheckCircle2 : XCircle,
       };
     }
