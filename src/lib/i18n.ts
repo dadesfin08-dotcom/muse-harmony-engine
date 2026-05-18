@@ -249,10 +249,13 @@ const resources = {
             placeholder: "Search name, phone, address, customer ID",
           },
           filters: {
+            status: "Status",
+            risk: "Risk",
             allStatuses: "All Statuses",
             allRiskLevels: "All Risk Levels",
           },
           sort: {
+            label: "Sort by",
             newest: "Newest",
             highestLtv: "Highest LTV",
             mostStrikes: "Most Strikes",
@@ -1696,10 +1699,13 @@ const resources = {
             placeholder: "Rechercher par nom, téléphone, adresse ou ID client",
           },
           filters: {
+            status: "Statut",
+            risk: "Risque",
             allStatuses: "Tous les statuts",
             allRiskLevels: "Tous les niveaux de risque",
           },
           sort: {
+            label: "Trier par",
             newest: "Plus récents",
             highestLtv: "LTV le plus élevé",
             mostStrikes: "Le plus de sanctions",
@@ -3106,10 +3112,13 @@ const resources = {
             placeholder: "ابحث بالاسم، الهاتف، العنوان، أو المعرّف...",
           },
           filters: {
+            status: "الحالة",
+            risk: "الخطر",
             allStatuses: "جميع الحالات",
             allRiskLevels: "جميع مستويات الخطر",
           },
           sort: {
+            label: "ترتيب حسب",
             newest: "الأحدث",
             highestLtv: "أعلى قيمة زبون",
             mostStrikes: "الأكثر إنذارات",
