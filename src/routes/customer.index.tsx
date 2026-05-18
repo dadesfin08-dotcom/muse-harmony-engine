@@ -2911,7 +2911,7 @@ function Index() {
 
     return (
       <section className="relative mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-card/90 backdrop-blur-xl md:my-3 md:rounded-3xl md:border md:border-border/70 md:shadow-xl">
-        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-4 pb-3 pt-3 backdrop-blur md:px-5">
+        <header className="sticky top-0 z-50 shrink-0 border-b border-border/60 bg-background/92 px-4 pb-3 pt-3 backdrop-blur md:px-5">
           <div className={`flex items-center justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
             <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm">
@@ -3003,7 +3003,7 @@ function Index() {
           </section>
         ) : null}
 
-        <div ref={supportMessagesScrollRef} className="flex-1 space-y-4 overflow-y-auto bg-background/35 px-4 py-4 md:px-5 md:py-5">
+        <div ref={supportMessagesScrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-background/35 px-4 py-4 md:px-5 md:py-5">
           {supportMessagesQuery.isLoading ? (
             <AppEmptyState title={language === "ar" ? "جاري تحميل المحادثة..." : language === "fr" ? "Chargement de la conversation..." : "Loading conversation..."} className="p-4" />
           ) : supportMessagesWithDateMarkers.length === 0 ? (
@@ -3082,7 +3082,7 @@ function Index() {
           ) : null}
         </div>
 
-        <footer className="border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur md:px-5 md:py-3.5">
+        <footer className="sticky bottom-0 z-50 shrink-0 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur md:px-5 md:py-3.5">
           {supportImageDataUrl ? (
             <div className="relative mb-2 overflow-hidden rounded-xl border border-border">
               <img src={supportImageDataUrl} alt="attachment preview" className="max-h-32 w-full object-cover" />
