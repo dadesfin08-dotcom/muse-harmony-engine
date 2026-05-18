@@ -424,6 +424,55 @@ function CyclistDashboardPage() {
     setIsScannerOpen(true);
   };
 
+  const openCancelDialog = (order: CyclistOrderCard) => {
+    setCancelOrder(order);
+    setCancelReason("cod_rejection");
+  };
+
+  const closeCancelDialog = () => {
+    if (isCancellingOrder) {
+      return;
+    }
+
+    setCancelOrder(null);
+    setCancelReason("cod_rejection");
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!session?.cyclistId || !cancelOrder || isCancellingOrder) {
+      return;
+    }
+
+    setIsCancellingOrder(true);
+    setIsUpdatingOrderId(cancelOrder.id);
+
+    try {
+      await cancelDelivery({
+        data: {
+          cyclistId: session.cyclistId,
+          orderId: cancelOrder.id,
+          reason: cancelReason,
+        },
+      });
+
+      toast.success(t("cyclist.cancelSuccess"));
+      setCancelOrder(null);
+      setCancelReason("cod_rejection");
+      setActiveView("available");
+
+      await Promise.all([
+        dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }),
+      ]);
+    } catch (error) {
+      console.error("Failed to cancel active delivery:", error);
+      toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+    } finally {
+      setIsCancellingOrder(false);
+      setIsUpdatingOrderId(null);
+    }
+  };
+
   useEffect(() => {
     if (!isScannerOpen || isScannerSuccess) {
       return;
