@@ -60,7 +60,7 @@ import {
   verifyOtpCode,
 } from "@/lib/customers.functions";
 import { getCheckoutPaymentOptions, getCustomerCarnetOverview } from "@/lib/carnet.functions";
-import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
+import { getActiveHeroSection, getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getActiveAdsAndAnnouncements } from "@/lib/ads-content.functions";
 import {
   getLocationByNeighborhoodId,
@@ -438,6 +438,7 @@ function Index() {
   const fetchCheckoutPaymentOptions = useServerFn(getCheckoutPaymentOptions);
   const fetchCustomerCarnetOverview = useServerFn(getCustomerCarnetOverview);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchActiveHeroSection = useServerFn(getActiveHeroSection);
   const fetchActiveAdsAndAnnouncements = useServerFn(getActiveAdsAndAnnouncements);
   const fetchActiveCategories = useServerFn(listActiveCategories);
   const fetchActivePlatformPacks = useServerFn(listActivePlatformPacks);
@@ -521,6 +522,11 @@ function Index() {
           campaignType: null,
         },
       }),
+    refetchInterval: 8_000,
+  });
+  const activeHeroSectionQuery = useQuery({
+    queryKey: ["customer", "active-hero"],
+    queryFn: () => fetchActiveHeroSection(),
     refetchInterval: 8_000,
   });
   const categoriesQuery = useQuery({
