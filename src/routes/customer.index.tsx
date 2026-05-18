@@ -4144,15 +4144,18 @@ function Index() {
       <AnimatePresence>
         {supportFloatingNotification ? (
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed bottom-24 left-1/2 z-[80] w-[min(92vw,24rem)] -translate-x-1/2 rounded-full border border-primary/30 bg-background/95 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-6"
+            initial={{ opacity: 0, y: 14, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.985 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+7.25rem)] left-1/2 z-[95] inline-flex w-[min(90vw,23rem)] -translate-x-1/2 items-center gap-2.5 rounded-full border border-success/35 bg-background/78 px-3.5 py-2 text-sm font-medium text-foreground shadow-[0_14px_34px_-20px_hsl(var(--success)/0.7)] backdrop-blur-xl md:bottom-7"
             role="status"
             aria-live="polite"
           >
-            {supportFloatingNotification}
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-success/25 bg-success/12 text-success">
+              <MessageCircle className="size-3.5" />
+            </span>
+            <span className={`min-w-0 truncate ${isArabic ? "text-right" : "text-left"}`}>{supportFloatingNotification}</span>
           </motion.div>
         ) : null}
       </AnimatePresence>
