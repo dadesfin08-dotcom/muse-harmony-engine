@@ -617,12 +617,7 @@ function CyclistDashboardPage() {
       const scanner = qrScannerRef.current;
       qrScannerRef.current = null;
       if (scanner) {
-        void scanner
-          .stop()
-          .catch(() => undefined)
-          .finally(() => {
-            void scanner.clear().catch(() => undefined);
-          });
+        void safelyStopAndClearScanner(scanner);
       }
     };
   }, [isScannerOpen, scannerPaused]);
