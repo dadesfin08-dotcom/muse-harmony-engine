@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
@@ -2889,7 +2890,7 @@ function Index() {
             <div className={`mt-3 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
               <Badge variant="outline" className="rounded-full">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
               {supportContext.pickupCode ? <Badge className="rounded-full bg-primary/10 text-primary">{supportContext.pickupCode}</Badge> : null}
-              {supportActiveTicket?.orderStatus ? <Badge variant="secondary" className="rounded-full">{supportActiveTicket.orderStatus}</Badge> : null}
+              {supportActiveTicket?.status ? <Badge variant="secondary" className="rounded-full">{supportActiveTicket.status}</Badge> : null}
             </div>
           ) : null}
         </section>
