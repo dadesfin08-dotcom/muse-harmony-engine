@@ -56,6 +56,12 @@ const settleVendorHandoverInputSchema = z.object({
   vendorId: z.string().uuid(),
 });
 
+const cancelActiveDeliveryInputSchema = z.object({
+  cyclistId: z.string().uuid(),
+  orderId: z.string().uuid(),
+  reason: z.enum(["cod_rejection", "unreachable", "fake_order"]),
+});
+
 type CyclistRow = {
   id: string;
   full_name: string;
@@ -1197,5 +1203,108 @@ export const settleVendorCashHandover = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("settleVendorCashHandover failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to settle cash handover.");
+    }
+  });
+
+export const cancelActiveDeliveryByOrder = createServerFn({ method: "POST" })
+  .inputValidator((input) => cancelActiveDeliveryInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: order, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, cyclist_id, status, customer_user_id")
+        .eq("id", data.orderId)
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["in_delivery"])
+        .maybeSingle();
+
+      if (orderError) {
+        throw new Error(orderError.message);
+      }
+
+      if (!order?.id) {
+        throw new Error("Order is not an active delivery for this cyclist.");
+      }
+
+      const nowIso = new Date().toISOString();
+      const { error: cancelError } = await (supabaseAdmin as any)
+        .from("orders")
+        .update({
+          status: "cancelled",
+          cyclist_id: null,
+          updated_at: nowIso,
+        })
+        .eq("id", data.orderId)
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["in_delivery"]);
+
+      if (cancelError) {
+        throw new Error(cancelError.message);
+      }
+
+      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+        const { data: existingProfile, error: existingProfileError } = await (supabaseAdmin as any)
+          .from("profiles")
+          .select("id, strikes, cod_rejections, fake_orders, cancelled_orders")
+          .eq("id", order.customer_user_id)
+          .maybeSingle();
+
+        if (existingProfileError) {
+          throw new Error(existingProfileError.message);
+        }
+
+        if (!existingProfile?.id) {
+          const { error: createProfileError } = await (supabaseAdmin as any)
+            .from("profiles")
+            .insert({ id: order.customer_user_id })
+            .select("id, strikes, cod_rejections, fake_orders, cancelled_orders")
+            .single();
+
+          if (createProfileError) {
+            throw new Error(createProfileError.message);
+          }
+        }
+
+        const baseStrikes = Number(existingProfile?.strikes ?? 0);
+        const baseCancelledOrders = Number(existingProfile?.cancelled_orders ?? 0);
+        const baseCodRejections = Number(existingProfile?.cod_rejections ?? 0);
+        const baseFakeOrders = Number(existingProfile?.fake_orders ?? 0);
+
+        const nextPatch: Record<string, unknown> = {
+          strikes: baseStrikes + 1,
+          cancelled_orders: baseCancelledOrders + 1,
+          cod_rejections: baseCodRejections,
+          fake_orders: baseFakeOrders,
+          updated_at: nowIso,
+        };
+
+        if (data.reason === "cod_rejection") {
+          nextPatch.cod_rejections = baseCodRejections + 1;
+        }
+
+        if (data.reason === "fake_order") {
+          nextPatch.fake_orders = baseFakeOrders + 1;
+        }
+
+        const { error: profileError } = await (supabaseAdmin as any)
+          .from("profiles")
+          .update(nextPatch)
+          .eq("id", order.customer_user_id);
+
+        if (profileError) {
+          throw new Error(profileError.message);
+        }
+
+        await evaluateCustomerBehavior(order.customer_user_id);
+      }
+
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after cyclist cancellation failed:", pushQueueError);
+      });
+
+      return { ok: true };
+    } catch (error) {
+      console.error("cancelActiveDeliveryByOrder failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to cancel active delivery.");
     }
   });

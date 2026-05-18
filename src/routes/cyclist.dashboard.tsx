@@ -10,11 +10,14 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
+  cancelActiveDeliveryByOrder,
   completeCustomerDeliveryByOrder,
   getCyclistDashboardData,
   setCyclistActiveState,
@@ -31,6 +34,7 @@ const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
 
 type CyclistView = "available" | "active" | "platformPacks";
+type CancelReason = "cod_rejection" | "unreachable" | "fake_order";
 type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
@@ -92,6 +96,9 @@ function CyclistDashboardPage() {
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
+  const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
@@ -121,6 +128,7 @@ function CyclistDashboardPage() {
   const acceptRun = useServerFn(acceptDeliveryRun);
   const completeCustomerDelivery = useServerFn(completeCustomerDeliveryByOrder);
   const settleVendorHandover = useServerFn(settleVendorCashHandover);
+  const cancelDelivery = useServerFn(cancelActiveDeliveryByOrder);
 
   usePushNotifications({
     enabled: Boolean(session?.cyclistId),
@@ -416,6 +424,55 @@ function CyclistDashboardPage() {
     setIsScannerOpen(true);
   };
 
+  const openCancelDialog = (order: CyclistOrderCard) => {
+    setCancelOrder(order);
+    setCancelReason("cod_rejection");
+  };
+
+  const closeCancelDialog = () => {
+    if (isCancellingOrder) {
+      return;
+    }
+
+    setCancelOrder(null);
+    setCancelReason("cod_rejection");
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!session?.cyclistId || !cancelOrder || isCancellingOrder) {
+      return;
+    }
+
+    setIsCancellingOrder(true);
+    setIsUpdatingOrderId(cancelOrder.id);
+
+    try {
+      await cancelDelivery({
+        data: {
+          cyclistId: session.cyclistId,
+          orderId: cancelOrder.id,
+          reason: cancelReason,
+        },
+      });
+
+      toast.success(t("cyclist.cancelSuccess"));
+      setCancelOrder(null);
+      setCancelReason("cod_rejection");
+      setActiveView("available");
+
+      await Promise.all([
+        dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }),
+      ]);
+    } catch (error) {
+      console.error("Failed to cancel active delivery:", error);
+      toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+    } finally {
+      setIsCancellingOrder(false);
+      setIsUpdatingOrderId(null);
+    }
+  };
+
   useEffect(() => {
     if (!isScannerOpen || isScannerSuccess) {
       return;
@@ -650,6 +707,7 @@ function CyclistDashboardPage() {
                     isBusy={isUpdatingOrderId === order.id}
                     onOpenDetails={() => setDetailsOrder(order)}
                     onAction={() => openScanner()}
+                    onCancel={() => openCancelDialog(order)}
                   />
                 </motion.div>
               ))
@@ -689,6 +747,46 @@ function CyclistDashboardPage() {
           )}
         </AnimatePresence>
       </section>
+
+      <Dialog open={Boolean(cancelOrder)} onOpenChange={(open) => (!open ? closeCancelDialog() : undefined)}>
+        <DialogContent dir={isArabic ? "rtl" : "ltr"} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("cyclist.cancelReasonTitle")}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <RadioGroup value={cancelReason} onValueChange={(value) => setCancelReason(value as CancelReason)}>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-cod" value="cod_rejection" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-cod" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.codRejection")}
+                </Label>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-unreachable" value="unreachable" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-unreachable" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.unreachable")}
+                </Label>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-fake" value="fake_order" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-fake" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.fakeOrder")}
+                </Label>
+              </div>
+            </RadioGroup>
+
+            <div className={cn("flex gap-2", isArabic ? "flex-row-reverse" : "flex-row")}>
+              <Button variant="outline" className="flex-1" onClick={closeCancelDialog} disabled={isCancellingOrder}>
+                {t("cyclist.cancelDialogClose")}
+              </Button>
+              <Button className="flex-1" onClick={handleConfirmCancel} disabled={isCancellingOrder}>
+                {isCancellingOrder ? t("cyclist.refreshing") : t("cyclist.cancelConfirm")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
@@ -885,6 +983,7 @@ function OrderCard({
   isBusy,
   onOpenDetails,
   onAction,
+  onCancel,
 }: {
   order: CyclistOrderCard;
   isActiveDelivery?: boolean;
@@ -894,6 +993,7 @@ function OrderCard({
   isBusy: boolean;
   onOpenDetails?: () => void;
   onAction: () => void;
+  onCancel?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
@@ -1015,6 +1115,15 @@ function OrderCard({
         <Button className={`mt-3 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 w-full text-sm font-bold text-destructive"
+          onClick={() => onCancel?.()}
+          disabled={isBusy}
+        >
+          {t("cyclist.cancelOrder")}
         </Button>
       </article>
     );

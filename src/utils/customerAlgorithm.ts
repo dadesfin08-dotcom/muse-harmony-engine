@@ -15,7 +15,7 @@ export async function evaluateCustomerBehavior(userId: string) {
     await Promise.all([
       (supabaseAdmin as any)
         .from("profiles")
-        .select("id, cod_rejections")
+        .select("id, cod_rejections, fake_orders, cancelled_orders")
         .eq("id", normalizedUserId)
         .maybeSingle(),
       (supabaseAdmin as any)
@@ -61,9 +61,12 @@ export async function evaluateCustomerBehavior(userId: string) {
 
   const totalOrders = Number(totalOrdersRes.count ?? 0);
   const deliveredOrders = Number(deliveredOrdersRes.count ?? 0);
-  const cancelledOrders = Number(cancelledOrdersRes.count ?? 0);
+  const cancelledOrders = Math.max(
+    Number(cancelledOrdersRes.count ?? 0),
+    Number(profileRes.data.cancelled_orders ?? 0),
+  );
   const codRejectedOrders = Number(codRejectedOrdersRes.count ?? 0);
-  const fakeOrders = Number(fakeReportsRes.count ?? 0);
+  const fakeOrders = Math.max(Number(fakeReportsRes.count ?? 0), Number(profileRes.data.fake_orders ?? 0));
   const complaintsCount = Number(complaintsRes.count ?? 0);
 
   const codRejected = Math.max(Number(profileRes.data.cod_rejections ?? 0), codRejectedOrders);
@@ -110,6 +113,8 @@ export async function evaluateCustomerBehavior(userId: string) {
       risk_score: risk,
       system_tags: Array.from(tags),
       cod_rejections: codRejected,
+      fake_orders: fakeOrders,
+      cancelled_orders: cancelledOrders,
     })
     .eq("id", normalizedUserId);
 

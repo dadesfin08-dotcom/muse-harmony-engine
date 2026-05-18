@@ -1320,9 +1320,11 @@ export type Database = {
           address: string | null
           admin_notes: string | null
           avatar_url: string | null
+          cancelled_orders: number
           cod_rejections: number
           created_at: string
           display_name: string | null
+          fake_orders: number
           full_name: string | null
           id: string
           lifetime_value: number
@@ -1339,9 +1341,11 @@ export type Database = {
           address?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          cancelled_orders?: number
           cod_rejections?: number
           created_at?: string
           display_name?: string | null
+          fake_orders?: number
           full_name?: string | null
           id: string
           lifetime_value?: number
@@ -1358,9 +1362,11 @@ export type Database = {
           address?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          cancelled_orders?: number
           cod_rejections?: number
           created_at?: string
           display_name?: string | null
+          fake_orders?: number
           full_name?: string | null
           id?: string
           lifetime_value?: number
