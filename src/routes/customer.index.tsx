@@ -3197,16 +3197,16 @@ function Index() {
                   </Link>
 
                   <div className="flex flex-1 flex-col p-3">
-                    <h3 className="min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.22] text-foreground">
+                    <h3 className={customerTypography.cardTitle}>
                       {product.name}
                     </h3>
 
                     <div className="mt-auto flex items-end gap-1 pt-2">
-                      <span className="text-[11px] font-bold text-red-700">
+                      <span className="text-[12px] font-bold leading-none text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
-                      <span className="text-[11px] font-bold text-[#2A7543]">{homepageUiCopy.currency}</span>
-                      <span className="text-[11px] text-muted-foreground line-through">
+                      <span className="text-[11px] font-bold leading-none text-[#2A7543]">{homepageUiCopy.currency}</span>
+                      <span className="text-[11px] leading-none text-muted-foreground line-through">
                         {Number(product.price ?? 0).toFixed(2)}
                       </span>
                     </div>
@@ -3235,7 +3235,7 @@ function Index() {
                       ) : (
                          <button
                           type="button"
-                          className="inline-flex h-9 items-center gap-1.5 rounded-[16px] bg-red-700 px-3 text-xs font-semibold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]"
+                          className={`${customerTypography.cta} bg-red-700 text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]`}
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
