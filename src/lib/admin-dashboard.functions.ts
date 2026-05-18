@@ -324,13 +324,50 @@ type AdminCustomerProfileRow = {
   phone: string | null;
   address: string | null;
   created_at: string;
+  status: "active" | "vip" | "warning" | "suspicious" | "blocked";
+  risk_score: "low" | "medium" | "high";
+  strikes: number;
+  cod_rejections: number;
+  admin_notes: string | null;
+  lifetime_value: number | null;
 };
 
 type AdminCustomerOrderAggregateRow = {
+  id: string;
+  customer_user_id: string | null;
+  status: string;
   customer_phone: string | null;
   total_price: number | null;
   delivery_fee: number | null;
+  created_at: string;
 };
+
+const adminCustomerListInputSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(10).max(100).default(20),
+  search: z.string().trim().max(120).optional(),
+  status: z.enum(["all", "active", "vip", "warning", "suspicious", "blocked"]).default("all"),
+  risk: z.enum(["all", "low", "medium", "high"]).default("all"),
+  sortBy: z.enum(["newest", "highest_ltv", "most_strikes"]).default("newest"),
+});
+
+const updateAdminCustomerStateInputSchema = z.object({
+  customerId: z.string().uuid(),
+  status: z.enum(["active", "vip", "warning", "suspicious", "blocked"]),
+  riskScore: z.enum(["low", "medium", "high"]).optional(),
+  strikesDelta: z.number().int().min(-10).max(10).optional(),
+  resetStrikes: z.boolean().optional(),
+  addCodRejection: z.boolean().optional(),
+});
+
+const updateAdminCustomerNotesInputSchema = z.object({
+  customerId: z.string().uuid(),
+  adminNotes: z.string().trim().max(5_000),
+});
+
+const getAdminCustomerProfileInputSchema = z.object({
+  customerId: z.string().uuid(),
+});
 
 type GlobalSettingsRow = {
   id: string;
