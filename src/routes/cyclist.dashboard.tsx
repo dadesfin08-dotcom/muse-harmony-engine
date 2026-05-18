@@ -566,7 +566,7 @@ function CyclistDashboardPage() {
   };
 
   useEffect(() => {
-    if (!isScannerOpen || isScannerSuccess) {
+    if (!isScannerOpen || scannerPaused) {
       return;
     }
 
@@ -616,7 +616,29 @@ function CyclistDashboardPage() {
           });
       }
     };
-  }, [isScannerOpen, isScannerSuccess]);
+  }, [isScannerOpen, scannerPaused]);
+
+  useEffect(() => {
+    if (!successAnimationVisible) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessAnimationVisible(false);
+      setIsScannerOpen(false);
+      setIsProcessing(false);
+      setScannerPaused(false);
+      isVerifyingCodeRef.current = false;
+      hasScannedRef.current = false;
+      setScannerStatus(t("cyclist.readyToScan"));
+      setActiveView("available");
+      void navigate({ to: "/cyclist/dashboard" });
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [navigate, successAnimationVisible, t]);
 
   const handleLogout = async () => {
     clearRoleSessions();
@@ -887,26 +909,26 @@ function CyclistDashboardPage() {
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
-            {isScannerSuccess ? (
-              <div className="flex flex-1 flex-col items-center justify-center text-center">
-                <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-success/15 text-success">
-                  <CheckCircle2 className="size-10" />
-                </span>
-                <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
+            {scannerPaused ? (
+              <div className="flex min-h-[340px] flex-1 items-center justify-center rounded-2xl border border-border bg-muted/30">
+                <p className="text-sm text-muted-foreground">{t("cyclist.scannerVerifying")}</p>
               </div>
             ) : (
-              <>
-                <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
-                  <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
-                </div>
-              </>
+              <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
+                <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
+              </div>
             )}
 
             <p className="text-center text-xs text-muted-foreground">{scannerStatus}</p>
           </div>
         </DialogContent>
       </Dialog>
+
+      <FulfillmentSuccessAnimation
+        open={successAnimationVisible}
+        title={t("cyclist.deliveryVerifiedTitle")}
+        subtitle={t("cyclist.deliveryVerifiedSubtitle")}
+      />
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
         <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
