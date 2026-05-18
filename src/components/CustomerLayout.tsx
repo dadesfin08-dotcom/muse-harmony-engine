@@ -103,7 +103,7 @@ export function CustomerLayout({
   });
 
   const customerOrdersQuery = useQuery({
-    queryKey: ["customer", "layout", "orders", customerSessionPhone],
+    queryKey: ["customer", "orders", customerSessionPhone],
     queryFn: () =>
       fetchCustomerOrders({
         data: { phoneNumber: customerSessionPhone! },
@@ -363,7 +363,15 @@ export function CustomerLayout({
         .replace(/[\s-]+/g, "_")
         .replace(/[^a-z_]/g, "");
 
-    const outForDeliveryStatuses = new Set(["out_for_delivery", "outfordelivery"]);
+    const outForDeliveryStatuses = new Set([
+      "out_for_delivery",
+      "outfordelivery",
+      "in_delivery",
+      "in_transit",
+      "delivering",
+      "on_the_way",
+      "picked_up",
+    ]);
     const terminalStatuses = new Set([
       "delivered",
       "delivered_cash_with_cyclist",
