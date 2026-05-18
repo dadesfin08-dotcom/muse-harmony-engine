@@ -4595,6 +4595,8 @@ function Index() {
                     Back to Account
                   </Button>
                   </div>
+                ) : customerSession && customerPanelView === "support" ? (
+                  renderSupportPanel()
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                   {customerCarnetQuery.isLoading ? (
@@ -5061,6 +5063,8 @@ function Index() {
                       Back to Account
                     </Button>
                   </div>
+                ) : customerSession && customerPanelView === "support" ? (
+                  renderSupportPanel()
                 ) : customerSession && customerPanelView === "carnet" ? (
                   <div className="space-y-3">
                     {customerCarnetQuery.isLoading ? (
