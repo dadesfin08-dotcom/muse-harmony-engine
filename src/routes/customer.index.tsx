@@ -2261,7 +2261,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
+        <section className="mx-auto mt-5 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
@@ -2276,7 +2276,7 @@ function Index() {
             </div>
           </div>
           <div
-            className="category-scroll overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="category-scroll overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             onMouseEnter={() => setIsCategoryTickerPaused(true)}
             onMouseLeave={() => setIsCategoryTickerPaused(false)}
             onTouchStart={() => setIsCategoryTickerPaused(true)}
@@ -2309,7 +2309,7 @@ function Index() {
                       to="/customer/categories/$id"
                       params={{ id: item.id }}
                       key={shouldAnimateCategories ? `${item.id}-${index}` : item.id}
-                      className="mx-1 inline-flex min-w-[92px] flex-col items-center gap-2 rounded-2xl border border-border bg-card px-2 py-2 text-center shadow-sm"
+                      className={`mx-1 inline-flex min-w-[96px] snap-start flex-col items-center gap-2 rounded-[22px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
                     >
                       <span
                         className="flex h-14 w-14 items-center justify-center rounded-2xl"
@@ -2335,7 +2335,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-5 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
+        <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
           <div className="mb-4 flex items-center justify-between">
             <Link to="/customer/all-products" className="text-xl font-bold text-foreground md:text-2xl">
               {t("products.title")}
@@ -2352,14 +2352,14 @@ function Index() {
             {teaserProducts.map((product) => (
               <article
                 key={product.id}
-                className="signature-tilt group relative overflow-hidden rounded-3xl border border-gray-100 bg-white pb-1 shadow-sm"
+                className="group relative overflow-hidden rounded-[24px] border border-border/70 bg-card pb-1 shadow-[0_14px_30px_-22px_rgba(17,24,39,0.3)] transition-all duration-300 hover:-translate-y-0.5"
               >
                 <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
-                  <div className="relative">
+                  <div className="relative aspect-square overflow-hidden bg-muted/35">
                     <img
                       src={product.image}
                       alt={product.alt}
-                      className="h-full w-full object-contain object-center"
+                      className="h-full w-full object-cover object-center"
                       loading="lazy"
                       width={1024}
                       height={768}
@@ -2370,14 +2370,14 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Wishlist"
-                  className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-white leading-none shadow-sm"
+                  className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full bg-background/95 leading-none shadow-sm"
                 >
                   <Heart className="size-4 text-teal-700" />
                 </button>
 
-                <div className="p-3">
+                <div className="p-3.5">
                   <div className="flex flex-row justify-between items-center w-full mb-2">
-                    <span className="inline-block rounded-md bg-green-100 px-2 py-1 text-xs font-bold leading-none text-green-800">
+                    <span className="inline-block rounded-full bg-primary/12 px-2.5 py-1 text-[10px] font-bold leading-none text-primary">
                       {getLocalizedText({
                         en: product.brandNameEn || product.brand || "",
                         fr: product.brandNameFr || product.brandNameEn || product.brand || "",
@@ -2385,7 +2385,7 @@ function Index() {
                       }) || "—"}
                     </span>
 
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-sm leading-none text-gray-700">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs leading-none text-muted-foreground">
                       <Package className="size-3.5" />
                       {product.measurementValue != null ? `${product.measurementValue} ` : ""}
                       {product.measurementUnit}
@@ -2393,19 +2393,19 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full line-clamp-2 min-h-[2.75rem] text-base font-semibold leading-snug">{product.name}</h3>
+                    <h3 className="w-full line-clamp-2 min-h-[2.75rem] text-[15px] font-semibold leading-snug text-foreground">{product.name}</h3>
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-3xl font-bold tracking-tight text-[#2A7543]">
-                      {product.price} <span className="text-sm font-medium">MAD</span>
+                    <p className="text-2xl font-extrabold tracking-tight text-primary">
+                      {product.price} <span className="text-xs font-semibold">MAD</span>
                     </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
-                      <div className="flex items-center rounded-full border border-gray-200 px-3 py-1">
+                      <div className="flex items-center rounded-full border border-border/80 bg-muted/40 px-2 py-1">
                         <button
                           type="button"
-                          className="inline-flex size-6 items-center justify-center leading-none text-[#2A7543]"
+                          className="inline-flex size-7 items-center justify-center leading-none text-primary"
                           onClick={() =>
                             decreaseItem(
                               product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
@@ -2415,12 +2415,12 @@ function Index() {
                         >
                           <Minus className="size-4" />
                         </button>
-                        <span className="min-w-7 text-center text-base font-medium text-gray-900">
+                        <span className="min-w-7 text-center text-sm font-semibold text-foreground">
                           {getCartQuantity(product.id, product.productVariants?.[0] ?? null)}
                         </span>
                         <button
                           type="button"
-                          className="inline-flex size-6 items-center justify-center leading-none text-[#2A7543]"
+                          className="inline-flex size-7 items-center justify-center leading-none text-primary"
                           onClick={() =>
                             increaseItem(
                               product.productVariants?.[0] ? `${product.id}::${product.productVariants[0]}` : product.id,
@@ -2432,9 +2432,9 @@ function Index() {
                         </button>
                       </div>
                     ) : (
-                      <button
+                        <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-full bg-[#2A7543] px-3 py-1.5 text-sm font-bold leading-none text-white transition hover:bg-green-800"
+                          className="inline-flex items-center gap-1.5 rounded-[18px] bg-primary px-3 py-2 text-xs font-bold leading-none text-primary-foreground shadow-[0_10px_20px_-15px_rgba(24,181,106,0.95)] transition hover:brightness-95"
                          onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
@@ -2452,7 +2452,7 @@ function Index() {
             <div className="px-4 pb-6 pt-2">
               <Link
                 to="/customer/all-products"
-                className="group relative flex w-full items-center justify-center rounded-2xl border border-emerald-100 bg-white py-4 text-[15px] font-bold text-emerald-600 shadow-[0_4px_14px_0_rgba(16,185,129,0.08)] transition-all duration-300 hover:bg-emerald-50 hover:shadow-[0_8px_25px_-4px_rgba(16,185,129,0.15)] active:scale-[0.98]"
+                className="group relative flex w-full items-center justify-center rounded-[18px] border border-primary/25 bg-card py-4 text-[15px] font-bold text-primary shadow-[0_8px_20px_-16px_rgba(24,181,106,0.75)] transition-all duration-300 hover:bg-primary/5 active:scale-[0.98]"
               >
                 <span>{t("home.view_all_products")}</span>
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 rtl:ml-0 rtl:mr-2 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
@@ -2469,7 +2469,7 @@ function Index() {
           ) : null}
         </section>
 
-        <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
+        <section className="mx-auto mt-3 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="line-clamp-1 text-xl font-bold text-foreground md:text-2xl">
               <Sparkles className="size-4 text-primary" />
@@ -2505,7 +2505,7 @@ function Index() {
                 return (
                 <article
                   key={pack.id}
-                  className="w-[280px] sm:w-[320px] flex-shrink-0 snap-center h-full surface-panel overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                  className="h-full w-[290px] flex-shrink-0 snap-center overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)] sm:w-[320px]"
                 >
                   <button
                     type="button"
@@ -2584,7 +2584,7 @@ function Index() {
 
         {flashDeals.length > 0 ? (
         <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-3 sm:px-6">
-          <div className="mb-3 overflow-hidden rounded-2xl border border-red-900/20 bg-gradient-to-r from-red-950 via-red-900 to-red-800 p-3 text-white shadow-[0_10px_26px_-16px_rgba(127,29,29,0.55)]">
+          <div className="mb-3 overflow-hidden rounded-[24px] border border-red-900/20 bg-gradient-to-r from-red-950 via-red-900 to-red-800 p-3 text-white shadow-[0_10px_26px_-16px_rgba(127,29,29,0.55)]">
             <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-2.5">
                 <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/10 backdrop-blur-sm">
@@ -2626,9 +2626,9 @@ function Index() {
               const cartQty = getCartQuantity(product.id);
 
               return (
-                <article
+                 <article
                   key={`flash-grid-${product.id}`}
-                  className="w-[160px] sm:w-[180px] flex-shrink-0 snap-start h-full flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_8px_24px_-18px_rgba(15,23,42,0.35)]"
+                   className="flex h-full w-[170px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_12px_24px_-18px_rgba(15,23,42,0.35)] sm:w-[186px]"
                 >
                   <Link
                     to="/customer/product/$id"
@@ -2636,7 +2636,7 @@ function Index() {
                     search={(prev: Record<string, unknown>) => ({ ...prev, deal: true })}
                     className="block"
                   >
-                    <div className="aspect-square w-full bg-muted/35 p-2">
+                     <div className="aspect-square w-full bg-muted/35 p-2">
                       <img
                         src={product.image}
                         alt={product.alt}
@@ -2660,7 +2660,7 @@ function Index() {
                     </div>
 
                     <div className="mt-2 flex items-center justify-center">
-                      {cartQty > 0 ? (
+                       {cartQty > 0 ? (
                         <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-1 leading-none">
                           <button
                             type="button"
@@ -2681,9 +2681,9 @@ function Index() {
                           </button>
                         </div>
                       ) : (
-                        <button
+                         <button
                           type="button"
-                          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98] bg-red-700"
+                          className="inline-flex items-center gap-1.5 rounded-[18px] bg-red-700 px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]"
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
@@ -2700,7 +2700,7 @@ function Index() {
           </div>
 
           {!isBottomPromoDismissed ? (
-            <div className="relative mb-20 overflow-hidden rounded-2xl border border-success/30 bg-card">
+            <div className="relative mb-20 overflow-hidden rounded-[24px] border border-success/30 bg-card">
               <button
                 type="button"
                 onClick={() => setIsBottomPromoDismissed(true)}
@@ -2751,6 +2751,25 @@ function Index() {
                   </CarouselItem>
                 </CarouselContent>
               </Carousel>
+
+              <div className="grid grid-cols-2 gap-2 border-t border-border/60 bg-muted/20 p-3">
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+                  <Bike className="size-4 text-primary" />
+                  <p className="text-xs font-medium text-foreground">15-min delivery</p>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+                  <ShieldCheck className="size-4 text-primary" />
+                  <p className="text-xs font-medium text-foreground">Trusted vendors</p>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+                  <Sparkles className="size-4 text-primary" />
+                  <p className="text-xs font-medium text-foreground">Daily freshness</p>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
+                  <HandCoins className="size-4 text-primary" />
+                  <p className="text-xs font-medium text-foreground">Fair local pricing</p>
+                </div>
+              </div>
             </div>
           ) : null}
         </section>
