@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
@@ -391,7 +391,7 @@ function CyclistDashboardPage() {
     hasScannedRef.current = false;
   };
 
-  const handleCyclistQrScan = async (rawValue: string) => {
+  const handleCyclistQrScan = useCallback(async (rawValue: string) => {
     if (
       !session?.cyclistId ||
       isProcessing ||
@@ -470,6 +470,7 @@ function CyclistDashboardPage() {
 
       await Promise.all([
         dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
@@ -503,9 +504,24 @@ function CyclistDashboardPage() {
     } finally {
       setIsUpdatingOrderId(null);
     }
-  };
+  }, [
+    completeCustomerDelivery,
+    dashboardQuery,
+    isProcessing,
+    navigate,
+    queryClient,
+    scannerPaused,
+    session?.cyclistId,
+    settleVendorHandover,
+    t,
+  ]);
 
   const openScanner = () => {
+    if (!session?.cyclistId || !cyclist?.id) {
+      setScannerStatus(t("cyclist.cameraPreparing"));
+      return;
+    }
+
     setSuccessAnimationVisible(false);
     setScannerPaused(false);
     setIsProcessing(false);
@@ -582,7 +598,7 @@ function CyclistDashboardPage() {
   };
 
   useEffect(() => {
-    if (!isScannerOpen || scannerPaused) {
+    if (!isScannerOpen || scannerPaused || !session?.cyclistId || !cyclist?.id) {
       return;
     }
 
@@ -602,9 +618,7 @@ function CyclistDashboardPage() {
         await scanner.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText: string) => {
-            void handleCyclistQrScan(decodedText);
-          },
+          (decodedText: string) => void handleCyclistQrScan(decodedText),
           () => undefined,
         );
 
@@ -627,7 +641,7 @@ function CyclistDashboardPage() {
         void safelyStopAndClearScanner(scanner);
       }
     };
-  }, [isScannerOpen, scannerPaused]);
+  }, [cyclist?.id, handleCyclistQrScan, isScannerOpen, scannerPaused, session?.cyclistId, t]);
 
   useEffect(() => {
     if (!successAnimationVisible) {

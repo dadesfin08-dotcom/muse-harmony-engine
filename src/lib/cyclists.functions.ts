@@ -856,21 +856,31 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
         throw new Error("No coverage areas assigned to this cyclist.");
       }
 
-      const { data: updated, error } = await (supabaseAdmin as any)
+      const { error } = await (supabaseAdmin as any)
         .from("orders")
         .update({ cyclist_id: cyclist.id, status: "in_delivery" })
         .eq("id", data.orderId)
         .eq("status", "ready")
         .in("neighborhood_id", coverageNeighborhoodIds)
-        .is("cyclist_id", null)
-        .select("id")
-        .maybeSingle();
+        .is("cyclist_id", null);
 
       if (error) {
         throw new Error(error.message);
       }
 
-      if (!updated?.id) {
+      const { data: acceptedOrder, error: acceptedOrderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id")
+        .eq("id", data.orderId)
+        .eq("cyclist_id", cyclist.id)
+        .eq("status", "in_delivery")
+        .maybeSingle();
+
+      if (acceptedOrderError) {
+        throw new Error(acceptedOrderError.message);
+      }
+
+      if (!acceptedOrder?.id) {
         throw new Error("Delivery was already accepted by another cyclist.");
       }
 
