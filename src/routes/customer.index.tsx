@@ -1564,6 +1564,14 @@ function Index() {
       return;
     }
 
+    const accountStatus = customerProfileQuery.data?.status;
+    const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
+    if (isRestricted) {
+      closeCart();
+      toast.error("Your account has been restricted due to policy violations. Please contact support.");
+      return;
+    }
+
     if (!isMinimumOrderMet) {
       closeCart();
       toast.error(
@@ -1585,6 +1593,13 @@ function Index() {
     if (!customerSession?.phoneNumber) {
       setIsCustomerAuthModalOpen(true);
       toast.error("Please login first.");
+      return;
+    }
+
+    const accountStatus = customerProfileQuery.data?.status;
+    const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
+    if (isRestricted) {
+      toast.error("Your account has been restricted due to policy violations. Please contact support.");
       return;
     }
 
