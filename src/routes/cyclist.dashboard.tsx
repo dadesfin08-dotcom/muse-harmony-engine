@@ -474,6 +474,7 @@ function CyclistDashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] }),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "earnings-history", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] }),
       ]);
