@@ -4414,9 +4414,16 @@ function Index() {
               <div
                 ref={authSheetScrollRef}
                 onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
-                className={`flex-1 overflow-y-auto overscroll-contain transition-[padding-bottom] duration-300 ease-out ${customerPanelView === "support" ? "px-0 pb-0 pt-0" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2"}`}
+                className={`flex-1 overflow-y-auto overscroll-contain transition-[padding-bottom] duration-300 ease-out ${customerPanelView === "support" ? "overflow-hidden px-0 pb-0 pt-0" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2"}`}
                 style={{
-                  paddingBottom: authKeyboardInset > 0 ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))` : undefined,
+                  paddingBottom:
+                    customerPanelView === "support"
+                      ? authKeyboardInset > 0
+                        ? `${authKeyboardInset}px`
+                        : undefined
+                      : authKeyboardInset > 0
+                        ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))`
+                        : undefined,
                   WebkitOverflowScrolling: "touch",
                   scrollBehavior: "smooth",
                 }}
