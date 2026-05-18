@@ -309,6 +309,92 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
 
+const normalizeScannedOrderToken = (value: string) =>
+  value
+    .trim()
+    .replace(/^order[:\-_]*/i, "")
+    .replace(/^#/, "")
+    .trim();
+
+const extractOrderIdentifierFromQrPayload = (rawValue: string): string | null => {
+  const trimmed = rawValue.trim();
+  if (!trimmed) return null;
+
+  const readFromPlainToken = (candidate: string) => {
+    const normalized = normalizeScannedOrderToken(candidate);
+    return /^[a-zA-Z0-9-]{6,64}$/.test(normalized) ? normalized : null;
+  };
+
+  const plainToken = readFromPlainToken(trimmed);
+  if (plainToken) return plainToken;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      const fromPath = pathParts[pathParts.length - 1] ?? "";
+      const fromPathToken = readFromPlainToken(fromPath);
+      if (fromPathToken) return fromPathToken;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      orderId?: string;
+      order_id?: string;
+      id?: string;
+      order?: string;
+      receiptUrl?: string;
+      receipt_url?: string;
+      url?: string;
+    };
+
+    const directCandidate =
+      parsed.orderId ??
+      parsed.order_id ??
+      parsed.id ??
+      parsed.order ??
+      parsed.receiptUrl ??
+      parsed.receipt_url ??
+      parsed.url;
+
+    if (typeof directCandidate !== "string") return null;
+    if (/^https?:\/\//i.test(directCandidate.trim())) {
+      return extractOrderIdentifierFromQrPayload(directCandidate);
+    }
+
+    return readFromPlainToken(directCandidate);
+  } catch {
+    const regexMatch = trimmed.match(/(?:order(?:Id)?|receipt)[\s:=/#-]*([a-zA-Z0-9-]{6,64})/i);
+    return regexMatch?.[1] ? normalizeScannedOrderToken(regexMatch[1]) : null;
+  }
+};
+
+const shouldFallbackToLatestOrderFromQrPayload = (rawValue: string) => {
+  const trimmed = rawValue.trim();
+  if (!trimmed) return false;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      const lastPath = pathParts[pathParts.length - 1] ?? "";
+      return !/^[a-zA-Z0-9-]{6,64}$/.test(normalizeScannedOrderToken(lastPath));
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 function useCustomerCarnet(
   customerPhone: string | null,
   fetchCustomerCarnetOverview: (input: { data: { customerPhone: string } }) => Promise<any>,
@@ -384,6 +470,11 @@ function Index() {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [scannerStatusMessage, setScannerStatusMessage] = useState("");
+  const [isProcessingQrResult, setIsProcessingQrResult] = useState(false);
+  const scannerInstanceRef = useRef<any>(null);
+  const scannerMountedRef = useRef(false);
   const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
@@ -1251,6 +1342,12 @@ function Index() {
         deliveryFeeHint: "سيتم إضافة هذا الرسم إلى الإجمالي النهائي.",
         closeModal: "إغلاق نافذة اختيار الموقع",
         confirmLocation: "تأكيد الموقع",
+        scannerPermissionDenied: "يرجى السماح باستخدام الكاميرا لمسح رمز الطلب.",
+        scannerCameraUnavailable: "تعذر فتح الكاميرا. حاول مرة أخرى.",
+        scannerPointToQr: "وجّه الكاميرا نحو رمز QR الخاص بالطلب.",
+        scannerSuccess: "تم التعرّف على الطلب بنجاح",
+        scannerInvalidQr: "رمز QR غير صالح",
+        scannerOrderNotFound: "الطلب غير موجود",
       };
     }
 
@@ -1334,6 +1431,12 @@ function Index() {
         deliveryFeeHint: "Ces frais seront ajoutés au total de la commande.",
         closeModal: "Fermer la fenêtre de sélection de zone",
         confirmLocation: "Confirmer la zone",
+        scannerPermissionDenied: "Veuillez autoriser la caméra pour scanner le code de commande.",
+        scannerCameraUnavailable: "Impossible d’ouvrir la caméra. Veuillez réessayer.",
+        scannerPointToQr: "Pointez votre caméra vers le QR de la commande.",
+        scannerSuccess: "Commande détectée avec succès",
+        scannerInvalidQr: "Code QR invalide",
+        scannerOrderNotFound: "Commande introuvable",
       };
     }
 
@@ -1416,6 +1519,12 @@ function Index() {
       deliveryFeeHint: "This fee will be added to your total.",
       closeModal: "Close location selection",
       confirmLocation: "Confirm Location",
+      scannerPermissionDenied: "Please allow camera access to scan the order QR code.",
+      scannerCameraUnavailable: "Unable to open camera. Please try again.",
+      scannerPointToQr: "Point your camera at the order QR code.",
+      scannerSuccess: "Order detected successfully",
+      scannerInvalidQr: "Invalid QR code",
+      scannerOrderNotFound: "Order not found",
     };
   }, [language]);
 
@@ -1845,6 +1954,142 @@ function Index() {
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
   const deliveredCustomerOrders = allCustomerOrders.filter((order) => isDeliveredOrderStatus(order.status));
+  const resolveOrderIdFromScan = (decodedOrderToken: string, allowFallbackToLatestOrder: boolean): string | null => {
+    const normalizedToken = normalizeScannedOrderToken(decodedOrderToken).toLowerCase();
+    if (!normalizedToken) return null;
+
+    const matchedOrder = allCustomerOrders.find((order) => {
+      const orderId = String(order.id ?? "").trim().toLowerCase();
+      const shortOrderId = orderId.slice(0, 8);
+      return normalizedToken === orderId || normalizedToken === shortOrderId;
+    });
+
+    if (matchedOrder?.id) return matchedOrder.id;
+    if (!allowFallbackToLatestOrder) return null;
+
+    return activeCustomerOrders[0]?.id ?? allCustomerOrders[0]?.id ?? null;
+  };
+
+  const openOrderQrScanner = () => {
+    setScannerStatusMessage(customerUiCopy.scannerPointToQr);
+    setIsProcessingQrResult(false);
+    setIsQrScannerOpen(true);
+  };
+
+  const handleScannedOrderNavigation = async (decodedText: string) => {
+    const extractedOrderId = extractOrderIdentifierFromQrPayload(decodedText);
+    const shouldUseFallback = shouldFallbackToLatestOrderFromQrPayload(decodedText);
+
+    if (!extractedOrderId && shouldUseFallback) {
+      const fallbackOrderId = activeCustomerOrders[0]?.id ?? allCustomerOrders[0]?.id ?? null;
+      if (!fallbackOrderId) {
+        toast.error(customerUiCopy.scannerOrderNotFound);
+        return;
+      }
+
+      setIsProcessingQrResult(true);
+      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        navigator.vibrate(18);
+      }
+      toast.success(customerUiCopy.scannerSuccess);
+      setIsQrScannerOpen(false);
+
+      const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: fallbackOrderId } });
+      const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+      if (typeof startViewTransition === "function") {
+        startViewTransition(() => {
+          goToReceipt();
+        });
+        return;
+      }
+      goToReceipt();
+      return;
+    }
+
+    if (!extractedOrderId) {
+      toast.error(customerUiCopy.scannerInvalidQr);
+      return;
+    }
+
+    const resolvedOrderId = resolveOrderIdFromScan(extractedOrderId, shouldUseFallback);
+    if (!resolvedOrderId) {
+      toast.error(customerUiCopy.scannerOrderNotFound);
+      return;
+    }
+
+    setIsProcessingQrResult(true);
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(18);
+    }
+
+    toast.success(customerUiCopy.scannerSuccess);
+    setIsQrScannerOpen(false);
+
+    const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: resolvedOrderId } });
+    const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+
+    if (typeof startViewTransition === "function") {
+      startViewTransition(() => {
+        goToReceipt();
+      });
+      return;
+    }
+
+    goToReceipt();
+  };
+
+  useEffect(() => {
+    if (!isQrScannerOpen) return;
+
+    let mounted = true;
+    scannerMountedRef.current = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        const scanner = new Html5Qrcode("customer-order-qr-reader");
+        scannerInstanceRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            if (!scannerMountedRef.current || isProcessingQrResult) return;
+            void handleScannedOrderNavigation(decodedText);
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        const message = String((error as Error)?.message ?? "").toLowerCase();
+        const denied =
+          message.includes("notallowed") || message.includes("permission") || message.includes("denied") || message.includes("not readable");
+        const nextMessage = denied ? customerUiCopy.scannerPermissionDenied : customerUiCopy.scannerCameraUnavailable;
+        setScannerStatusMessage(nextMessage);
+        toast.error(nextMessage);
+      }
+    };
+
+    setScannerStatusMessage(customerUiCopy.scannerPointToQr);
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      scannerMountedRef.current = false;
+      const scanner = scannerInstanceRef.current;
+      scannerInstanceRef.current = null;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [customerUiCopy.scannerCameraUnavailable, customerUiCopy.scannerPermissionDenied, customerUiCopy.scannerPointToQr, isProcessingQrResult, isQrScannerOpen]);
+
   const customerSubscriptions =
     (customerSubscriptionsQuery.data ?? []) as Array<{
       id: string;
@@ -2455,6 +2700,7 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Scan"
+                  onClick={openOrderQrScanner}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
                 >
                   <ScanLine className="size-3.5" />
@@ -2604,6 +2850,7 @@ function Index() {
               <button
                 type="button"
                 aria-label="Scan"
+                onClick={openOrderQrScanner}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
               >
                 <ScanLine className="size-[13px]" />
@@ -2714,6 +2961,7 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Scan"
+                  onClick={openOrderQrScanner}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
                 >
                   <ScanLine className="size-[13px]" />
@@ -4573,6 +4821,27 @@ function Index() {
           </Dialog>
         )
       ) : null}
+
+      <Dialog
+        open={isQrScannerOpen}
+        onOpenChange={(open) => {
+          setIsQrScannerOpen(open);
+          if (!open) setIsProcessingQrResult(false);
+        }}
+      >
+        <DialogContent className={`w-[95vw] max-w-md rounded-2xl ${isArabic ? "text-right" : "text-left"}`} dir={isArabic ? "rtl" : "ltr"}>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{scannerStatusMessage || customerUiCopy.scannerPointToQr}</p>
+            <div id="customer-order-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
+            {isProcessingQrResult ? (
+              <div className={`inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary ${isArabic ? "flex-row-reverse" : ""}`}>
+                <CheckCircle2 className="size-4" />
+                {customerUiCopy.scannerSuccess}
+              </div>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AnimatePresence>
         {isLocationModalOpen ? (
