@@ -2422,46 +2422,258 @@ export const uploadPlatformPackAsset = createServerFn({ method: "POST" })
     };
   });
 
-export const listAdminCustomers = createServerFn({ method: "GET" }).handler(async () => {
-  const [profilesRes, ordersRes] = await Promise.all([
+export const getAdminCustomerKpis = createServerFn({ method: "GET" }).handler(async () => {
+  const [profilesRes, ltvRes] = await Promise.all([
     (supabaseAdmin as any)
       .from("profiles")
-      .select("id, full_name, phone, address, created_at")
-      .order("created_at", { ascending: false }),
+      .select("id, status, risk_score"),
     (supabaseAdmin as any)
-      .from("orders")
-      .select("customer_phone, total_price, delivery_fee")
-      .in("status", ["delivered", "cash_transferred_to_vendor"]),
+      .from("profiles")
+      .select("lifetime_value"),
   ]);
 
   if (profilesRes.error) throw new Error(profilesRes.error.message);
-  if (ordersRes.error) throw new Error(ordersRes.error.message);
+  if (ltvRes.error) throw new Error(ltvRes.error.message);
 
-  const orderMetricsByPhone = new Map<string, { totalOrders: number; ltvMad: number }>();
+  const profiles = (profilesRes.data ?? []) as Array<{
+    id: string;
+    status: "active" | "vip" | "warning" | "suspicious" | "blocked";
+    risk_score: "low" | "medium" | "high";
+  }>;
+  const ltvRows = (ltvRes.data ?? []) as Array<{ lifetime_value: number | null }>;
 
-  for (const row of (ordersRes.data ?? []) as AdminCustomerOrderAggregateRow[]) {
-    const phone = row.customer_phone?.trim();
-    if (!phone) continue;
+  const totalCustomers = profiles.length;
+  const vipCustomers = profiles.filter((profile) => profile.status === "vip").length;
+  const highRiskOrBlocked = profiles.filter(
+    (profile) => profile.risk_score === "high" || profile.status === "blocked",
+  ).length;
+  const ltvValues = ltvRows.map((row) => Number(row.lifetime_value ?? 0));
+  const averageLtv = ltvValues.length > 0 ? ltvValues.reduce((sum, value) => sum + value, 0) / ltvValues.length : 0;
 
-    const current = orderMetricsByPhone.get(phone) ?? { totalOrders: 0, ltvMad: 0 };
-    orderMetricsByPhone.set(phone, {
-      totalOrders: current.totalOrders + 1,
-      ltvMad: current.ltvMad + Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0),
-    });
-  }
+  return {
+    totalCustomers,
+    vipCustomers,
+    highRiskOrBlocked,
+    averageLtv,
+  };
+});
 
-  return ((profilesRes.data ?? []) as AdminCustomerProfileRow[]).map((profile) => {
-    const phone = profile.phone?.trim() ?? "";
-    const metrics = phone ? orderMetricsByPhone.get(phone) : undefined;
+export const listAdminCustomers = createServerFn({ method: "POST" })
+  .inputValidator((input) => adminCustomerListInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const page = Math.max(1, data.page ?? 1);
+    const pageSize = data.pageSize ?? 20;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let profilesQuery = (supabaseAdmin as any)
+      .from("profiles")
+      .select(
+        "id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value",
+        { count: "exact" },
+      );
+
+    if (data.status !== "all") {
+      profilesQuery = profilesQuery.eq("status", data.status);
+    }
+
+    if (data.risk !== "all") {
+      profilesQuery = profilesQuery.eq("risk_score", data.risk);
+    }
+
+    if (data.search && data.search.trim().length > 0) {
+      const query = data.search.trim();
+      profilesQuery = profilesQuery.or(
+        `full_name.ilike.%${query}%,phone.ilike.%${query}%,address.ilike.%${query}%,id.ilike.%${query}%`,
+      );
+    }
+
+    if (data.sortBy === "highest_ltv") {
+      profilesQuery = profilesQuery.order("lifetime_value", { ascending: false }).order("created_at", { ascending: false });
+    } else if (data.sortBy === "most_strikes") {
+      profilesQuery = profilesQuery.order("strikes", { ascending: false }).order("created_at", { ascending: false });
+    } else {
+      profilesQuery = profilesQuery.order("created_at", { ascending: false });
+    }
+
+    const [profilesRes, ordersRes] = await Promise.all([
+      profilesQuery.range(from, to),
+      (supabaseAdmin as any)
+        .from("orders")
+        .select("id, customer_user_id, customer_phone, status, total_price, delivery_fee, created_at")
+        .in("status", ["delivered", "cash_transferred_to_vendor"]),
+    ]);
+
+    if (profilesRes.error) throw new Error(profilesRes.error.message);
+    if (ordersRes.error) throw new Error(ordersRes.error.message);
+
+    const orderMetricsByProfileId = new Map<string, { totalOrders: number; ltvMad: number }>();
+    const orderMetricsByPhone = new Map<string, { totalOrders: number; ltvMad: number }>();
+
+    for (const row of (ordersRes.data ?? []) as AdminCustomerOrderAggregateRow[]) {
+      const value = Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0);
+
+      if (row.customer_user_id) {
+        const current = orderMetricsByProfileId.get(row.customer_user_id) ?? { totalOrders: 0, ltvMad: 0 };
+        orderMetricsByProfileId.set(row.customer_user_id, {
+          totalOrders: current.totalOrders + 1,
+          ltvMad: current.ltvMad + value,
+        });
+      }
+
+      const phone = row.customer_phone?.trim();
+      if (phone) {
+        const current = orderMetricsByPhone.get(phone) ?? { totalOrders: 0, ltvMad: 0 };
+        orderMetricsByPhone.set(phone, {
+          totalOrders: current.totalOrders + 1,
+          ltvMad: current.ltvMad + value,
+        });
+      }
+    }
+
+    const profiles = (profilesRes.data ?? []) as AdminCustomerProfileRow[];
+
+    return {
+      page,
+      pageSize,
+      total: Number(profilesRes.count ?? 0),
+      rows: profiles.map((profile) => {
+        const phone = profile.phone?.trim() ?? "";
+        const profileMetrics = orderMetricsByProfileId.get(profile.id);
+        const phoneMetrics = phone ? orderMetricsByPhone.get(phone) : undefined;
+        const totalOrders = profileMetrics?.totalOrders ?? phoneMetrics?.totalOrders ?? 0;
+        const derivedLtv = profileMetrics?.ltvMad ?? phoneMetrics?.ltvMad ?? 0;
+        const lifetimeValue = Number(profile.lifetime_value ?? 0);
+
+        return {
+          id: profile.id,
+          fullName: profile.full_name?.trim() || "—",
+          phone: phone || "—",
+          address: profile.address?.trim() || "—",
+          joinedAt: profile.created_at,
+          totalOrders,
+          ltvMad: lifetimeValue > 0 ? lifetimeValue : derivedLtv,
+          status: profile.status,
+          riskScore: profile.risk_score,
+          strikes: Number(profile.strikes ?? 0),
+          codRejections: Number(profile.cod_rejections ?? 0),
+          adminNotes: profile.admin_notes ?? "",
+        };
+      }),
+    };
+  });
+
+export const getAdminCustomerProfile = createServerFn({ method: "POST" })
+  .inputValidator((input) => getAdminCustomerProfileInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const [profileRes, ordersRes] = await Promise.all([
+      (supabaseAdmin as any)
+        .from("profiles")
+        .select("id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value")
+        .eq("id", data.customerId)
+        .maybeSingle(),
+      (supabaseAdmin as any)
+        .from("orders")
+        .select("id, customer_user_id, customer_name, customer_phone, status, total_price, delivery_fee, created_at")
+        .eq("customer_user_id", data.customerId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (profileRes.error) throw new Error(profileRes.error.message);
+    if (ordersRes.error) throw new Error(ordersRes.error.message);
+    if (!profileRes.data?.id) throw new Error("Customer not found.");
+
+    const profile = profileRes.data as AdminCustomerProfileRow;
+    const orders = (ordersRes.data ?? []) as AdminCustomerOrderAggregateRow[];
+    const totalOrders = orders.length;
+    const deliveredOrders = orders.filter((order) => ["delivered", "cash_transferred_to_vendor"].includes(order.status)).length;
+    const cancelledOrders = orders.filter((order) => order.status === "cancelled").length;
+    const totalSpent = orders
+      .filter((order) => ["delivered", "cash_transferred_to_vendor"].includes(order.status))
+      .reduce((sum, order) => sum + Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0), 0);
+    const averageOrderValue = deliveredOrders > 0 ? totalSpent / deliveredOrders : 0;
+    const cancellationRate = totalOrders > 0 ? (cancelledOrders / totalOrders) * 100 : 0;
+    const lifetimeValue = Number(profile.lifetime_value ?? 0) > 0 ? Number(profile.lifetime_value ?? 0) : totalSpent;
 
     return {
       id: profile.id,
       fullName: profile.full_name?.trim() || "—",
-      phone: phone || "—",
+      phone: profile.phone?.trim() || "—",
       address: profile.address?.trim() || "—",
       joinedAt: profile.created_at,
-      totalOrders: metrics?.totalOrders ?? 0,
-      ltvMad: metrics?.ltvMad ?? 0,
+      status: profile.status,
+      riskScore: profile.risk_score,
+      strikes: Number(profile.strikes ?? 0),
+      codRejections: Number(profile.cod_rejections ?? 0),
+      adminNotes: profile.admin_notes ?? "",
+      lifetimeValue,
+      metrics: {
+        totalSpent: lifetimeValue,
+        averageOrderValue,
+        totalOrders,
+        deliveredOrders,
+        cancellationRate,
+        codRejections: Number(profile.cod_rejections ?? 0),
+      },
+      recentOrders: orders.slice(0, 10).map((order) => ({
+        id: order.id,
+        createdAt: order.created_at,
+        status: order.status,
+        amount: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
+      })),
     };
   });
-});
+
+export const updateAdminCustomerState = createServerFn({ method: "POST" })
+  .inputValidator((input) => updateAdminCustomerStateInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: existingProfile, error: existingError } = await (supabaseAdmin as any)
+      .from("profiles")
+      .select("id, strikes")
+      .eq("id", data.customerId)
+      .maybeSingle();
+
+    if (existingError) throw new Error(existingError.message);
+    if (!existingProfile?.id) throw new Error("Customer not found.");
+
+    const currentStrikes = Number(existingProfile.strikes ?? 0);
+    const nextStrikes = data.resetStrikes
+      ? 0
+      : Math.max(0, currentStrikes + Number(data.strikesDelta ?? 0));
+
+    const patch: Record<string, unknown> = {
+      status: data.status,
+      strikes: nextStrikes,
+    };
+
+    if (data.riskScore) {
+      patch.risk_score = data.riskScore;
+    }
+
+    if (data.addCodRejection) {
+      patch.cod_rejections = (supabaseAdmin as any).raw("cod_rejections + 1");
+    }
+
+    const { error } = await (supabaseAdmin as any).from("profiles").update(patch).eq("id", data.customerId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { ok: true };
+  });
+
+export const updateAdminCustomerNotes = createServerFn({ method: "POST" })
+  .inputValidator((input) => updateAdminCustomerNotesInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { error } = await (supabaseAdmin as any)
+      .from("profiles")
+      .update({ admin_notes: data.adminNotes })
+      .eq("id", data.customerId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { ok: true };
+  });
