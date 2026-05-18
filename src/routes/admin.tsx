@@ -3792,6 +3792,220 @@ function AdminPage() {
     }
   };
 
+  const resetHeroForm = useCallback(() => {
+    setEditingHeroSectionId(null);
+    setHeroImageFile(null);
+    setHeroImagePreviewUrl(null);
+    setHeroForm({
+      id: "",
+      sortOrder: "0",
+      isActive: true,
+      imageUrl: "",
+      badgeAr: "",
+      badgeEn: "",
+      badgeFr: "",
+      titleAr: "",
+      titleEn: "",
+      titleFr: "",
+      subtitleAr: "",
+      subtitleEn: "",
+      subtitleFr: "",
+      deliveryTimingAr: "",
+      deliveryTimingEn: "",
+      deliveryTimingFr: "",
+      ctaTextAr: "",
+      ctaTextEn: "",
+      ctaTextFr: "",
+      ctaLink: "",
+      accentFrom: "",
+      accentTo: "",
+      accentChipBg: "",
+      accentChipText: "",
+      greetingAr: "",
+      greetingEn: "",
+      greetingFr: "",
+      headlineAr: "",
+      headlineEn: "",
+      headlineFr: "",
+      descriptionAr: "",
+      descriptionEn: "",
+      descriptionFr: "",
+    });
+  }, []);
+
+  const editHeroSection = useCallback((row: any) => {
+    setEditingHeroSectionId(row.id);
+    setHeroImageFile(null);
+    setHeroImagePreviewUrl(row.image_url ?? null);
+    setHeroForm({
+      id: row.id,
+      sortOrder: String(Number(row.sort_order ?? 0)),
+      isActive: Boolean(row.is_active),
+      imageUrl: row.image_url ?? "",
+      badgeAr: row.badge_ar ?? "",
+      badgeEn: row.badge_en ?? "",
+      badgeFr: row.badge_fr ?? "",
+      titleAr: row.title_ar ?? "",
+      titleEn: row.title_en ?? "",
+      titleFr: row.title_fr ?? "",
+      subtitleAr: row.subtitle_ar ?? "",
+      subtitleEn: row.subtitle_en ?? "",
+      subtitleFr: row.subtitle_fr ?? "",
+      deliveryTimingAr: row.delivery_timing_ar ?? "",
+      deliveryTimingEn: row.delivery_timing_en ?? "",
+      deliveryTimingFr: row.delivery_timing_fr ?? "",
+      ctaTextAr: row.cta_text_ar ?? "",
+      ctaTextEn: row.cta_text_en ?? "",
+      ctaTextFr: row.cta_text_fr ?? "",
+      ctaLink: row.cta_link ?? "",
+      accentFrom: row.accent_from ?? "",
+      accentTo: row.accent_to ?? "",
+      accentChipBg: row.accent_chip_bg ?? "",
+      accentChipText: row.accent_chip_text ?? "",
+      greetingAr: row.greeting_ar ?? "",
+      greetingEn: row.greeting_en ?? "",
+      greetingFr: row.greeting_fr ?? "",
+      headlineAr: row.headline_ar ?? "",
+      headlineEn: row.headline_en ?? "",
+      headlineFr: row.headline_fr ?? "",
+      descriptionAr: row.description_ar ?? "",
+      descriptionEn: row.description_en ?? "",
+      descriptionFr: row.description_fr ?? "",
+    });
+  }, []);
+
+  const saveHeroSection = async () => {
+    if (
+      !heroForm.titleAr.trim() ||
+      !heroForm.titleEn.trim() ||
+      !heroForm.titleFr.trim() ||
+      !heroForm.subtitleAr.trim() ||
+      !heroForm.subtitleEn.trim() ||
+      !heroForm.subtitleFr.trim()
+    ) {
+      toast.error("Please complete required multilingual hero fields.");
+      return;
+    }
+
+    const parsedSortOrder = Number(heroForm.sortOrder || "0");
+    if (Number.isNaN(parsedSortOrder) || parsedSortOrder < 0) {
+      toast.error("Sort order must be a non-negative number.");
+      return;
+    }
+
+    if (heroForm.ctaLink.trim() && !/^https?:\/\//.test(heroForm.ctaLink.trim()) && !heroForm.ctaLink.trim().startsWith("/")) {
+      toast.error("CTA link must be a full URL or start with '/'.");
+      return;
+    }
+
+    try {
+      setIsSavingHeroSection(true);
+      let imageUrl = heroForm.imageUrl.trim() || null;
+
+      if (heroImageFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(heroImageFile);
+        });
+
+        const uploaded = await uploadHeroSectionImageToStorage({
+          data: {
+            fileName: heroImageFile.name,
+            contentType: heroImageFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+        imageUrl = uploaded.publicUrl;
+      }
+
+      await saveHeroSectionToDatabase({
+        data: {
+          id: heroForm.id || undefined,
+          imageUrl,
+          sortOrder: parsedSortOrder,
+          badgeAr: heroForm.badgeAr.trim(),
+          badgeEn: heroForm.badgeEn.trim(),
+          badgeFr: heroForm.badgeFr.trim(),
+          titleAr: heroForm.titleAr.trim(),
+          titleEn: heroForm.titleEn.trim(),
+          titleFr: heroForm.titleFr.trim(),
+          subtitleAr: heroForm.subtitleAr.trim(),
+          subtitleEn: heroForm.subtitleEn.trim(),
+          subtitleFr: heroForm.subtitleFr.trim(),
+          deliveryTimingAr: heroForm.deliveryTimingAr.trim(),
+          deliveryTimingEn: heroForm.deliveryTimingEn.trim(),
+          deliveryTimingFr: heroForm.deliveryTimingFr.trim(),
+          ctaTextAr: heroForm.ctaTextAr.trim(),
+          ctaTextEn: heroForm.ctaTextEn.trim(),
+          ctaTextFr: heroForm.ctaTextFr.trim(),
+          ctaLink: heroForm.ctaLink.trim() || null,
+          accentFrom: heroForm.accentFrom.trim() || null,
+          accentTo: heroForm.accentTo.trim() || null,
+          accentChipBg: heroForm.accentChipBg.trim() || null,
+          accentChipText: heroForm.accentChipText.trim() || null,
+          greetingAr: heroForm.greetingAr.trim() || heroForm.badgeAr.trim(),
+          greetingEn: heroForm.greetingEn.trim() || heroForm.badgeEn.trim(),
+          greetingFr: heroForm.greetingFr.trim() || heroForm.badgeFr.trim(),
+          headlineAr: heroForm.headlineAr.trim() || heroForm.titleAr.trim(),
+          headlineEn: heroForm.headlineEn.trim() || heroForm.titleEn.trim(),
+          headlineFr: heroForm.headlineFr.trim() || heroForm.titleFr.trim(),
+          descriptionAr: heroForm.descriptionAr.trim() || heroForm.subtitleAr.trim(),
+          descriptionEn: heroForm.descriptionEn.trim() || heroForm.subtitleEn.trim(),
+          descriptionFr: heroForm.descriptionFr.trim() || heroForm.subtitleFr.trim(),
+          isActive: heroForm.isActive,
+        },
+      });
+
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+      setHeroImageFile(null);
+      toast.success("Hero section saved.");
+    } catch (error) {
+      console.error("Failed to save hero section:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save hero section.");
+    } finally {
+      setIsSavingHeroSection(false);
+    }
+  };
+
+  const removeHeroSection = async (id: string) => {
+    try {
+      await deleteHeroSectionFromDatabase({ data: { id } });
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+      if (heroForm.id === id) {
+        resetHeroForm();
+      }
+      toast.success("Hero section deleted.");
+    } catch (error) {
+      console.error("Failed to delete hero section:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete hero section.");
+    }
+  };
+
+  const shiftHeroSection = async (id: string, direction: "up" | "down") => {
+    const rows = ((heroSectionsQuery.data ?? []) as Array<any>).slice().sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
+    const index = rows.findIndex((row) => row.id === id);
+    if (index < 0) return;
+
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rows.length) return;
+
+    const swapped = [...rows];
+    [swapped[index], swapped[targetIndex]] = [swapped[targetIndex], swapped[index]];
+
+    try {
+      await reorderHeroSectionsInDatabase({ data: { orderedIds: swapped.map((row) => row.id) } });
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+    } catch (error) {
+      console.error("Failed to reorder hero sections:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reorder hero sections.");
+    }
+  };
+
   const handleFactoryReset = async () => {
     if (factoryResetConfirmationText.trim() !== "RESET_ALL") {
       toast.error("Type RESET_ALL exactly to confirm factory reset.");
