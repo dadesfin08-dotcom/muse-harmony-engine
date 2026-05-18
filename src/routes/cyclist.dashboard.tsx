@@ -748,6 +748,46 @@ function CyclistDashboardPage() {
         </AnimatePresence>
       </section>
 
+      <Dialog open={Boolean(cancelOrder)} onOpenChange={(open) => (!open ? closeCancelDialog() : undefined)}>
+        <DialogContent dir={isArabic ? "rtl" : "ltr"} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("cyclist.cancelReasonTitle")}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <RadioGroup value={cancelReason} onValueChange={(value) => setCancelReason(value as CancelReason)}>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-cod" value="cod_rejection" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-cod" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.codRejection")}
+                </Label>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-unreachable" value="unreachable" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-unreachable" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.unreachable")}
+                </Label>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <RadioGroupItem id="cancel-reason-fake" value="fake_order" className="mt-0.5" />
+                <Label htmlFor="cancel-reason-fake" className="cursor-pointer leading-snug">
+                  {t("cyclist.cancelReasons.fakeOrder")}
+                </Label>
+              </div>
+            </RadioGroup>
+
+            <div className={cn("flex gap-2", isArabic ? "flex-row-reverse" : "flex-row")}>
+              <Button variant="outline" className="flex-1" onClick={closeCancelDialog} disabled={isCancellingOrder}>
+                {t("cyclist.cancelDialogClose")}
+              </Button>
+              <Button className="flex-1" onClick={handleConfirmCancel} disabled={isCancellingOrder}>
+                {isCancellingOrder ? t("cyclist.refreshing") : t("cyclist.cancelConfirm")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isScannerOpen} onOpenChange={(open) => (!open ? closeScanner() : undefined)}>
         <DialogContent className="h-[92vh] w-[96vw] max-w-lg overflow-hidden rounded-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
