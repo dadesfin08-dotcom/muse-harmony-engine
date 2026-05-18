@@ -528,12 +528,13 @@ function CyclistDashboardPage() {
     };
   }, [handleCyclistQrScan]);
 
-  const openScanner = () => {
+  const openScanner = (mode: ScannerMode) => {
     if (!session?.cyclistId || !cyclist?.id) {
       setScannerStatus(t("cyclist.cameraPreparing"));
       return;
     }
 
+    setScannerMode(mode);
     setSuccessAnimationVisible(false);
     setScannerPaused(false);
     setIsProcessing(false);
@@ -773,7 +774,7 @@ function CyclistDashboardPage() {
                   </p>
                 </div>
               ))}
-              <Button className="w-full active:scale-95" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+                <Button className="w-full active:scale-95" onClick={() => openScanner("merchant_clearance")} disabled={isUpdatingOrderId !== null}>
                 <Camera className="size-4" />
                 {t("cyclist.openUniversalScanner")}
               </Button>
@@ -857,7 +858,7 @@ function CyclistDashboardPage() {
                     actionIcon={Camera}
                     isBusy={isUpdatingOrderId === order.id}
                     onOpenDetails={() => setDetailsOrder(order)}
-                    onAction={() => openScanner()}
+                    onAction={() => openScanner("customer")}
                     onCancel={() => openCancelDialog(order)}
                   />
                 </motion.div>
@@ -887,7 +888,7 @@ function CyclistDashboardPage() {
                       isActiveDelivery={isActiveTask}
                       isBusy={isUpdatingOrderId === order.id}
                       onAccept={() => handleAcceptDelivery(order)}
-                      onDeliver={() => openScanner()}
+                      onDeliver={() => openScanner("customer")}
                     />
                   </motion.div>
                 );
