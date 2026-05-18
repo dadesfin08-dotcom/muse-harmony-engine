@@ -2953,14 +2953,14 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.22] text-foreground">
+                    <h3 className={`w-full ${customerTypography.cardTitle}`}>
                       {product.name}
                     </h3>
                   </Link>
 
                   <div className="mt-auto flex items-end justify-between gap-2 pt-2">
-                    <p className="whitespace-nowrap text-[clamp(1.03rem,4.6vw,1.26rem)] font-extrabold tracking-tight text-primary">
-                      {product.price} <span className="text-[11px] font-semibold">{homepageUiCopy.currency}</span>
+                    <p className={customerTypography.priceMain}>
+                      {product.price} <span className={customerTypography.priceCurrency}>{homepageUiCopy.currency}</span>
                     </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
@@ -2996,7 +2996,7 @@ function Index() {
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-[16px] bg-primary px-3 text-xs font-semibold leading-none text-primary-foreground shadow-[0_10px_20px_-15px_rgba(24,181,106,0.95)] transition hover:brightness-95"
+                        className={`${customerTypography.cta} bg-primary text-primary-foreground shadow-[0_10px_20px_-15px_rgba(24,181,106,0.95)] transition hover:brightness-95`}
                         onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
@@ -3029,10 +3029,10 @@ function Index() {
 
         <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-7 sm:px-6 md:mt-8">
           <div className={`mb-4 space-y-1.5 ${isArabic ? "text-right" : "text-left"}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90">
+            <p className={customerTypography.eyebrow}>
               {subscriptionSectionCopy.eyebrow}
             </p>
-            <h2 className={`flex items-center gap-2 text-[1.1rem] font-bold leading-tight text-foreground md:text-[1.35rem] ${isArabic ? "flex-row-reverse" : ""}`}>
+            <h2 className={`flex items-center gap-2 ${customerTypography.sectionTitle} ${isArabic ? "flex-row-reverse" : ""}`}>
               <Sparkles className="size-4 text-primary" />
               <span>{subscriptionSectionCopy.title}</span>
             </h2>
@@ -3088,8 +3088,8 @@ function Index() {
 
                       <div className={`flex flex-1 flex-col justify-between px-3.5 py-3 ${isArabic ? "text-right" : "text-left"}`}>
                         <div className="space-y-1">
-                          <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight text-foreground">{pack.name}</h3>
-                          <p className="line-clamp-1 text-[11px] font-medium text-muted-foreground/90">
+                          <h3 className="line-clamp-1 text-[14px] font-semibold leading-[1.25] text-foreground">{pack.name}</h3>
+                          <p className={customerTypography.cardBody}>
                             {pack.description || subscriptionSectionCopy.fallbackDescription}
                           </p>
                         </div>
@@ -3143,7 +3143,7 @@ function Index() {
                   <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
                 </span>
                 <div className="leading-tight">
-                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">{homepageUiCopy.flashTitle}</h2>
+                  <h2 className={customerTypography.flashTitle}>{homepageUiCopy.flashTitle}</h2>
                   <p className="text-[10px] font-medium uppercase text-white/85">{homepageUiCopy.flashSubtitle}</p>
                 </div>
               </div>
