@@ -2957,16 +2957,6 @@ function Index() {
               >
                 <House className="size-4" />
               </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
-                onClick={() => setIsCustomerAuthModalOpen(false)}
-                aria-label={language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
-              >
-                <X className="size-4" />
-              </Button>
               </div>
             </div>
           </div>
