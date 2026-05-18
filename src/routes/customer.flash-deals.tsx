@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Heart, Minus, Package, Plus, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Package, Plus, Search, ShoppingCart } from "lucide-react";
 
 import { MobileHeader } from "@/components/MobileHeader";
+import { Input } from "@/components/ui/input";
 import { listActiveFlashDeals } from "@/lib/catalog.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import fallbackProductImage from "@/assets/product-vegetables.jpg";
@@ -37,6 +38,7 @@ function FlashDealsPage() {
   const { t, i18n } = useTranslation();
   const language = (i18n.resolvedLanguage || i18n.language || "en") as AppLanguage;
   const isArabic = language === "ar";
+  const [searchTerm, setSearchTerm] = useState("");
   const [neighborhoodId, setNeighborhoodId] = useState<string | null>(null);
   const fetchFlashDeals = useServerFn(listActiveFlashDeals);
   const addCartItem = useCustomerCartStore((state) => state.addItem);
@@ -79,6 +81,20 @@ function FlashDealsPage() {
     }));
   }, [flashDealsQuery.data, language]);
 
+  const filteredDeals = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return deals;
+
+    return deals.filter((deal) => {
+      const searchable = [deal.name, deal.nameFr, deal.nameAr, deal.localizedName]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(term);
+    });
+  }, [deals, searchTerm]);
+
   const getCartQuantity = (productId: string) =>
     cartItems.find((item) => item.id === productId)?.quantity ?? 0;
 
@@ -98,8 +114,26 @@ function FlashDealsPage() {
           </p>
         </section>
       ) : (
-        <section className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {deals.map((deal) => {
+        <section className="space-y-3.5">
+          <div className="relative">
+            <Search className={`pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground ${isArabic ? "right-3" : "left-3"}`} />
+            <Input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={t("flashDeals.searchPlaceholder", { defaultValue: "Search flash deals" })}
+              aria-label={t("flashDeals.searchAria", { defaultValue: "Search flash deals products" })}
+              className={`h-11 bg-background/90 ${isArabic ? "pr-9 text-right" : "pl-9"}`}
+            />
+          </div>
+
+          {filteredDeals.length === 0 ? (
+            <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              {t("flashDeals.searchNoResults", { defaultValue: "No products match your search." })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredDeals.map((deal) => {
             const cartQty = getCartQuantity(deal.id);
             const dealPrice = Number(deal.finalFlashSalePrice ?? deal.flashSalePrice ?? 0);
             const oldPrice = Number(deal.finalVendorPrice ?? deal.vendorPrice ?? 0);
@@ -218,8 +252,10 @@ function FlashDealsPage() {
                   </div>
                 </div>
               </article>
-            );
-          })}
+              );
+            })}
+            </div>
+          )}
         </section>
       )}
     </main>
