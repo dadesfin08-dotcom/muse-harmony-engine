@@ -2372,7 +2372,7 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm shadow-[0_20px_36px_-24px_color-mix(in_oklab,var(--foreground)_30%,transparent)] backdrop-blur-xl outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
+                className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm shadow-[0_20px_36px_-24px_color-mix(in_oklab,var(--foreground)_30%,transparent)] backdrop-blur-xl outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30 border-zinc-900 border-double"
               />
 
               <div className="absolute right-2.5 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
