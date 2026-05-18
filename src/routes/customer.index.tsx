@@ -720,6 +720,7 @@ function Index() {
   const supportActiveTicket = supportTickets.find((ticket) => ticket.id === supportActiveTicketId) ?? null;
   const supportUnreadCount = supportTickets.filter((ticket) => ticket.lastSenderType === "admin" && ticket.status === "open").length;
   const supportHasAdminUnread = supportActiveTicket?.lastSenderType === "admin";
+  const isSupportPanelActive = Boolean(customerSession && customerPanelView === "support");
   const supportMessagesWithDateMarkers = useMemo(() => {
     const rows: Array<{ type: "date" | "message"; key: string; label?: string; message?: (typeof supportMessages)[number] }> = [];
     let previousDateKey: string | null = null;
@@ -2909,7 +2910,7 @@ function Index() {
       (!supportImageDataUrl && (supportActiveTicketId ? supportMessageInput.trim().length === 0 : supportMessageInput.trim().length < 3));
 
     return (
-      <section className="relative flex min-h-[64vh] max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/90 shadow-xl backdrop-blur-xl md:min-h-[68vh] md:max-h-[82vh]">
+      <section className="relative mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-card/90 backdrop-blur-xl md:my-3 md:rounded-3xl md:border md:border-border/70 md:shadow-xl">
         <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-3 pb-3 pt-3 backdrop-blur md:px-4">
           <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
             <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
@@ -2927,6 +2928,16 @@ function Index() {
 
             <div className={`flex items-center gap-1.5 ${isArabic ? "flex-row-reverse" : ""}`}>
               {supportUnreadCount > 0 ? <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge> : null}
+              <Button
+                type="button"
+                size="icon"
+                variant="soft"
+                className="h-8 w-8 rounded-full"
+                onClick={() => setCustomerPanelView("account")}
+                aria-label={language === "ar" ? "الرجوع" : language === "fr" ? "Retour" : "Back"}
+              >
+                <ChevronLeft className={`size-4 ${isArabic ? "rotate-180" : ""}`} />
+              </Button>
               <Button
                 type="button"
                 size="icon"
@@ -4356,15 +4367,15 @@ function Index() {
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
               className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out ${
-                customerPanelView === "support" ? "max-h-[94vh] sm:max-h-[95vh]" : "max-h-[85vh] sm:max-h-[90vh]"
+                customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
               }`}
               style={{
-                maxHeight: authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
+                maxHeight: isSupportPanelActive ? "100dvh" : authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
               }}
             >
               <div
-                className="relative shrink-0 border-b border-border/60 bg-background px-6 pb-4"
+                className={`relative shrink-0 border-b border-border/60 bg-background px-6 pb-4 ${customerPanelView === "support" ? "hidden" : ""}`}
                 style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
               >
                 <div className="mx-auto h-1.5 w-12 rounded-full bg-muted" aria-hidden="true" />
@@ -4389,13 +4400,13 @@ function Index() {
                 </div>
               </div>
 
-              <div className="pointer-events-none absolute inset-x-0 top-[126px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/95 via-background/60 to-transparent transition-opacity duration-200" style={{ opacity: authSheetCanScrollDown ? 1 : 0 }} />
+              <div className={`pointer-events-none absolute inset-x-0 top-[126px] z-10 h-8 bg-gradient-to-b from-background/95 to-transparent transition-opacity duration-200 ${customerPanelView === "support" ? "hidden" : ""}`} style={{ opacity: authSheetCanScrollUp ? 1 : 0 }} />
+              <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/95 via-background/60 to-transparent transition-opacity duration-200 ${customerPanelView === "support" ? "hidden" : ""}`} style={{ opacity: authSheetCanScrollDown ? 1 : 0 }} />
 
               <div
                 ref={authSheetScrollRef}
                 onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
-                className="flex-1 overflow-y-auto overscroll-contain px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out"
+                className={`flex-1 overflow-y-auto overscroll-contain transition-[padding-bottom] duration-300 ease-out ${customerPanelView === "support" ? "px-0 pb-0 pt-0" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2"}`}
                 style={{
                   paddingBottom: authKeyboardInset > 0 ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))` : undefined,
                   WebkitOverflowScrolling: "touch",
@@ -4861,9 +4872,9 @@ function Index() {
         ) : (
           <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DialogContent
-              className={`[&>button]:hidden w-[95vw] rounded-2xl border border-border bg-background shadow-2xl ${
+              className={`[&>button]:hidden w-[95vw] border border-border bg-background shadow-2xl ${
                 customerSession && customerPanelView === "support"
-                  ? "max-w-3xl p-4 md:p-5"
+                  ? "left-1/2 top-1/2 h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] rounded-none border-0 p-0"
                   : "max-w-md p-8"
               }`}
             >
@@ -4889,19 +4900,19 @@ function Index() {
                     ? customerUiCopy.signedIn
                     : customerUiCopy.enterPhoneToContinue}
               </DialogDescription>
-              <div className="relative flex flex-col gap-5">
+              <div className={`relative flex flex-col gap-5 ${isSupportPanelActive ? "h-full gap-0" : ""}`}>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className={`absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground ${isSupportPanelActive ? "hidden" : ""}`}
                   onClick={() => setIsCustomerAuthModalOpen(false)}
                   aria-label="Close login prompt"
                 >
                   <X className="h-5 w-5" />
                 </Button>
 
-                <div className="text-center">
+                <div className={`text-center ${isSupportPanelActive ? "hidden" : ""}`}>
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
                   <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
