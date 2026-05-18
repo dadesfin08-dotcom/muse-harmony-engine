@@ -130,6 +130,9 @@ function CustomerOrderDetailsPage() {
     };
   }, [copy.paymentCarnet, copy.paymentCash, order?.paymentMethod]);
 
+  const pickupCode = order ? `#${order.id.slice(-4).toUpperCase()}` : "";
+  const internalRef = order ? `#${order.id.slice(0, 8).toUpperCase()}` : "";
+
   return (
     <main dir={isArabic ? "rtl" : "ltr"} className="min-h-screen bg-muted/20 px-4 py-4">
       <div className="mx-auto w-full max-w-5xl space-y-4">
@@ -152,9 +155,14 @@ function CustomerOrderDetailsPage() {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
             <div>
               <h1 className="text-lg font-semibold text-foreground">{copy.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                {order ? t("customerOrder.orderCode", { id: order.id.slice(0, 8).toUpperCase() }) : copy.loadingOrder}
-              </p>
+              {order ? (
+                <div className="mt-1">
+                  <p className="text-sm font-semibold text-foreground">{t("customerOrder.pickupCode", { code: pickupCode })}</p>
+                  <p className="text-xs text-muted-foreground">{t("customerOrder.internalRef", { id: internalRef })}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{copy.loadingOrder}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={paymentBadge.className}>
