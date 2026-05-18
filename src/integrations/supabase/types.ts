@@ -561,7 +561,21 @@ export type Database = {
       }
       hero_sections: {
         Row: {
+          accent_chip_bg: string | null
+          accent_chip_text: string | null
+          accent_from: string | null
+          accent_to: string | null
+          badge_ar: string
+          badge_en: string
+          badge_fr: string
           created_at: string
+          cta_link: string | null
+          cta_text_ar: string
+          cta_text_en: string
+          cta_text_fr: string
+          delivery_timing_ar: string
+          delivery_timing_en: string
+          delivery_timing_fr: string
           description_ar: string
           description_en: string
           description_fr: string
@@ -574,10 +588,31 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          sort_order: number
+          subtitle_ar: string
+          subtitle_en: string
+          subtitle_fr: string
+          title_ar: string
+          title_en: string
+          title_fr: string
           updated_at: string
         }
         Insert: {
+          accent_chip_bg?: string | null
+          accent_chip_text?: string | null
+          accent_from?: string | null
+          accent_to?: string | null
+          badge_ar?: string
+          badge_en?: string
+          badge_fr?: string
           created_at?: string
+          cta_link?: string | null
+          cta_text_ar?: string
+          cta_text_en?: string
+          cta_text_fr?: string
+          delivery_timing_ar?: string
+          delivery_timing_en?: string
+          delivery_timing_fr?: string
           description_ar?: string
           description_en?: string
           description_fr?: string
@@ -590,10 +625,31 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          sort_order?: number
+          subtitle_ar?: string
+          subtitle_en?: string
+          subtitle_fr?: string
+          title_ar?: string
+          title_en?: string
+          title_fr?: string
           updated_at?: string
         }
         Update: {
+          accent_chip_bg?: string | null
+          accent_chip_text?: string | null
+          accent_from?: string | null
+          accent_to?: string | null
+          badge_ar?: string
+          badge_en?: string
+          badge_fr?: string
           created_at?: string
+          cta_link?: string | null
+          cta_text_ar?: string
+          cta_text_en?: string
+          cta_text_fr?: string
+          delivery_timing_ar?: string
+          delivery_timing_en?: string
+          delivery_timing_fr?: string
           description_ar?: string
           description_en?: string
           description_fr?: string
@@ -606,6 +662,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          sort_order?: number
+          subtitle_ar?: string
+          subtitle_en?: string
+          subtitle_fr?: string
+          title_ar?: string
+          title_en?: string
+          title_fr?: string
           updated_at?: string
         }
         Relationships: []
