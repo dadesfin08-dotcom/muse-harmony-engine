@@ -2210,7 +2210,7 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
@@ -2359,7 +2359,7 @@ function Index() {
                         key={item.id}
                         type="button"
                         onClick={() => handleSearchResultClick(item.id)}
-                        className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                        className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                       >
                         <img
                           src={item.imageUrl || productFallbackImage}
@@ -2469,7 +2469,7 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
