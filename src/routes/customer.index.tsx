@@ -32,7 +32,6 @@ import {
   Flame,
   Clock3,
   ChevronLeft,
-  Bell,
   Mic,
   ScanLine,
 } from "lucide-react";
@@ -98,6 +97,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -2766,13 +2766,7 @@ function Index() {
               </AnimatePresence>
             </div>
 
-            <button
-              aria-label="Notifications"
-              className="relative inline-flex h-[clamp(2rem,7vw,2.35rem)] w-[clamp(2rem,7vw,2.35rem)] shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-foreground transition hover:bg-muted"
-            >
-              <Bell className="size-[clamp(0.92rem,3.1vw,1.05rem)]" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-            </button>
+            <LanguageSwitcher className="inline-flex h-[clamp(2rem,7vw,2.35rem)] w-[clamp(2rem,7vw,2.35rem)] shrink-0 rounded-full border border-border/70 bg-card text-foreground transition hover:bg-muted" />
 
             <button
               aria-label={t("header.userProfile")}
