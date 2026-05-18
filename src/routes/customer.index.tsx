@@ -2191,14 +2191,14 @@ function Index() {
         </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative overflow-hidden rounded-[24px] border border-border/70 bg-card p-5 shadow-[var(--shadow-soft)] md:hidden">
-            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
-            <p className="text-lg font-semibold text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 text-balance text-4xl font-extrabold leading-tight text-foreground">
+          <article className="relative mx-auto w-full max-w-[352px] overflow-hidden rounded-[28px] border border-border/60 bg-card px-4 py-3.5 shadow-[0_12px_32px_-24px_color-mix(in_oklab,var(--foreground)_22%,transparent)] md:hidden">
+            <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
+            <p className="text-[15px] font-medium text-foreground">Good morning, 👋</p>
+            <h1 className="mt-1 text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
               Fresh groceries,
-              <span className="block text-primary">delivered in 15 min</span>
+              <span className="block text-[1.78rem] leading-[1.08] text-primary">delivered in 15 min</span>
             </h1>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-2.5 max-w-[280px] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
           </article>
 
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
