@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { evaluateCustomerBehavior, evaluateCustomersBehavior } from "@/utils/customerAlgorithm";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
@@ -330,6 +331,7 @@ type AdminCustomerProfileRow = {
   cod_rejections: number;
   admin_notes: string | null;
   lifetime_value: number | null;
+  system_tags: string[] | null;
 };
 
 type AdminCustomerOrderAggregateRow = {
@@ -2469,7 +2471,7 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
     let profilesQuery = (supabaseAdmin as any)
       .from("profiles")
       .select(
-        "id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value",
+        "id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value, system_tags",
         { count: "exact" },
       );
 
