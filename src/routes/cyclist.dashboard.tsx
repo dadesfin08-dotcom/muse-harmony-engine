@@ -36,6 +36,7 @@ const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
 
 type CyclistView = "available" | "active" | "platformPacks";
 type CancelReason = "cod_rejection" | "unreachable" | "fake_order";
+type ScannerMode = "customer" | "merchant_clearance";
 type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
@@ -94,10 +95,13 @@ function CyclistDashboardPage() {
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState<ScannerMode>("customer");
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [isProcessing, setIsProcessing] = useState(false);
   const [scannerPaused, setScannerPaused] = useState(false);
   const [successAnimationVisible, setSuccessAnimationVisible] = useState(false);
+  const [successAnimationTitle, setSuccessAnimationTitle] = useState("");
+  const [successAnimationSubtitle, setSuccessAnimationSubtitle] = useState("");
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
