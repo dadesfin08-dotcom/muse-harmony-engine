@@ -398,6 +398,23 @@ function Index() {
   const bannerScrollRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
+  const customerTypography = useMemo(
+    () => ({
+      textAlign: isArabic ? "text-right" : "text-left",
+      heroTitle: "text-balance font-sans text-[clamp(1.18rem,5.2vw,1.46rem)] font-bold leading-[1.08] text-foreground",
+      heroSubtitle: "text-[clamp(0.78rem,3.2vw,0.92rem)] font-normal leading-[1.5] text-muted-foreground",
+      sectionTitle: "text-[clamp(1.2rem,4.6vw,1.55rem)] font-bold leading-tight tracking-tight text-foreground",
+      sectionMeta: "text-[11px] font-medium leading-4 text-muted-foreground",
+      eyebrow: "text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90",
+      cardTitle: "min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.28] text-foreground",
+      cardBody: "text-xs leading-5 text-muted-foreground",
+      priceMain: "whitespace-nowrap text-[clamp(1.02rem,4.5vw,1.22rem)] font-extrabold leading-none tracking-tight text-primary",
+      priceCurrency: "text-[11px] font-semibold leading-none",
+      cta: "inline-flex h-9 items-center gap-1.5 rounded-[16px] px-3 text-xs font-semibold leading-none",
+      flashTitle: "text-[15px] font-extrabold uppercase tracking-wide leading-tight",
+    }),
+    [isArabic],
+  );
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
