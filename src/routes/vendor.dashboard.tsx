@@ -192,6 +192,7 @@ type DashboardOrder = {
     | "in_delivery"
     | "in_transit"
     | "delivering"
+    | "cancelled"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
@@ -1236,7 +1237,19 @@ function VendorDashboardPage() {
         queryClient.setQueryData(dashboardKey, previousDashboard);
       }
       await dashboardQuery.refetch();
-      toast.error(resolveMutationErrorMessage(error));
+      if (isStaleTransitionError(error)) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+          queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+          queryClient.invalidateQueries({ queryKey: ["orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
+        ]);
+      } else {
+        toast.error(resolveMutationErrorMessage(error));
+      }
     } finally {
       setIsUpdating(null);
     }
@@ -1282,7 +1295,19 @@ function VendorDashboardPage() {
         queryClient.setQueryData(dashboardKey, previousDashboard);
       }
       await dashboardQuery.refetch();
-      toast.error(resolveMutationErrorMessage(error));
+      if (isStaleTransitionError(error)) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+          queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+          queryClient.invalidateQueries({ queryKey: ["orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
+        ]);
+      } else {
+        toast.error(resolveMutationErrorMessage(error));
+      }
       return false;
     } finally {
       setIsUpdating(null);
