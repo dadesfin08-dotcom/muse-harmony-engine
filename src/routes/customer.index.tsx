@@ -1978,12 +1978,39 @@ function Index() {
 
   const handleScannedOrderNavigation = async (decodedText: string) => {
     const extractedOrderId = extractOrderIdentifierFromQrPayload(decodedText);
+    const shouldUseFallback = shouldFallbackToLatestOrderFromQrPayload(decodedText);
+
+    if (!extractedOrderId && shouldUseFallback) {
+      const fallbackOrderId = activeCustomerOrders[0]?.id ?? allCustomerOrders[0]?.id ?? null;
+      if (!fallbackOrderId) {
+        toast.error(customerUiCopy.scannerOrderNotFound);
+        return;
+      }
+
+      setIsProcessingQrResult(true);
+      if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+        navigator.vibrate(18);
+      }
+      toast.success(customerUiCopy.scannerSuccess);
+      setIsQrScannerOpen(false);
+
+      const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: fallbackOrderId } });
+      const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+      if (typeof startViewTransition === "function") {
+        startViewTransition(() => {
+          goToReceipt();
+        });
+        return;
+      }
+      goToReceipt();
+      return;
+    }
+
     if (!extractedOrderId) {
       toast.error(customerUiCopy.scannerInvalidQr);
       return;
     }
 
-    const shouldUseFallback = shouldFallbackToLatestOrderFromQrPayload(decodedText);
     const resolvedOrderId = resolveOrderIdFromScan(extractedOrderId, shouldUseFallback);
     if (!resolvedOrderId) {
       toast.error(customerUiCopy.scannerOrderNotFound);
