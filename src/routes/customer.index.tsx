@@ -2363,7 +2363,7 @@ function Index() {
 
   return (
     <>
-      <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
+      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
@@ -3632,27 +3632,27 @@ function Index() {
                   </section>
                   <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet"}
                     </p>
                     <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                   </section>
-                  <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
-                    View & Edit Profile
-                  </Button>
+                    <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
+                      {language === "ar" ? "عرض وتعديل الحساب" : language === "fr" ? "Voir et modifier le profil" : "View & Edit Profile"}
+                    </Button>
                   <Button
                     variant="soft"
                     className="w-full rounded-xl"
                     onClick={() => {
                       setCustomerPanelView("carnet");
                     }}
-                  >
-                    Carnet Details
-                  </Button>
+                    >
+                      {language === "ar" ? "تفاصيل الكارني" : language === "fr" ? "Détails du carnet" : "Carnet Details"}
+                    </Button>
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
-                    Close
+                      {language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
                   </Button>
                   <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
-                    Logout
+                      {language === "ar" ? "تسجيل الخروج" : language === "fr" ? "Déconnexion" : "Logout"}
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "profile" ? (
