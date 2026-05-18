@@ -386,6 +386,27 @@ type GlobalSettingsRow = {
 type HeroSectionRow = {
   id: string;
   image_url: string | null;
+  sort_order: number;
+  badge_ar: string;
+  badge_en: string;
+  badge_fr: string;
+  title_ar: string;
+  title_en: string;
+  title_fr: string;
+  subtitle_ar: string;
+  subtitle_en: string;
+  subtitle_fr: string;
+  delivery_timing_ar: string;
+  delivery_timing_en: string;
+  delivery_timing_fr: string;
+  cta_text_ar: string;
+  cta_text_en: string;
+  cta_text_fr: string;
+  cta_link: string | null;
+  accent_from: string | null;
+  accent_to: string | null;
+  accent_chip_bg: string | null;
+  accent_chip_text: string | null;
   greeting_ar: string;
   greeting_en: string;
   greeting_fr: string;
@@ -453,6 +474,27 @@ const uploadPlatformPackAssetInputSchema = z.object({
 const heroSectionSettingsInputSchema = z.object({
   id: z.string().uuid().optional(),
   imageUrl: z.string().trim().url().max(2000).nullable(),
+  sortOrder: z.number().int().min(0).max(10_000).default(0),
+  badgeAr: z.string().trim().max(120).default(""),
+  badgeEn: z.string().trim().max(120).default(""),
+  badgeFr: z.string().trim().max(120).default(""),
+  titleAr: z.string().trim().max(200).default(""),
+  titleEn: z.string().trim().max(200).default(""),
+  titleFr: z.string().trim().max(200).default(""),
+  subtitleAr: z.string().trim().max(320).default(""),
+  subtitleEn: z.string().trim().max(320).default(""),
+  subtitleFr: z.string().trim().max(320).default(""),
+  deliveryTimingAr: z.string().trim().max(120).default(""),
+  deliveryTimingEn: z.string().trim().max(120).default(""),
+  deliveryTimingFr: z.string().trim().max(120).default(""),
+  ctaTextAr: z.string().trim().max(120).default(""),
+  ctaTextEn: z.string().trim().max(120).default(""),
+  ctaTextFr: z.string().trim().max(120).default(""),
+  ctaLink: z.string().trim().url().max(2000).nullable(),
+  accentFrom: z.string().trim().max(24).nullable().optional(),
+  accentTo: z.string().trim().max(24).nullable().optional(),
+  accentChipBg: z.string().trim().max(24).nullable().optional(),
+  accentChipText: z.string().trim().max(24).nullable().optional(),
   greetingAr: z.string().trim().min(1).max(120),
   greetingEn: z.string().trim().min(1).max(120),
   greetingFr: z.string().trim().min(1).max(120),
@@ -469,6 +511,14 @@ const uploadHeroSectionImageInputSchema = z.object({
   fileName: z.string().trim().min(1).max(200),
   contentType: z.string().trim().min(1).max(120),
   dataUrl: z.string().trim().min(1).max(12_000_000),
+});
+
+const heroSectionIdInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const reorderHeroSectionsInputSchema = z.object({
+  orderedIds: z.array(z.string().uuid()).min(1).max(100),
 });
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
