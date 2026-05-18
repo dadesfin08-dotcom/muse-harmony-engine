@@ -1153,6 +1153,243 @@ function Index() {
     };
   }, [language]);
 
+  const customerUiCopy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        orderPlaced: "تم إنشاء الطلب",
+        preparing: "قيد التحضير",
+        outForDelivery: "في طريقه للتوصيل",
+        delivered: "تم التسليم",
+        statusPendingReview: "قيد المراجعة",
+        statusActive: "نشط",
+        statusFinished: "مكتمل",
+        statusPaused: "متوقف",
+        statusExpired: "منتهي",
+        statusCancelled: "ملغي",
+        toastSelectLocationFirst: "اختَر موقع التوصيل أولاً.",
+        toastAddedToCart: "تمت الإضافة إلى السلة",
+        toastLoginRequired: "تسجيل الدخول مطلوب قبل إتمام الطلب.",
+        toastAccountRestricted: "تم تقييد الحساب بسبب مخالفة السياسات. تواصل مع الدعم.",
+        toastPleaseLoginFirst: "يرجى تسجيل الدخول أولاً.",
+        toastEnterFullName: "يرجى إدخال الاسم الكامل.",
+        toastOrderConfirmed: "تم تأكيد الطلب بنجاح.",
+        toastOrderFailed: "تعذر تأكيد الطلب. حاول مرة أخرى.",
+        toastSelectCommuneNeighborhood: "يرجى اختيار الجماعة والحي.",
+        toastInvalidLocation: "اختيار الموقع غير صالح. حاول مجددًا.",
+        toastLocationSyncFailed: "تم حفظ الموقع محليًا لكن فشلت المزامنة السحابية. حاول مرة أخرى.",
+        toastLocationSaved: "تم حفظ موقع التوصيل.",
+        toastCompleteProfile: "يرجى إكمال بيانات الحساب أولاً.",
+        toastProfileUpdated: "تم تحديث الحساب.",
+        toastProfileUpdateFailed: "تعذر تحديث الحساب.",
+        account: "الحساب",
+        welcomeBack: "مرحبًا بعودتك",
+        signedIn: "أنت مسجل الدخول حاليًا.",
+        enterPhoneToContinue: "أدخل رقم هاتفك للمتابعة",
+        fullName: "الاسم الكامل",
+        phoneNumber: "رقم الهاتف",
+        address: "العنوان",
+        fullNamePlaceholder: "أدخل اسمك الكامل",
+        addressPlaceholder: "الشارع، العمارة، الشقة...",
+        saveProfile: "حفظ الملف",
+        backToAccount: "الرجوع إلى الحساب",
+        mySubscriptions: "اشتراكاتي",
+        loadingSubscriptions: "جارٍ تحميل الاشتراكات...",
+        syncingSubscriptions: "جارٍ مزامنة حالة الاشتراك.",
+        loadingOrders: "جارٍ تحميل الطلبات...",
+        pleaseWait: "يرجى الانتظار قليلًا.",
+        noOrdersYet: "لا توجد طلبات بعد.",
+        orderHistoryHint: "سيظهر سجل الطلبات هنا بعد إتمام أول طلب.",
+        activeOrders: "الطلبات النشطة",
+        orderHistory: "سجل الطلبات",
+        openDigitalReceipt: "فتح الفاتورة الرقمية",
+        unpaidCarnet: "غير مدفوع / كارني",
+        items: "منتجات",
+        deliveries: "توصيلات",
+        awaitingApproval: "بانتظار موافقة المنصة قبل التفعيل.",
+        activeTracking: "الاشتراك نشط ويتم تتبع التوصيلات مباشرة.",
+        loadingCarnet: "جارٍ تحميل الكارني...",
+        fetchingCarnet: "جارٍ جلب آخر تفاصيل السجل.",
+        noCarnet: "لا يوجد كارني نشط لهذا الحساب.",
+        askVendorCarnet: "اطلب من البائع تفعيل الكارني لرقمك.",
+        transactionHistory: "سجل المعاملات",
+        noTransactions: "لا توجد معاملات كارني بعد.",
+        sending: "جارٍ الإرسال...",
+        sendCodeWhatsapp: "إرسال الرمز عبر واتساب",
+        enterOtp: "أدخل رمز 4 أرقام المرسل عبر واتساب",
+        verifying: "جارٍ التحقق...",
+        verifyLogin: "تأكيد وتسجيل الدخول",
+        changePhone: "تغيير رقم الهاتف",
+        selectDeliveryLocation: "حدد موقع التوصيل",
+        locationHint: "اختر الجماعة الترابية والحي قبل الطلب.",
+        searchCommunePlaceholder: "ابحث عن الجماعة...",
+        searchDouarPlaceholder: "ابحث عن الحي...",
+        selectCommuneFirst: "اختر جماعة أولًا.",
+        startTyping: "ابدأ بالكتابة للبحث...",
+        loadingCommunes: "جارٍ تحميل الجماعات...",
+        noCommune: "لم يتم العثور على جماعة.",
+        loadingDouars: "جارٍ تحميل الأحياء...",
+        noDouar: "لم يتم العثور على حي في هذه الجماعة.",
+        confirmLocation: "تأكيد الموقع",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        orderPlaced: "Commande créée",
+        preparing: "Préparation",
+        outForDelivery: "En livraison",
+        delivered: "Livrée",
+        statusPendingReview: "En attente de validation",
+        statusActive: "Actif",
+        statusFinished: "Terminé",
+        statusPaused: "En pause",
+        statusExpired: "Expiré",
+        statusCancelled: "Annulé",
+        toastSelectLocationFirst: "Sélectionnez d'abord votre zone de livraison.",
+        toastAddedToCart: "Ajouté au panier",
+        toastLoginRequired: "Connexion requise avant le paiement.",
+        toastAccountRestricted: "Votre compte est restreint. Veuillez contacter le support.",
+        toastPleaseLoginFirst: "Veuillez vous connecter d'abord.",
+        toastEnterFullName: "Veuillez saisir votre nom complet.",
+        toastOrderConfirmed: "Commande confirmée avec succès.",
+        toastOrderFailed: "Impossible de confirmer la commande. Réessayez.",
+        toastSelectCommuneNeighborhood: "Veuillez sélectionner la commune et le quartier.",
+        toastInvalidLocation: "Sélection de zone invalide. Réessayez.",
+        toastLocationSyncFailed: "Zone enregistrée localement, mais synchronisation cloud échouée.",
+        toastLocationSaved: "Zone de livraison enregistrée.",
+        toastCompleteProfile: "Complétez d'abord les informations du profil.",
+        toastProfileUpdated: "Profil mis à jour.",
+        toastProfileUpdateFailed: "Échec de la mise à jour du profil.",
+        account: "Compte",
+        welcomeBack: "Bon retour",
+        signedIn: "Vous êtes actuellement connecté.",
+        enterPhoneToContinue: "Entrez votre numéro pour continuer",
+        fullName: "Nom complet",
+        phoneNumber: "Numéro de téléphone",
+        address: "Adresse",
+        fullNamePlaceholder: "Entrez votre nom complet",
+        addressPlaceholder: "Rue, immeuble, appartement...",
+        saveProfile: "Enregistrer le profil",
+        backToAccount: "Retour au compte",
+        mySubscriptions: "Mes abonnements",
+        loadingSubscriptions: "Chargement des abonnements...",
+        syncingSubscriptions: "Synchronisation du statut du contrat.",
+        loadingOrders: "Chargement des commandes...",
+        pleaseWait: "Veuillez patienter un instant.",
+        noOrdersYet: "Aucune commande pour le moment.",
+        orderHistoryHint: "Votre historique apparaîtra ici après votre premier achat.",
+        activeOrders: "Commandes actives",
+        orderHistory: "Historique des commandes",
+        openDigitalReceipt: "Ouvrir le reçu numérique",
+        unpaidCarnet: "Impayé / Carnet",
+        items: "articles",
+        deliveries: "livraisons",
+        awaitingApproval: "En attente d'approbation avant activation.",
+        activeTracking: "Abonnement actif — livraisons suivies en direct.",
+        loadingCarnet: "Chargement du carnet...",
+        fetchingCarnet: "Récupération des derniers détails du registre.",
+        noCarnet: "Aucun carnet actif pour ce compte.",
+        askVendorCarnet: "Demandez au vendeur d'activer l'accès carnet.",
+        transactionHistory: "Historique des transactions",
+        noTransactions: "Aucune transaction carnet pour le moment.",
+        sending: "Envoi...",
+        sendCodeWhatsapp: "Envoyer le code via WhatsApp",
+        enterOtp: "Entrez le code à 4 chiffres reçu sur WhatsApp",
+        verifying: "Vérification...",
+        verifyLogin: "Vérifier et se connecter",
+        changePhone: "Changer le numéro",
+        selectDeliveryLocation: "Sélectionnez votre zone de livraison",
+        locationHint: "Choisissez votre commune et quartier avant de commander.",
+        searchCommunePlaceholder: "Rechercher une commune...",
+        searchDouarPlaceholder: "Rechercher un quartier...",
+        selectCommuneFirst: "Sélectionnez d'abord une commune.",
+        startTyping: "Commencez à taper pour rechercher...",
+        loadingCommunes: "Chargement des communes...",
+        noCommune: "Aucune commune trouvée.",
+        loadingDouars: "Chargement des quartiers...",
+        noDouar: "Aucun quartier trouvé dans cette commune.",
+        confirmLocation: "Confirmer la zone",
+      };
+    }
+
+    return {
+      orderPlaced: "Order Placed",
+      preparing: "Preparing",
+      outForDelivery: "Out for Delivery",
+      delivered: "Delivered",
+      statusPendingReview: "Pending Admin Review",
+      statusActive: "Active",
+      statusFinished: "Subscription finished",
+      statusPaused: "Paused",
+      statusExpired: "Expired",
+      statusCancelled: "Cancelled",
+      toastSelectLocationFirst: "Select your delivery location first.",
+      toastAddedToCart: "Added to cart",
+      toastLoginRequired: "Login is required before checkout.",
+      toastAccountRestricted: "Your account has been restricted due to policy violations. Please contact support.",
+      toastPleaseLoginFirst: "Please login first.",
+      toastEnterFullName: "Please enter your full name.",
+      toastOrderConfirmed: "Order confirmed successfully.",
+      toastOrderFailed: "Failed to confirm order. Please try again.",
+      toastSelectCommuneNeighborhood: "Please select both commune and neighborhood.",
+      toastInvalidLocation: "Invalid location selection. Please try again.",
+      toastLocationSyncFailed: "Location saved locally, but cloud sync failed. Please retry.",
+      toastLocationSaved: "Delivery location saved.",
+      toastCompleteProfile: "Please complete profile details first.",
+      toastProfileUpdated: "Profile updated.",
+      toastProfileUpdateFailed: "Failed to update profile.",
+      account: "Account",
+      welcomeBack: "Welcome Back",
+      signedIn: "You are currently signed in.",
+      enterPhoneToContinue: "Enter your phone number to continue",
+      fullName: "Full Name",
+      phoneNumber: "Phone Number",
+      address: "Address",
+      fullNamePlaceholder: "Enter your full name",
+      addressPlaceholder: "Street, building, apartment...",
+      saveProfile: "Save Profile",
+      backToAccount: "Back to Account",
+      mySubscriptions: "My Subscriptions",
+      loadingSubscriptions: "Loading subscriptions...",
+      syncingSubscriptions: "Syncing your contract status.",
+      loadingOrders: "Loading your orders...",
+      pleaseWait: "Please wait a moment.",
+      noOrdersYet: "No orders yet.",
+      orderHistoryHint: "Your order history will appear here after checkout.",
+      activeOrders: "Active Orders",
+      orderHistory: "Order History",
+      openDigitalReceipt: "Open digital receipt",
+      unpaidCarnet: "Unpaid / Carnet",
+      items: "items",
+      deliveries: "deliveries",
+      awaitingApproval: "Awaiting platform approval before activation.",
+      activeTracking: "Subscription active — deliveries are being tracked live.",
+      loadingCarnet: "Loading your carnet...",
+      fetchingCarnet: "Fetching your latest ledger details.",
+      noCarnet: "No active carnet found for your account.",
+      askVendorCarnet: "Ask your vendor to enable carnet access for your phone number.",
+      transactionHistory: "Transaction History",
+      noTransactions: "No carnet transactions yet.",
+      sending: "Sending...",
+      sendCodeWhatsapp: "Send Code via WhatsApp",
+      enterOtp: "Enter the 4-digit code sent to WhatsApp",
+      verifying: "Verifying...",
+      verifyLogin: "Verify & Login",
+      changePhone: "Change phone number",
+      selectDeliveryLocation: "Select Your Delivery Location",
+      locationHint: "Choose your Jamaa Tourabiya and Hay / Douar before placing orders.",
+      searchCommunePlaceholder: "Search commune...",
+      searchDouarPlaceholder: "Search neighborhood...",
+      selectCommuneFirst: "Select a commune first.",
+      startTyping: "Start typing to search...",
+      loadingCommunes: "Loading communes...",
+      noCommune: "No commune found.",
+      loadingDouars: "Loading neighborhoods...",
+      noDouar: "No neighborhood found in this commune.",
+      confirmLocation: "Confirm Location",
+    };
+  }, [language]);
+
   const countdownLabel = useMemo(() => {
     if (flashDeals.length === 0) {
       return "00:00:00";
@@ -1550,14 +1787,14 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "Order Placed", statuses: ["pending", "new"] },
-    { label: "Preparing", statuses: ["preparing", "ready", "accepted", "processing"] },
+    { label: customerUiCopy.orderPlaced, statuses: ["pending", "new"] },
+    { label: customerUiCopy.preparing, statuses: ["preparing", "ready", "accepted", "processing"] },
     {
-      label: "Out for Delivery",
+      label: customerUiCopy.outForDelivery,
       statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering"],
     },
     {
-      label: "Delivered",
+      label: customerUiCopy.delivered,
       statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
     },
   ];
@@ -1627,18 +1864,18 @@ function Index() {
   }, [customerSubscriptions]);
   const hasCustomerSubscriptions = customerSubscriptions.length > 0;
   const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
-    if (status === "pending") return "Pending Admin Review / قيد المراجعة";
-    if (status === "active") return "Active";
-    if (status === "completed") return "Subscription finished";
-    if (status === "paused") return "Paused";
-    if (status === "expired") return "Expired";
-    return "Cancelled";
+    if (status === "pending") return customerUiCopy.statusPendingReview;
+    if (status === "active") return customerUiCopy.statusActive;
+    if (status === "completed") return customerUiCopy.statusFinished;
+    if (status === "paused") return customerUiCopy.statusPaused;
+    if (status === "expired") return customerUiCopy.statusExpired;
+    return customerUiCopy.statusCancelled;
   };
 
   const addToCart = (product: Product, selectedVariant?: string | null) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
@@ -1660,7 +1897,7 @@ function Index() {
       alt: product.alt,
     });
 
-    toast.success("Added to cart", {
+    toast.success(customerUiCopy.toastAddedToCart, {
       description: product.name,
       duration: 1400,
     });
@@ -1683,7 +1920,7 @@ function Index() {
   }) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
@@ -1697,7 +1934,7 @@ function Index() {
       alt: deal.alt,
     });
 
-    toast.success("Added to cart", {
+    toast.success(customerUiCopy.toastAddedToCart, {
       description: deal.name,
       duration: 1400,
     });
@@ -1706,14 +1943,14 @@ function Index() {
   const openCheckout = () => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
     if (!customerSession?.phoneNumber) {
       closeCart();
       setIsCustomerAuthModalOpen(true);
-      toast.error("Login is required before checkout.");
+      toast.error(customerUiCopy.toastLoginRequired);
       return;
     }
 
@@ -1721,7 +1958,7 @@ function Index() {
     const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
     if (isRestricted) {
       closeCart();
-      toast.error("Your account has been restricted due to policy violations. Please contact support.");
+      toast.error(customerUiCopy.toastAccountRestricted);
       return;
     }
 
@@ -1745,19 +1982,19 @@ function Index() {
   const confirmOrder = async () => {
     if (!customerSession?.phoneNumber) {
       setIsCustomerAuthModalOpen(true);
-      toast.error("Please login first.");
+      toast.error(customerUiCopy.toastPleaseLoginFirst);
       return;
     }
 
     const accountStatus = customerProfileQuery.data?.status;
     const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
     if (isRestricted) {
-      toast.error("Your account has been restricted due to policy violations. Please contact support.");
+      toast.error(customerUiCopy.toastAccountRestricted);
       return;
     }
 
     if (!fullName.trim()) {
-      toast.error("Please enter your full name.");
+      toast.error(customerUiCopy.toastEnterFullName);
       return;
     }
 
@@ -1830,10 +2067,10 @@ function Index() {
 
       setCheckoutStep("success");
       clearCart();
-      toast.success("Order confirmed successfully.");
+      toast.success(customerUiCopy.toastOrderConfirmed);
     } catch (error) {
       console.error("Failed to confirm order:", error);
-      toast.error("Failed to confirm order. Please try again.");
+      toast.error(customerUiCopy.toastOrderFailed);
     } finally {
       setIsSubmittingOrder(false);
     }
@@ -2033,7 +2270,7 @@ function Index() {
 
   const saveLocationSelection = async () => {
     if (!selectedCommuneId || !selectedNeighborhoodId) {
-      toast.error("Please select both commune and neighborhood.");
+      toast.error(customerUiCopy.toastSelectCommuneNeighborhood);
       return;
     }
 
@@ -2051,7 +2288,7 @@ function Index() {
     }
 
     if (!commune || !neighborhood) {
-      toast.error("Invalid location selection. Please try again.");
+      toast.error(customerUiCopy.toastInvalidLocation);
       return;
     }
 
@@ -2075,12 +2312,12 @@ function Index() {
       } catch (error) {
         console.error("Failed to sync customer neighborhood:", error);
         locationSyncRef.current = null;
-        toast.error("Location saved locally, but cloud sync failed. Please retry.");
+        toast.error(customerUiCopy.toastLocationSyncFailed);
       }
     }
 
     setIsLocationModalOpen(false);
-    toast.success("Delivery location saved.");
+    toast.success(customerUiCopy.toastLocationSaved);
   };
 
   const closeLocationModal = () => {
@@ -2126,7 +2363,7 @@ function Index() {
 
   return (
     <>
-      <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
+      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
@@ -3224,21 +3461,21 @@ function Index() {
                             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
                               <CreditCard className="size-4" />
                             </span>
-                            Add to Carnet (Pay Later)
+                            {language === "ar" ? "أضف إلى الكارني (الدفع لاحقًا)" : language === "fr" ? "Ajouter au carnet (payer plus tard)" : "Add to Carnet (Pay Later)"}
                           </span>
                           <RadioGroupItem id="payment-carnet" value="Carnet" />
                         </Label>
                       ) : null}
                     </RadioGroup>
                     {paymentOptionsQuery.isFetching ? (
-                      <p className="text-xs text-muted-foreground">Checking carnet eligibility...</p>
+                      <p className="text-xs text-muted-foreground">{language === "ar" ? "جارٍ التحقق من أهلية الكارني..." : language === "fr" ? "Vérification de l'éligibilité carnet..." : "Checking carnet eligibility..."}</p>
                     ) : !paymentOptionsQuery.data?.canUseCarnet && paymentOptionsQuery.data?.reason ? (
                       <p className="text-xs text-muted-foreground">{paymentOptionsQuery.data.reason}</p>
                     ) : null}
                   </section>
 
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                    <h3 className="text-sm font-semibold text-foreground">Order Summary</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{language === "ar" ? "ملخص الطلب" : language === "fr" ? "Résumé de la commande" : "Order Summary"}</h3>
                     <div className="space-y-2">
                       {cartItems.map((item) => (
                         <div key={item.cartItemId || item.id} className="flex items-center justify-between text-sm">
@@ -3253,9 +3490,15 @@ function Index() {
                     </div>
                     <div className="border-t border-border pt-3">
                       <div className="mb-1.5 flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
+                        <p className="text-sm text-muted-foreground">{language === "ar" ? "رسوم التوصيل" : language === "fr" ? "Frais de livraison" : "Delivery Fee"}</p>
                         <p className="text-sm font-medium text-foreground">
-                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : isArabic ? "قيد التحديد" : "Pending"}
+                          {selectedNeighborhoodId
+                            ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD`
+                            : language === "ar"
+                              ? "قيد التحديد"
+                              : language === "fr"
+                                ? "En attente"
+                                : "Pending"}
                         </p>
                       </div>
                       {selectedNeighborhoodId ? (
@@ -3263,24 +3506,30 @@ function Index() {
                           <p className="inline-flex items-center gap-2 text-xs font-semibold text-success">
                             <Gift className="size-3.5" />
                             {amountToFreeDeliveryMad > 0
-                              ? isArabic
+                              ? language === "ar"
                                 ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
-                                : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
-                              : isArabic
+                                : language === "fr"
+                                  ? `Ajoutez ${amountToFreeDeliveryMad.toFixed(2)} MAD pour débloquer la livraison offerte !`
+                                  : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
+                              : language === "ar"
                                 ? "مبروك! عندك توصيل فابور"
-                                : "You have unlocked Free Delivery! 🎉"}
+                                : language === "fr"
+                                  ? "Félicitations ! Livraison offerte débloquée !"
+                                  : "You have unlocked Free Delivery! 🎉"}
                           </p>
                         </div>
                       ) : null}
                       {!isMinimumOrderMet ? (
                         <p className="mb-2 text-xs font-medium text-destructive">
-                          {isArabic
+                          {language === "ar"
                             ? `الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`
-                            : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
+                            : language === "fr"
+                              ? `Le montant minimum de commande est ${minimumOrderMad.toFixed(2)} MAD.`
+                              : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
                         </p>
                       ) : null}
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Final Total</p>
+                        <p className="text-sm text-muted-foreground">{language === "ar" ? "الإجمالي النهائي" : language === "fr" ? "Total final" : "Final Total"}</p>
                         <p className="text-lg font-semibold text-foreground">{finalTotalMad.toFixed(2)} MAD</p>
                       </div>
                     </div>
@@ -3300,7 +3549,23 @@ function Index() {
                     onClick={confirmOrder}
                     disabled={!canConfirmOrder}
                   >
-                    {isAccountRestricted ? "Account Restricted" : isSubmittingOrder ? "Confirming..." : "Confirm Order"}
+                    {isAccountRestricted
+                      ? language === "ar"
+                        ? "الحساب مقيّد"
+                        : language === "fr"
+                          ? "Compte restreint"
+                          : "Account Restricted"
+                      : isSubmittingOrder
+                        ? language === "ar"
+                          ? "جارٍ التأكيد..."
+                          : language === "fr"
+                            ? "Confirmation..."
+                            : "Confirming..."
+                        : language === "ar"
+                          ? "تأكيد الطلب"
+                          : language === "fr"
+                            ? "Confirmer la commande"
+                            : "Confirm Order"}
                   </Button>
                 </div>
               </>
@@ -3338,9 +3603,9 @@ function Index() {
 
                 <div className="pt-3 text-center">
                   <UserCircle2 className="mx-auto mb-3 h-10 w-10 text-primary" strokeWidth={1.5} aria-hidden="true" />
-                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{customerSession ? customerUiCopy.account : customerUiCopy.welcomeBack}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
+                    {customerSession ? customerUiCopy.signedIn : customerUiCopy.enterPhoneToContinue}
                   </p>
                 </div>
               </div>
@@ -3362,32 +3627,32 @@ function Index() {
                 {customerSession && customerPanelView === "account" ? (
                   <div className="space-y-3">
                   <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">{customerUiCopy.phoneNumber}</p>
                     <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
                   </section>
                   <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                      {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet"}
                     </p>
                     <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                   </section>
-                  <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
-                    View & Edit Profile
-                  </Button>
+                    <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
+                      {language === "ar" ? "عرض وتعديل الحساب" : language === "fr" ? "Voir et modifier le profil" : "View & Edit Profile"}
+                    </Button>
                   <Button
                     variant="soft"
                     className="w-full rounded-xl"
                     onClick={() => {
                       setCustomerPanelView("carnet");
                     }}
-                  >
-                    Carnet Details
-                  </Button>
+                    >
+                      {language === "ar" ? "تفاصيل الكارني" : language === "fr" ? "Détails du carnet" : "Carnet Details"}
+                    </Button>
                   <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
-                    Close
+                      {language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
                   </Button>
                   <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
-                    Logout
+                      {language === "ar" ? "تسجيل الخروج" : language === "fr" ? "Déconnexion" : "Logout"}
                   </Button>
                   </div>
                 ) : customerSession && customerPanelView === "profile" ? (
@@ -3559,7 +3824,7 @@ function Index() {
                                     <div className="text-right">
                                       {isCarnetUnpaidOrder(order.payment_method) ? (
                                         <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
-                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                          {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
@@ -3614,7 +3879,7 @@ function Index() {
                                     <div className="text-right">
                                       {isCarnetUnpaidOrder(order.payment_method) ? (
                                         <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
-                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                          {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
@@ -3841,12 +4106,12 @@ function Index() {
                     </section>
                     <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet"}
                       </p>
                       <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                     </section>
                     <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
-                      View & Edit Profile
+                      {language === "ar" ? "عرض وتعديل الحساب" : language === "fr" ? "Voir et modifier le profil" : "View & Edit Profile"}
                     </Button>
                     <Button
                       variant="soft"
@@ -3855,32 +4120,32 @@ function Index() {
                         setCustomerPanelView("carnet");
                       }}
                     >
-                      Carnet Details
+                      {language === "ar" ? "تفاصيل الكارني" : language === "fr" ? "Détails du carnet" : "Carnet Details"}
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
-                      Close
+                      {language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
                     </Button>
                     <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
-                      Logout
+                      {language === "ar" ? "تسجيل الخروج" : language === "fr" ? "Déconnexion" : "Logout"}
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "profile" ? (
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <label htmlFor="profile-full-name" className="text-xs font-medium text-muted-foreground">
-                        Full Name
+                      {customerUiCopy.fullName}
                       </label>
                       <input
                         id="profile-full-name"
                         value={fullName}
                         onChange={(event) => setFullName(event.target.value)}
-                        placeholder="Enter your full name"
+                        placeholder={customerUiCopy.fullNamePlaceholder}
                         className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                       />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="profile-phone" className="text-xs font-medium text-muted-foreground">
-                        Phone Number
+                      {customerUiCopy.phoneNumber}
                       </label>
                       <input
                         id="profile-phone"
@@ -3891,13 +4156,13 @@ function Index() {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="profile-address" className="text-xs font-medium text-muted-foreground">
-                        Address
+                      {customerUiCopy.address}
                       </label>
                       <textarea
                         id="profile-address"
                         value={address}
                         onChange={(event) => setAddress(event.target.value)}
-                        placeholder="Street, building, apartment..."
+                        placeholder={customerUiCopy.addressPlaceholder}
                         className="min-h-24 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                       />
                     </div>
@@ -3906,7 +4171,7 @@ function Index() {
                       className="w-full rounded-xl"
                       onClick={async () => {
                         if (!customerSession?.phoneNumber || !fullName.trim()) {
-                          toast.error("Please complete profile details first.");
+                          toast.error(customerUiCopy.toastCompleteProfile);
                           return;
                         }
 
@@ -3920,18 +4185,18 @@ function Index() {
                               neighborhoodId: selectedNeighborhoodId || null,
                             },
                           });
-                          toast.success("Profile updated.");
+                          toast.success(customerUiCopy.toastProfileUpdated);
                           setCustomerPanelView("account");
                         } catch (error) {
                           console.error("Failed to update customer profile:", error);
-                          toast.error("Failed to update profile.");
+                          toast.error(customerUiCopy.toastProfileUpdateFailed);
                         }
                       }}
                     >
-                      Save Profile
+                      {customerUiCopy.saveProfile}
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      {customerUiCopy.backToAccount}
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
@@ -4282,7 +4547,7 @@ function Index() {
           <section className="absolute inset-0 flex items-center justify-center px-4">
             <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
               <div className="flex w-full items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-foreground">Select Your Delivery Location</h2>
+                <h2 className="text-lg font-semibold text-foreground">{customerUiCopy.selectDeliveryLocation}</h2>
                 <Button
                   type="button"
                   variant="ghost"
@@ -4294,13 +4559,11 @@ function Index() {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Choose your Jamaa Tourabiya and Hay / Douar before placing orders.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{customerUiCopy.locationHint}</p>
 
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Jamaa Tourabiya</label>
+                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الجماعة الترابية" : language === "fr" ? "Commune" : "Commune"}</label>
                   <div className="sticky top-0 z-50 bg-background pb-2">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -4320,7 +4583,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder="Search commune (EN / FR / AR)..."
+                        placeholder={customerUiCopy.searchCommunePlaceholder}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={hasEnoughCommuneChars}
@@ -4338,9 +4601,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : communeSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingCommunes}</p>
                     ) : filteredCommuneOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No commune found.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noCommune}</p>
                     ) : (
                       <ul className="py-1">
                         {filteredCommuneOptions.map((commune) => (
@@ -4372,7 +4635,7 @@ function Index() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Hay / Douar</label>
+                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الحي" : language === "fr" ? "Quartier" : "Neighborhood"}</label>
                   <div className="sticky top-0 z-50 bg-background pb-2">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -4389,7 +4652,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                        placeholder={selectedCommuneId ? customerUiCopy.searchDouarPlaceholder : customerUiCopy.selectCommuneFirst}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
@@ -4405,7 +4668,7 @@ function Index() {
                   </div>
                   <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
                     {!selectedCommuneId ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Select a commune first.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.selectCommuneFirst}</p>
                     ) : !hasEnoughNeighborhoodChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
@@ -4415,9 +4678,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingDouars}</p>
                     ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noDouar}</p>
                     ) : (
                       <ul className="py-1">
                         {filteredNeighborhoodOptions.map((neighborhood) => (
@@ -4452,7 +4715,7 @@ function Index() {
                 onClick={saveLocationSelection}
                 disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
               >
-                Confirm Location
+                {customerUiCopy.confirmLocation}
               </Button>
             </div>
           </section>
