@@ -876,7 +876,7 @@ function Index() {
     setSupportFloatingNotification(
       language === "ar" ? "رد جديد من الدعم" : language === "fr" ? "Nouvelle réponse du support" : "New support reply",
     );
-    const timer = window.setTimeout(() => setSupportFloatingNotification(null), 3000);
+    const timer = window.setTimeout(() => setSupportFloatingNotification(null), 1800);
     return () => window.clearTimeout(timer);
   }, [customerPanelView, language, supportLastSeenAt, supportMessages]);
 
