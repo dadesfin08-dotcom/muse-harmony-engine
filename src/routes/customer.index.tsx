@@ -3461,21 +3461,21 @@ function Index() {
                             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent-foreground">
                               <CreditCard className="size-4" />
                             </span>
-                            Add to Carnet (Pay Later)
+                            {language === "ar" ? "أضف إلى الكارني (الدفع لاحقًا)" : language === "fr" ? "Ajouter au carnet (payer plus tard)" : "Add to Carnet (Pay Later)"}
                           </span>
                           <RadioGroupItem id="payment-carnet" value="Carnet" />
                         </Label>
                       ) : null}
                     </RadioGroup>
                     {paymentOptionsQuery.isFetching ? (
-                      <p className="text-xs text-muted-foreground">Checking carnet eligibility...</p>
+                      <p className="text-xs text-muted-foreground">{language === "ar" ? "جارٍ التحقق من أهلية الكارني..." : language === "fr" ? "Vérification de l'éligibilité carnet..." : "Checking carnet eligibility..."}</p>
                     ) : !paymentOptionsQuery.data?.canUseCarnet && paymentOptionsQuery.data?.reason ? (
                       <p className="text-xs text-muted-foreground">{paymentOptionsQuery.data.reason}</p>
                     ) : null}
                   </section>
 
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                    <h3 className="text-sm font-semibold text-foreground">Order Summary</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{language === "ar" ? "ملخص الطلب" : language === "fr" ? "Résumé de la commande" : "Order Summary"}</h3>
                     <div className="space-y-2">
                       {cartItems.map((item) => (
                         <div key={item.cartItemId || item.id} className="flex items-center justify-between text-sm">
@@ -3490,9 +3490,15 @@ function Index() {
                     </div>
                     <div className="border-t border-border pt-3">
                       <div className="mb-1.5 flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">{isArabic ? "رسوم التوصيل" : "Delivery Fee"}</p>
+                        <p className="text-sm text-muted-foreground">{language === "ar" ? "رسوم التوصيل" : language === "fr" ? "Frais de livraison" : "Delivery Fee"}</p>
                         <p className="text-sm font-medium text-foreground">
-                          {selectedNeighborhoodId ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD` : isArabic ? "قيد التحديد" : "Pending"}
+                          {selectedNeighborhoodId
+                            ? `${calculatedDeliveryFeeMad.toFixed(2)} MAD`
+                            : language === "ar"
+                              ? "قيد التحديد"
+                              : language === "fr"
+                                ? "En attente"
+                                : "Pending"}
                         </p>
                       </div>
                       {selectedNeighborhoodId ? (
@@ -3500,24 +3506,30 @@ function Index() {
                           <p className="inline-flex items-center gap-2 text-xs font-semibold text-success">
                             <Gift className="size-3.5" />
                             {amountToFreeDeliveryMad > 0
-                              ? isArabic
+                              ? language === "ar"
                                 ? `زيد ${amountToFreeDeliveryMad.toFixed(2)} درهم باش تستافد من توصيل فابور!`
-                                : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
-                              : isArabic
+                                : language === "fr"
+                                  ? `Ajoutez ${amountToFreeDeliveryMad.toFixed(2)} MAD pour débloquer la livraison offerte !`
+                                  : `Spend ${amountToFreeDeliveryMad.toFixed(2)} MAD more to get FREE Delivery!`
+                              : language === "ar"
                                 ? "مبروك! عندك توصيل فابور"
-                                : "You have unlocked Free Delivery! 🎉"}
+                                : language === "fr"
+                                  ? "Félicitations ! Livraison offerte débloquée !"
+                                  : "You have unlocked Free Delivery! 🎉"}
                           </p>
                         </div>
                       ) : null}
                       {!isMinimumOrderMet ? (
                         <p className="mb-2 text-xs font-medium text-destructive">
-                          {isArabic
+                          {language === "ar"
                             ? `الحد الأدنى للطلب هو ${minimumOrderMad.toFixed(2)} درهم.`
-                            : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
+                            : language === "fr"
+                              ? `Le montant minimum de commande est ${minimumOrderMad.toFixed(2)} MAD.`
+                              : `Minimum order amount is ${minimumOrderMad.toFixed(2)} MAD.`}
                         </p>
                       ) : null}
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">Final Total</p>
+                        <p className="text-sm text-muted-foreground">{language === "ar" ? "الإجمالي النهائي" : language === "fr" ? "Total final" : "Final Total"}</p>
                         <p className="text-lg font-semibold text-foreground">{finalTotalMad.toFixed(2)} MAD</p>
                       </div>
                     </div>
@@ -3537,7 +3549,23 @@ function Index() {
                     onClick={confirmOrder}
                     disabled={!canConfirmOrder}
                   >
-                    {isAccountRestricted ? "Account Restricted" : isSubmittingOrder ? "Confirming..." : "Confirm Order"}
+                    {isAccountRestricted
+                      ? language === "ar"
+                        ? "الحساب مقيّد"
+                        : language === "fr"
+                          ? "Compte restreint"
+                          : "Account Restricted"
+                      : isSubmittingOrder
+                        ? language === "ar"
+                          ? "جارٍ التأكيد..."
+                          : language === "fr"
+                            ? "Confirmation..."
+                            : "Confirming..."
+                        : language === "ar"
+                          ? "تأكيد الطلب"
+                          : language === "fr"
+                            ? "Confirmer la commande"
+                            : "Confirm Order"}
                   </Button>
                 </div>
               </>
