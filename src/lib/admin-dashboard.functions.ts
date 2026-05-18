@@ -2496,21 +2496,49 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
       profilesQuery = profilesQuery.order("created_at", { ascending: false });
     }
 
-    const [profilesRes, ordersRes] = await Promise.all([
-      profilesQuery.range(from, to),
-      (supabaseAdmin as any)
-        .from("orders")
-        .select("id, customer_user_id, customer_phone, status, total_price, delivery_fee, created_at")
-        .in("status", ["delivered", "cash_transferred_to_vendor"]),
-    ]);
+    const profilesRes = await profilesQuery.range(from, to);
 
     if (profilesRes.error) throw new Error(profilesRes.error.message);
-    if (ordersRes.error) throw new Error(ordersRes.error.message);
+
+    const profiles = (profilesRes.data ?? []) as AdminCustomerProfileRow[];
+    const profileIds = profiles.map((profile) => profile.id);
+    const profilePhones = profiles
+      .map((profile) => profile.phone?.trim() ?? "")
+      .filter((phone): phone is string => phone.length > 0);
+
+    const [ordersByUserRes, ordersByPhoneRes] = await Promise.all([
+      profileIds.length > 0
+        ? (supabaseAdmin as any)
+            .from("orders")
+            .select("id, customer_user_id, customer_phone, status, total_price, delivery_fee, created_at")
+            .in("status", ["delivered", "cash_transferred_to_vendor"])
+            .in("customer_user_id", profileIds)
+        : Promise.resolve({ data: [], error: null }),
+      profilePhones.length > 0
+        ? (supabaseAdmin as any)
+            .from("orders")
+            .select("id, customer_user_id, customer_phone, status, total_price, delivery_fee, created_at")
+            .in("status", ["delivered", "cash_transferred_to_vendor"])
+            .in("customer_phone", profilePhones)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (ordersByUserRes.error) throw new Error(ordersByUserRes.error.message);
+    if (ordersByPhoneRes.error) throw new Error(ordersByPhoneRes.error.message);
+
+    const scopedOrders = [
+      ...((ordersByUserRes.data ?? []) as AdminCustomerOrderAggregateRow[]),
+      ...((ordersByPhoneRes.data ?? []) as AdminCustomerOrderAggregateRow[]),
+    ];
 
     const orderMetricsByProfileId = new Map<string, { totalOrders: number; ltvMad: number }>();
     const orderMetricsByPhone = new Map<string, { totalOrders: number; ltvMad: number }>();
+    const seenOrderIds = new Set<string>();
 
-    for (const row of (ordersRes.data ?? []) as AdminCustomerOrderAggregateRow[]) {
+    for (const row of scopedOrders) {
+      if (seenOrderIds.has(row.id)) continue;
+      seenOrderIds.add(row.id);
+
       const value = Number(row.total_price ?? 0) + Number(row.delivery_fee ?? 0);
 
       if (row.customer_user_id) {
@@ -2530,8 +2558,6 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
         });
       }
     }
-
-    const profiles = (profilesRes.data ?? []) as AdminCustomerProfileRow[];
 
     return {
       page,
