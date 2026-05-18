@@ -33,7 +33,6 @@ import {
   Clock3,
   ChevronLeft,
   Mic,
-  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1993,6 +1992,10 @@ function Index() {
     setIsQrScannerOpen(true);
   };
 
+  const openSupportCenter = () => {
+    openCustomerPanel("account");
+  };
+
   const handleScannedOrderNavigation = async (decodedText: string) => {
     const extractedOrderId = extractOrderIdentifierFromQrPayload(decodedText);
     const shouldUseFallback = shouldFallbackToLatestOrderFromQrPayload(decodedText);
@@ -2716,11 +2719,11 @@ function Index() {
                 </button>
                 <button
                   type="button"
-                  aria-label="Scan"
-                  onClick={openOrderQrScanner}
+                  aria-label={language === "ar" ? "مركز الدعم" : language === "fr" ? "Centre d'assistance" : "Support Center"}
+                  onClick={openSupportCenter}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
                 >
-                  <ScanLine className="size-3.5" />
+                  <MessageCircle className="size-3.5" />
                 </button>
               </div>
 
@@ -2860,11 +2863,11 @@ function Index() {
               </button>
               <button
                 type="button"
-                aria-label="Scan"
-                onClick={openOrderQrScanner}
+                aria-label={language === "ar" ? "مركز الدعم" : language === "fr" ? "Centre d'assistance" : "Support Center"}
+                onClick={openSupportCenter}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
               >
-                <ScanLine className="size-[13px]" />
+                <MessageCircle className="size-[13px]" />
               </button>
             </div>
 
@@ -2971,11 +2974,11 @@ function Index() {
                 </button>
                 <button
                   type="button"
-                  aria-label="Scan"
-                  onClick={openOrderQrScanner}
+                  aria-label={language === "ar" ? "مركز الدعم" : language === "fr" ? "Centre d'assistance" : "Support Center"}
+                  onClick={openSupportCenter}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
                 >
-                  <ScanLine className="size-[13px]" />
+                  <MessageCircle className="size-[13px]" />
                 </button>
               </div>
 
