@@ -356,6 +356,9 @@ export function CustomerLayout({
     location.pathname.startsWith("/customer/order/") ||
     location.pathname.startsWith("/customer/digital-receipt/") ||
     location.pathname.startsWith("/customer/receipt/");
+  const bottomNavAnimationClass = shouldHideBottomNav
+    ? "animate-fade-out opacity-0 pointer-events-none"
+    : "animate-fade-in opacity-100 pointer-events-auto";
   const navItemClass = (active: boolean) =>
     `group flex h-full w-full flex-col items-center justify-center gap-1 text-[10px] leading-none transition-colors ${
       active ? "text-primary" : "text-muted-foreground hover:text-primary"
@@ -411,10 +414,9 @@ export function CustomerLayout({
         {children}
       </main>
 
-      {!shouldHideBottomNav ? (
-        <nav
-          className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
-        >
+      <nav
+        className={`fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl transition-all duration-300 ease-out md:hidden ${bottomNavAnimationClass}`}
+      >
           <Link to="/" className={navItemClass(isHomeActive)}>
             <span className={navIconWrapClass(isHomeActive)}>
               <House className="size-5" />
@@ -491,8 +493,7 @@ export function CustomerLayout({
             </span>
             <span>{t("nav.profile")}</span>
           </button>
-        </nav>
-      ) : null}
+      </nav>
 
       {isProfileHubOpen ? (
         <div className="fixed inset-0 z-[110] md:hidden">
