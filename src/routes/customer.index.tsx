@@ -213,9 +213,9 @@ type SiteAdRow = {
 const adSlides: AdSlide[] = [
   {
     id: "hero",
-    image: heroImage,
+    image: fallbackProductImage,
     linkUrl: null,
-    alt: "Bicycle courier delivering groceries in Morocco",
+    alt: "Fresh grocery basket",
     headline: "Daily groceries delivered in minutes",
     copy: "Fast local essentials with clean bicycle delivery across Morocco.",
     tag: "Featured",
@@ -2078,7 +2078,7 @@ function Index() {
               </span>
             </button>
           </div>
-          <div className="mx-auto w-full max-w-6xl px-4 pb-4 sm:hidden">
+          <div className="mx-auto w-full max-w-6xl px-4 pb-2 sm:hidden">
             <div className="mb-3 flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -2089,90 +2089,10 @@ function Index() {
                 <span className="line-clamp-1">{selectedLocationLabel}</span>
               </button>
 
-              <button
-                aria-label="Notifications"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground"
-              >
+              <div className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground">
                 <Bell className="size-4.5" />
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-              </button>
-            </div>
-
-            <div ref={searchContainerRef} className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-              {predictiveSearchQuery.isFetching && hasSearchTerm ? (
-                <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              ) : null}
-              <input
-                ref={mobileSearchInputRef}
-                aria-label="Search products"
-                value={mobileSearchInput}
-                onFocus={() => setIsSearchOpen(true)}
-                onChange={(event) => {
-                  setMobileSearchInput(event.target.value);
-                  setIsSearchOpen(true);
-                }}
-                placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-12 w-full rounded-[20px] border border-border/70 bg-card pl-9 pr-24 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              />
-
-              <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Voice search"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
-                >
-                  <Mic className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Scan"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
-                >
-                  <ScanLine className="size-3.5" />
-                </button>
               </div>
-
-              <AnimatePresence>
-                {isSearchOpen && hasSearchTerm ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
-                  >
-                    {predictiveSearchResults.length > 0 ? (
-                      predictiveSearchResults.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
-                        >
-                          <img
-                            src={item.imageUrl || productFallbackImage}
-                            alt={item.localizedName}
-                            className="h-11 w-11 rounded-lg border border-border object-cover"
-                            loading="lazy"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 block text-sm font-semibold text-foreground">
-                              {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
-                            </span>
-                            <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
-                          </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">
-                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
-                    )}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -2193,12 +2113,15 @@ function Index() {
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
           <article className="relative overflow-hidden rounded-[24px] border border-border/70 bg-card p-5 shadow-[var(--shadow-soft)] md:hidden">
             <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
+            <div className="absolute -bottom-1 right-0 h-[66%] w-[48%] overflow-hidden rounded-tl-[26px]">
+              <img src={fallbackProductImage} alt="Fresh grocery bundle" className="h-full w-full object-cover" loading="lazy" />
+            </div>
             <p className="text-lg font-semibold text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 text-balance text-4xl font-extrabold leading-tight text-foreground">
+            <h1 className="mt-1 max-w-[64%] text-balance text-4xl font-extrabold leading-tight text-foreground">
               Fresh groceries,
               <span className="block text-primary">delivered in 15 min</span>
             </h1>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-3 max-w-[60%] text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
           </article>
 
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
@@ -2258,6 +2181,85 @@ function Index() {
                 </article>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-6xl px-4 pb-1 sm:hidden">
+          <div ref={searchContainerRef} className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 z-10 size-5 -translate-y-1/2 text-muted-foreground" />
+            {predictiveSearchQuery.isFetching && hasSearchTerm ? (
+              <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            ) : null}
+            <input
+              ref={mobileSearchInputRef}
+              aria-label="Search products"
+              value={mobileSearchInput}
+              onFocus={() => setIsSearchOpen(true)}
+              onChange={(event) => {
+                setMobileSearchInput(event.target.value);
+                setIsSearchOpen(true);
+              }}
+              placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
+              className="h-14 w-full rounded-[22px] border border-border/70 bg-card pl-12 pr-24 text-base outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+            />
+
+            <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Voice search"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+              >
+                <Mic className="size-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Scan"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+              >
+                <ScanLine className="size-4" />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {isSearchOpen && hasSearchTerm ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="no-scrollbar absolute left-0 right-0 top-15 z-[100] max-h-[350px] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-2xl"
+                >
+                  {predictiveSearchResults.length > 0 ? (
+                    predictiveSearchResults.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSearchResultClick(item.id)}
+                        className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                      >
+                        <img
+                          src={item.imageUrl || productFallbackImage}
+                          alt={item.localizedName}
+                          className="h-11 w-11 rounded-lg border border-border object-cover"
+                          loading="lazy"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 block text-sm font-semibold text-foreground">
+                            {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
+                          </span>
+                          <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </section>
 
