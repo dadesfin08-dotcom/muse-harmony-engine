@@ -60,6 +60,8 @@ import {
   Ban,
   Zap,
   CalendarDays,
+  MessageCircle,
+  SendHorizontal,
   PauseCircle,
   StopCircle,
   PlayCircle,
@@ -177,6 +179,12 @@ import {
   updateAnnouncement,
   updateSiteAd,
 } from "@/lib/ads-content.functions";
+import {
+  listAdminSupportMessages,
+  listAdminSupportTickets,
+  sendAdminSupportMessage,
+  updateSupportTicketStatus,
+} from "@/lib/support.functions";
 import { checkAdminDatabaseHealth } from "@/lib/admin-health.functions";
 import {
   createVendor,
@@ -284,6 +292,7 @@ type AdminTab =
   | "catalog"
   | "brands"
   | "categories"
+  | "support"
   | "ads-content"
   | "settings";
 
@@ -298,6 +307,7 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "admin.nav.catalog", tab: "catalog", icon: Boxes },
   { label: "admin.nav.brands", tab: "brands", icon: Shapes },
   { label: "admin.nav.categories", tab: "categories", icon: Shapes },
+  { label: "admin.nav.support", tab: "support", icon: MessageCircle },
   { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
   { label: "admin.nav.settings", tab: "settings", icon: Settings },
 ];
