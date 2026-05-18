@@ -165,6 +165,8 @@ type PlatformPack = {
   nameFr?: string | null;
   nameAr?: string | null;
   description?: string | null;
+  descriptionFr?: string | null;
+  descriptionAr?: string | null;
   basePriceMad: number;
   billingCycle: "DAILY" | "WEEKLY" | "MONTHLY";
   pricePerUnit: number;
@@ -1031,6 +1033,14 @@ function Index() {
     return rows.map((pack) => ({
       ...pack,
       name: getLocalizedText({ en: pack.name, fr: pack.nameFr, ar: pack.nameAr }),
+      description: getLocalizedText(
+        {
+          en: pack.description,
+          fr: pack.descriptionFr ?? (pack as { description_fr?: string | null }).description_fr,
+          ar: pack.descriptionAr ?? (pack as { description_ar?: string | null }).description_ar,
+        },
+        pack.description ?? "",
+      ),
       billingLabel:
         pack.billingCycle === "DAILY"
           ? language === "ar"
@@ -1055,6 +1065,54 @@ function Index() {
   const openSubscriptionCheckout = (pack: PlatformPack) => {
     void navigate({ to: "/customer/platform-packs/$packId", params: { packId: pack.id } });
   };
+
+  const subscriptionSectionCopy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        eyebrow: "خطط التوفير",
+        title: "باقات التوفير",
+        emptyTitle: "لا توجد باقات اشتراك متاحة حاليًا.",
+        emptySubtitle: "ستظهر باقات التوفير المدفوعة مسبقًا هنا قريبًا.",
+        bestValue: "أفضل قيمة",
+        fallbackDescription: "منتجات موسمية طازجة تُسلَّم إلى باب منزلك",
+        subscribe: "اشترك",
+        pending: "قيد المراجعة",
+        paused: "متوقف",
+        pricingPrefix: "/",
+        packAltSuffix: "باقة اشتراك",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        eyebrow: "Plans premium",
+        title: "Abonnements Économies",
+        emptyTitle: "Aucun pack d'abonnement disponible pour le moment.",
+        emptySubtitle: "Les packs prépayés apparaîtront ici prochainement.",
+        bestValue: "Meilleure offre",
+        fallbackDescription: "Produits saisonniers frais livrés à votre porte",
+        subscribe: "S’abonner",
+        pending: "En attente",
+        paused: "En pause",
+        pricingPrefix: "/",
+        packAltSuffix: "pack d’abonnement",
+      };
+    }
+
+    return {
+      eyebrow: "Premium plans",
+      title: "Saving Subscriptions",
+      emptyTitle: "No subscription packs available yet.",
+      emptySubtitle: "New prepaid savings packs will appear here soon.",
+      bestValue: "Best value",
+      fallbackDescription: "Fresh seasonal essentials delivered to your door",
+      subscribe: "Subscribe",
+      pending: "Pending",
+      paused: "Paused",
+      pricingPrefix: "/",
+      packAltSuffix: "subscription pack",
+    };
+  }, [language]);
 
   const countdownLabel = useMemo(() => {
     if (flashDeals.length === 0) {
