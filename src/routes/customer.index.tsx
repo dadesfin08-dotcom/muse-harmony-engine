@@ -2177,14 +2177,22 @@ function Index() {
 
         <div
           ref={mobileStickySearchRef}
-          className="pointer-events-none fixed inset-x-0 top-[4.55rem] z-40 px-3.5 md:hidden"
+          className="pointer-events-none fixed inset-x-0 top-[4.55rem] z-[60] px-3.5 md:hidden"
           style={{
             opacity: isMobileSearchSticky ? 1 : 0,
             transform: `translateY(${isMobileSearchSticky ? 0 : -18}px)`,
-            transition: "opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+            transition: "opacity 280ms cubic-bezier(0.22, 1, 0.36, 1), transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
+            willChange: "opacity, transform",
           }}
         >
-          <div className="pointer-events-auto relative rounded-[18px] bg-background/68 p-1.5 shadow-[0_20px_34px_-24px_color-mix(in_oklab,var(--foreground)_35%,transparent)] backdrop-blur-xl">
+          <div
+            className="pointer-events-auto relative rounded-[20px] border border-border/45 bg-background/62 p-1.5 backdrop-blur-2xl"
+            style={{
+              boxShadow:
+                "0 18px 34px -22px color-mix(in oklab, var(--foreground) 34%, transparent), 0 8px 16px -14px color-mix(in oklab, var(--foreground) 22%, transparent)",
+              transition: "box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1), background-color 320ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
             <Search className="pointer-events-none absolute left-4.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
             {predictiveSearchQuery.isFetching && hasSearchTerm ? (
               <Loader2 className="pointer-events-none absolute right-5 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
