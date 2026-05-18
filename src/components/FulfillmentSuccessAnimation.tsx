@@ -15,13 +15,14 @@ export function FulfillmentSuccessAnimation({
 }: FulfillmentSuccessAnimationProps) {
   return (
     <Dialog open={open}>
-      <DialogContent className="max-w-sm rounded-2xl border-border p-8">
+      <DialogContent className="max-w-sm rounded-2xl border-border p-8 [&>button]:hidden">
         <div className="flex flex-col items-center justify-center text-center">
           <motion.svg
             width="108"
             height="108"
             viewBox="0 0 108 108"
             fill="none"
+            className="text-success"
             initial="hidden"
             animate="visible"
           >
@@ -29,7 +30,7 @@ export function FulfillmentSuccessAnimation({
               cx="54"
               cy="54"
               r="42"
-              stroke="hsl(var(--success))"
+              stroke="currentColor"
               strokeWidth="6"
               strokeLinecap="round"
               variants={{
@@ -40,7 +41,7 @@ export function FulfillmentSuccessAnimation({
             />
             <motion.path
               d="M34 56L48 70L76 42"
-              stroke="hsl(var(--success))"
+              stroke="currentColor"
               strokeWidth="7"
               strokeLinecap="round"
               strokeLinejoin="round"
