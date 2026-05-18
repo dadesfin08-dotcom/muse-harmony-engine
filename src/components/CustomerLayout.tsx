@@ -68,6 +68,8 @@ export function CustomerLayout({
   const [isProfileHubOpen, setIsProfileHubOpen] = useState(false);
   const [isCarnetDialogOpen, setIsCarnetDialogOpen] = useState(false);
   const profileHubTimerRef = useRef<number | null>(null);
+  const removeTimersRef = useRef<Map<string, number>>(new Map());
+  const [removingItemKeys, setRemovingItemKeys] = useState<string[]>([]);
   const [customerSessionPhone, setCustomerSessionPhone] = useState<string | null>(null);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<string | null>(null);
 
@@ -331,8 +333,34 @@ export function CustomerLayout({
       if (profileHubTimerRef.current) {
         window.clearTimeout(profileHubTimerRef.current);
       }
+
+      for (const timeoutId of removeTimersRef.current.values()) {
+        window.clearTimeout(timeoutId);
+      }
+      removeTimersRef.current.clear();
     };
   }, []);
+
+  const getCartItemKey = (item: { id: string; cartItemId?: string }) => item.cartItemId || item.id;
+
+  const handleRemoveCartItem = (item: { id: string; cartItemId?: string }) => {
+    const itemKey = getCartItemKey(item);
+
+    setRemovingItemKeys((current) => (current.includes(itemKey) ? current : [...current, itemKey]));
+    removeItem(itemKey);
+
+    const existingTimeout = removeTimersRef.current.get(itemKey);
+    if (existingTimeout) {
+      window.clearTimeout(existingTimeout);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRemovingItemKeys((current) => current.filter((key) => key !== itemKey));
+      removeTimersRef.current.delete(itemKey);
+    }, 260);
+
+    removeTimersRef.current.set(itemKey, timeoutId);
+  };
 
   const openProfilePanelFromHub = (view: "orders" | "account" | "carnet") => {
     setIsProfileHubOpen(false);
@@ -615,11 +643,21 @@ export function CustomerLayout({
             ) : (
               <>
                 <div className="flex-1 space-y-3 overflow-y-auto p-4">
-                  {cartItems.map((item) => (
-                    <article
-                      key={item.id}
-                      className="surface-panel flex items-center gap-3 rounded-xl border border-border p-3"
-                    >
+                  <AnimatePresence initial={false}>
+                    {cartItems.map((item) => {
+                      const cartItemKey = getCartItemKey(item);
+                      const isRemoving = removingItemKeys.includes(cartItemKey);
+
+                      return (
+                        <motion.article
+                          key={cartItemKey}
+                          layout
+                          initial={{ opacity: 0, y: 8, scale: 0.995 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.985 }}
+                          transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="surface-panel flex items-center gap-3 rounded-xl border border-border p-3"
+                        >
                       <img
                         src={item.image}
                         alt={item.alt}
@@ -633,7 +671,7 @@ export function CustomerLayout({
                         <div className="mt-2 inline-flex items-center gap-2">
                           <button
                             aria-label={`Decrease quantity of ${item.name}`}
-                            onClick={() => decreaseItem(item.id)}
+                            onClick={() => decreaseItem(cartItemKey)}
                             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground transition hover:bg-muted"
                           >
                             <Minus className="size-3.5" />
@@ -641,7 +679,7 @@ export function CustomerLayout({
                           <span className="min-w-5 text-center text-sm font-semibold">{item.quantity}</span>
                           <button
                             aria-label={`Increase quantity of ${item.name}`}
-                            onClick={() => increaseItem(item.id)}
+                            onClick={() => increaseItem(cartItemKey)}
                             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-foreground transition hover:bg-muted"
                           >
                             <Plus className="size-3.5" />
@@ -650,13 +688,16 @@ export function CustomerLayout({
                       </div>
                       <button
                         aria-label={`Remove ${item.name}`}
-                        onClick={() => removeItem(item.id)}
-                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleRemoveCartItem(item)}
+                        disabled={isRemoving}
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive active:scale-95 disabled:cursor-not-allowed disabled:opacity-65"
                       >
                         <Trash2 className="size-4" />
                       </button>
-                    </article>
-                  ))}
+                        </motion.article>
+                      );
+                    })}
+                  </AnimatePresence>
                 </div>
 
                 <div className="border-t border-border p-5">
