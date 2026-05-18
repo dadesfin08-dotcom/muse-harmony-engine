@@ -3575,9 +3575,9 @@ function Index() {
 
                 <div className="pt-3 text-center">
                   <UserCircle2 className="mx-auto mb-3 h-10 w-10 text-primary" strokeWidth={1.5} aria-hidden="true" />
-                  <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
+                  <h2 className="text-xl font-bold text-foreground">{customerSession ? customerUiCopy.account : customerUiCopy.welcomeBack}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {customerSession ? "You are currently signed in." : "Enter your phone number to continue"}
+                    {customerSession ? customerUiCopy.signedIn : customerUiCopy.enterPhoneToContinue}
                   </p>
                 </div>
               </div>
@@ -3599,7 +3599,7 @@ function Index() {
                 {customerSession && customerPanelView === "account" ? (
                   <div className="space-y-3">
                   <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Phone Number</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">{customerUiCopy.phoneNumber}</p>
                     <p className="text-sm font-medium text-foreground">{customerSession.phoneNumber}</p>
                   </section>
                   <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
@@ -4078,12 +4078,12 @@ function Index() {
                     </section>
                     <section className="space-y-2 rounded-2xl border border-border bg-card p-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet / Credit Balance"}
+                        {language === "ar" ? "رصيد الكارني" : language === "fr" ? "Solde Carnet" : "My Carnet"}
                       </p>
                       <p className="text-lg font-semibold text-destructive">{Number(carnetCurrentDebt ?? 0).toFixed(2)} MAD</p>
                     </section>
                     <Button variant="hero" className="w-full rounded-xl" onClick={() => setCustomerPanelView("profile")}>
-                      View & Edit Profile
+                      {language === "ar" ? "عرض وتعديل الحساب" : language === "fr" ? "Voir et modifier le profil" : "View & Edit Profile"}
                     </Button>
                     <Button
                       variant="soft"
@@ -4092,32 +4092,32 @@ function Index() {
                         setCustomerPanelView("carnet");
                       }}
                     >
-                      Carnet Details
+                      {language === "ar" ? "تفاصيل الكارني" : language === "fr" ? "Détails du carnet" : "Carnet Details"}
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setIsCustomerAuthModalOpen(false)}>
-                      Close
+                      {language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
                     </Button>
                     <Button variant="destructive" className="w-full rounded-xl" onClick={logoutCustomer}>
-                      Logout
+                      {language === "ar" ? "تسجيل الخروج" : language === "fr" ? "Déconnexion" : "Logout"}
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "profile" ? (
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <label htmlFor="profile-full-name" className="text-xs font-medium text-muted-foreground">
-                        Full Name
+                      {customerUiCopy.fullName}
                       </label>
                       <input
                         id="profile-full-name"
                         value={fullName}
                         onChange={(event) => setFullName(event.target.value)}
-                        placeholder="Enter your full name"
+                        placeholder={customerUiCopy.fullNamePlaceholder}
                         className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                       />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="profile-phone" className="text-xs font-medium text-muted-foreground">
-                        Phone Number
+                      {customerUiCopy.phoneNumber}
                       </label>
                       <input
                         id="profile-phone"
@@ -4128,13 +4128,13 @@ function Index() {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="profile-address" className="text-xs font-medium text-muted-foreground">
-                        Address
+                      {customerUiCopy.address}
                       </label>
                       <textarea
                         id="profile-address"
                         value={address}
                         onChange={(event) => setAddress(event.target.value)}
-                        placeholder="Street, building, apartment..."
+                        placeholder={customerUiCopy.addressPlaceholder}
                         className="min-h-24 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
                       />
                     </div>
@@ -4143,7 +4143,7 @@ function Index() {
                       className="w-full rounded-xl"
                       onClick={async () => {
                         if (!customerSession?.phoneNumber || !fullName.trim()) {
-                          toast.error("Please complete profile details first.");
+                          toast.error(customerUiCopy.toastCompleteProfile);
                           return;
                         }
 
@@ -4157,18 +4157,18 @@ function Index() {
                               neighborhoodId: selectedNeighborhoodId || null,
                             },
                           });
-                          toast.success("Profile updated.");
+                          toast.success(customerUiCopy.toastProfileUpdated);
                           setCustomerPanelView("account");
                         } catch (error) {
                           console.error("Failed to update customer profile:", error);
-                          toast.error("Failed to update profile.");
+                          toast.error(customerUiCopy.toastProfileUpdateFailed);
                         }
                       }}
                     >
-                      Save Profile
+                      {customerUiCopy.saveProfile}
                     </Button>
                     <Button variant="soft" className="w-full rounded-xl" onClick={() => setCustomerPanelView("account")}>
-                      Back to Account
+                      {customerUiCopy.backToAccount}
                     </Button>
                   </div>
                 ) : customerSession && customerPanelView === "orders" ? (
