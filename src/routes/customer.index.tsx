@@ -1953,7 +1953,7 @@ function Index() {
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
   const deliveredCustomerOrders = allCustomerOrders.filter((order) => isDeliveredOrderStatus(order.status));
-  const resolveOrderIdFromScan = (decodedOrderToken: string): string | null => {
+  const resolveOrderIdFromScan = (decodedOrderToken: string, allowFallbackToLatestOrder: boolean): string | null => {
     const normalizedToken = normalizeScannedOrderToken(decodedOrderToken).toLowerCase();
     if (!normalizedToken) return null;
 
@@ -1964,6 +1964,8 @@ function Index() {
     });
 
     if (matchedOrder?.id) return matchedOrder.id;
+    if (!allowFallbackToLatestOrder) return null;
+
     return activeCustomerOrders[0]?.id ?? allCustomerOrders[0]?.id ?? null;
   };
 
@@ -1980,7 +1982,8 @@ function Index() {
       return;
     }
 
-    const resolvedOrderId = resolveOrderIdFromScan(extractedOrderId);
+    const shouldUseFallback = shouldFallbackToLatestOrderFromQrPayload(decodedText);
+    const resolvedOrderId = resolveOrderIdFromScan(extractedOrderId, shouldUseFallback);
     if (!resolvedOrderId) {
       toast.error(customerUiCopy.scannerOrderNotFound);
       return;
