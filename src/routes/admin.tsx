@@ -4043,12 +4043,17 @@ function AdminPage() {
     mutationFn: ({ orderId, status }: { orderId: string; status: "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled" }) =>
       updateSubscriptionOrderStatusInDatabase({ data: { orderId, status } }),
     onSuccess: async () => {
-      await adminOrdersQuery.refetch();
+      await Promise.all([
+        adminOrdersQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+      ]);
       toast.success("Subscription order status updated.");
     },
     onError: (error) => {
       console.error("Failed to update subscription order status:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update subscription order status.");
+      const raw = error as { message?: string; details?: string; hint?: string };
+      toast.error(raw?.message || raw?.details || raw?.hint || "Failed to update subscription order status.");
     },
   });
 
