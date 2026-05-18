@@ -1051,6 +1051,65 @@ function AdminPage() {
     refetchInterval: 20_000,
     placeholderData: (previousData) => previousData,
   });
+  const [adminSupportSearch, setAdminSupportSearch] = useState("");
+  const [adminSupportStatusFilter, setAdminSupportStatusFilter] = useState<"all" | "open" | "resolved" | "closed" | "archived">("open");
+  const [adminSupportActiveTicketId, setAdminSupportActiveTicketId] = useState<string | null>(null);
+  const [adminSupportReplyInput, setAdminSupportReplyInput] = useState("");
+  const [adminSupportIsSending, setAdminSupportIsSending] = useState(false);
+  const adminSupportTicketsQuery = useQuery({
+    queryKey: ["admin", "support", "tickets", adminSupportStatusFilter, adminSupportSearch],
+    enabled: isAdminDataEnabled,
+    queryFn: () =>
+      fetchAdminSupportTickets({
+        data: {
+          status: adminSupportStatusFilter === "all" ? undefined : adminSupportStatusFilter,
+          search: adminSupportSearch.trim() || undefined,
+        },
+      }),
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminSupportTickets =
+    (adminSupportTicketsQuery.data ?? []) as Array<{
+      id: string;
+      userName: string;
+      userPhone: string;
+      subject: string;
+      category: string;
+      message: string;
+      imageUrl: string | null;
+      status: "open" | "resolved" | "closed" | "archived";
+      createdAt: string;
+      lastReplyAt: string | null;
+      lastSenderType: "admin" | "user" | null;
+      orderId: string | null;
+      orderStatus: string | null;
+      pickupCode: string | null;
+    }>;
+  const adminSupportActiveTicket =
+    adminSupportTickets.find((ticket) => ticket.id === adminSupportActiveTicketId) ?? null;
+  const adminSupportMessagesQuery = useQuery({
+    queryKey: ["admin", "support", "messages", adminSupportActiveTicketId],
+    enabled: isAdminDataEnabled && !!adminSupportActiveTicketId,
+    queryFn: () =>
+      fetchAdminSupportMessages({
+        data: {
+          ticketId: adminSupportActiveTicketId!,
+        },
+      }),
+    refetchInterval: adminSupportActiveTicketId ? 3_500 : false,
+    refetchIntervalInBackground: true,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminSupportMessages =
+    (adminSupportMessagesQuery.data ?? []) as Array<{
+      id: string;
+      senderType: "admin" | "user";
+      message: string;
+      imageUrl: string | null;
+      createdAt: string;
+    }>;
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
