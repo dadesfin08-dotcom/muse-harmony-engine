@@ -1046,6 +1046,17 @@ export const markDeliveryAsDelivered = createServerFn({ method: "POST" })
         throw new Error("Delivery not found or already completed.");
       }
 
+      const deliveredOrderId = String(rpcResult[0].order_id);
+      const { data: deliveredOrder } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("customer_user_id")
+        .eq("id", deliveredOrderId)
+        .maybeSingle();
+
+      if (typeof deliveredOrder?.customer_user_id === "string" && deliveredOrder.customer_user_id.length > 0) {
+        await evaluateCustomerBehavior(deliveredOrder.customer_user_id);
+      }
+
       return { ok: true };
     } catch (error) {
       console.error("markDeliveryAsDelivered failed:", error);
