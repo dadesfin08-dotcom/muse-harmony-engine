@@ -109,7 +109,17 @@ export function CustomerLayout({
     () => cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
     [cartItems],
   );
-  const cartLabel = useMemo(() => `${cartCount} item${cartCount === 1 ? "" : "s"}`, [cartCount]);
+  const cartLabel = useMemo(() => {
+    if (language === "ar") {
+      return `${cartCount} ${cartCount === 1 ? "منتج" : "منتجات"}`;
+    }
+
+    if (language === "fr") {
+      return `${cartCount} ${cartCount === 1 ? "article" : "articles"}`;
+    }
+
+    return `${cartCount} item${cartCount === 1 ? "" : "s"}`;
+  }, [cartCount, language]);
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
   const language = (i18n.resolvedLanguage || i18n.language || "en") as "ar" | "fr" | "en";
   const layoutCopy = useMemo(() => {
