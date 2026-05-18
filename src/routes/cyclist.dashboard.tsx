@@ -465,7 +465,6 @@ function CyclistDashboardPage() {
       setIsScannerOpen(false);
       setScannerStatus(t("cyclist.scannerVerified"));
       setActiveView("available");
-      toast.success(t("cyclist.deliveryCompleted"));
 
       void navigate({ to: "/cyclist/dashboard", replace: true });
 
@@ -496,7 +495,7 @@ function CyclistDashboardPage() {
       }
 
       setScannerStatus(t("cyclist.scannerFailed"));
-      toast.error(error instanceof Error && error.message ? error.message : t("cyclist.deliveryUpdateFailed"));
+      toast.error(error instanceof Error && error.message ? error.message : "فشل غير معروف، يرجى المحاولة.");
       setScannerPaused(false);
       setIsProcessing(false);
       isVerifyingCodeRef.current = false;
