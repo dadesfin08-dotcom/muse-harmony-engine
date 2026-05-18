@@ -459,11 +459,19 @@ function CyclistDashboardPage() {
         throw new Error(t("cyclist.invalidQr"));
       }
 
+      setIsProcessing(true);
+      setScannerPaused(true);
       setSuccessAnimationVisible(true);
       setIsScannerOpen(false);
       setScannerStatus(t("cyclist.scannerVerified"));
+      setActiveView("available");
+      toast.success(t("cyclist.deliveryCompleted"));
+
+      void navigate({ to: "/cyclist/dashboard", replace: true });
+
       await Promise.all([
         dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] }),
@@ -488,7 +496,7 @@ function CyclistDashboardPage() {
       }
 
       setScannerStatus(t("cyclist.scannerFailed"));
-      toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
+      toast.error(error instanceof Error && error.message ? error.message : t("cyclist.deliveryUpdateFailed"));
       setScannerPaused(false);
       setIsProcessing(false);
       isVerifyingCodeRef.current = false;

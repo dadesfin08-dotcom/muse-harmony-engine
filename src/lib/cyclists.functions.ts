@@ -1115,7 +1115,9 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
       }
 
       if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
-        await evaluateCustomerBehavior(order.customer_user_id);
+        void evaluateCustomerBehavior(order.customer_user_id).catch((behaviorError) => {
+          console.error("Customer behavior evaluation after delivery failed:", behaviorError);
+        });
       }
 
       if (isPlatformSubscriptionOrder && typeof order.subscription_id === "string" && order.subscription_id.length > 0) {
