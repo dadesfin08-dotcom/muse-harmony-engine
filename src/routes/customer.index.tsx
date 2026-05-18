@@ -2714,13 +2714,13 @@ function Index() {
         </section>
 
         <section className="mx-auto mt-4 w-full max-w-6xl px-4 pb-5 sm:px-6 md:mt-2">
-          <div className="mb-3.5 space-y-1">
+          <div className={`mb-3.5 space-y-1 ${isArabic ? "text-right" : "text-left"}`}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90">
-              Premium plans
+              {subscriptionSectionCopy.eyebrow}
             </p>
-            <h2 className="flex items-center gap-2 text-[1.1rem] font-bold leading-tight text-foreground md:text-[1.35rem]">
+            <h2 className={`flex items-center gap-2 text-[1.1rem] font-bold leading-tight text-foreground md:text-[1.35rem] ${isArabic ? "flex-row-reverse" : ""}`}>
               <Sparkles className="size-4 text-primary" />
-              <span>Saving Subscriptions / باكات التوفير</span>
+              <span>{subscriptionSectionCopy.title}</span>
             </h2>
           </div>
 
@@ -2732,8 +2732,8 @@ function Index() {
             </div>
           ) : platformPacks.length === 0 ? (
             <AppEmptyState
-              title="No subscription packs available yet."
-              subtitle="New prepaid savings packs will appear here soon."
+              title={subscriptionSectionCopy.emptyTitle}
+              subtitle={subscriptionSectionCopy.emptySubtitle}
             />
           ) : (
             <div
@@ -2763,12 +2763,12 @@ function Index() {
                       <div className="relative h-auto w-[42%] min-w-[132px] max-w-[156px] overflow-hidden">
                         <img
                           src={pack.imageUrl || productFallbackImage}
-                          alt={`${pack.name} subscription pack`}
+                          alt={`${pack.name} ${subscriptionSectionCopy.packAltSuffix}`}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           loading="lazy"
                         />
                         <span className={`absolute top-2 inline-flex items-center rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-success-foreground shadow-sm ${isArabic ? "right-2" : "left-2"}`}>
-                          Best value
+                          {subscriptionSectionCopy.bestValue}
                         </span>
                       </div>
 
@@ -2776,7 +2776,7 @@ function Index() {
                         <div className="space-y-1">
                           <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight text-foreground">{pack.name}</h3>
                           <p className="line-clamp-1 text-[11px] font-medium text-muted-foreground/90">
-                            {pack.description || "Fresh seasonal essentials delivered to your door"}
+                            {pack.description || subscriptionSectionCopy.fallbackDescription}
                           </p>
                         </div>
 
@@ -2785,14 +2785,14 @@ function Index() {
                             <p className="whitespace-nowrap text-[13px] font-semibold text-success">
                               {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">MAD</span>
                               <span className="ml-1 text-[11px] font-medium text-muted-foreground rtl:ml-0 rtl:mr-1">
-                                / {pack.billingLabel.toLowerCase()}
+                                {subscriptionSectionCopy.pricingPrefix} {pack.billingLabel.toLowerCase()}
                               </span>
                             </p>
                           </div>
 
                           {packSubscriptionState?.status === "pending" ? (
                             <span className="inline-flex h-8 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-500">
-                              Pending
+                              {subscriptionSectionCopy.pending}
                             </span>
                           ) : packSubscriptionState?.status === "active" ? (
                             <span className="inline-flex h-8 items-center rounded-full border border-success/35 bg-success/12 px-3 text-[11px] font-semibold text-success">
@@ -2800,11 +2800,11 @@ function Index() {
                             </span>
                           ) : packSubscriptionState?.status === "paused" ? (
                             <span className="inline-flex h-8 items-center rounded-full border border-border bg-muted px-3 text-[11px] font-semibold text-muted-foreground">
-                              Paused
+                              {subscriptionSectionCopy.paused}
                             </span>
                           ) : (
                             <span className="inline-flex h-8 items-center rounded-full border border-success/45 bg-success/10 px-3.5 text-[11px] font-semibold text-success transition-colors group-hover:bg-success/20">
-                              Subscribe
+                              {subscriptionSectionCopy.subscribe}
                             </span>
                           )}
                         </div>
