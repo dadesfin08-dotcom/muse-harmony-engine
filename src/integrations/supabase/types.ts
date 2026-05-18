@@ -1318,38 +1318,56 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          admin_notes: string | null
           avatar_url: string | null
+          cod_rejections: number
           created_at: string
           display_name: string | null
           full_name: string | null
           id: string
+          lifetime_value: number
           neighborhood_id: string | null
           phone: string | null
           preferred_language: string
+          risk_score: Database["public"]["Enums"]["customer_risk_score"]
+          status: Database["public"]["Enums"]["customer_status"]
+          strikes: number
           updated_at: string
         }
         Insert: {
           address?: string | null
+          admin_notes?: string | null
           avatar_url?: string | null
+          cod_rejections?: number
           created_at?: string
           display_name?: string | null
           full_name?: string | null
           id: string
+          lifetime_value?: number
           neighborhood_id?: string | null
           phone?: string | null
           preferred_language?: string
+          risk_score?: Database["public"]["Enums"]["customer_risk_score"]
+          status?: Database["public"]["Enums"]["customer_status"]
+          strikes?: number
           updated_at?: string
         }
         Update: {
           address?: string | null
+          admin_notes?: string | null
           avatar_url?: string | null
+          cod_rejections?: number
           created_at?: string
           display_name?: string | null
           full_name?: string | null
           id?: string
+          lifetime_value?: number
           neighborhood_id?: string | null
           phone?: string | null
           preferred_language?: string
+          risk_score?: Database["public"]["Enums"]["customer_risk_score"]
+          status?: Database["public"]["Enums"]["customer_status"]
+          strikes?: number
           updated_at?: string
         }
         Relationships: [
@@ -1879,6 +1897,8 @@ export type Database = {
         | "CREDIT_ISSUED"
         | "CREDIT_REPAID"
         | "CREDIT_CANCELLED"
+      customer_risk_score: "low" | "medium" | "high"
+      customer_status: "active" | "vip" | "warning" | "suspicious" | "blocked"
       markup_type: "fixed" | "percentage"
       measurement_unit:
         | "Kg"
@@ -2057,6 +2077,8 @@ export const Constants = {
         "CREDIT_REPAID",
         "CREDIT_CANCELLED",
       ],
+      customer_risk_score: ["low", "medium", "high"],
+      customer_status: ["active", "vip", "warning", "suspicious", "blocked"],
       markup_type: ["fixed", "percentage"],
       measurement_unit: [
         "Kg",

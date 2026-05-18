@@ -210,6 +210,8 @@ import {
   autoDispatchSubscriptionOrder,
   updateSubscriptionOrderStatus,
   getGlobalSettings,
+  getAdminCustomerKpis,
+  getAdminCustomerProfile,
   listAdminCustomers,
   listAdminOrders,
   manualBoostBrandScore,
@@ -220,6 +222,8 @@ import {
   uploadSiteLogo,
   uploadPlatformPackAsset,
   updateGlobalSettings,
+  updateAdminCustomerNotes,
+  updateAdminCustomerState,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
 import {
@@ -254,6 +258,9 @@ import {
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 import i18n from "@/lib/i18n";
+import { CustomerKPIs } from "@/components/CustomerKPIs";
+import { CustomerTable, type AdminCustomerRow } from "@/components/CustomerTable";
+import { CustomerDrawer } from "@/components/CustomerDrawer";
 
 type AdminTab =
   | "overview"
@@ -770,10 +777,14 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchAdminCustomerKpis = useServerFn(getAdminCustomerKpis);
   const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
   const fetchAdminOrders = useServerFn(listAdminOrders);
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
+  const fetchAdminCustomerProfile = useServerFn(getAdminCustomerProfile);
+  const saveAdminCustomerState = useServerFn(updateAdminCustomerState);
+  const saveAdminCustomerNotes = useServerFn(updateAdminCustomerNotes);
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
@@ -820,6 +831,29 @@ function AdminPage() {
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
   const triggerSeedBrandDemoData = useServerFn(seedBrandEngineDemoData);
   const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
+  const [customerSearchInput, setCustomerSearchInput] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<"all" | "active" | "vip" | "warning" | "suspicious" | "blocked">("all");
+  const [customerRiskFilter, setCustomerRiskFilter] = useState<"all" | "low" | "medium" | "high">("all");
+  const [customerSortBy, setCustomerSortBy] = useState<"newest" | "highest_ltv" | "most_strikes">("newest");
+  const [crmPage, setCrmPage] = useState(1);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [customerNotesDraft, setCustomerNotesDraft] = useState("");
+  const [isCustomerDrawerOpen, setIsCustomerDrawerOpen] = useState(false);
+  const [isUpdatingCustomerState, setIsUpdatingCustomerState] = useState(false);
+  const [isSavingCustomerNotes, setIsSavingCustomerNotes] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearchInput.trim());
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [customerSearchInput]);
+
+  useEffect(() => {
+    setCrmPage(1);
+  }, [debouncedCustomerSearch, customerStatusFilter, customerRiskFilter, customerSortBy]);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
@@ -890,9 +924,26 @@ function AdminPage() {
     placeholderData: (previousData) => previousData,
   });
   const adminCustomersQuery = useQuery({
-    queryKey: ["admin", "customers"],
+    queryKey: ["admin", "customers", crmPage, debouncedCustomerSearch, customerStatusFilter, customerRiskFilter, customerSortBy],
     enabled: isAdminDataEnabled,
-    queryFn: () => fetchAdminCustomers(),
+    queryFn: () =>
+      fetchAdminCustomers({
+        data: {
+          page: crmPage,
+          pageSize: 20,
+          search: debouncedCustomerSearch,
+          status: customerStatusFilter,
+          risk: customerRiskFilter,
+          sortBy: customerSortBy,
+        },
+      }),
+    refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminCustomerKpisQuery = useQuery({
+    queryKey: ["admin", "customers", "kpis"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchAdminCustomerKpis(),
     refetchInterval: 20_000,
     placeholderData: (previousData) => previousData,
   });
@@ -1090,18 +1141,28 @@ function AdminPage() {
     deliveryCompletionPercent: number;
     createdAt: string;
   }>;
-  const adminCustomers =
+  const adminCustomersData =
     (adminCustomersQuery.data as
-      | Array<{
-          id: string;
-          fullName: string;
-          phone: string;
-          address: string;
-          joinedAt: string;
-          totalOrders: number;
-          ltvMad: number;
-        }>
-      | undefined) ?? [];
+      | {
+          page: number;
+          pageSize: number;
+          total: number;
+          rows: AdminCustomerRow[];
+        }
+      | undefined) ?? { page: 1, pageSize: 20, total: 0, rows: [] };
+  const adminCustomers = adminCustomersData.rows;
+  const selectedCustomerProfileQuery = useQuery({
+    queryKey: ["admin", "customers", "profile", selectedCustomerId],
+    enabled: isAdminDataEnabled && !!selectedCustomerId,
+    queryFn: () => fetchAdminCustomerProfile({ data: { customerId: selectedCustomerId! } }),
+    placeholderData: (previousData) => previousData,
+  });
+
+  useEffect(() => {
+    if (selectedCustomerProfileQuery.data?.adminNotes != null) {
+      setCustomerNotesDraft(String(selectedCustomerProfileQuery.data.adminNotes));
+    }
+  }, [selectedCustomerProfileQuery.data?.adminNotes]);
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
@@ -4325,11 +4386,151 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "customers" ? (
-                <CustomersSection
-                  customers={adminCustomers}
-                  isLoading={dbHealthQuery.isLoading || adminCustomersQuery.isLoading}
-                  error={adminCustomersQuery.error}
-                />
+                <section className="space-y-4">
+                  <CustomerKPIs kpis={adminCustomerKpisQuery.data as { totalCustomers: number; vipCustomers: number; highRiskOrBlocked: number; averageLtv: number } | undefined} />
+                  <CustomerTable
+                    customers={adminCustomers}
+                    isLoading={dbHealthQuery.isLoading || adminCustomersQuery.isLoading}
+                    error={adminCustomersQuery.error}
+                    searchInput={customerSearchInput}
+                    statusFilter={customerStatusFilter}
+                    riskFilter={customerRiskFilter}
+                    sortBy={customerSortBy}
+                    page={adminCustomersData.page}
+                    pageSize={adminCustomersData.pageSize}
+                    total={adminCustomersData.total}
+                    onSearchInputChange={setCustomerSearchInput}
+                    onStatusFilterChange={setCustomerStatusFilter}
+                    onRiskFilterChange={setCustomerRiskFilter}
+                    onSortByChange={setCustomerSortBy}
+                    onPageChange={(nextPage) => setCrmPage(Math.max(1, nextPage))}
+                    onOpenCustomer={(customerId) => {
+                      setSelectedCustomerId(customerId);
+                      setIsCustomerDrawerOpen(true);
+                    }}
+                    onAction={(customerId, action) => {
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          const payload =
+                            action === "vip"
+                              ? { status: "vip" as const, riskScore: "low" as const }
+                              : action === "warning"
+                                ? { status: "warning" as const, riskScore: "medium" as const, strikesDelta: 1 }
+                                : action === "suspend"
+                                  ? { status: "suspicious" as const, riskScore: "high" as const }
+                                  : { status: "blocked" as const, riskScore: "high" as const };
+
+                          await saveAdminCustomerState({ data: { customerId, ...payload } });
+                          await Promise.all([adminCustomersQuery.refetch(), adminCustomerKpisQuery.refetch()]);
+                          if (selectedCustomerId === customerId) {
+                            await selectedCustomerProfileQuery.refetch();
+                          }
+                          toast.success("Customer status updated.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to update customer.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                  />
+                  <CustomerDrawer
+                    open={isCustomerDrawerOpen}
+                    profile={selectedCustomerProfileQuery.data as {
+                      id: string;
+                      fullName: string;
+                      phone: string;
+                      status: "active" | "vip" | "warning" | "suspicious" | "blocked";
+                      riskScore: "low" | "medium" | "high";
+                      strikes: number;
+                      codRejections: number;
+                      adminNotes: string;
+                      metrics: {
+                        totalSpent: number;
+                        averageOrderValue: number;
+                        totalOrders: number;
+                        cancellationRate: number;
+                        codRejections: number;
+                      };
+                      recentOrders: Array<{ id: string; createdAt: string; status: string; amount: number }>;
+                    } | null}
+                    notesDraft={customerNotesDraft}
+                    isSavingNotes={isSavingCustomerNotes}
+                    isUpdatingState={isUpdatingCustomerState}
+                    onOpenChange={setIsCustomerDrawerOpen}
+                    onNotesDraftChange={setCustomerNotesDraft}
+                    onSaveNotes={() => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsSavingCustomerNotes(true);
+                        try {
+                          await saveAdminCustomerNotes({ data: { customerId: selectedCustomerId, adminNotes: customerNotesDraft } });
+                          await selectedCustomerProfileQuery.refetch();
+                          await adminCustomersQuery.refetch();
+                          toast.success("Internal note saved.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to save note.");
+                        } finally {
+                          setIsSavingCustomerNotes(false);
+                        }
+                      })();
+                    }}
+                    onAdjustStrike={(type) => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          await saveAdminCustomerState({
+                            data: {
+                              customerId: selectedCustomerId,
+                              status: (selectedCustomerProfileQuery.data?.status ?? "active") as "active" | "vip" | "warning" | "suspicious" | "blocked",
+                              strikesDelta: type === "add" ? 1 : type === "remove" ? -1 : undefined,
+                              resetStrikes: type === "reset",
+                            },
+                          });
+                          await Promise.all([
+                            selectedCustomerProfileQuery.refetch(),
+                            adminCustomersQuery.refetch(),
+                            adminCustomerKpisQuery.refetch(),
+                          ]);
+                          toast.success("Strike record updated.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to update strikes.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                    onAction={(action) => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          const payload =
+                            action === "vip"
+                              ? { status: "vip" as const, riskScore: "low" as const }
+                              : action === "warning"
+                                ? { status: "warning" as const, riskScore: "medium" as const, strikesDelta: 1 }
+                                : action === "suspend"
+                                  ? { status: "suspicious" as const, riskScore: "high" as const }
+                                  : { status: "blocked" as const, riskScore: "high" as const };
+                          await saveAdminCustomerState({ data: { customerId: selectedCustomerId, ...payload } });
+                          await Promise.all([
+                            selectedCustomerProfileQuery.refetch(),
+                            adminCustomersQuery.refetch(),
+                            adminCustomerKpisQuery.refetch(),
+                          ]);
+                          toast.success("Customer action applied.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to apply action.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                  />
+                </section>
               ) : null}
               {tab === "settings" ? (
                 <SettingsSection
