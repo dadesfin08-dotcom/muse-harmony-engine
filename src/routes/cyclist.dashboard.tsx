@@ -649,7 +649,11 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus(t("cyclist.cameraPointToQr"));
+          setScannerStatus(
+            scannerMode === "merchant_clearance"
+              ? "وجّه الكاميرا نحو رمز التاجر لتصفية الحساب"
+              : "وجّه الكاميرا نحو رمز QR الخاص بالزبون",
+          );
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
@@ -667,7 +671,7 @@ function CyclistDashboardPage() {
         void safelyStopAndClearScanner(scanner);
       }
     };
-  }, [cyclist?.id, isScannerOpen, scannerPaused, session?.cyclistId, t]);
+  }, [cyclist?.id, isScannerOpen, scannerMode, scannerPaused, session?.cyclistId, t]);
 
   useEffect(() => {
     if (!successAnimationVisible) {
@@ -977,8 +981,8 @@ function CyclistDashboardPage() {
 
       <FulfillmentSuccessAnimation
         open={successAnimationVisible}
-        title={t("cyclist.deliveryVerifiedTitle")}
-        subtitle={t("cyclist.deliveryVerifiedSubtitle")}
+        title={successAnimationTitle || t("cyclist.deliveryVerifiedTitle")}
+        subtitle={successAnimationSubtitle || t("cyclist.deliveryVerifiedSubtitle")}
       />
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
