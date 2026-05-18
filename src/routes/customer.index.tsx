@@ -720,6 +720,7 @@ function Index() {
   const supportActiveTicket = supportTickets.find((ticket) => ticket.id === supportActiveTicketId) ?? null;
   const supportUnreadCount = supportTickets.filter((ticket) => ticket.lastSenderType === "admin" && ticket.status === "open").length;
   const supportHasAdminUnread = supportActiveTicket?.lastSenderType === "admin";
+  const isSupportPanelActive = Boolean(customerSession && customerPanelView === "support");
   const supportMessagesWithDateMarkers = useMemo(() => {
     const rows: Array<{ type: "date" | "message"; key: string; label?: string; message?: (typeof supportMessages)[number] }> = [];
     let previousDateKey: string | null = null;
@@ -2909,7 +2910,7 @@ function Index() {
       (!supportImageDataUrl && (supportActiveTicketId ? supportMessageInput.trim().length === 0 : supportMessageInput.trim().length < 3));
 
     return (
-      <section className="relative flex min-h-[64vh] max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/90 shadow-xl backdrop-blur-xl md:min-h-[68vh] md:max-h-[82vh]">
+      <section className="relative mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-card/90 backdrop-blur-xl md:my-3 md:rounded-3xl md:border md:border-border/70 md:shadow-xl">
         <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-3 pb-3 pt-3 backdrop-blur md:px-4">
           <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
             <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
@@ -2927,6 +2928,16 @@ function Index() {
 
             <div className={`flex items-center gap-1.5 ${isArabic ? "flex-row-reverse" : ""}`}>
               {supportUnreadCount > 0 ? <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge> : null}
+              <Button
+                type="button"
+                size="icon"
+                variant="soft"
+                className="h-8 w-8 rounded-full"
+                onClick={() => setCustomerPanelView("account")}
+                aria-label={language === "ar" ? "الرجوع" : language === "fr" ? "Retour" : "Back"}
+              >
+                <ChevronLeft className={`size-4 ${isArabic ? "rotate-180" : ""}`} />
+              </Button>
               <Button
                 type="button"
                 size="icon"
