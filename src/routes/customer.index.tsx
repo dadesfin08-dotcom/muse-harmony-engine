@@ -2655,11 +2655,14 @@ function Index() {
           ) : null}
         </section>
 
-        <section className="mx-auto mt-3 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-1">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="line-clamp-1 text-xl font-bold text-foreground md:text-2xl">
+        <section className="mx-auto mt-4 w-full max-w-6xl px-4 pb-5 sm:px-6 md:mt-2">
+          <div className="mb-3.5 space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90">
+              Premium plans
+            </p>
+            <h2 className="flex items-center gap-2 text-[1.1rem] font-bold leading-tight text-foreground md:text-[1.35rem]">
               <Sparkles className="size-4 text-primary" />
-              Saving Subscriptions / باكات التوفير
+              <span>Saving Subscriptions / باكات التوفير</span>
             </h2>
           </div>
 
@@ -2677,7 +2680,7 @@ function Index() {
           ) : (
             <div
               ref={subScrollRef}
-              className="flex flex-row overflow-x-auto gap-4 pb-4 pt-2 scrollbar-hide snap-x snap-mandatory w-full"
+              className="flex w-full snap-x snap-mandatory flex-row gap-3 overflow-x-auto pb-3 pt-1 scrollbar-hide"
               onMouseEnter={() => setIsSubInteracting(true)}
               onMouseLeave={() => setIsSubInteracting(false)}
               onTouchStart={() => setIsSubInteracting(true)}
@@ -2691,76 +2694,65 @@ function Index() {
                 return (
                 <article
                   key={pack.id}
-                  className="h-full w-[290px] flex-shrink-0 snap-center overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)] sm:w-[320px]"
+                  className="w-[min(92vw,360px)] flex-shrink-0 snap-center overflow-hidden rounded-[22px] border border-border/60 bg-[color:color-mix(in_oklab,var(--card)_88%,white)] shadow-[0_12px_28px_-20px_rgba(15,23,42,0.45)] sm:w-[380px]"
                 >
                   <button
                     type="button"
                     onClick={() => openSubscriptionCheckout(pack)}
-                    className="group block w-full text-left"
+                    className="group block w-full"
                   >
-                    <div className="relative h-36 w-full overflow-hidden">
-                      <img
-                        src={pack.imageUrl || productFallbackImage}
-                        alt={`${pack.name} subscription pack`}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                        loading="lazy"
-                      />
-                      <div className="absolute left-3 top-3 inline-flex items-center rounded-full border border-success/30 bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
-                        {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
+                    <div className={`flex min-h-[132px] w-full ${isArabic ? "flex-row-reverse" : "flex-row"}`}>
+                      <div className="relative h-auto w-[42%] min-w-[132px] max-w-[156px] overflow-hidden">
+                        <img
+                          src={pack.imageUrl || productFallbackImage}
+                          alt={`${pack.name} subscription pack`}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+                        <span className={`absolute top-2 inline-flex items-center rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-success-foreground shadow-sm ${isArabic ? "right-2" : "left-2"}`}>
+                          Best value
+                        </span>
                       </div>
-                    </div>
-                    <div className="space-y-2 p-3">
-                      <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
-                      {pack.description ? (
-                        <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Direct prepaid platform subscription</p>
-                      )}
+
+                      <div className={`flex flex-1 flex-col justify-between px-3.5 py-3 ${isArabic ? "text-right" : "text-left"}`}>
+                        <div className="space-y-1">
+                          <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight text-foreground">{pack.name}</h3>
+                          <p className="line-clamp-1 text-[11px] font-medium text-muted-foreground/90">
+                            {pack.description || "Fresh seasonal essentials delivered to your door"}
+                          </p>
+                        </div>
+
+                        <div className={`mt-2 flex items-end justify-between gap-2 ${isArabic ? "flex-row-reverse" : "flex-row"}`}>
+                          <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
+                            <p className="whitespace-nowrap text-[13px] font-semibold text-success">
+                              {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">MAD</span>
+                              <span className="ml-1 text-[11px] font-medium text-muted-foreground rtl:ml-0 rtl:mr-1">
+                                / {pack.billingLabel.toLowerCase()}
+                              </span>
+                            </p>
+                          </div>
+
+                          {packSubscriptionState?.status === "pending" ? (
+                            <span className="inline-flex h-8 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-500">
+                              Pending
+                            </span>
+                          ) : packSubscriptionState?.status === "active" ? (
+                            <span className="inline-flex h-8 items-center rounded-full border border-success/35 bg-success/12 px-3 text-[11px] font-semibold text-success">
+                              {Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1))}/{Math.max(totalDeliveries, 1)}
+                            </span>
+                          ) : packSubscriptionState?.status === "paused" ? (
+                            <span className="inline-flex h-8 items-center rounded-full border border-border bg-muted px-3 text-[11px] font-semibold text-muted-foreground">
+                              Paused
+                            </span>
+                          ) : (
+                            <span className="inline-flex h-8 items-center rounded-full border border-success/45 bg-success/10 px-3.5 text-[11px] font-semibold text-success transition-colors group-hover:bg-success/20">
+                              Subscribe
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </button>
-
-                  <div className="space-y-3 px-3 pb-3">
-                    {packSubscriptionState?.status === "pending" ? (
-                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
-                        Pending Review / قيد المراجعة
-                      </div>
-                    ) : packSubscriptionState?.status === "active" ? (
-                      <div className="space-y-2 rounded-xl border border-success/30 bg-success/10 p-2.5">
-                        <div className="flex items-center gap-1.5">
-                          {(totalDeliveries > 0 ? Array.from({ length: totalDeliveries }) : Array.from({ length: 4 })).map((_, index) => {
-                            const isDone = index < completedDeliveries;
-                            return (
-                              <span
-                                key={`${pack.id}-step-${index}`}
-                                className={[
-                                  "h-2.5 flex-1 rounded-sm border transition-colors",
-                                  isDone
-                                    ? "border-success bg-success"
-                                    : "border-border/80 bg-muted",
-                                ].join(" ")}
-                              />
-                            );
-                          })}
-                        </div>
-                        <p className="text-[11px] font-medium text-success">
-                          Delivery {Math.min(completedDeliveries + 1, Math.max(totalDeliveries, 1))} of {Math.max(totalDeliveries, 1)}
-                        </p>
-                      </div>
-                    ) : packSubscriptionState?.status === "paused" ? (
-                      <div className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-muted px-3 py-2 text-xs font-semibold text-muted-foreground">
-                        Paused — View details to resume
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        className="w-full rounded-xl border border-success/30 bg-success/15 text-success hover:bg-success/20"
-                        onClick={() => openSubscriptionCheckout(pack)}
-                      >
-                        <Package className="size-4" />
-                        Subscribe
-                      </Button>
-                    )}
-                  </div>
                 </article>
                 );
               })}
