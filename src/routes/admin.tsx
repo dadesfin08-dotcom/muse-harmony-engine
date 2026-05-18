@@ -46,6 +46,7 @@ import {
   FileUp,
   Search,
   Plus,
+  Loader2,
   Wallet,
   BikeIcon,
   Landmark,
