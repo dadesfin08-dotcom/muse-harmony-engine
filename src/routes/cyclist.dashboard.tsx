@@ -105,6 +105,7 @@ function CyclistDashboardPage() {
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
+  const scanHandlerRef = useRef<(decodedText: string) => void>(() => undefined);
   const isVerifyingCodeRef = useRef(false);
   const hasScannedRef = useRef(false);
 
@@ -516,6 +517,12 @@ function CyclistDashboardPage() {
     t,
   ]);
 
+  useEffect(() => {
+    scanHandlerRef.current = (decodedText: string) => {
+      void handleCyclistQrScan(decodedText);
+    };
+  }, [handleCyclistQrScan]);
+
   const openScanner = () => {
     if (!session?.cyclistId || !cyclist?.id) {
       setScannerStatus(t("cyclist.cameraPreparing"));
@@ -618,7 +625,7 @@ function CyclistDashboardPage() {
         await scanner.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText: string) => void handleCyclistQrScan(decodedText),
+          (decodedText: string) => scanHandlerRef.current(decodedText),
           () => undefined,
         );
 
@@ -641,7 +648,7 @@ function CyclistDashboardPage() {
         void safelyStopAndClearScanner(scanner);
       }
     };
-  }, [cyclist?.id, handleCyclistQrScan, isScannerOpen, scannerPaused, session?.cyclistId, t]);
+  }, [cyclist?.id, isScannerOpen, scannerPaused, session?.cyclistId, t]);
 
   useEffect(() => {
     if (!successAnimationVisible) {
