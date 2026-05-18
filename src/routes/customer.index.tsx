@@ -498,6 +498,7 @@ function Index() {
   const [supportFloatingNotification, setSupportFloatingNotification] = useState<string | null>(null);
   const supportMessagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
+  const [supportViewportHeight, setSupportViewportHeight] = useState<number | null>(null);
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
   const [authSheetCanScrollDown, setAuthSheetCanScrollDown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1790,6 +1791,7 @@ function Index() {
     if (!isMobile || !isCustomerAuthModalOpen || typeof window === "undefined") {
       setAuthKeyboardInset(0);
       setAuthSheetMaxHeight(null);
+      setSupportViewportHeight(null);
       setAuthSheetCanScrollUp(false);
       setAuthSheetCanScrollDown(false);
       return;
@@ -1807,6 +1809,7 @@ function Index() {
 
       setAuthKeyboardInset(Math.round(keyboardInset));
       setAuthSheetMaxHeight(boundedHeight);
+      setSupportViewportHeight(Math.max(320, Math.round(visualHeight)));
     };
 
     syncSheetViewport();
@@ -1822,7 +1825,7 @@ function Index() {
       viewport.removeEventListener("resize", syncSheetViewport);
       viewport.removeEventListener("scroll", syncSheetViewport);
     };
-  }, [isCustomerAuthModalOpen, isMobile]);
+  }, [isCustomerAuthModalOpen, isMobile, customerPanelView]);
 
   useEffect(() => {
     if (!isMobile || !isCustomerAuthModalOpen) return;
@@ -4396,8 +4399,15 @@ function Index() {
                 customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
               }`}
               style={{
-                maxHeight: isSupportPanelActive ? "100dvh" : authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
-                paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
+                height: isSupportPanelActive ? (supportViewportHeight ? `${supportViewportHeight}px` : "100dvh") : undefined,
+                maxHeight: isSupportPanelActive
+                  ? supportViewportHeight
+                    ? `${supportViewportHeight}px`
+                    : "100dvh"
+                  : authSheetMaxHeight
+                    ? `${authSheetMaxHeight}px`
+                    : undefined,
+                paddingBottom: isSupportPanelActive ? undefined : authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
               }}
             >
               <div
@@ -4436,9 +4446,7 @@ function Index() {
                 style={{
                   paddingBottom:
                     customerPanelView === "support"
-                      ? authKeyboardInset > 0
-                        ? `${authKeyboardInset}px`
-                        : undefined
+                      ? undefined
                       : authKeyboardInset > 0
                         ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))`
                         : undefined,
