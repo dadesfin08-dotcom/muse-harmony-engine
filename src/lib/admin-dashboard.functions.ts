@@ -2683,14 +2683,7 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
       ? 0
       : Math.max(0, currentStrikes + Number(data.strikesDelta ?? 0));
 
-    const patch: Record<string, unknown> = {
-      status: data.status,
-      strikes: nextStrikes,
-    };
-
-    if (data.riskScore) {
-      patch.risk_score = data.riskScore;
-    }
+    const patch: Record<string, unknown> = { strikes: nextStrikes };
 
     if (data.addCodRejection) {
       patch.cod_rejections = Number(existingProfile.cod_rejections ?? 0) + 1;
@@ -2701,6 +2694,8 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
     if (error) {
       throw new Error(error.message);
     }
+
+    await evaluateCustomerBehavior(data.customerId);
 
     return { ok: true };
   });
