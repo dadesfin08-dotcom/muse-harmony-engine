@@ -379,7 +379,8 @@ const shouldFallbackToLatestOrderFromQrPayload = (rawValue: string) => {
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const url = new URL(trimmed);
-      const lastPath = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      const lastPath = pathParts[pathParts.length - 1] ?? "";
       return !/^[a-zA-Z0-9-]{6,64}$/.test(normalizeScannedOrderToken(lastPath));
     } catch {
       return false;
