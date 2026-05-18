@@ -2078,7 +2078,7 @@ function Index() {
               </span>
             </button>
           </div>
-          <div className="mx-auto w-full max-w-6xl px-4 pb-4 sm:hidden">
+          <div className="mx-auto w-full max-w-6xl px-4 pb-2 sm:hidden">
             <div className="mb-3 flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -2097,11 +2097,36 @@ function Index() {
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
               </button>
             </div>
+          </div>
+        </header>
 
-            <div ref={searchContainerRef} className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+        <section
+          className="overflow-hidden border-b border-border/70 py-2"
+          style={{ backgroundColor: tickerBgColor, color: tickerTextColor }}
+          aria-label="Global announcement ticker"
+        >
+          <div className={`marquee-track whitespace-nowrap text-sm font-medium ${isArabic ? "marquee-track-rtl" : ""}`}>
+            <span className="mx-6">{tickerText}</span>
+            <span className="mx-6" aria-hidden="true">
+              {tickerText}
+            </span>
+          </div>
+        </section>
+
+        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
+          <article className="relative mx-auto mb-7 w-full max-w-[352px] overflow-visible rounded-[28px] border border-border/60 bg-card px-4 pb-12 pt-3.5 shadow-[0_12px_32px_-24px_color-mix(in_oklab,var(--foreground)_22%,transparent)] md:hidden">
+            <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
+            <p className="text-[15px] font-medium text-foreground">Good morning, 👋</p>
+            <h1 className="mt-1 text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
+              Fresh groceries,
+              <span className="block text-[1.78rem] leading-[1.08] text-primary">delivered in 15 min</span>
+            </h1>
+            <p className="mt-2.5 max-w-[280px] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+
+            <div ref={searchContainerRef} className="absolute inset-x-3 -bottom-6 z-20">
+              <Search className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
               {predictiveSearchQuery.isFetching && hasSearchTerm ? (
-                <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                <Loader2 className="pointer-events-none absolute right-4 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
               ) : null}
               <input
                 ref={mobileSearchInputRef}
@@ -2113,21 +2138,21 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-12 w-full rounded-[20px] border border-border/70 bg-card pl-9 pr-24 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-14 w-full rounded-full border border-border/50 bg-background pl-11 pr-24 text-sm shadow-[0_18px_36px_-24px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
               />
 
-              <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
+              <div className="absolute right-3 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1.5">
                 <button
                   type="button"
                   aria-label="Voice search"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
                 >
                   <Mic className="size-3.5" />
                 </button>
                 <button
                   type="button"
                   aria-label="Scan"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
                 >
                   <ScanLine className="size-3.5" />
                 </button>
@@ -2140,7 +2165,7 @@ function Index() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                    className="no-scrollbar absolute left-0 right-0 top-14 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
                   >
                     {predictiveSearchResults.length > 0 ? (
                       predictiveSearchResults.map((item) => (
@@ -2174,31 +2199,6 @@ function Index() {
                 ) : null}
               </AnimatePresence>
             </div>
-          </div>
-        </header>
-
-        <section
-          className="overflow-hidden border-b border-border/70 py-2"
-          style={{ backgroundColor: tickerBgColor, color: tickerTextColor }}
-          aria-label="Global announcement ticker"
-        >
-          <div className={`marquee-track whitespace-nowrap text-sm font-medium ${isArabic ? "marquee-track-rtl" : ""}`}>
-            <span className="mx-6">{tickerText}</span>
-            <span className="mx-6" aria-hidden="true">
-              {tickerText}
-            </span>
-          </div>
-        </section>
-
-        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative mx-auto w-full max-w-[352px] overflow-hidden rounded-[28px] border border-border/60 bg-card px-4 py-3.5 shadow-[0_12px_32px_-24px_color-mix(in_oklab,var(--foreground)_22%,transparent)] md:hidden">
-            <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
-            <p className="text-[15px] font-medium text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
-              Fresh groceries,
-              <span className="block text-[1.78rem] leading-[1.08] text-primary">delivered in 15 min</span>
-            </h1>
-            <p className="mt-2.5 max-w-[280px] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
           </article>
 
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
