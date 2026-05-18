@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
@@ -109,8 +109,10 @@ function FlashDealsPage() {
                 key={deal.id}
                 className="group flex h-full min-h-[246px] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_10px_24px_-18px_rgba(15,23,42,0.45)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-18px_rgba(15,23,42,0.55)]"
               >
-                <a
-                  href={`/customer/product/${deal.id}?deal=true`}
+                <Link
+                  to="/customer/product/$id"
+                  params={{ id: deal.id }}
+                  search={(prev: Record<string, unknown>) => ({ ...prev, deal: true })}
                   className="relative block"
                   aria-label={deal.localizedName}
                 >
@@ -129,19 +131,14 @@ function FlashDealsPage() {
                       </span>
                     ) : null}
 
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                      }}
-                      aria-label={t("products.favorite", { defaultValue: "Favorite" })}
+                    <span
+                      aria-hidden="true"
                       className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/90 text-muted-foreground shadow-sm backdrop-blur"
                     >
                       <Heart className="size-4" />
-                    </button>
+                    </span>
                   </div>
-                </a>
+                </Link>
 
                 <div className="flex flex-1 flex-col p-3.5">
                   <div className={`inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary ${isArabic ? "self-end" : "self-start"}`}>
@@ -163,8 +160,8 @@ function FlashDealsPage() {
                   <div className={`mt-auto flex items-end justify-between gap-2 pt-3 ${isArabic ? "flex-row-reverse" : ""}`}>
                     <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
                       <div className={`flex items-baseline gap-1 ${isArabic ? "justify-end" : ""}`}>
-                        <span className="text-[1.03rem] font-extrabold leading-none text-[#2A7543]">{dealPrice.toFixed(2)}</span>
-                        <span className="text-[11px] font-bold leading-none text-[#2A7543]">MAD</span>
+                        <span className="text-[1.03rem] font-extrabold leading-none text-primary">{dealPrice.toFixed(2)}</span>
+                        <span className="text-[11px] font-bold leading-none text-primary">MAD</span>
                       </div>
                       {oldPrice > dealPrice ? (
                         <span className="mt-0.5 block text-[11px] leading-none text-muted-foreground line-through">
@@ -177,7 +174,7 @@ function FlashDealsPage() {
                       <div className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-border bg-card px-1.5 shadow-sm">
                         <button
                           type="button"
-                          className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
+                          className="inline-flex h-[1.875rem] w-[1.875rem] items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
                           onClick={() => decreaseItem(deal.id)}
                           aria-label="Decrease quantity"
                         >
@@ -186,7 +183,7 @@ function FlashDealsPage() {
                         <span className="min-w-5 text-center text-xs font-semibold text-foreground">{cartQty}</span>
                         <button
                           type="button"
-                          className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
+                          className="inline-flex h-[1.875rem] w-[1.875rem] items-center justify-center rounded-full bg-muted text-foreground transition active:scale-95"
                           onClick={() => increaseItem(deal.id)}
                           aria-label="Increase quantity"
                         >
@@ -196,7 +193,7 @@ function FlashDealsPage() {
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#2A7543] px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-12px_rgba(42,117,67,0.8)] transition-all duration-200 hover:brightness-105 active:scale-[0.98]"
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-[0_10px_18px_-12px_hsl(var(--primary)/0.75)] transition-all duration-200 hover:brightness-105 active:scale-[0.98]"
                         onClick={() => {
                           addCartItem({
                             id: deal.id,
