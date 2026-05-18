@@ -798,10 +798,6 @@ export const setCyclistActiveState = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
-      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
-        await evaluateCustomerBehavior(order.customer_user_id);
-      }
-
       return { ok: true, isActive: data.isActive };
     } catch (error) {
       console.error("setCyclistActiveState failed:", error);
@@ -1099,6 +1095,10 @@ export const completeCustomerDeliveryByOrder = createServerFn({ method: "POST" }
 
       if (error) {
         throw new Error(error.message);
+      }
+
+      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+        await evaluateCustomerBehavior(order.customer_user_id);
       }
 
       if (isPlatformSubscriptionOrder && typeof order.subscription_id === "string" && order.subscription_id.length > 0) {
