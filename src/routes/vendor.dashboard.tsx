@@ -292,6 +292,7 @@ function VendorDashboardPage() {
   const [flashDraft, setFlashDraft] = useState<Record<string, { enabled: boolean; price: string; endAt: string }>>({});
   const [isSavingInventoryFor, setIsSavingInventoryFor] = useState<string | null>(null);
   const [isSavingFlashFor, setIsSavingFlashFor] = useState<string | null>(null);
+  const [isConfirmingPackedOrder, setIsConfirmingPackedOrder] = useState(false);
   const [trustedCustomerPhone, setTrustedCustomerPhone] = useState("");
   const [trustedCustomerMaxLimit, setTrustedCustomerMaxLimit] = useState("");
   const [trustedCustomerName, setTrustedCustomerName] = useState("");
@@ -1280,6 +1281,7 @@ function VendorDashboardPage() {
         dashboardQuery.refetch(),
         queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
         queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
       ]);
       toast.success(t("vendorDashboard.toasts.markedReady"));
 
@@ -1441,14 +1443,19 @@ function VendorDashboardPage() {
 
   const handleConfirmPackedOrder = async () => {
     if (!packingOrder || !isPackingComplete) return;
-    const wasUpdated = await handleMarkReady(packingOrder.id);
-    if (wasUpdated) {
-      setPackingProgressByOrder((current) => {
-        const next = { ...current };
-        delete next[packingOrder.id];
-        return next;
-      });
-      setPackingOrderId(null);
+    try {
+      setIsConfirmingPackedOrder(true);
+      const wasUpdated = await handleMarkReady(packingOrder.id);
+      if (wasUpdated) {
+        setPackingProgressByOrder((current) => {
+          const next = { ...current };
+          delete next[packingOrder.id];
+          return next;
+        });
+        setPackingOrderId(null);
+      }
+    } finally {
+      setIsConfirmingPackedOrder(false);
     }
   };
 
@@ -2154,11 +2161,11 @@ function VendorDashboardPage() {
                     "rounded-full px-4 disabled:bg-muted disabled:text-muted-foreground disabled:hover:bg-muted",
                     isPackingComplete && "bg-success text-success-foreground hover:bg-success/90",
                   )}
-                  disabled={!isPackingComplete || (packingOrderId ? isUpdating === packingOrderId : false)}
+                  disabled={!isPackingComplete || isConfirmingPackedOrder || (packingOrderId ? isUpdating === packingOrderId : false)}
                   onClick={handleConfirmPackedOrder}
                 >
                   <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                  {packingOrderId && isUpdating === packingOrderId
+                  {isConfirmingPackedOrder || (packingOrderId && isUpdating === packingOrderId)
                     ? t("vendorDashboard.actions.updating")
                     : t("vendorDashboard.packOrder.confirmAndMarkReady", { packed: packedItemsCount, total: totalPackingItems })}
                 </Button>
