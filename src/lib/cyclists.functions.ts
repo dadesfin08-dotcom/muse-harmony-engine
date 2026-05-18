@@ -56,6 +56,12 @@ const settleVendorHandoverInputSchema = z.object({
   vendorId: z.string().uuid(),
 });
 
+const cancelActiveDeliveryInputSchema = z.object({
+  cyclistId: z.string().uuid(),
+  orderId: z.string().uuid(),
+  reason: z.enum(["cod_rejection", "unreachable", "fake_order"]),
+});
+
 type CyclistRow = {
   id: string;
   full_name: string;
@@ -1197,5 +1203,79 @@ export const settleVendorCashHandover = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("settleVendorCashHandover failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to settle cash handover.");
+    }
+  });
+
+export const cancelActiveDeliveryByOrder = createServerFn({ method: "POST" })
+  .inputValidator((input) => cancelActiveDeliveryInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: order, error: orderError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, cyclist_id, status, customer_user_id")
+        .eq("id", data.orderId)
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["in_delivery"])
+        .maybeSingle();
+
+      if (orderError) {
+        throw new Error(orderError.message);
+      }
+
+      if (!order?.id) {
+        throw new Error("Order is not an active delivery for this cyclist.");
+      }
+
+      const nowIso = new Date().toISOString();
+      const { error: cancelError } = await (supabaseAdmin as any)
+        .from("orders")
+        .update({
+          status: "cancelled",
+          cyclist_id: null,
+          updated_at: nowIso,
+        })
+        .eq("id", data.orderId)
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["in_delivery"]);
+
+      if (cancelError) {
+        throw new Error(cancelError.message);
+      }
+
+      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+        const patch: Record<string, unknown> = {
+          strikes: "strikes + 1",
+          cancelled_orders: "cancelled_orders + 1",
+          updated_at: nowIso,
+        };
+
+        if (data.reason === "cod_rejection") {
+          patch.cod_rejections = "cod_rejections + 1";
+        }
+
+        if (data.reason === "fake_order") {
+          patch.fake_orders = "fake_orders + 1";
+        }
+
+        const { error: profileError } = await (supabaseAdmin as any)
+          .from("profiles")
+          .update(patch)
+          .eq("id", order.customer_user_id);
+
+        if (profileError) {
+          throw new Error(profileError.message);
+        }
+
+        await evaluateCustomerBehavior(order.customer_user_id);
+      }
+
+      void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+        console.error("Push queue processing after cyclist cancellation failed:", pushQueueError);
+      });
+
+      return { ok: true };
+    } catch (error) {
+      console.error("cancelActiveDeliveryByOrder failed:", error);
+      throw new Error(error instanceof Error ? error.message : "Failed to cancel active delivery.");
     }
   });
