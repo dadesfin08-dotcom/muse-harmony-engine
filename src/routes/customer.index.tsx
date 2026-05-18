@@ -2647,6 +2647,7 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Scan"
+                  onClick={openOrderQrScanner}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
                 >
                   <ScanLine className="size-3.5" />
@@ -2796,6 +2797,7 @@ function Index() {
               <button
                 type="button"
                 aria-label="Scan"
+                onClick={openOrderQrScanner}
                 className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
               >
                 <ScanLine className="size-[13px]" />
@@ -2906,6 +2908,7 @@ function Index() {
                 <button
                   type="button"
                   aria-label="Scan"
+                  onClick={openOrderQrScanner}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
                 >
                   <ScanLine className="size-[13px]" />
