@@ -1456,7 +1456,7 @@ export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, subscription_id")
+      .select("id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1495,6 +1495,10 @@ export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
       throw new Error(error?.message ?? "Failed to assign cyclist to subscription order.");
     }
 
+    if (typeof currentOrder.customer_user_id === "string" && currentOrder.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(currentOrder.customer_user_id);
+    }
+
     return { ok: true };
   });
 
@@ -1503,7 +1507,7 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: order, error: orderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, neighborhood_id, subscription_id")
+      .select("id, neighborhood_id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1578,6 +1582,10 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
 
     if (updateError || !updated?.id) {
       throw new Error(updateError?.message ?? "Failed to auto-dispatch subscription order.");
+    }
+
+    if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(order.customer_user_id);
     }
 
     return { ok: true, cyclistId: selectedCyclistId };
