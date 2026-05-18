@@ -4444,7 +4444,7 @@ function Index() {
               <div
                 ref={authSheetScrollRef}
                 onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
-                className={`flex-1 overflow-y-auto overscroll-contain transition-[padding-bottom] duration-300 ease-out ${customerPanelView === "support" ? "overflow-hidden px-0 pb-0 pt-0" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2"}`}
+                className={`flex-1 overflow-y-auto overscroll-contain ${customerPanelView === "support" ? "overflow-hidden px-0 pb-0 pt-0 transition-none" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out"}`}
                 style={{
                   paddingBottom:
                     customerPanelView === "support"
