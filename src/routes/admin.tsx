@@ -4386,11 +4386,151 @@ function AdminPage() {
                 />
               ) : null}
               {tab === "customers" ? (
-                <CustomersSection
-                  customers={adminCustomers}
-                  isLoading={dbHealthQuery.isLoading || adminCustomersQuery.isLoading}
-                  error={adminCustomersQuery.error}
-                />
+                <section className="space-y-4">
+                  <CustomerKPIs kpis={adminCustomerKpisQuery.data as { totalCustomers: number; vipCustomers: number; highRiskOrBlocked: number; averageLtv: number } | undefined} />
+                  <CustomerTable
+                    customers={adminCustomers}
+                    isLoading={dbHealthQuery.isLoading || adminCustomersQuery.isLoading}
+                    error={adminCustomersQuery.error}
+                    searchInput={customerSearchInput}
+                    statusFilter={customerStatusFilter}
+                    riskFilter={customerRiskFilter}
+                    sortBy={customerSortBy}
+                    page={adminCustomersData.page}
+                    pageSize={adminCustomersData.pageSize}
+                    total={adminCustomersData.total}
+                    onSearchInputChange={setCustomerSearchInput}
+                    onStatusFilterChange={setCustomerStatusFilter}
+                    onRiskFilterChange={setCustomerRiskFilter}
+                    onSortByChange={setCustomerSortBy}
+                    onPageChange={(nextPage) => setCrmPage(Math.max(1, nextPage))}
+                    onOpenCustomer={(customerId) => {
+                      setSelectedCustomerId(customerId);
+                      setIsCustomerDrawerOpen(true);
+                    }}
+                    onAction={(customerId, action) => {
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          const payload =
+                            action === "vip"
+                              ? { status: "vip" as const, riskScore: "low" as const }
+                              : action === "warning"
+                                ? { status: "warning" as const, riskScore: "medium" as const, strikesDelta: 1 }
+                                : action === "suspend"
+                                  ? { status: "suspicious" as const, riskScore: "high" as const }
+                                  : { status: "blocked" as const, riskScore: "high" as const };
+
+                          await saveAdminCustomerState({ data: { customerId, ...payload } });
+                          await Promise.all([adminCustomersQuery.refetch(), adminCustomerKpisQuery.refetch()]);
+                          if (selectedCustomerId === customerId) {
+                            await selectedCustomerProfileQuery.refetch();
+                          }
+                          toast.success("Customer status updated.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to update customer.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                  />
+                  <CustomerDrawer
+                    open={isCustomerDrawerOpen}
+                    profile={selectedCustomerProfileQuery.data as {
+                      id: string;
+                      fullName: string;
+                      phone: string;
+                      status: "active" | "vip" | "warning" | "suspicious" | "blocked";
+                      riskScore: "low" | "medium" | "high";
+                      strikes: number;
+                      codRejections: number;
+                      adminNotes: string;
+                      metrics: {
+                        totalSpent: number;
+                        averageOrderValue: number;
+                        totalOrders: number;
+                        cancellationRate: number;
+                        codRejections: number;
+                      };
+                      recentOrders: Array<{ id: string; createdAt: string; status: string; amount: number }>;
+                    } | null}
+                    notesDraft={customerNotesDraft}
+                    isSavingNotes={isSavingCustomerNotes}
+                    isUpdatingState={isUpdatingCustomerState}
+                    onOpenChange={setIsCustomerDrawerOpen}
+                    onNotesDraftChange={setCustomerNotesDraft}
+                    onSaveNotes={() => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsSavingCustomerNotes(true);
+                        try {
+                          await saveAdminCustomerNotes({ data: { customerId: selectedCustomerId, adminNotes: customerNotesDraft } });
+                          await selectedCustomerProfileQuery.refetch();
+                          await adminCustomersQuery.refetch();
+                          toast.success("Internal note saved.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to save note.");
+                        } finally {
+                          setIsSavingCustomerNotes(false);
+                        }
+                      })();
+                    }}
+                    onAdjustStrike={(type) => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          await saveAdminCustomerState({
+                            data: {
+                              customerId: selectedCustomerId,
+                              status: (selectedCustomerProfileQuery.data?.status ?? "active") as "active" | "vip" | "warning" | "suspicious" | "blocked",
+                              strikesDelta: type === "add" ? 1 : type === "remove" ? -1 : undefined,
+                              resetStrikes: type === "reset",
+                            },
+                          });
+                          await Promise.all([
+                            selectedCustomerProfileQuery.refetch(),
+                            adminCustomersQuery.refetch(),
+                            adminCustomerKpisQuery.refetch(),
+                          ]);
+                          toast.success("Strike record updated.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to update strikes.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                    onAction={(action) => {
+                      if (!selectedCustomerId) return;
+                      void (async () => {
+                        setIsUpdatingCustomerState(true);
+                        try {
+                          const payload =
+                            action === "vip"
+                              ? { status: "vip" as const, riskScore: "low" as const }
+                              : action === "warning"
+                                ? { status: "warning" as const, riskScore: "medium" as const, strikesDelta: 1 }
+                                : action === "suspend"
+                                  ? { status: "suspicious" as const, riskScore: "high" as const }
+                                  : { status: "blocked" as const, riskScore: "high" as const };
+                          await saveAdminCustomerState({ data: { customerId: selectedCustomerId, ...payload } });
+                          await Promise.all([
+                            selectedCustomerProfileQuery.refetch(),
+                            adminCustomersQuery.refetch(),
+                            adminCustomerKpisQuery.refetch(),
+                          ]);
+                          toast.success("Customer action applied.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Failed to apply action.");
+                        } finally {
+                          setIsUpdatingCustomerState(false);
+                        }
+                      })();
+                    }}
+                  />
+                </section>
               ) : null}
               {tab === "settings" ? (
                 <SettingsSection
