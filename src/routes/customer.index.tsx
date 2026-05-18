@@ -213,9 +213,9 @@ type SiteAdRow = {
 const adSlides: AdSlide[] = [
   {
     id: "hero",
-    image: heroImage,
+    image: fallbackProductImage,
     linkUrl: null,
-    alt: "Bicycle courier delivering groceries in Morocco",
+    alt: "Fresh grocery basket",
     headline: "Daily groceries delivered in minutes",
     copy: "Fast local essentials with clean bicycle delivery across Morocco.",
     tag: "Featured",
@@ -2078,7 +2078,7 @@ function Index() {
               </span>
             </button>
           </div>
-          <div className="mx-auto w-full max-w-6xl px-4 pb-4 sm:hidden">
+          <div className="mx-auto w-full max-w-6xl px-4 pb-2 sm:hidden">
             <div className="mb-3 flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -2089,90 +2089,10 @@ function Index() {
                 <span className="line-clamp-1">{selectedLocationLabel}</span>
               </button>
 
-              <button
-                aria-label="Notifications"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground"
-              >
+              <div className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground">
                 <Bell className="size-4.5" />
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-              </button>
-            </div>
-
-            <div ref={searchContainerRef} className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-              {predictiveSearchQuery.isFetching && hasSearchTerm ? (
-                <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              ) : null}
-              <input
-                ref={mobileSearchInputRef}
-                aria-label="Search products"
-                value={mobileSearchInput}
-                onFocus={() => setIsSearchOpen(true)}
-                onChange={(event) => {
-                  setMobileSearchInput(event.target.value);
-                  setIsSearchOpen(true);
-                }}
-                placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-12 w-full rounded-[20px] border border-border/70 bg-card pl-9 pr-24 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              />
-
-              <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Voice search"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
-                >
-                  <Mic className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Scan"
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
-                >
-                  <ScanLine className="size-3.5" />
-                </button>
               </div>
-
-              <AnimatePresence>
-                {isSearchOpen && hasSearchTerm ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
-                  >
-                    {predictiveSearchResults.length > 0 ? (
-                      predictiveSearchResults.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
-                        >
-                          <img
-                            src={item.imageUrl || productFallbackImage}
-                            alt={item.localizedName}
-                            className="h-11 w-11 rounded-lg border border-border object-cover"
-                            loading="lazy"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 block text-sm font-semibold text-foreground">
-                              {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
-                            </span>
-                            <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
-                          </span>
-                          <span className="shrink-0 text-sm font-bold text-emerald-600">
-                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
-                    )}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -2193,12 +2113,15 @@ function Index() {
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
           <article className="relative overflow-hidden rounded-[24px] border border-border/70 bg-card p-5 shadow-[var(--shadow-soft)] md:hidden">
             <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
+            <div className="absolute -bottom-1 right-0 h-[66%] w-[48%] overflow-hidden rounded-tl-[26px]">
+              <img src={fallbackProductImage} alt="Fresh grocery bundle" className="h-full w-full object-cover" loading="lazy" />
+            </div>
             <p className="text-lg font-semibold text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 text-balance text-4xl font-extrabold leading-tight text-foreground">
-              Fresh groceries,
-              <span className="block text-primary">delivered in 15 min</span>
+            <h1 className="mt-1 max-w-[64%] text-5xl font-extrabold leading-[0.98] text-foreground">
+              <span className="block">Fresh groceries,</span>
+              <span className="mt-1 block text-primary">delivered in 15 min</span>
             </h1>
-            <p className="mt-3 max-w-xs text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-3 max-w-[60%] text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
           </article>
 
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
@@ -2223,7 +2146,7 @@ function Index() {
 
           <div
             ref={bannerScrollRef}
-            className="flex w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide"
+            className="hidden w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide md:flex"
             onMouseEnter={() => setIsBannerInteracting(true)}
             onMouseLeave={() => setIsBannerInteracting(false)}
             onTouchStart={() => setIsBannerInteracting(true)}
@@ -2261,7 +2184,109 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-5 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
+        <section className="mx-auto w-full max-w-6xl px-4 pb-1 sm:hidden">
+          <div ref={searchContainerRef} className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 z-10 size-5 -translate-y-1/2 text-muted-foreground" />
+            {predictiveSearchQuery.isFetching && hasSearchTerm ? (
+              <Loader2 className="pointer-events-none absolute right-3 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            ) : null}
+            <input
+              ref={mobileSearchInputRef}
+              aria-label="Search products"
+              value={mobileSearchInput}
+              onFocus={() => setIsSearchOpen(true)}
+              onChange={(event) => {
+                setMobileSearchInput(event.target.value);
+                setIsSearchOpen(true);
+              }}
+              placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
+              className="h-14 w-full rounded-[22px] border border-border/70 bg-card pl-12 pr-24 text-base outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+            />
+
+            <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Voice search"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+              >
+                <Mic className="size-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Scan"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+              >
+                <ScanLine className="size-4" />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {isSearchOpen && hasSearchTerm ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="no-scrollbar absolute left-0 right-0 top-15 z-[100] max-h-[350px] overflow-y-auto rounded-2xl border border-border bg-card p-2 shadow-2xl"
+                >
+                  {predictiveSearchResults.length > 0 ? (
+                    predictiveSearchResults.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSearchResultClick(item.id)}
+                        className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                      >
+                        <img
+                          src={item.imageUrl || productFallbackImage}
+                          alt={item.localizedName}
+                          className="h-11 w-11 rounded-lg border border-border object-cover"
+                          loading="lazy"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 block text-sm font-semibold text-foreground">
+                            {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
+                          </span>
+                          <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-primary">
+                          {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </section>
+
+        <section
+          ref={bannerScrollRef}
+          className="mx-auto w-full max-w-6xl snap-x snap-mandatory overflow-x-auto px-4 pt-3 scrollbar-hide sm:hidden"
+          onTouchStart={() => setIsBannerInteracting(true)}
+          onTouchEnd={() => setIsBannerInteracting(false)}
+        >
+          {displayAdSlides.map((slide) => (
+            <div key={`mobile-${slide.id}`} className="w-full flex-shrink-0 snap-center">
+              <article className="relative h-[230px] w-full overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_16px_34px_-24px_rgba(17,24,39,0.45)]">
+                <img src={slide.image} alt={slide.alt} className="h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/40 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-background">
+                  <span className="mb-2 inline-flex rounded-full border border-background/60 bg-foreground/45 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
+                    {slide.tag}
+                  </span>
+                  <p className="text-[35px] leading-none font-extrabold">Daily groceries delivered in minutes</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-background/90">{slide.copy}</p>
+                </div>
+              </article>
+            </div>
+          ))}
+        </section>
+
+        <section className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
@@ -2309,7 +2334,7 @@ function Index() {
                       to="/customer/categories/$id"
                       params={{ id: item.id }}
                       key={shouldAnimateCategories ? `${item.id}-${index}` : item.id}
-                      className={`mx-1 inline-flex min-w-[96px] snap-start flex-col items-center gap-2 rounded-[22px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
+                      className={`mx-1 inline-flex min-w-[92px] snap-start flex-col items-center gap-2 rounded-[24px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
                     >
                       <span
                         className="flex h-14 w-14 items-center justify-center rounded-2xl"
@@ -2326,7 +2351,7 @@ function Index() {
                           <CategoryIcon iconName={item.icon_name} className="h-8 w-8 text-foreground" />
                         )}
                       </span>
-                      <span className="line-clamp-1 text-xs font-semibold text-foreground">{categoryName}</span>
+                      <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-foreground">{categoryName}</span>
                     </Link>
                   );
                 })}
@@ -2352,7 +2377,7 @@ function Index() {
             {teaserProducts.map((product) => (
               <article
                 key={product.id}
-                className="group relative overflow-hidden rounded-[24px] border border-border/70 bg-card pb-1 shadow-[0_14px_30px_-22px_rgba(17,24,39,0.3)] transition-all duration-300 hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-[30px] border border-border/70 bg-card pb-1 shadow-[0_14px_30px_-22px_rgba(17,24,39,0.3)] transition-all duration-300 hover:-translate-y-0.5"
               >
                 <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
                   <div className="relative aspect-square overflow-hidden bg-muted/35">
@@ -2375,7 +2400,7 @@ function Index() {
                   <Heart className="size-4 text-teal-700" />
                 </button>
 
-                <div className="p-3.5">
+                <div className="p-3">
                   <div className="flex flex-row justify-between items-center w-full mb-2">
                     <span className="inline-block rounded-full bg-primary/12 px-2.5 py-1 text-[10px] font-bold leading-none text-primary">
                       {getLocalizedText({
@@ -2393,11 +2418,11 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full line-clamp-2 min-h-[2.75rem] text-[15px] font-semibold leading-snug text-foreground">{product.name}</h3>
+                    <h3 className="w-full line-clamp-2 min-h-[2.5rem] text-[16px] font-semibold leading-snug text-foreground">{product.name}</h3>
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-2xl font-extrabold tracking-tight text-primary">
+                    <p className="text-[34px] font-extrabold tracking-tight text-primary leading-none">
                       {product.price} <span className="text-xs font-semibold">MAD</span>
                     </p>
 
@@ -2505,7 +2530,7 @@ function Index() {
                 return (
                 <article
                   key={pack.id}
-                  className="h-full w-[290px] flex-shrink-0 snap-center overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)] sm:w-[320px]"
+                  className="h-full w-[320px] flex-shrink-0 snap-center overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)]"
                 >
                   <button
                     type="button"
@@ -2523,7 +2548,7 @@ function Index() {
                         {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
                       </div>
                     </div>
-                    <div className="space-y-2 p-3">
+                      <div className="space-y-2 p-4">
                       <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
                       {pack.description ? (
                         <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p>
@@ -2533,7 +2558,7 @@ function Index() {
                     </div>
                   </button>
 
-                  <div className="space-y-3 px-3 pb-3">
+                    <div className="space-y-3 px-4 pb-4">
                     {packSubscriptionState?.status === "pending" ? (
                       <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
                         Pending Review / قيد المراجعة

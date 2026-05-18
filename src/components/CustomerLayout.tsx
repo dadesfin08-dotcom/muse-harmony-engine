@@ -270,7 +270,7 @@ export function CustomerLayout({
       </main>
 
       <nav
-        className="fixed inset-x-3 bottom-3 z-50 grid h-18 grid-cols-5 items-center justify-items-center rounded-[32px] border border-border/70 bg-card/90 px-1 pb-safe shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-4 bottom-3 z-50 grid h-20 grid-cols-5 items-center justify-items-center rounded-[32px] border border-border/70 bg-card/92 px-1 pb-safe shadow-[0_22px_45px_-24px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary">
             <House className="size-5" />
@@ -299,9 +299,9 @@ export function CustomerLayout({
                   type="button"
                   dir="ltr"
                   aria-label={t("language.label")}
-                  className="relative -top-5 z-50 mx-auto flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
+                  className="relative -top-6 z-50 mx-auto flex h-16 w-16 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
                 >
-                  <Languages className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
+                  <Languages className="h-7 w-7 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
                 </button>
               }
             />
