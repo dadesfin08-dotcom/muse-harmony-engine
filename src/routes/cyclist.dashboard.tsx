@@ -110,6 +110,7 @@ function CyclistDashboardPage() {
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
   const scanHandlerRef = useRef<(decodedText: string) => void>(() => undefined);
+  const scannerModeRef = useRef<ScannerMode>("customer");
   const isScanningRef = useRef(false);
   const isVerifyingCodeRef = useRef(false);
   const hasScannedRef = useRef(false);
@@ -421,6 +422,7 @@ function CyclistDashboardPage() {
     }
 
     const parsed = payload as { action?: string; order_id?: string; vendor_id?: string };
+    const modeAtScan = scannerModeRef.current;
     const action = String(parsed.action ?? "").trim();
     let orderIdForStateCheck: string | null = null;
 
@@ -430,7 +432,28 @@ function CyclistDashboardPage() {
     setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
-      if (scannerMode === "customer") {
+      if (modeAtScan === "merchant_clearance") {
+        if (action !== "vendor_handover") {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
+        const vendorId = String(parsed.vendor_id ?? "").trim();
+        if (!vendorId) {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
+        hasScannedRef.current = true;
+        const scanner = qrScannerRef.current;
+        qrScannerRef.current = null;
+        if (scanner) {
+          await safelyStopAndClearScanner(scanner);
+        }
+        setIsUpdatingOrderId(`vendor:${vendorId}`);
+        await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
+        toast.success(t("cyclist.settlementCompleted"));
+        setSuccessAnimationTitle("تم تسليم النقد بنجاح");
+        setSuccessAnimationSubtitle("تمت تصفية الحساب مع التاجر بنجاح.");
+      } else if (modeAtScan === "customer") {
         if (action !== "customer_delivery") {
           throw new Error(t("cyclist.invalidQr"));
         }
@@ -456,27 +479,6 @@ function CyclistDashboardPage() {
         );
         setSuccessAnimationTitle(t("cyclist.deliveryVerifiedTitle"));
         setSuccessAnimationSubtitle(t("cyclist.deliveryVerifiedSubtitle"));
-      } else if (scannerMode === "merchant_clearance") {
-        if (action !== "vendor_handover") {
-          throw new Error(t("cyclist.invalidQr"));
-        }
-
-        const vendorId = String(parsed.vendor_id ?? "").trim();
-        if (!vendorId) {
-          throw new Error(t("cyclist.invalidQr"));
-        }
-
-        hasScannedRef.current = true;
-        const scanner = qrScannerRef.current;
-        qrScannerRef.current = null;
-        if (scanner) {
-          await safelyStopAndClearScanner(scanner);
-        }
-        setIsUpdatingOrderId(`vendor:${vendorId}`);
-        await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
-        toast.success(t("cyclist.settlementCompleted"));
-        setSuccessAnimationTitle("تم تسليم النقد بنجاح");
-        setSuccessAnimationSubtitle("تمت تصفية الحساب مع التاجر بنجاح.");
       } else {
         throw new Error(t("cyclist.invalidQr"));
       }
@@ -533,7 +535,6 @@ function CyclistDashboardPage() {
     dashboardQuery,
     navigate,
     queryClient,
-    scannerMode,
     scannerPaused,
     session?.cyclistId,
     settleVendorHandover,
@@ -552,6 +553,7 @@ function CyclistDashboardPage() {
       return;
     }
 
+    scannerModeRef.current = mode;
     setScannerMode(mode);
     setSuccessAnimationVisible(false);
     setScannerPaused(false);
@@ -656,7 +658,7 @@ function CyclistDashboardPage() {
 
         if (mounted) {
           setScannerStatus(
-            scannerMode === "merchant_clearance"
+            scannerModeRef.current === "merchant_clearance"
               ? "وجّه الكاميرا نحو رمز التاجر لتصفية الحساب"
               : "وجّه الكاميرا نحو رمز QR الخاص بالزبون",
           );
@@ -677,7 +679,7 @@ function CyclistDashboardPage() {
         void safelyStopAndClearScanner(scanner);
       }
     };
-  }, [cyclist?.id, isScannerOpen, scannerMode, scannerPaused, session?.cyclistId, t]);
+  }, [cyclist?.id, isScannerOpen, scannerPaused, session?.cyclistId, t]);
 
   useEffect(() => {
     if (!successAnimationVisible) {
