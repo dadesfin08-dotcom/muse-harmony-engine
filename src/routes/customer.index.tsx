@@ -2922,9 +2922,9 @@ function Index() {
               const cartQty = getCartQuantity(product.id);
 
               return (
-                 <article
+                <article
                   key={`flash-grid-${product.id}`}
-                   className="flex h-full w-[170px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_12px_24px_-18px_rgba(15,23,42,0.35)] sm:w-[186px]"
+                  className="flex min-h-[258px] w-[170px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_12px_24px_-18px_rgba(15,23,42,0.35)] sm:w-[186px]"
                 >
                   <Link
                     to="/customer/product/$id"
@@ -2942,10 +2942,12 @@ function Index() {
                     </div>
                   </Link>
 
-                  <div className="flex-1 flex-col p-2.5 flex items-center justify-center">
-                    <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-snug text-foreground">{product.name}</h3>
+                  <div className="flex flex-1 flex-col p-3">
+                    <h3 className="min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.22] text-foreground">
+                      {product.name}
+                    </h3>
 
-                    <div className="mt-1.5 gap-1 flex items-center justify-center">
+                    <div className="mt-auto flex items-end gap-1 pt-2">
                       <span className="text-[11px] font-bold text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
@@ -2955,12 +2957,12 @@ function Index() {
                       </span>
                     </div>
 
-                    <div className="mt-2 flex items-center justify-center">
+                    <div className="mt-2 flex items-center">
                        {cartQty > 0 ? (
-                        <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-1 leading-none">
+                        <div className="inline-flex h-9 items-center gap-1 rounded-full border border-border bg-card px-1.5 leading-none">
                           <button
                             type="button"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground leading-none"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-foreground leading-none"
                             onClick={() => decreaseItem(product.id)}
                             aria-label="Decrease quantity"
                           >
@@ -2969,7 +2971,7 @@ function Index() {
                           <span className="min-w-5 text-center text-xs font-semibold text-foreground">{cartQty}</span>
                           <button
                             type="button"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-foreground leading-none"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-foreground leading-none"
                             onClick={() => increaseItem(product.id)}
                             aria-label="Increase quantity"
                           >
@@ -2979,7 +2981,7 @@ function Index() {
                       ) : (
                          <button
                           type="button"
-                          className="inline-flex items-center gap-1.5 rounded-[18px] bg-red-700 px-3 py-1.5 text-sm font-bold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-[16px] bg-red-700 px-3 text-xs font-semibold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]"
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
