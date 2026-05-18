@@ -1975,8 +1975,25 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-10 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-11 w-full rounded-2xl border border-border/70 bg-card pl-9 pr-24 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+
+              <div className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 items-center gap-1 sm:inline-flex">
+                <button
+                  type="button"
+                  aria-label="Voice search"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                >
+                  <Mic className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Scan"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                >
+                  <ScanLine className="size-3.5" />
+                </button>
+              </div>
 
               <AnimatePresence>
                 {isSearchOpen && hasSearchTerm ? (
@@ -2021,11 +2038,19 @@ function Index() {
             </div>
 
             <button
+              aria-label="Notifications"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
+            >
+              <Bell className="size-4.5" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
+            </button>
+
+            <button
               aria-label={t("header.userProfile")}
               onClick={() => {
                 openCustomerPanel("account");
               }}
-              className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted md:inline-flex"
+              className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
             >
               <UserCircle2 className="size-5" />
             </button>
@@ -2036,7 +2061,7 @@ function Index() {
                 onClick={() => {
                   openCustomerPanel("orders");
                 }}
-                className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted md:inline-flex"
+                className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
               >
                 <ClipboardList className="size-5" />
               </button>
@@ -2045,7 +2070,7 @@ function Index() {
             <button
               aria-label={cartLabel}
               onClick={openCart}
-              className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition hover:bg-muted md:inline-flex"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
             >
               <ShoppingCart className="size-5" />
               <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-destructive-foreground">
@@ -2053,15 +2078,26 @@ function Index() {
               </span>
             </button>
           </div>
-          <div className="mx-auto w-full max-w-6xl px-4 pb-3 sm:hidden">
-            <button
-              type="button"
-              onClick={() => setIsLocationModalOpen(true)}
-              className="mb-2 inline-flex items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted"
-            >
-              <MapPin className="size-3.5 text-primary" />
-              {selectedLocationLabel}
-            </button>
+          <div className="mx-auto w-full max-w-6xl px-4 pb-4 sm:hidden">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(true)}
+                className="inline-flex max-w-[78%] items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted"
+              >
+                <MapPin className="size-3.5 shrink-0 text-primary" />
+                <span className="line-clamp-1">{selectedLocationLabel}</span>
+              </button>
+
+              <button
+                aria-label="Notifications"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground"
+              >
+                <Bell className="size-4.5" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
+              </button>
+            </div>
+
             <div ref={searchContainerRef} className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
               {predictiveSearchQuery.isFetching && hasSearchTerm ? (
@@ -2077,8 +2113,25 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-10 w-full rounded-xl border border-input bg-card pl-9 pr-10 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
+                className="h-12 w-full rounded-[20px] border border-border/70 bg-card pl-9 pr-24 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+
+              <div className="absolute right-2 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Voice search"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                >
+                  <Mic className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Scan"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground"
+                >
+                  <ScanLine className="size-3.5" />
+                </button>
+              </div>
 
               <AnimatePresence>
                 {isSearchOpen && hasSearchTerm ? (
