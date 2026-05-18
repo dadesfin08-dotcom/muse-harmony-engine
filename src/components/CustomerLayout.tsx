@@ -336,8 +336,12 @@ export function CustomerLayout({
   const isProfileActive =
     isProfileHubOpen || isCustomerAuthModalOpen || customerPanelView === "profile" || location.pathname === "/profile";
   const navItemClass = (active: boolean) =>
-    `group flex h-full w-full flex-col items-center justify-center gap-1.5 text-[10px] leading-none transition-colors ${
+    `group flex h-full w-full flex-col items-center justify-center gap-1 text-[10px] leading-none transition-colors ${
       active ? "text-primary" : "text-muted-foreground hover:text-primary"
+    }`;
+  const navIconWrapClass = (active: boolean) =>
+    `inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+      active ? "bg-primary/14 text-primary" : "text-current"
     }`;
 
   return (
@@ -350,10 +354,12 @@ export function CustomerLayout({
       </main>
 
       <nav
-        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.4rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className={navItemClass(isHomeActive)}>
-            <House className="size-5" />
+            <span className={navIconWrapClass(isHomeActive)}>
+              <House className="size-5" />
+            </span>
             <span className="font-medium">{t("nav.home")}</span>
           </Link>
 
@@ -368,7 +374,9 @@ export function CustomerLayout({
             }}
             className={navItemClass(isSearchActive)}
           >
-            <Search className="size-5" />
+            <span className={navIconWrapClass(isSearchActive)}>
+              <Search className="size-5" />
+            </span>
             <span>{t("nav.search")}</span>
           </button>
 
@@ -379,7 +387,7 @@ export function CustomerLayout({
                   type="button"
                   dir="ltr"
                   aria-label={t("language.label")}
-                  className="relative -top-4 z-50 mx-auto flex h-[56px] w-[56px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
+                  className="relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
                 >
                   <Languages className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
                 </button>
@@ -394,7 +402,9 @@ export function CustomerLayout({
             aria-label={cartLabel}
           >
             <span className="relative">
-              <ShoppingCart className="size-5" />
+              <span className={navIconWrapClass(isCartActive)}>
+                <ShoppingCart className="size-5" />
+              </span>
               <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
                 {cartCount}
               </span>
@@ -409,7 +419,9 @@ export function CustomerLayout({
             }}
             className={navItemClass(isProfileActive)}
           >
-            <UserCircle2 className="size-5" />
+            <span className={navIconWrapClass(isProfileActive)}>
+              <UserCircle2 className="size-5" />
+            </span>
             <span>{t("nav.profile")}</span>
           </button>
       </nav>
