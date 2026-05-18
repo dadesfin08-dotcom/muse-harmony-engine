@@ -9,6 +9,7 @@ import {
 import type { AppLanguage } from "@/lib/i18n";
 import { getLocalizedValue, localizeText, resolveAppLanguage } from "@/lib/localization";
 import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
+import { evaluateCustomerBehavior } from "@/utils/customerAlgorithm";
 
 const moroccoPhoneSchema = z
   .string()
@@ -1194,6 +1195,10 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
 
       if (updateError) {
         throw new Error(updateError.message);
+      }
+
+      if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
+        await evaluateCustomerBehavior(order.customer_user_id);
       }
 
       void processPendingOrderPushEvents(20).catch((pushQueueError) => {
