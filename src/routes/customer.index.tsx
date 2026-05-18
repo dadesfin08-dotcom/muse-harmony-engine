@@ -1319,6 +1319,12 @@ function Index() {
         deliveryFeeHint: "سيتم إضافة هذا الرسم إلى الإجمالي النهائي.",
         closeModal: "إغلاق نافذة اختيار الموقع",
         confirmLocation: "تأكيد الموقع",
+        scannerPermissionDenied: "يرجى السماح باستخدام الكاميرا لمسح رمز الطلب.",
+        scannerCameraUnavailable: "تعذر فتح الكاميرا. حاول مرة أخرى.",
+        scannerPointToQr: "وجّه الكاميرا نحو رمز QR الخاص بالطلب.",
+        scannerSuccess: "تم التعرّف على الطلب بنجاح",
+        scannerInvalidQr: "رمز QR غير صالح",
+        scannerOrderNotFound: "الطلب غير موجود",
       };
     }
 
@@ -1402,6 +1408,12 @@ function Index() {
         deliveryFeeHint: "Ces frais seront ajoutés au total de la commande.",
         closeModal: "Fermer la fenêtre de sélection de zone",
         confirmLocation: "Confirmer la zone",
+        scannerPermissionDenied: "Veuillez autoriser la caméra pour scanner le code de commande.",
+        scannerCameraUnavailable: "Impossible d’ouvrir la caméra. Veuillez réessayer.",
+        scannerPointToQr: "Pointez votre caméra vers le QR de la commande.",
+        scannerSuccess: "Commande détectée avec succès",
+        scannerInvalidQr: "Code QR invalide",
+        scannerOrderNotFound: "Commande introuvable",
       };
     }
 
@@ -1484,6 +1496,12 @@ function Index() {
       deliveryFeeHint: "This fee will be added to your total.",
       closeModal: "Close location selection",
       confirmLocation: "Confirm Location",
+      scannerPermissionDenied: "Please allow camera access to scan the order QR code.",
+      scannerCameraUnavailable: "Unable to open camera. Please try again.",
+      scannerPointToQr: "Point your camera at the order QR code.",
+      scannerSuccess: "Order detected successfully",
+      scannerInvalidQr: "Invalid QR code",
+      scannerOrderNotFound: "Order not found",
     };
   }, [language]);
 
