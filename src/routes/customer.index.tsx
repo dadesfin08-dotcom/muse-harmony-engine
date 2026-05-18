@@ -101,7 +101,7 @@ import productMintTeaImage from "@/assets/product-mint-tea.jpg";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { type CustomerPanelView, useCustomerPanelStore } from "@/lib/customer-panel-store";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
@@ -2895,31 +2895,71 @@ function Index() {
         : language === "fr"
           ? "Chat en direct avec l’équipe support"
           : "Live chat with the support team";
+    const supportSendDisabled =
+      isSupportAttachmentUploading ||
+      supportIsTyping ||
+      (!supportImageDataUrl && (supportActiveTicketId ? supportMessageInput.trim().length === 0 : supportMessageInput.trim().length < 3));
 
     return (
-      <div className="space-y-3">
-        <section className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm backdrop-blur">
-          <div className={`flex items-start justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
-            <div className={isArabic ? "text-right" : "text-left"}>
-              <p className="text-sm font-semibold text-foreground">{supportTitle}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{supportSubtitle}</p>
+      <section className="relative flex min-h-[64vh] max-h-[78vh] flex-col overflow-hidden rounded-3xl border border-border/70 bg-card/90 shadow-xl backdrop-blur-xl md:min-h-[68vh] md:max-h-[82vh]">
+        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-3 pb-3 pt-3 backdrop-blur md:px-4">
+          <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
+                <Headset className="size-4" />
+              </span>
+              <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
+                <p className="truncate text-sm font-semibold text-foreground">{supportTitle}</p>
+                <div className={`mt-0.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
+                  <span className="inline-flex h-2 w-2 rounded-full bg-success" aria-hidden="true" />
+                  <span>{language === "ar" ? "الدعم متصل" : language === "fr" ? "Support en ligne" : "Support online"}</span>
+                </div>
+              </div>
             </div>
-            {supportUnreadCount > 0 ? (
-              <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge>
-            ) : null}
+
+            <div className={`flex items-center gap-1.5 ${isArabic ? "flex-row-reverse" : ""}`}>
+              {supportUnreadCount > 0 ? <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge> : null}
+              <Button
+                type="button"
+                size="icon"
+                variant="soft"
+                className="h-8 w-8 rounded-full"
+                onClick={() => {
+                  setIsCustomerAuthModalOpen(false);
+                  setCustomerPanelView("account");
+                  void navigate({ to: "/customer" });
+                }}
+                aria-label={language === "ar" ? "العودة للرئيسية" : language === "fr" ? "Retour à l'accueil" : "Back to homepage"}
+              >
+                <House className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full"
+                onClick={() => setIsCustomerAuthModalOpen(false)}
+                aria-label={language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
           </div>
+
+          <div className={`mt-2 text-xs text-muted-foreground ${isArabic ? "text-right" : "text-left"}`}>{supportSubtitle}</div>
+
           {supportContext?.orderId ? (
-            <div className={`mt-3 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
+            <div className={`mt-2 flex flex-wrap gap-1.5 ${isArabic ? "justify-end" : ""}`}>
               <Badge variant="outline" className="rounded-full">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
               {supportContext.pickupCode ? <Badge className="rounded-full bg-primary/10 text-primary">{supportContext.pickupCode}</Badge> : null}
               {supportActiveTicket?.status ? <Badge variant="secondary" className="rounded-full">{supportActiveTicket.status}</Badge> : null}
             </div>
           ) : null}
-        </section>
+        </header>
 
         {supportTickets.length > 0 ? (
-          <section className="space-y-2 rounded-2xl border border-border bg-background/70 p-3">
-            <div className={`flex gap-2 overflow-x-auto ${isArabic ? "flex-row-reverse" : ""}`}>
+          <section className="border-b border-border/50 bg-background/65 px-3 py-2 md:px-4">
+            <div className={`no-scrollbar flex gap-1.5 overflow-x-auto ${isArabic ? "flex-row-reverse" : ""}`}>
               {supportTickets.map((ticket) => (
                 <button
                   key={ticket.id}
@@ -2938,74 +2978,87 @@ function Index() {
           </section>
         ) : null}
 
-        <section className="rounded-2xl border border-border bg-card p-3">
-          <div ref={supportMessagesScrollRef} className="max-h-[38vh] space-y-3 overflow-y-auto pr-1">
-            {supportMessagesQuery.isLoading ? (
-              <AppEmptyState title={language === "ar" ? "جاري تحميل المحادثة..." : language === "fr" ? "Chargement de la conversation..." : "Loading conversation..."} className="p-4" />
-            ) : supportMessagesWithDateMarkers.length === 0 ? (
-              <AppEmptyState
-                title={language === "ar" ? "ابدأ محادثة جديدة" : language === "fr" ? "Commencez une nouvelle conversation" : "Start a new conversation"}
-                subtitle={language === "ar" ? "أرسل رسالتك الأولى وسيتم الرد عليك فورًا." : language === "fr" ? "Envoyez votre premier message et nous répondrons rapidement." : "Send your first message and we will reply quickly."}
-                className="p-4"
-              />
-            ) : (
-              <>
-                {supportHasAdminUnread ? (
-                  <div className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-center text-[11px] font-medium text-primary">
-                    {language === "ar" ? "رسائل جديدة" : language === "fr" ? "Nouveaux messages" : "Unread replies"}
-                  </div>
-                ) : null}
-                {supportMessagesWithDateMarkers.map((entry) => {
-                  if (entry.type === "date") {
-                    return (
-                      <div key={entry.key} className="text-center text-[11px] text-muted-foreground">
-                        <span className="rounded-full border border-border bg-background px-2.5 py-1">{entry.label}</span>
-                      </div>
-                    );
-                  }
+        <div ref={supportMessagesScrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/35 px-3 py-3 md:px-4 md:py-4">
+          {supportMessagesQuery.isLoading ? (
+            <AppEmptyState title={language === "ar" ? "جاري تحميل المحادثة..." : language === "fr" ? "Chargement de la conversation..." : "Loading conversation..."} className="p-4" />
+          ) : supportMessagesWithDateMarkers.length === 0 ? (
+            <div className="mx-auto flex max-w-sm flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/80 px-5 py-8 text-center">
+              <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
+                <MessageCircle className="size-5" />
+              </span>
+              <p className="text-sm font-semibold text-foreground">
+                {language === "ar" ? "ابدأ محادثة جديدة" : language === "fr" ? "Commencez une nouvelle conversation" : "Start a new conversation"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {language === "ar"
+                  ? "اكتب سؤالك أو أرسل صورة، وسيرد فريق الدعم بسرعة."
+                  : language === "fr"
+                    ? "Écrivez votre question ou envoyez une image, l’équipe répondra rapidement."
+                    : "Write your question or share an image and our team will reply quickly."}
+              </p>
+            </div>
+          ) : (
+            <>
+              {supportHasAdminUnread ? (
+                <div className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-center text-[11px] font-medium text-primary">
+                  {language === "ar" ? "رسائل جديدة" : language === "fr" ? "Nouveaux messages" : "Unread replies"}
+                </div>
+              ) : null}
 
-                  const message = entry.message!;
-                  const isMine = message.senderType === "user";
-                  const hasAdminReplyAfter =
-                    isMine && supportMessages.some((row) => row.senderType === "admin" && new Date(row.createdAt) > new Date(message.createdAt));
-
+              {supportMessagesWithDateMarkers.map((entry) => {
+                if (entry.type === "date") {
                   return (
-                    <motion.div
-                      key={entry.key}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className={`flex ${isMine ? (isArabic ? "justify-start" : "justify-end") : isArabic ? "justify-end" : "justify-start"}`}
-                    >
-                      <div className={`max-w-[82%] space-y-1 rounded-2xl px-3 py-2 ${isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
-                        <p className="whitespace-pre-wrap break-words text-sm">{message.message}</p>
-                        {message.imageUrl ? (
-                          <img src={message.imageUrl} alt="support attachment" className="max-h-40 w-full rounded-xl object-cover" loading="lazy" />
-                        ) : null}
-                        <div className={`flex items-center gap-1 text-[10px] ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
-                          <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-                          {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
-                        </div>
-                      </div>
-                    </motion.div>
+                    <div key={entry.key} className="text-center text-[11px] text-muted-foreground">
+                      <span className="rounded-full border border-border bg-background px-2.5 py-1">{entry.label}</span>
+                    </div>
                   );
-                })}
-              </>
-            )}
+                }
 
-            {supportIsTyping ? (
-              <div className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
-                <Loader2 className="size-3 animate-spin" />
-                {language === "ar" ? "يتم الإرسال..." : language === "fr" ? "Envoi..." : "Sending..."}
-              </div>
-            ) : null}
-          </div>
-        </section>
+                const message = entry.message!;
+                const isMine = message.senderType === "user";
+                const hasAdminReplyAfter =
+                  isMine && supportMessages.some((row) => row.senderType === "admin" && new Date(row.createdAt) > new Date(message.createdAt));
 
-        <section className="sticky bottom-0 space-y-2 rounded-2xl border border-border bg-background/95 p-3 backdrop-blur">
+                return (
+                  <motion.div
+                    key={entry.key}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className={`flex ${isMine ? (isArabic ? "justify-start" : "justify-end") : isArabic ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[88%] space-y-1.5 rounded-2xl px-3 py-2.5 sm:max-w-[80%] ${
+                        isMine ? "bg-primary text-primary-foreground" : "border border-border/60 bg-card text-foreground"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.message}</p>
+                      {message.imageUrl ? (
+                        <img src={message.imageUrl} alt="support attachment" className="max-h-44 w-full rounded-xl object-cover" loading="lazy" />
+                      ) : null}
+                      <div className={`flex items-center gap-1 text-[10px] ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
+                        <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+                        {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </>
+          )}
+
+          {supportIsTyping ? (
+            <div className={`inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
+              <Loader2 className="size-3 animate-spin" />
+              {language === "ar" ? "يتم الإرسال..." : language === "fr" ? "Envoi..." : "Sending..."}
+            </div>
+          ) : null}
+        </div>
+
+        <footer className="border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur md:px-4 md:py-3">
           {supportImageDataUrl ? (
-            <div className="relative overflow-hidden rounded-xl border border-border">
-              <img src={supportImageDataUrl} alt="attachment preview" className="max-h-36 w-full object-cover" />
+            <div className="relative mb-2 overflow-hidden rounded-xl border border-border">
+              <img src={supportImageDataUrl} alt="attachment preview" className="max-h-32 w-full object-cover" />
               <Button
                 type="button"
                 variant="secondary"
@@ -3020,51 +3073,47 @@ function Index() {
           ) : null}
 
           <div className={`flex items-end gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
-            <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-background hover:bg-muted">
+            <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-background hover:bg-muted">
               <Paperclip className="h-4 w-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleSupportAttachmentChange} />
             </label>
-            <Textarea
-              value={supportMessageInput}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSupportMessageInput(event.target.value)}
-              placeholder={language === "ar" ? "اكتب رسالتك..." : language === "fr" ? "Écrivez votre message..." : "Write your message..."}
-              rows={2}
-              className={`min-h-[44px] max-h-32 resize-none rounded-2xl ${isArabic ? "text-right" : "text-left"}`}
-              onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendSupportMessageNow();
-                }
-              }}
-            />
+            <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card p-1.5">
+              <Textarea
+                value={supportMessageInput}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSupportMessageInput(event.target.value)}
+                placeholder={language === "ar" ? "اكتب رسالتك..." : language === "fr" ? "Écrivez votre message..." : "Write your message..."}
+                rows={2}
+                className={`min-h-[48px] max-h-32 resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 ${isArabic ? "text-right" : "text-left"}`}
+                onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void sendSupportMessageNow();
+                  }
+                }}
+              />
+            </div>
             <Button
               type="button"
               variant="hero"
               size="icon"
-              className="h-10 w-10 rounded-full"
-              disabled={
-                isSupportAttachmentUploading ||
-                supportIsTyping ||
-                (!supportImageDataUrl && (supportActiveTicketId ? supportMessageInput.trim().length === 0 : supportMessageInput.trim().length < 3))
-              }
+              className="h-10 w-10 shrink-0 rounded-full"
+              disabled={supportSendDisabled}
               onClick={() => void sendSupportMessageNow()}
             >
               {isSupportAttachmentUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
             </Button>
           </div>
 
-          <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
-            <div className={`flex items-center gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
-              <Button type="button" size="sm" variant={supportPriority === "high" ? "default" : "soft"} className="h-8 rounded-full px-3" onClick={() => setSupportPriority(supportPriority === "high" ? "normal" : "high")}>
-                {language === "ar" ? "أولوية عالية" : language === "fr" ? "Priorité haute" : "High priority"}
-              </Button>
-            </div>
-            <Button variant="soft" className="h-8 rounded-full px-3 text-xs" onClick={() => setCustomerPanelView("account")}>
+          <div className={`mt-2 flex flex-wrap items-center justify-between gap-1.5 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <Button type="button" size="sm" variant={supportPriority === "high" ? "default" : "soft"} className="h-7 rounded-full px-2.5 text-[11px]" onClick={() => setSupportPriority(supportPriority === "high" ? "normal" : "high")}>
+              {language === "ar" ? "أولوية عالية" : language === "fr" ? "Priorité haute" : "High priority"}
+            </Button>
+            <Button variant="soft" className="h-7 rounded-full px-2.5 text-[11px]" onClick={() => setCustomerPanelView("account")}>
               {customerUiCopy.backToAccount}
             </Button>
           </div>
-        </section>
-      </div>
+        </footer>
+      </section>
     );
   };
 
@@ -4298,7 +4347,9 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out sm:max-h-[90vh]"
+              className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out ${
+                customerPanelView === "support" ? "max-h-[94vh] sm:max-h-[95vh]" : "max-h-[85vh] sm:max-h-[90vh]"
+              }`}
               style={{
                 maxHeight: authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
@@ -4801,7 +4852,35 @@ function Index() {
           </Drawer>
         ) : (
           <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
-            <DialogContent className="[&>button]:hidden w-[95vw] max-w-md rounded-2xl border border-border bg-background p-8 shadow-2xl">
+            <DialogContent
+              className={`[&>button]:hidden w-[95vw] rounded-2xl border border-border bg-background shadow-2xl ${
+                customerSession && customerPanelView === "support"
+                  ? "max-w-3xl p-4 md:p-5"
+                  : "max-w-md p-8"
+              }`}
+            >
+              <DialogTitle className="sr-only">
+                {customerSession && customerPanelView === "support"
+                  ? language === "ar"
+                    ? "مركز الدعم"
+                    : language === "fr"
+                      ? "Centre d’assistance"
+                      : "Support Center"
+                  : customerSession
+                    ? customerUiCopy.account
+                    : customerUiCopy.welcomeBack}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {customerSession && customerPanelView === "support"
+                  ? language === "ar"
+                    ? "دردشة مباشرة مع فريق الدعم"
+                    : language === "fr"
+                      ? "Chat en direct avec l’équipe support"
+                      : "Live chat with the support team"
+                  : customerSession
+                    ? customerUiCopy.signedIn
+                    : customerUiCopy.enterPhoneToContinue}
+              </DialogDescription>
               <div className="relative flex flex-col gap-5">
                 <Button
                   type="button"
@@ -5277,6 +5356,14 @@ function Index() {
         }}
       >
         <DialogContent className={`w-[95vw] max-w-md rounded-2xl ${isArabic ? "text-right" : "text-left"}`} dir={isArabic ? "rtl" : "ltr"}>
+          <DialogTitle className="sr-only">{language === "ar" ? "ماسح رمز الطلب" : language === "fr" ? "Scanner de commande" : "Order QR scanner"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {language === "ar"
+              ? "وجّه الكاميرا إلى رمز الطلب"
+              : language === "fr"
+                ? "Pointez la caméra vers le QR de la commande"
+                : "Point the camera at your order QR code"}
+          </DialogDescription>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{scannerStatusMessage || customerUiCopy.scannerPointToQr}</p>
             <div id="customer-order-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
