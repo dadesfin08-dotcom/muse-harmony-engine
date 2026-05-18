@@ -198,6 +198,13 @@ import {
   getAdminOverviewAnalytics,
   getBrandEngineAnalytics,
   getPlatformPacksAnalytics,
+  getActiveHeroSection,
+  getHeroSectionSettings,
+  listHeroSections,
+  updateHeroSectionSettings,
+  uploadHeroSectionImage,
+  deleteHeroSection,
+  reorderHeroSections,
   activatePlatformSubscriber,
   listPlatformPacks,
   createPlatformPack,
@@ -777,6 +784,13 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchHeroSections = useServerFn(listHeroSections);
+  const fetchActiveHero = useServerFn(getActiveHeroSection);
+  const fetchFallbackHero = useServerFn(getHeroSectionSettings);
+  const saveHeroSectionToDatabase = useServerFn(updateHeroSectionSettings);
+  const uploadHeroSectionImageToStorage = useServerFn(uploadHeroSectionImage);
+  const deleteHeroSectionFromDatabase = useServerFn(deleteHeroSection);
+  const reorderHeroSectionsInDatabase = useServerFn(reorderHeroSections);
   const fetchAdminCustomerKpis = useServerFn(getAdminCustomerKpis);
   const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
@@ -957,6 +971,24 @@ function AdminPage() {
     queryKey: ["admin", "global-settings"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchGlobalSettings(),
+    placeholderData: (previousData) => previousData,
+  });
+  const heroSectionsQuery = useQuery({
+    queryKey: ["admin", "hero-sections"],
+    enabled: isAdminDataEnabled,
+    queryFn: async () => {
+      const rows = await fetchHeroSections();
+      if (rows.length > 0) return rows;
+
+      await fetchFallbackHero();
+      return fetchHeroSections();
+    },
+    placeholderData: (previousData) => previousData,
+  });
+  const activeHeroPreviewQuery = useQuery({
+    queryKey: ["admin", "hero-sections", "active-preview"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchActiveHero(),
     placeholderData: (previousData) => previousData,
   });
   const markupRulesQuery = useQuery({
@@ -1370,6 +1402,45 @@ function AdminPage() {
   const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
   const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+  const [heroImagePreviewUrl, setHeroImagePreviewUrl] = useState<string | null>(null);
+  const [isSavingHeroSection, setIsSavingHeroSection] = useState(false);
+  const [editingHeroSectionId, setEditingHeroSectionId] = useState<string | null>(null);
+  const [heroForm, setHeroForm] = useState({
+    id: "",
+    sortOrder: "0",
+    isActive: true,
+    imageUrl: "",
+    badgeAr: "",
+    badgeEn: "",
+    badgeFr: "",
+    titleAr: "",
+    titleEn: "",
+    titleFr: "",
+    subtitleAr: "",
+    subtitleEn: "",
+    subtitleFr: "",
+    deliveryTimingAr: "",
+    deliveryTimingEn: "",
+    deliveryTimingFr: "",
+    ctaTextAr: "",
+    ctaTextEn: "",
+    ctaTextFr: "",
+    ctaLink: "",
+    accentFrom: "",
+    accentTo: "",
+    accentChipBg: "",
+    accentChipText: "",
+    greetingAr: "",
+    greetingEn: "",
+    greetingFr: "",
+    headlineAr: "",
+    headlineEn: "",
+    headlineFr: "",
+    descriptionAr: "",
+    descriptionEn: "",
+    descriptionFr: "",
+  });
   const [isFactoryResetDialogOpen, setIsFactoryResetDialogOpen] = useState(false);
   const [factoryResetConfirmationText, setFactoryResetConfirmationText] = useState("");
   const [isResettingFactoryData, setIsResettingFactoryData] = useState(false);
@@ -1454,6 +1525,51 @@ function AdminPage() {
     setReceiptLogoPreviewUrl(row.receipt_logo_url ?? null);
 
   }, [adminInvoiceSettingsQuery.data]);
+
+  useEffect(() => {
+    const rows = (heroSectionsQuery.data ?? []) as Array<any>;
+    if (rows.length === 0) return;
+    if (editingHeroSectionId) return;
+
+    const row = rows[0];
+    setHeroForm({
+      id: row.id,
+      sortOrder: String(Number(row.sort_order ?? 0)),
+      isActive: Boolean(row.is_active),
+      imageUrl: row.image_url ?? "",
+      badgeAr: row.badge_ar ?? "",
+      badgeEn: row.badge_en ?? "",
+      badgeFr: row.badge_fr ?? "",
+      titleAr: row.title_ar ?? "",
+      titleEn: row.title_en ?? "",
+      titleFr: row.title_fr ?? "",
+      subtitleAr: row.subtitle_ar ?? "",
+      subtitleEn: row.subtitle_en ?? "",
+      subtitleFr: row.subtitle_fr ?? "",
+      deliveryTimingAr: row.delivery_timing_ar ?? "",
+      deliveryTimingEn: row.delivery_timing_en ?? "",
+      deliveryTimingFr: row.delivery_timing_fr ?? "",
+      ctaTextAr: row.cta_text_ar ?? "",
+      ctaTextEn: row.cta_text_en ?? "",
+      ctaTextFr: row.cta_text_fr ?? "",
+      ctaLink: row.cta_link ?? "",
+      accentFrom: row.accent_from ?? "",
+      accentTo: row.accent_to ?? "",
+      accentChipBg: row.accent_chip_bg ?? "",
+      accentChipText: row.accent_chip_text ?? "",
+      greetingAr: row.greeting_ar ?? "",
+      greetingEn: row.greeting_en ?? "",
+      greetingFr: row.greeting_fr ?? "",
+      headlineAr: row.headline_ar ?? "",
+      headlineEn: row.headline_en ?? "",
+      headlineFr: row.headline_fr ?? "",
+      descriptionAr: row.description_ar ?? "",
+      descriptionEn: row.description_en ?? "",
+      descriptionFr: row.description_fr ?? "",
+    });
+    setHeroImagePreviewUrl(row.image_url ?? null);
+    setHeroImageFile(null);
+  }, [heroSectionsQuery.data, editingHeroSectionId]);
 
   const analyticsQuery = useQuery({
     queryKey: ["admin", "vendor-analytics", selectedVendor?.id],
@@ -3676,6 +3792,220 @@ function AdminPage() {
     }
   };
 
+  const resetHeroForm = useCallback(() => {
+    setEditingHeroSectionId(null);
+    setHeroImageFile(null);
+    setHeroImagePreviewUrl(null);
+    setHeroForm({
+      id: "",
+      sortOrder: "0",
+      isActive: true,
+      imageUrl: "",
+      badgeAr: "",
+      badgeEn: "",
+      badgeFr: "",
+      titleAr: "",
+      titleEn: "",
+      titleFr: "",
+      subtitleAr: "",
+      subtitleEn: "",
+      subtitleFr: "",
+      deliveryTimingAr: "",
+      deliveryTimingEn: "",
+      deliveryTimingFr: "",
+      ctaTextAr: "",
+      ctaTextEn: "",
+      ctaTextFr: "",
+      ctaLink: "",
+      accentFrom: "",
+      accentTo: "",
+      accentChipBg: "",
+      accentChipText: "",
+      greetingAr: "",
+      greetingEn: "",
+      greetingFr: "",
+      headlineAr: "",
+      headlineEn: "",
+      headlineFr: "",
+      descriptionAr: "",
+      descriptionEn: "",
+      descriptionFr: "",
+    });
+  }, []);
+
+  const editHeroSection = useCallback((row: any) => {
+    setEditingHeroSectionId(row.id);
+    setHeroImageFile(null);
+    setHeroImagePreviewUrl(row.image_url ?? null);
+    setHeroForm({
+      id: row.id,
+      sortOrder: String(Number(row.sort_order ?? 0)),
+      isActive: Boolean(row.is_active),
+      imageUrl: row.image_url ?? "",
+      badgeAr: row.badge_ar ?? "",
+      badgeEn: row.badge_en ?? "",
+      badgeFr: row.badge_fr ?? "",
+      titleAr: row.title_ar ?? "",
+      titleEn: row.title_en ?? "",
+      titleFr: row.title_fr ?? "",
+      subtitleAr: row.subtitle_ar ?? "",
+      subtitleEn: row.subtitle_en ?? "",
+      subtitleFr: row.subtitle_fr ?? "",
+      deliveryTimingAr: row.delivery_timing_ar ?? "",
+      deliveryTimingEn: row.delivery_timing_en ?? "",
+      deliveryTimingFr: row.delivery_timing_fr ?? "",
+      ctaTextAr: row.cta_text_ar ?? "",
+      ctaTextEn: row.cta_text_en ?? "",
+      ctaTextFr: row.cta_text_fr ?? "",
+      ctaLink: row.cta_link ?? "",
+      accentFrom: row.accent_from ?? "",
+      accentTo: row.accent_to ?? "",
+      accentChipBg: row.accent_chip_bg ?? "",
+      accentChipText: row.accent_chip_text ?? "",
+      greetingAr: row.greeting_ar ?? "",
+      greetingEn: row.greeting_en ?? "",
+      greetingFr: row.greeting_fr ?? "",
+      headlineAr: row.headline_ar ?? "",
+      headlineEn: row.headline_en ?? "",
+      headlineFr: row.headline_fr ?? "",
+      descriptionAr: row.description_ar ?? "",
+      descriptionEn: row.description_en ?? "",
+      descriptionFr: row.description_fr ?? "",
+    });
+  }, []);
+
+  const saveHeroSection = async () => {
+    if (
+      !heroForm.titleAr.trim() ||
+      !heroForm.titleEn.trim() ||
+      !heroForm.titleFr.trim() ||
+      !heroForm.subtitleAr.trim() ||
+      !heroForm.subtitleEn.trim() ||
+      !heroForm.subtitleFr.trim()
+    ) {
+      toast.error("Please complete required multilingual hero fields.");
+      return;
+    }
+
+    const parsedSortOrder = Number(heroForm.sortOrder || "0");
+    if (Number.isNaN(parsedSortOrder) || parsedSortOrder < 0) {
+      toast.error("Sort order must be a non-negative number.");
+      return;
+    }
+
+    if (heroForm.ctaLink.trim() && !/^https?:\/\//.test(heroForm.ctaLink.trim()) && !heroForm.ctaLink.trim().startsWith("/")) {
+      toast.error("CTA link must be a full URL or start with '/'.");
+      return;
+    }
+
+    try {
+      setIsSavingHeroSection(true);
+      let imageUrl = heroForm.imageUrl.trim() || null;
+
+      if (heroImageFile) {
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Invalid image format."));
+          };
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(heroImageFile);
+        });
+
+        const uploaded = await uploadHeroSectionImageToStorage({
+          data: {
+            fileName: heroImageFile.name,
+            contentType: heroImageFile.type || "image/png",
+            dataUrl: imageDataUrl,
+          },
+        });
+        imageUrl = uploaded.publicUrl;
+      }
+
+      await saveHeroSectionToDatabase({
+        data: {
+          id: heroForm.id || undefined,
+          imageUrl,
+          sortOrder: parsedSortOrder,
+          badgeAr: heroForm.badgeAr.trim(),
+          badgeEn: heroForm.badgeEn.trim(),
+          badgeFr: heroForm.badgeFr.trim(),
+          titleAr: heroForm.titleAr.trim(),
+          titleEn: heroForm.titleEn.trim(),
+          titleFr: heroForm.titleFr.trim(),
+          subtitleAr: heroForm.subtitleAr.trim(),
+          subtitleEn: heroForm.subtitleEn.trim(),
+          subtitleFr: heroForm.subtitleFr.trim(),
+          deliveryTimingAr: heroForm.deliveryTimingAr.trim(),
+          deliveryTimingEn: heroForm.deliveryTimingEn.trim(),
+          deliveryTimingFr: heroForm.deliveryTimingFr.trim(),
+          ctaTextAr: heroForm.ctaTextAr.trim(),
+          ctaTextEn: heroForm.ctaTextEn.trim(),
+          ctaTextFr: heroForm.ctaTextFr.trim(),
+          ctaLink: heroForm.ctaLink.trim() || null,
+          accentFrom: heroForm.accentFrom.trim() || null,
+          accentTo: heroForm.accentTo.trim() || null,
+          accentChipBg: heroForm.accentChipBg.trim() || null,
+          accentChipText: heroForm.accentChipText.trim() || null,
+          greetingAr: heroForm.greetingAr.trim() || heroForm.badgeAr.trim(),
+          greetingEn: heroForm.greetingEn.trim() || heroForm.badgeEn.trim(),
+          greetingFr: heroForm.greetingFr.trim() || heroForm.badgeFr.trim(),
+          headlineAr: heroForm.headlineAr.trim() || heroForm.titleAr.trim(),
+          headlineEn: heroForm.headlineEn.trim() || heroForm.titleEn.trim(),
+          headlineFr: heroForm.headlineFr.trim() || heroForm.titleFr.trim(),
+          descriptionAr: heroForm.descriptionAr.trim() || heroForm.subtitleAr.trim(),
+          descriptionEn: heroForm.descriptionEn.trim() || heroForm.subtitleEn.trim(),
+          descriptionFr: heroForm.descriptionFr.trim() || heroForm.subtitleFr.trim(),
+          isActive: heroForm.isActive,
+        },
+      });
+
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+      setHeroImageFile(null);
+      toast.success("Hero section saved.");
+    } catch (error) {
+      console.error("Failed to save hero section:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save hero section.");
+    } finally {
+      setIsSavingHeroSection(false);
+    }
+  };
+
+  const removeHeroSection = async (id: string) => {
+    try {
+      await deleteHeroSectionFromDatabase({ data: { id } });
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+      if (heroForm.id === id) {
+        resetHeroForm();
+      }
+      toast.success("Hero section deleted.");
+    } catch (error) {
+      console.error("Failed to delete hero section:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete hero section.");
+    }
+  };
+
+  const shiftHeroSection = async (id: string, direction: "up" | "down") => {
+    const rows = ((heroSectionsQuery.data ?? []) as Array<any>).slice().sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
+    const index = rows.findIndex((row) => row.id === id);
+    if (index < 0) return;
+
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rows.length) return;
+
+    const swapped = [...rows];
+    [swapped[index], swapped[targetIndex]] = [swapped[targetIndex], swapped[index]];
+
+    try {
+      await reorderHeroSectionsInDatabase({ data: { orderedIds: swapped.map((row) => row.id) } });
+      await Promise.all([heroSectionsQuery.refetch(), activeHeroPreviewQuery.refetch()]);
+    } catch (error) {
+      console.error("Failed to reorder hero sections:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reorder hero sections.");
+    }
+  };
+
   const handleFactoryReset = async () => {
     if (factoryResetConfirmationText.trim() !== "RESET_ALL") {
       toast.error("Type RESET_ALL exactly to confirm factory reset.");
@@ -4568,6 +4898,21 @@ function AdminPage() {
                   onSaveMarkupRule={saveMarkupRule}
                   isSavingMarkupRule={isSavingMarkupRule}
                   editingMarkupRuleId={editingMarkupRuleId}
+                  heroSections={(heroSectionsQuery.data ?? []) as Array<any>}
+                  activeHeroPreview={activeHeroPreviewQuery.data as any}
+                  heroForm={heroForm}
+                  onHeroFormChange={setHeroForm}
+                  heroImagePreviewUrl={heroImagePreviewUrl}
+                  onHeroImageFileChange={(file: File | null) => setHeroImageFile(file)}
+                  onHeroImagePreviewChange={(url: string | null) => setHeroImagePreviewUrl(url)}
+                  onSaveHeroSection={saveHeroSection}
+                  onEditHeroSection={editHeroSection}
+                  onResetHeroForm={resetHeroForm}
+                  onDeleteHeroSection={removeHeroSection}
+                  onReorderHeroSection={shiftHeroSection}
+                  editingHeroSectionId={editingHeroSectionId}
+                  isHeroSectionLoading={dbHealthQuery.isLoading || heroSectionsQuery.isLoading || activeHeroPreviewQuery.isLoading}
+                  isSavingHeroSection={isSavingHeroSection}
                   onOpenFactoryResetDialog={() => setIsFactoryResetDialogOpen(true)}
                 />
               ) : null}
@@ -9703,6 +10048,21 @@ function SettingsSection({
   onSaveMarkupRule,
   isSavingMarkupRule,
   editingMarkupRuleId,
+  heroSections,
+  activeHeroPreview,
+  heroForm,
+  onHeroFormChange,
+  heroImagePreviewUrl,
+  onHeroImageFileChange,
+  onHeroImagePreviewChange,
+  onSaveHeroSection,
+  onEditHeroSection,
+  onResetHeroForm,
+  onDeleteHeroSection,
+  onReorderHeroSection,
+  editingHeroSectionId,
+  isHeroSectionLoading,
+  isSavingHeroSection,
   onOpenFactoryResetDialog,
 }: {
   form: {
@@ -9787,6 +10147,21 @@ function SettingsSection({
   onSaveMarkupRule: () => Promise<void>;
   isSavingMarkupRule: boolean;
   editingMarkupRuleId: string | null;
+  heroSections: Array<any>;
+  activeHeroPreview: any;
+  heroForm: any;
+  onHeroFormChange: Dispatch<SetStateAction<any>>;
+  heroImagePreviewUrl: string | null;
+  onHeroImageFileChange: (file: File | null) => void;
+  onHeroImagePreviewChange: (url: string | null) => void;
+  onSaveHeroSection: () => Promise<void>;
+  onEditHeroSection: (row: any) => void;
+  onResetHeroForm: () => void;
+  onDeleteHeroSection: (id: string) => Promise<void>;
+  onReorderHeroSection: (id: string, direction: "up" | "down") => Promise<void>;
+  editingHeroSectionId: string | null;
+  isHeroSectionLoading: boolean;
+  isSavingHeroSection: boolean;
   onOpenFactoryResetDialog: () => void;
 }) {
   const { i18n } = useTranslation();
@@ -9932,6 +10307,128 @@ function SettingsSection({
       >
         {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
+
+      <div className="rounded-xl border border-border bg-card p-4 md:p-5" dir={isArabic ? "rtl" : "ltr"}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Homepage Hero Manager</h3>
+            <p className="text-sm text-muted-foreground">Manage multilingual hero content, media, visibility and order.</p>
+          </div>
+          <Button type="button" variant="outline" className="rounded-md" onClick={onResetHeroForm}>New Hero</Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium text-foreground">Hero Image</label>
+            <div className="flex items-center gap-3 rounded-md border border-border bg-background p-3">
+              {heroImagePreviewUrl ? (
+                <img src={heroImagePreviewUrl} alt="Hero preview" className="h-16 w-24 rounded-md border border-border object-cover" />
+              ) : (
+                <div className="flex h-16 w-24 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">No image</div>
+              )}
+              <input
+                id="hero-image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  onHeroImageFileChange(file);
+                  if (!file) {
+                    onHeroImagePreviewChange(heroForm.imageUrl || null);
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => onHeroImagePreviewChange(typeof reader.result === "string" ? reader.result : null);
+                  reader.onerror = () => toast.error("Unable to preview selected hero image.");
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <Button type="button" variant="outline" className="rounded-md" onClick={() => document.getElementById("hero-image-upload")?.click()}>
+                Upload
+              </Button>
+            </div>
+          </div>
+
+          <Input placeholder="Sort order" value={heroForm.sortOrder} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, sortOrder: e.target.value }))} />
+          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+            <span className="text-sm font-medium text-foreground">Active</span>
+            <Switch checked={heroForm.isActive} onCheckedChange={(checked) => onHeroFormChange((c: any) => ({ ...c, isActive: checked }))} />
+          </div>
+
+          <Input placeholder="Badge AR" value={heroForm.badgeAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeAr: e.target.value }))} />
+          <Input placeholder="Badge EN" value={heroForm.badgeEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeEn: e.target.value }))} />
+          <Input placeholder="Badge FR" value={heroForm.badgeFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="Title AR" value={heroForm.titleAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleAr: e.target.value }))} />
+          <Input placeholder="Title EN" value={heroForm.titleEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleEn: e.target.value }))} />
+          <Input placeholder="Title FR" value={heroForm.titleFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleFr: e.target.value }))} className="md:col-span-2" />
+
+          <Textarea placeholder="Subtitle AR" value={heroForm.subtitleAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleAr: e.target.value }))} />
+          <Textarea placeholder="Subtitle EN" value={heroForm.subtitleEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleEn: e.target.value }))} />
+          <Textarea placeholder="Subtitle FR" value={heroForm.subtitleFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="Delivery AR" value={heroForm.deliveryTimingAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingAr: e.target.value }))} />
+          <Input placeholder="Delivery EN" value={heroForm.deliveryTimingEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingEn: e.target.value }))} />
+          <Input placeholder="Delivery FR" value={heroForm.deliveryTimingFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="CTA AR" value={heroForm.ctaTextAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextAr: e.target.value }))} />
+          <Input placeholder="CTA EN" value={heroForm.ctaTextEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextEn: e.target.value }))} />
+          <Input placeholder="CTA FR" value={heroForm.ctaTextFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextFr: e.target.value }))} className="md:col-span-2" />
+          <Input placeholder="CTA Link" value={heroForm.ctaLink} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaLink: e.target.value }))} className="md:col-span-2" />
+
+          <div className="md:col-span-2 flex flex-wrap gap-2">
+            <Button type="button" variant="hero" className="rounded-md" disabled={isSavingHeroSection} onClick={() => void onSaveHeroSection()}>
+              {isSavingHeroSection ? "Saving..." : editingHeroSectionId ? "Update Hero" : "Create Hero"}
+            </Button>
+            <Button type="button" variant="outline" className="rounded-md" onClick={onResetHeroForm}>Reset</Button>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-md border border-border">
+          <table className="w-full min-w-[780px] text-left text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Hero</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Order</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isHeroSectionLoading ? (
+                <tr><td className="px-3 py-5 text-muted-foreground" colSpan={4}>Loading hero sections...</td></tr>
+              ) : heroSections.length === 0 ? (
+                <tr><td className="px-3 py-5 text-muted-foreground" colSpan={4}>No hero sections yet.</td></tr>
+              ) : (
+                heroSections.map((row: any, index: number) => (
+                  <tr key={row.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-medium text-foreground">{row.title_en || row.headline_en || "Untitled"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.is_active ? "Active" : "Inactive"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.sort_order}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => onEditHeroSection(row)}>Edit</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={index === 0} onClick={() => void onReorderHeroSection(row.id, "up")}>Up</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={index === heroSections.length - 1} onClick={() => void onReorderHeroSection(row.id, "down")}>Down</Button>
+                        <Button type="button" size="sm" variant="destructive" onClick={() => void onDeleteHeroSection(row.id)}>Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {activeHeroPreview ? (
+          <div className="mt-4 rounded-xl border border-border bg-muted/25 p-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Hero Preview</p>
+            <p className="text-sm font-semibold text-foreground">{activeHeroPreview.title_en || activeHeroPreview.headline_en}</p>
+            <p className="text-xs text-muted-foreground">{activeHeroPreview.subtitle_en || activeHeroPreview.description_en}</p>
+          </div>
+        ) : null}
+      </div>
 
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
         <h3 className="text-sm font-semibold text-destructive">Orders Reset (مسح الطلبات فقط)</h3>

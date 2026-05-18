@@ -386,6 +386,27 @@ type GlobalSettingsRow = {
 type HeroSectionRow = {
   id: string;
   image_url: string | null;
+  sort_order: number;
+  badge_ar: string;
+  badge_en: string;
+  badge_fr: string;
+  title_ar: string;
+  title_en: string;
+  title_fr: string;
+  subtitle_ar: string;
+  subtitle_en: string;
+  subtitle_fr: string;
+  delivery_timing_ar: string;
+  delivery_timing_en: string;
+  delivery_timing_fr: string;
+  cta_text_ar: string;
+  cta_text_en: string;
+  cta_text_fr: string;
+  cta_link: string | null;
+  accent_from: string | null;
+  accent_to: string | null;
+  accent_chip_bg: string | null;
+  accent_chip_text: string | null;
   greeting_ar: string;
   greeting_en: string;
   greeting_fr: string;
@@ -453,6 +474,32 @@ const uploadPlatformPackAssetInputSchema = z.object({
 const heroSectionSettingsInputSchema = z.object({
   id: z.string().uuid().optional(),
   imageUrl: z.string().trim().url().max(2000).nullable(),
+  sortOrder: z.number().int().min(0).max(10_000).default(0),
+  badgeAr: z.string().trim().max(120).default(""),
+  badgeEn: z.string().trim().max(120).default(""),
+  badgeFr: z.string().trim().max(120).default(""),
+  titleAr: z.string().trim().max(200).default(""),
+  titleEn: z.string().trim().max(200).default(""),
+  titleFr: z.string().trim().max(200).default(""),
+  subtitleAr: z.string().trim().max(320).default(""),
+  subtitleEn: z.string().trim().max(320).default(""),
+  subtitleFr: z.string().trim().max(320).default(""),
+  deliveryTimingAr: z.string().trim().max(120).default(""),
+  deliveryTimingEn: z.string().trim().max(120).default(""),
+  deliveryTimingFr: z.string().trim().max(120).default(""),
+  ctaTextAr: z.string().trim().max(120).default(""),
+  ctaTextEn: z.string().trim().max(120).default(""),
+  ctaTextFr: z.string().trim().max(120).default(""),
+  ctaLink: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((value) => value.length === 0 || value.startsWith("/") || z.string().url().safeParse(value).success, "CTA link must be a valid URL or path.")
+    .nullable(),
+  accentFrom: z.string().trim().max(24).nullable().optional(),
+  accentTo: z.string().trim().max(24).nullable().optional(),
+  accentChipBg: z.string().trim().max(24).nullable().optional(),
+  accentChipText: z.string().trim().max(24).nullable().optional(),
   greetingAr: z.string().trim().min(1).max(120),
   greetingEn: z.string().trim().min(1).max(120),
   greetingFr: z.string().trim().min(1).max(120),
@@ -469,6 +516,14 @@ const uploadHeroSectionImageInputSchema = z.object({
   fileName: z.string().trim().min(1).max(200),
   contentType: z.string().trim().min(1).max(120),
   dataUrl: z.string().trim().min(1).max(12_000_000),
+});
+
+const heroSectionIdInputSchema = z.object({
+  id: z.string().uuid(),
+});
+
+const reorderHeroSectionsInputSchema = z.object({
+  orderedIds: z.array(z.string().uuid()).min(1).max(100),
 });
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
@@ -2344,6 +2399,27 @@ function normalizeHeroSectionRow(row: any): HeroSectionRow {
   return {
     id: row.id,
     image_url: typeof row.image_url === "string" && row.image_url.trim().length > 0 ? row.image_url.trim() : null,
+    sort_order: Number(row.sort_order ?? 0),
+    badge_ar: typeof row.badge_ar === "string" ? row.badge_ar.trim() : "",
+    badge_en: typeof row.badge_en === "string" ? row.badge_en.trim() : "",
+    badge_fr: typeof row.badge_fr === "string" ? row.badge_fr.trim() : "",
+    title_ar: typeof row.title_ar === "string" ? row.title_ar.trim() : "",
+    title_en: typeof row.title_en === "string" ? row.title_en.trim() : "",
+    title_fr: typeof row.title_fr === "string" ? row.title_fr.trim() : "",
+    subtitle_ar: typeof row.subtitle_ar === "string" ? row.subtitle_ar.trim() : "",
+    subtitle_en: typeof row.subtitle_en === "string" ? row.subtitle_en.trim() : "",
+    subtitle_fr: typeof row.subtitle_fr === "string" ? row.subtitle_fr.trim() : "",
+    delivery_timing_ar: typeof row.delivery_timing_ar === "string" ? row.delivery_timing_ar.trim() : "",
+    delivery_timing_en: typeof row.delivery_timing_en === "string" ? row.delivery_timing_en.trim() : "",
+    delivery_timing_fr: typeof row.delivery_timing_fr === "string" ? row.delivery_timing_fr.trim() : "",
+    cta_text_ar: typeof row.cta_text_ar === "string" ? row.cta_text_ar.trim() : "",
+    cta_text_en: typeof row.cta_text_en === "string" ? row.cta_text_en.trim() : "",
+    cta_text_fr: typeof row.cta_text_fr === "string" ? row.cta_text_fr.trim() : "",
+    cta_link: typeof row.cta_link === "string" && row.cta_link.trim().length > 0 ? row.cta_link.trim() : null,
+    accent_from: typeof row.accent_from === "string" && row.accent_from.trim().length > 0 ? row.accent_from.trim() : null,
+    accent_to: typeof row.accent_to === "string" && row.accent_to.trim().length > 0 ? row.accent_to.trim() : null,
+    accent_chip_bg: typeof row.accent_chip_bg === "string" && row.accent_chip_bg.trim().length > 0 ? row.accent_chip_bg.trim() : null,
+    accent_chip_text: typeof row.accent_chip_text === "string" && row.accent_chip_text.trim().length > 0 ? row.accent_chip_text.trim() : null,
     greeting_ar: typeof row.greeting_ar === "string" ? row.greeting_ar.trim() : "",
     greeting_en: typeof row.greeting_en === "string" ? row.greeting_en.trim() : "",
     greeting_fr: typeof row.greeting_fr === "string" ? row.greeting_fr.trim() : "",
@@ -2359,28 +2435,56 @@ function normalizeHeroSectionRow(row: any): HeroSectionRow {
   };
 }
 
-export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(async () => {
+const HERO_SECTION_SELECT = "id, image_url, sort_order, badge_ar, badge_en, badge_fr, title_ar, title_en, title_fr, subtitle_ar, subtitle_en, subtitle_fr, delivery_timing_ar, delivery_timing_en, delivery_timing_fr, cta_text_ar, cta_text_en, cta_text_fr, cta_link, accent_from, accent_to, accent_chip_bg, accent_chip_text, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at";
+
+export const listHeroSections = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("hero_sections")
-    .select(
-      "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
-    )
-    .order("is_active", { ascending: false })
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select(HERO_SECTION_SELECT)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false });
 
   if (error) {
-    throw new Error(error.message ?? "Failed to load hero section settings.");
+    throw new Error(error.message ?? "Failed to load hero sections.");
   }
 
-  if (data?.id) {
-    return normalizeHeroSectionRow(data);
+  return ((data ?? []) as any[]).map(normalizeHeroSectionRow);
+});
+
+export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: existingRows, error: existingRowsError } = await (supabaseAdmin as any)
+    .from("hero_sections")
+    .select(HERO_SECTION_SELECT)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (existingRowsError) {
+    throw new Error(existingRowsError.message ?? "Failed to load hero section settings.");
   }
+
+  if ((existingRows ?? []).length > 0) return normalizeHeroSectionRow(existingRows[0]);
 
   const { data: inserted, error: insertError } = await (supabaseAdmin as any)
     .from("hero_sections")
     .insert({
+      sort_order: 0,
+      badge_ar: "توصيل سريع بالدراجة",
+      badge_en: "Bicycle delivery across Morocco",
+      badge_fr: "Livraison vélo partout au Maroc",
+      title_ar: "خضروات طازجة تصلك في 15 دقيقة",
+      title_en: "Fresh groceries, delivered in 15 min",
+      title_fr: "Produits frais livrés en 15 min",
+      subtitle_ar: "منتجات محلية، توصيل سريع، ومتاجر موثوقة بالقرب منك.",
+      subtitle_en: "Local produce, fast riders, and trusted vendors near you.",
+      subtitle_fr: "Produits locaux, livraison rapide et vendeurs de confiance près de chez vous.",
+      delivery_timing_ar: "متوسط التوصيل: 18 دقيقة",
+      delivery_timing_en: "Avg. delivery: 18 min",
+      delivery_timing_fr: "Livraison moyenne : 18 min",
+      cta_text_ar: "ابدأ التسوق",
+      cta_text_en: "Start shopping",
+      cta_text_fr: "Commencer les achats",
+      cta_link: "/customer",
       greeting_ar: "صباح الخير 👋",
       greeting_en: "Good morning, 👋",
       greeting_fr: "Bonjour, 👋",
@@ -2392,9 +2496,7 @@ export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(
       description_fr: "Produits locaux, livraison rapide et vendeurs de confiance près de chez vous.",
       is_active: true,
     })
-    .select(
-      "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
-    )
+    .select(HERO_SECTION_SELECT)
     .single();
 
   if (insertError || !inserted?.id) {
@@ -2402,6 +2504,24 @@ export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(
   }
 
   return normalizeHeroSectionRow(inserted);
+});
+
+export const getActiveHeroSection = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("hero_sections")
+    .select(HERO_SECTION_SELECT)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message ?? "Failed to load active hero section.");
+  }
+
+  if (data?.id) return normalizeHeroSectionRow(data);
+  return null;
 });
 
 export const updateHeroSectionSettings = createServerFn({ method: "POST" })
@@ -2421,6 +2541,27 @@ export const updateHeroSectionSettings = createServerFn({ method: "POST" })
 
     const payload = {
       image_url: data.imageUrl,
+      sort_order: data.sortOrder,
+      badge_ar: data.badgeAr,
+      badge_en: data.badgeEn,
+      badge_fr: data.badgeFr,
+      title_ar: data.titleAr,
+      title_en: data.titleEn,
+      title_fr: data.titleFr,
+      subtitle_ar: data.subtitleAr,
+      subtitle_en: data.subtitleEn,
+      subtitle_fr: data.subtitleFr,
+      delivery_timing_ar: data.deliveryTimingAr,
+      delivery_timing_en: data.deliveryTimingEn,
+      delivery_timing_fr: data.deliveryTimingFr,
+      cta_text_ar: data.ctaTextAr,
+      cta_text_en: data.ctaTextEn,
+      cta_text_fr: data.ctaTextFr,
+      cta_link: data.ctaLink,
+      accent_from: data.accentFrom ?? null,
+      accent_to: data.accentTo ?? null,
+      accent_chip_bg: data.accentChipBg ?? null,
+      accent_chip_text: data.accentChipText ?? null,
       greeting_ar: data.greetingAr,
       greeting_en: data.greetingEn,
       greeting_fr: data.greetingFr,
@@ -2438,16 +2579,12 @@ export const updateHeroSectionSettings = createServerFn({ method: "POST" })
           .from("hero_sections")
           .update(payload)
           .eq("id", data.id)
-          .select(
-            "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
-          )
+          .select(HERO_SECTION_SELECT)
           .single()
       : await (supabaseAdmin as any)
           .from("hero_sections")
           .insert(payload)
-          .select(
-            "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
-          )
+          .select(HERO_SECTION_SELECT)
           .single();
 
     if (error || !saved?.id) {
@@ -2455,6 +2592,40 @@ export const updateHeroSectionSettings = createServerFn({ method: "POST" })
     }
 
     return normalizeHeroSectionRow(saved);
+  });
+
+export const deleteHeroSection = createServerFn({ method: "POST" })
+  .inputValidator((input) => heroSectionIdInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { error } = await (supabaseAdmin as any).from("hero_sections").delete().eq("id", data.id);
+    if (error) {
+      throw new Error(error.message ?? "Failed to delete hero section.");
+    }
+    return { ok: true };
+  });
+
+export const reorderHeroSections = createServerFn({ method: "POST" })
+  .inputValidator((input) => reorderHeroSectionsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    for (let index = 0; index < data.orderedIds.length; index += 1) {
+      const id = data.orderedIds[index];
+      const { error } = await (supabaseAdmin as any).from("hero_sections").update({ sort_order: index }).eq("id", id);
+      if (error) {
+        throw new Error(error.message ?? "Failed to reorder hero sections.");
+      }
+    }
+
+    const { data: rows, error: refreshError } = await (supabaseAdmin as any)
+      .from("hero_sections")
+      .select(HERO_SECTION_SELECT)
+      .order("sort_order", { ascending: true })
+      .order("updated_at", { ascending: false });
+
+    if (refreshError) {
+      throw new Error(refreshError.message ?? "Failed to reload hero sections after reordering.");
+    }
+
+    return ((rows ?? []) as any[]).map(normalizeHeroSectionRow);
   });
 
 export const uploadHeroSectionImage = createServerFn({ method: "POST" })
