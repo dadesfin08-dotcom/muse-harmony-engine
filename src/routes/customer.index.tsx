@@ -377,6 +377,7 @@ function Index() {
   const [desktopSearchInput, setDesktopSearchInput] = useState("");
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mobileHeroScrollProgress, setMobileHeroScrollProgress] = useState(0);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
@@ -1120,6 +1121,37 @@ function Index() {
 
     return () => clearInterval(interval);
   }, [isArabic, isBannerInteracting]);
+
+  useEffect(() => {
+    if (!isMobile || typeof window === "undefined") {
+      setMobileHeroScrollProgress(0);
+      return;
+    }
+
+    let rafId = 0;
+    let ticking = false;
+
+    const syncHeroProgress = () => {
+      if (ticking) return;
+      ticking = true;
+      rafId = window.requestAnimationFrame(() => {
+        const y = window.scrollY || 0;
+        const nextProgress = Math.min(1, Math.max(0, y / 120));
+        setMobileHeroScrollProgress((prev) => (Math.abs(prev - nextProgress) > 0.01 ? nextProgress : prev));
+        ticking = false;
+      });
+    };
+
+    syncHeroProgress();
+    window.addEventListener("scroll", syncHeroProgress, { passive: true });
+    window.addEventListener("resize", syncHeroProgress);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", syncHeroProgress);
+      window.removeEventListener("resize", syncHeroProgress);
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isMobile || !isCustomerAuthModalOpen || typeof window === "undefined") {
@@ -2129,20 +2161,34 @@ function Index() {
         </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative mx-auto mb-6 w-full max-w-[336px] overflow-visible px-1 pb-10 pt-1 md:hidden">
+          <article className="relative mx-auto mb-5 w-full overflow-visible px-0 pb-3 pt-1 md:hidden">
             <img
               src={heroImageUrl}
               alt="Fresh groceries"
               className="pointer-events-none absolute right-1 top-0 h-[88px] w-[88px] rounded-2xl object-cover opacity-95"
               loading="lazy"
             />
-            <p className="max-w-[58%] text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
-            <h1 className="mt-0.5 max-w-[68%] text-balance text-[1.62rem] font-bold leading-[1.04] text-foreground">
-              {localizedHeroTitle}
-            </h1>
-            <p className="mt-1.5 max-w-[66%] text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
+            <div
+              className="max-w-[70%] transition-[opacity,transform] duration-300 ease-out"
+              style={{
+                opacity: 1 - mobileHeroScrollProgress * 0.55,
+                transform: `translateY(${-mobileHeroScrollProgress * 16}px) scale(${1 - mobileHeroScrollProgress * 0.03})`,
+                transformOrigin: isArabic ? "top right" : "top left",
+              }}
+            >
+              <p className="text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
+              <h1 className="mt-0.5 text-balance text-[1.62rem] font-bold leading-[1.04] text-foreground">{localizedHeroTitle}</h1>
+              <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
+            </div>
 
-            <div ref={searchContainerRef} className="absolute inset-x-2 -bottom-5 z-20">
+            <div
+              ref={searchContainerRef}
+              className="sticky top-[4.4rem] z-30 mt-2 px-0.5 transition-[transform,opacity,box-shadow] duration-300 ease-out"
+              style={{
+                opacity: 1,
+                transform: `translateY(${(1 - mobileHeroScrollProgress) * 16}px)`,
+              }}
+            >
               <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
               {predictiveSearchQuery.isFetching && hasSearchTerm ? (
                 <Loader2 className="pointer-events-none absolute right-4 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -2157,7 +2203,7 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-11 w-full rounded-[18px] border border-border/45 bg-card pl-10 pr-21 text-sm shadow-[0_16px_30px_-22px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
+                className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm shadow-[0_20px_36px_-24px_color-mix(in_oklab,var(--foreground)_30%,transparent)] backdrop-blur-xl outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
               />
 
               <div className="absolute right-2.5 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
