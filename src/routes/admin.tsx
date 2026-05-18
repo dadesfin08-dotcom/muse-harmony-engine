@@ -831,6 +831,29 @@ function AdminPage() {
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
   const triggerSeedBrandDemoData = useServerFn(seedBrandEngineDemoData);
   const [isBrandEngineLiveRefreshEnabled, setIsBrandEngineLiveRefreshEnabled] = useState(true);
+  const [customerSearchInput, setCustomerSearchInput] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<"all" | "active" | "vip" | "warning" | "suspicious" | "blocked">("all");
+  const [customerRiskFilter, setCustomerRiskFilter] = useState<"all" | "low" | "medium" | "high">("all");
+  const [customerSortBy, setCustomerSortBy] = useState<"newest" | "highest_ltv" | "most_strikes">("newest");
+  const [crmPage, setCrmPage] = useState(1);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [customerNotesDraft, setCustomerNotesDraft] = useState("");
+  const [isCustomerDrawerOpen, setIsCustomerDrawerOpen] = useState(false);
+  const [isUpdatingCustomerState, setIsUpdatingCustomerState] = useState(false);
+  const [isSavingCustomerNotes, setIsSavingCustomerNotes] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearchInput.trim());
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [customerSearchInput]);
+
+  useEffect(() => {
+    setCrmPage(1);
+  }, [debouncedCustomerSearch, customerStatusFilter, customerRiskFilter, customerSortBy]);
   const dbHealthQuery = useQuery({
     queryKey: ["admin", "database-health"],
     queryFn: () => fetchDatabaseHealth(),
