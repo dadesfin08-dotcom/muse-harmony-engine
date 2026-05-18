@@ -36,6 +36,7 @@ const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
 
 type CyclistView = "available" | "active" | "platformPacks";
 type CancelReason = "cod_rejection" | "unreachable" | "fake_order";
+type ScannerMode = "customer" | "merchant_clearance";
 type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
@@ -94,10 +95,13 @@ function CyclistDashboardPage() {
   const [isSoundEnabled, setIsSoundEnabled] = useState(false);
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState<ScannerMode>("customer");
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [isProcessing, setIsProcessing] = useState(false);
   const [scannerPaused, setScannerPaused] = useState(false);
   const [successAnimationVisible, setSuccessAnimationVisible] = useState(false);
+  const [successAnimationTitle, setSuccessAnimationTitle] = useState("");
+  const [successAnimationSubtitle, setSuccessAnimationSubtitle] = useState("");
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
@@ -421,7 +425,11 @@ function CyclistDashboardPage() {
     setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
-      if (action === "customer_delivery") {
+      if (scannerMode === "customer") {
+        if (action !== "customer_delivery") {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
         const orderId = String(parsed.order_id ?? "").trim();
         if (!orderId) {
           throw new Error(t("cyclist.invalidQr"));
@@ -441,7 +449,13 @@ function CyclistDashboardPage() {
             ? t("cyclist.deliveryCompletedCash")
             : t("cyclist.deliveryCompleted"),
         );
-      } else if (action === "vendor_handover") {
+        setSuccessAnimationTitle(t("cyclist.deliveryVerifiedTitle"));
+        setSuccessAnimationSubtitle(t("cyclist.deliveryVerifiedSubtitle"));
+      } else if (scannerMode === "merchant_clearance") {
+        if (action !== "vendor_handover") {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
           throw new Error(t("cyclist.invalidQr"));
@@ -456,6 +470,8 @@ function CyclistDashboardPage() {
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
         toast.success(t("cyclist.settlementCompleted"));
+        setSuccessAnimationTitle("تم تسليم النقد بنجاح");
+        setSuccessAnimationSubtitle("تمت تصفية الحساب مع التاجر بنجاح.");
       } else {
         throw new Error(t("cyclist.invalidQr"));
       }
@@ -512,6 +528,7 @@ function CyclistDashboardPage() {
     isProcessing,
     navigate,
     queryClient,
+    scannerMode,
     scannerPaused,
     session?.cyclistId,
     settleVendorHandover,
@@ -524,12 +541,13 @@ function CyclistDashboardPage() {
     };
   }, [handleCyclistQrScan]);
 
-  const openScanner = () => {
+  const openScanner = (mode: ScannerMode) => {
     if (!session?.cyclistId || !cyclist?.id) {
       setScannerStatus(t("cyclist.cameraPreparing"));
       return;
     }
 
+    setScannerMode(mode);
     setSuccessAnimationVisible(false);
     setScannerPaused(false);
     setIsProcessing(false);
@@ -631,7 +649,11 @@ function CyclistDashboardPage() {
         );
 
         if (mounted) {
-          setScannerStatus(t("cyclist.cameraPointToQr"));
+          setScannerStatus(
+            scannerMode === "merchant_clearance"
+              ? "وجّه الكاميرا نحو رمز التاجر لتصفية الحساب"
+              : "وجّه الكاميرا نحو رمز QR الخاص بالزبون",
+          );
         }
       } catch (error) {
         console.error("QR camera permission/start failed:", error);
@@ -649,7 +671,7 @@ function CyclistDashboardPage() {
         void safelyStopAndClearScanner(scanner);
       }
     };
-  }, [cyclist?.id, isScannerOpen, scannerPaused, session?.cyclistId, t]);
+  }, [cyclist?.id, isScannerOpen, scannerMode, scannerPaused, session?.cyclistId, t]);
 
   useEffect(() => {
     if (!successAnimationVisible) {
@@ -769,7 +791,7 @@ function CyclistDashboardPage() {
                   </p>
                 </div>
               ))}
-              <Button className="w-full active:scale-95" onClick={() => openScanner()} disabled={isUpdatingOrderId !== null}>
+                <Button className="w-full active:scale-95" onClick={() => openScanner("merchant_clearance")} disabled={isUpdatingOrderId !== null}>
                 <Camera className="size-4" />
                 {t("cyclist.openUniversalScanner")}
               </Button>
@@ -853,7 +875,7 @@ function CyclistDashboardPage() {
                     actionIcon={Camera}
                     isBusy={isUpdatingOrderId === order.id}
                     onOpenDetails={() => setDetailsOrder(order)}
-                    onAction={() => openScanner()}
+                    onAction={() => openScanner("customer")}
                     onCancel={() => openCancelDialog(order)}
                   />
                 </motion.div>
@@ -883,7 +905,7 @@ function CyclistDashboardPage() {
                       isActiveDelivery={isActiveTask}
                       isBusy={isUpdatingOrderId === order.id}
                       onAccept={() => handleAcceptDelivery(order)}
-                      onDeliver={() => openScanner()}
+                      onDeliver={() => openScanner("customer")}
                     />
                   </motion.div>
                 );
@@ -959,8 +981,8 @@ function CyclistDashboardPage() {
 
       <FulfillmentSuccessAnimation
         open={successAnimationVisible}
-        title={t("cyclist.deliveryVerifiedTitle")}
-        subtitle={t("cyclist.deliveryVerifiedSubtitle")}
+        title={successAnimationTitle || t("cyclist.deliveryVerifiedTitle")}
+        subtitle={successAnimationSubtitle || t("cyclist.deliveryVerifiedSubtitle")}
       />
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">

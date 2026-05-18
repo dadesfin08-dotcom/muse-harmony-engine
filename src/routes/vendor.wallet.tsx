@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
@@ -33,6 +33,7 @@ function VendorWalletPage() {
   const [isVendorHandoverQrOpen, setIsVendorHandoverQrOpen] = useState(false);
   const [isPlatformScannerOpen, setIsPlatformScannerOpen] = useState(false);
   const [isSubmittingPlatformPayment, setIsSubmittingPlatformPayment] = useState(false);
+  const vendorClearanceToastLockRef = useRef(false);
   const [pendingScannedPayment, setPendingScannedPayment] = useState<{
     amount: number;
     timestamp: string;
@@ -110,6 +111,45 @@ function VendorWalletPage() {
       void supabase.removeChannel(channel);
     };
   }, [queryClient, vendorId, normalizedVendorPhoneNumber]);
+
+  useEffect(() => {
+    if (!isVendorHandoverQrOpen || !vendorId) {
+      vendorClearanceToastLockRef.current = false;
+      return;
+    }
+
+    const channel = supabase
+      .channel(`merchant_clearance_sync_${vendorId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `vendor_id=eq.${vendorId}`,
+        },
+        (payload) => {
+          const newStatus = String((payload.new as { status?: string } | null)?.status ?? "");
+          if (newStatus !== "cash_transferred_to_vendor" || vendorClearanceToastLockRef.current) {
+            return;
+          }
+
+          vendorClearanceToastLockRef.current = true;
+          setIsVendorHandoverQrOpen(false);
+          toast.success("نجاح العملية", {
+            description: "تم استلام النقد من السائق وتحديث محفظتك.",
+          });
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "wallet", vendorId, normalizedVendorPhoneNumber] });
+          void queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+      vendorClearanceToastLockRef.current = false;
+    };
+  }, [isVendorHandoverQrOpen, normalizedVendorPhoneNumber, queryClient, vendorId]);
 
   useEffect(() => {
     if (!vendorId) return;
