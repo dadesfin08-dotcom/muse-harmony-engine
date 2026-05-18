@@ -28,6 +28,10 @@ type CustomerRow = {
   address: string | null;
   neighborhood_id: string | null;
   status: "active" | "vip" | "warning" | "suspicious" | "blocked" | null;
+  system_tags: string[] | null;
+  cod_rejections: number | null;
+  fake_orders: number | null;
+  cancelled_orders: number | null;
 };
 
 type LegacyCustomerRow = {
@@ -115,7 +119,9 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
     try {
       const { data: profile, error } = await (supabaseAdmin as any)
         .from("profiles")
-        .select("id, phone, full_name, address, neighborhood_id, status")
+        .select(
+          "id, phone, full_name, address, neighborhood_id, status, system_tags, cod_rejections, fake_orders, cancelled_orders",
+        )
         .eq("phone", data.phoneNumber)
         .maybeSingle();
 
@@ -146,6 +152,10 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
           savedInstructions: legacyRow?.saved_instructions ?? null,
           neighborhoodId: profileRow?.neighborhood_id ?? legacyRow?.neighborhood_id ?? null,
           status: profileRow?.status ?? "active",
+          systemTags: Array.isArray(profileRow?.system_tags) ? profileRow.system_tags : [],
+          codRejections: Number(profileRow?.cod_rejections ?? 0),
+          fakeOrders: Number(profileRow?.fake_orders ?? 0),
+          cancelledOrders: Number(profileRow?.cancelled_orders ?? 0),
         };
       }
 
