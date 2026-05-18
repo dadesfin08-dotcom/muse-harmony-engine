@@ -1875,7 +1875,7 @@ function Index() {
   const addToCart = (product: Product, selectedVariant?: string | null) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
@@ -1897,7 +1897,7 @@ function Index() {
       alt: product.alt,
     });
 
-    toast.success("Added to cart", {
+    toast.success(customerUiCopy.toastAddedToCart, {
       description: product.name,
       duration: 1400,
     });
@@ -1920,7 +1920,7 @@ function Index() {
   }) => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
@@ -1934,7 +1934,7 @@ function Index() {
       alt: deal.alt,
     });
 
-    toast.success("Added to cart", {
+    toast.success(customerUiCopy.toastAddedToCart, {
       description: deal.name,
       duration: 1400,
     });
@@ -1943,14 +1943,14 @@ function Index() {
   const openCheckout = () => {
     if (!selectedNeighborhoodId) {
       setIsLocationModalOpen(true);
-      toast.error("Select your delivery location first.");
+      toast.error(customerUiCopy.toastSelectLocationFirst);
       return;
     }
 
     if (!customerSession?.phoneNumber) {
       closeCart();
       setIsCustomerAuthModalOpen(true);
-      toast.error("Login is required before checkout.");
+      toast.error(customerUiCopy.toastLoginRequired);
       return;
     }
 
@@ -1958,7 +1958,7 @@ function Index() {
     const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
     if (isRestricted) {
       closeCart();
-      toast.error("Your account has been restricted due to policy violations. Please contact support.");
+      toast.error(customerUiCopy.toastAccountRestricted);
       return;
     }
 
@@ -1982,19 +1982,19 @@ function Index() {
   const confirmOrder = async () => {
     if (!customerSession?.phoneNumber) {
       setIsCustomerAuthModalOpen(true);
-      toast.error("Please login first.");
+      toast.error(customerUiCopy.toastPleaseLoginFirst);
       return;
     }
 
     const accountStatus = customerProfileQuery.data?.status;
     const isRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
     if (isRestricted) {
-      toast.error("Your account has been restricted due to policy violations. Please contact support.");
+      toast.error(customerUiCopy.toastAccountRestricted);
       return;
     }
 
     if (!fullName.trim()) {
-      toast.error("Please enter your full name.");
+      toast.error(customerUiCopy.toastEnterFullName);
       return;
     }
 
@@ -2067,10 +2067,10 @@ function Index() {
 
       setCheckoutStep("success");
       clearCart();
-      toast.success("Order confirmed successfully.");
+      toast.success(customerUiCopy.toastOrderConfirmed);
     } catch (error) {
       console.error("Failed to confirm order:", error);
-      toast.error("Failed to confirm order. Please try again.");
+      toast.error(customerUiCopy.toastOrderFailed);
     } finally {
       setIsSubmittingOrder(false);
     }
@@ -2270,7 +2270,7 @@ function Index() {
 
   const saveLocationSelection = async () => {
     if (!selectedCommuneId || !selectedNeighborhoodId) {
-      toast.error("Please select both commune and neighborhood.");
+      toast.error(customerUiCopy.toastSelectCommuneNeighborhood);
       return;
     }
 
@@ -2288,7 +2288,7 @@ function Index() {
     }
 
     if (!commune || !neighborhood) {
-      toast.error("Invalid location selection. Please try again.");
+      toast.error(customerUiCopy.toastInvalidLocation);
       return;
     }
 
@@ -2312,12 +2312,12 @@ function Index() {
       } catch (error) {
         console.error("Failed to sync customer neighborhood:", error);
         locationSyncRef.current = null;
-        toast.error("Location saved locally, but cloud sync failed. Please retry.");
+        toast.error(customerUiCopy.toastLocationSyncFailed);
       }
     }
 
     setIsLocationModalOpen(false);
-    toast.success("Delivery location saved.");
+    toast.success(customerUiCopy.toastLocationSaved);
   };
 
   const closeLocationModal = () => {
