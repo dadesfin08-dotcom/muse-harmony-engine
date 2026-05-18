@@ -2263,7 +2263,30 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-3 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
+        <section
+          ref={bannerScrollRef}
+          className="mx-auto w-full max-w-6xl snap-x snap-mandatory overflow-x-auto px-4 pt-3 scrollbar-hide sm:hidden"
+          onTouchStart={() => setIsBannerInteracting(true)}
+          onTouchEnd={() => setIsBannerInteracting(false)}
+        >
+          {displayAdSlides.map((slide) => (
+            <div key={`mobile-${slide.id}`} className="w-full flex-shrink-0 snap-center">
+              <article className="relative h-[230px] w-full overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_16px_34px_-24px_rgba(17,24,39,0.45)]">
+                <img src={slide.image} alt={slide.alt} className="h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/40 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-background">
+                  <span className="mb-2 inline-flex rounded-full border border-background/60 bg-foreground/45 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
+                    {slide.tag}
+                  </span>
+                  <p className="text-[35px] leading-none font-extrabold">Daily groceries delivered in minutes</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-background/90">{slide.copy}</p>
+                </div>
+              </article>
+            </div>
+          ))}
+        </section>
+
+        <section className="mx-auto mt-4 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
