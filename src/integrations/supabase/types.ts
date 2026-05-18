@@ -1659,7 +1659,11 @@ export type Database = {
           id: string
           image_url: string | null
           last_reply_at: string | null
+          last_sender_type:
+            | Database["public"]["Enums"]["support_sender_type"]
+            | null
           message: string
+          order_id: string | null
           status: Database["public"]["Enums"]["support_ticket_status"]
           subject: string
           updated_at: string
@@ -1671,7 +1675,11 @@ export type Database = {
           id?: string
           image_url?: string | null
           last_reply_at?: string | null
+          last_sender_type?:
+            | Database["public"]["Enums"]["support_sender_type"]
+            | null
           message: string
+          order_id?: string | null
           status?: Database["public"]["Enums"]["support_ticket_status"]
           subject: string
           updated_at?: string
@@ -1683,13 +1691,25 @@ export type Database = {
           id?: string
           image_url?: string | null
           last_reply_at?: string | null
+          last_sender_type?:
+            | Database["public"]["Enums"]["support_sender_type"]
+            | null
           message?: string
+          order_id?: string | null
           status?: Database["public"]["Enums"]["support_ticket_status"]
           subject?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trending_history: {
         Row: {
