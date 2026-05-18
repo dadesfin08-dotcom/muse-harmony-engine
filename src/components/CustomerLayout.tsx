@@ -369,6 +369,15 @@ export function CustomerLayout({
     `inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${
       active ? "bg-primary/14 text-primary" : "text-current"
     }`;
+  const navIconMotion = (active: boolean) => ({
+    animate: active
+      ? { scale: [1, 1.08, 1], y: [0, -1, 0] }
+      : { scale: 1, y: 0 },
+    transition: {
+      duration: active ? 0.32 : 0.2,
+      ease: "easeOut" as const,
+    },
+  });
   const latestOutForDeliveryOrderId = useMemo(
     () => getLatestOutForDeliveryOrderId(customerOrdersQuery.data),
     [customerOrdersQuery.data],
@@ -426,9 +435,9 @@ export function CustomerLayout({
         className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className={navItemClass(isHomeActive)}>
-            <span className={navIconWrapClass(isHomeActive)}>
+            <motion.span className={navIconWrapClass(isHomeActive)} {...navIconMotion(isHomeActive)}>
               <House className="size-5" />
-            </span>
+            </motion.span>
             <span className="font-medium">{t("nav.home")}</span>
           </Link>
 
@@ -443,9 +452,9 @@ export function CustomerLayout({
             }}
             className={navItemClass(isSearchActive)}
           >
-            <span className={navIconWrapClass(isSearchActive)}>
+            <motion.span className={navIconWrapClass(isSearchActive)} {...navIconMotion(isSearchActive)}>
               <Search className="size-5" />
-            </span>
+            </motion.span>
             <span>{t("nav.search")}</span>
           </button>
 
@@ -460,7 +469,9 @@ export function CustomerLayout({
                 hasOutForDeliveryShortcut ? "opacity-100" : "cursor-default opacity-80"
               }`}
             >
-              <Package className="h-6 w-6 shrink-0 text-primary-foreground" />
+              <motion.span {...navIconMotion(hasOutForDeliveryShortcut)}>
+                <Package className="h-6 w-6 shrink-0 text-primary-foreground" />
+              </motion.span>
               {hasOutForDeliveryShortcut ? (
                 <span
                   className={`pointer-events-none absolute top-1.5 z-[70] inline-flex h-2.5 w-2.5 animate-[pulse_1.05s_cubic-bezier(0.4,0,0.6,1)_infinite] rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
@@ -479,9 +490,9 @@ export function CustomerLayout({
             aria-label={cartLabel}
           >
             <span className="relative">
-              <span className={navIconWrapClass(isCartActive)}>
+              <motion.span className={navIconWrapClass(isCartActive)} {...navIconMotion(isCartActive)}>
                 <ShoppingCart className="size-5" />
-              </span>
+              </motion.span>
               <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
                 {cartCount}
               </span>
@@ -496,9 +507,9 @@ export function CustomerLayout({
             }}
             className={navItemClass(isProfileActive)}
           >
-            <span className={navIconWrapClass(isProfileActive)}>
+            <motion.span className={navIconWrapClass(isProfileActive)} {...navIconMotion(isProfileActive)}>
               <UserCircle2 className="size-5" />
-            </span>
+            </motion.span>
             <span>{t("nav.profile")}</span>
           </button>
       </motion.nav>
