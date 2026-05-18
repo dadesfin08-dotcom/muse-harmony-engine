@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS system_tags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
