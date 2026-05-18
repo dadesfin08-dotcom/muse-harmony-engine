@@ -2164,6 +2164,28 @@ function Index() {
   const sendSupportMessageNow = async () => {
     if (!customerSession?.phoneNumber) return;
 
+    const trimmedMessage = supportMessageInput.trim();
+    const hasAttachment = Boolean(supportImageDataUrl);
+    const attachmentOnlyFallback = language === "ar" ? "مرفق صورة" : language === "fr" ? "Image jointe" : "Image attached";
+
+    if (!hasAttachment && trimmedMessage.length === 0) {
+      return;
+    }
+
+    if (!supportActiveTicketId && !hasAttachment && trimmedMessage.length < 3) {
+      toast.error(
+        language === "ar"
+          ? "الرسالة الأولى يجب أن تحتوي على 3 أحرف على الأقل."
+          : language === "fr"
+            ? "Le premier message doit contenir au moins 3 caractères."
+            : "The first message must be at least 3 characters.",
+      );
+      return;
+    }
+
+    const initialTicketMessage = trimmedMessage.length >= 3 ? trimmedMessage : attachmentOnlyFallback;
+    const followupMessage = trimmedMessage || attachmentOnlyFallback;
+
     try {
       setSupportIsTyping(true);
       if (!supportActiveTicketId) {
@@ -2177,7 +2199,7 @@ function Index() {
                   ? "Nouvelle demande de support"
                   : "New support request",
             category: supportPriority === "high" ? "order_problem" : "other",
-            message: supportMessageInput.trim() || (language === "ar" ? "مرفق صورة" : language === "fr" ? "Image jointe" : "Image attached"),
+            message: initialTicketMessage,
             imageDataUrl: supportImageDataUrl,
             orderId: supportContext?.orderId ?? null,
           },
@@ -2188,7 +2210,7 @@ function Index() {
           data: {
             phoneNumber: customerSession.phoneNumber,
             ticketId: supportActiveTicketId,
-            message: supportMessageInput.trim() || (language === "ar" ? "مرفق صورة" : language === "fr" ? "Image jointe" : "Image attached"),
+            message: followupMessage,
             imageDataUrl: supportImageDataUrl,
           },
         });
@@ -3020,7 +3042,11 @@ function Index() {
               variant="hero"
               size="icon"
               className="h-10 w-10 rounded-full"
-              disabled={isSupportAttachmentUploading || supportIsTyping || (!supportMessageInput.trim() && !supportImageDataUrl)}
+              disabled={
+                isSupportAttachmentUploading ||
+                supportIsTyping ||
+                (!supportImageDataUrl && (supportActiveTicketId ? supportMessageInput.trim().length === 0 : supportMessageInput.trim().length < 3))
+              }
               onClick={() => void sendSupportMessageNow()}
             >
               {isSupportAttachmentUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
