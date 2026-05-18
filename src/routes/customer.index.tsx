@@ -309,6 +309,69 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
 
 const normalizeSearchText = (value: string) => value.trim().toLocaleLowerCase();
 
+const normalizeScannedOrderToken = (value: string) =>
+  value
+    .trim()
+    .replace(/^order[:\-_]*/i, "")
+    .replace(/^#/, "")
+    .trim();
+
+const extractOrderIdentifierFromQrPayload = (rawValue: string): string | null => {
+  const trimmed = rawValue.trim();
+  if (!trimmed) return null;
+
+  const readFromPlainToken = (candidate: string) => {
+    const normalized = normalizeScannedOrderToken(candidate);
+    return /^[a-zA-Z0-9-]{6,64}$/.test(normalized) ? normalized : null;
+  };
+
+  const plainToken = readFromPlainToken(trimmed);
+  if (plainToken) return plainToken;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      const fromPath = pathParts[pathParts.length - 1] ?? "";
+      const fromPathToken = readFromPlainToken(fromPath);
+      if (fromPathToken) return fromPathToken;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      orderId?: string;
+      order_id?: string;
+      id?: string;
+      order?: string;
+      receiptUrl?: string;
+      receipt_url?: string;
+      url?: string;
+    };
+
+    const directCandidate =
+      parsed.orderId ??
+      parsed.order_id ??
+      parsed.id ??
+      parsed.order ??
+      parsed.receiptUrl ??
+      parsed.receipt_url ??
+      parsed.url;
+
+    if (typeof directCandidate !== "string") return null;
+    if (/^https?:\/\//i.test(directCandidate.trim())) {
+      return extractOrderIdentifierFromQrPayload(directCandidate);
+    }
+
+    return readFromPlainToken(directCandidate);
+  } catch {
+    const regexMatch = trimmed.match(/(?:order(?:Id)?|receipt)[\s:=/#-]*([a-zA-Z0-9-]{6,64})/i);
+    return regexMatch?.[1] ? normalizeScannedOrderToken(regexMatch[1]) : null;
+  }
+};
+
 function useCustomerCarnet(
   customerPhone: string | null,
   fetchCustomerCarnetOverview: (input: { data: { customerPhone: string } }) => Promise<any>,
