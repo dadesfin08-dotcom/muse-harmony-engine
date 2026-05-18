@@ -210,6 +210,8 @@ import {
   autoDispatchSubscriptionOrder,
   updateSubscriptionOrderStatus,
   getGlobalSettings,
+  getAdminCustomerKpis,
+  getAdminCustomerProfile,
   listAdminCustomers,
   listAdminOrders,
   manualBoostBrandScore,
@@ -220,6 +222,8 @@ import {
   uploadSiteLogo,
   uploadPlatformPackAsset,
   updateGlobalSettings,
+  updateAdminCustomerNotes,
+  updateAdminCustomerState,
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
 import {
@@ -254,6 +258,9 @@ import {
   DEFAULT_RECEIPT_WEBSITE,
 } from "@/lib/receipt-settings.defaults";
 import i18n from "@/lib/i18n";
+import { CustomerKPIs } from "@/components/CustomerKPIs";
+import { CustomerTable, type AdminCustomerRow } from "@/components/CustomerTable";
+import { CustomerDrawer } from "@/components/CustomerDrawer";
 
 type AdminTab =
   | "overview"
