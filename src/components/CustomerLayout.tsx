@@ -8,7 +8,7 @@ import {
   Search,
   ShoppingCart,
   UserCircle2,
-  Languages,
+  ScanLine,
   Plus,
   Minus,
   Trash2,
@@ -25,9 +25,9 @@ import { Button } from "@/components/ui/button";
 import { CustomerStatusAlert } from "@/components/CustomerStatusAlert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getCustomerCarnetBalance, getCustomerCarnetOverview } from "@/lib/carnet.functions";
+import { getCustomerOrders } from "@/lib/orders.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { listServiceZones } from "@/lib/locations.functions";
 import { useCustomerPanelStore } from "@/lib/customer-panel-store";
@@ -51,6 +51,7 @@ export function CustomerLayout({
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
   const fetchCustomerCarnetBalance = useServerFn(getCustomerCarnetBalance);
   const fetchCustomerCarnetOverview = useServerFn(getCustomerCarnetOverview);
+  const fetchCustomerOrders = useServerFn(getCustomerOrders);
   const fetchServiceZones = useServerFn(listServiceZones);
   const cartItems = useCustomerCartStore((state) => state.items);
   const isCartOpen = useCustomerCartStore((state) => state.isCartOpen);
@@ -99,6 +100,17 @@ export function CustomerLayout({
       }),
     enabled: isCarnetDialogOpen && !!customerSessionPhone,
     staleTime: 10_000,
+  });
+
+  const customerOrdersQuery = useQuery({
+    queryKey: ["customer", "layout", "orders", customerSessionPhone],
+    queryFn: () =>
+      fetchCustomerOrders({
+        data: { phoneNumber: customerSessionPhone! },
+      }),
+    enabled: !!customerSessionPhone,
+    staleTime: 10_000,
+    refetchInterval: customerSessionPhone ? 8_000 : false,
   });
 
   const cartCount = useMemo(
@@ -343,6 +355,47 @@ export function CustomerLayout({
     `inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${
       active ? "bg-primary/14 text-primary" : "text-current"
     }`;
+  const latestOutForDeliveryOrderId = useMemo(() => {
+    const orders = (customerOrdersQuery.data ?? []) as Array<{ id: string; status?: string | null; created_at?: string | null }>;
+    const outForDeliveryStatuses = new Set(["out_for_delivery"]);
+
+    const matching = orders
+      .filter((order) => outForDeliveryStatuses.has(String(order.status ?? "").trim().toLowerCase()))
+      .sort((a, b) => {
+        const aTime = new Date(a.created_at ?? 0).getTime();
+        const bTime = new Date(b.created_at ?? 0).getTime();
+        return bTime - aTime;
+      });
+
+    return matching[0]?.id ?? null;
+  }, [customerOrdersQuery.data]);
+  const hasOutForDeliveryShortcut = !!latestOutForDeliveryOrderId;
+  const floatingShortcutLabel =
+    language === "ar"
+      ? "فتح تفاصيل الطلب الجاري توصيله"
+      : language === "fr"
+        ? "Ouvrir les détails de la commande en livraison"
+        : "Open out-for-delivery order details";
+
+  const openLatestOutForDeliveryReceipt = () => {
+    if (!latestOutForDeliveryOrderId) return;
+
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(16);
+    }
+
+    const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: latestOutForDeliveryOrderId } });
+    const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+
+    if (typeof startViewTransition === "function") {
+      startViewTransition(() => {
+        goToReceipt();
+      });
+      return;
+    }
+
+    goToReceipt();
+  };
 
   return (
     <>
@@ -381,18 +434,26 @@ export function CustomerLayout({
           </button>
 
           <div className="flex h-full w-full items-center justify-center">
-            <LanguageSwitcher
-              trigger={
-                <button
-                  type="button"
-                  dir="ltr"
-                  aria-label={t("language.label")}
-                  className="relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
-                >
-                  <Languages className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
-                </button>
-              }
-            />
+            <button
+              type="button"
+              dir="ltr"
+              aria-label={floatingShortcutLabel}
+              onClick={openLatestOutForDeliveryReceipt}
+              disabled={!hasOutForDeliveryShortcut}
+              className={`relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-[0.94] ${
+                hasOutForDeliveryShortcut ? "opacity-100" : "opacity-80"
+              }`}
+            >
+              <ScanLine className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
+              {hasOutForDeliveryShortcut ? (
+                <span
+                  className={`pointer-events-none absolute top-1.5 inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
+                    isArabic ? "left-1.5" : "right-1.5"
+                  }`}
+                  aria-hidden="true"
+                />
+              ) : null}
+            </button>
           </div>
 
           <button
