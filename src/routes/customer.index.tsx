@@ -1771,10 +1771,14 @@ function Index() {
   }, [location.hash, navigate, setIsCustomerAuthModalOpen]);
 
   const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
+  const accountStatus = customerProfileQuery.data?.status;
+  const isAccountRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
+  const accountRestrictionMessage = "Your account has been restricted due to policy violations. Please contact support.";
 
   const canConfirmOrder =
     !isSubmittingOrder &&
     !isCheckoutProfileHydrating &&
+    !isAccountRestricted &&
     cartItems.length > 0 &&
     fullName.trim().length > 0 &&
     address.trim().length > 0 &&
