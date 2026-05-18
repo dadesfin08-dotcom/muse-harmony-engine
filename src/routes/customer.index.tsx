@@ -2117,9 +2117,9 @@ function Index() {
               <img src={fallbackProductImage} alt="Fresh grocery bundle" className="h-full w-full object-cover" loading="lazy" />
             </div>
             <p className="text-lg font-semibold text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 max-w-[64%] text-balance text-4xl font-extrabold leading-tight text-foreground">
-              Fresh groceries,
-              <span className="block text-primary">delivered in 15 min</span>
+            <h1 className="mt-1 max-w-[64%] text-5xl font-extrabold leading-[0.98] text-foreground">
+              <span className="block">Fresh groceries,</span>
+              <span className="mt-1 block text-primary">delivered in 15 min</span>
             </h1>
             <p className="mt-3 max-w-[60%] text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
           </article>
@@ -2146,7 +2146,7 @@ function Index() {
 
           <div
             ref={bannerScrollRef}
-            className="flex w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide"
+            className="hidden w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide md:flex"
             onMouseEnter={() => setIsBannerInteracting(true)}
             onMouseLeave={() => setIsBannerInteracting(false)}
             onTouchStart={() => setIsBannerInteracting(true)}
