@@ -327,6 +327,19 @@ export function CustomerLayout({
     }, 140);
   };
 
+  const isHomeActive = location.pathname === "/customer" || location.pathname === "/customer/";
+  const isSearchActive =
+    location.pathname === "/customer/categories" ||
+    location.pathname.startsWith("/customer/categories/") ||
+    location.pathname === "/customer/all-products";
+  const isCartActive = isCartOpen;
+  const isProfileActive =
+    isProfileHubOpen || isCustomerAuthModalOpen || customerPanelView === "profile" || location.pathname === "/profile";
+  const navItemClass = (active: boolean) =>
+    `group flex h-full w-full flex-col items-center justify-center gap-1.5 text-[10px] leading-none transition-colors ${
+      active ? "text-primary" : "text-muted-foreground hover:text-primary"
+    }`;
+
   return (
     <>
       <main className="pb-24 md:pb-0">
@@ -337,11 +350,11 @@ export function CustomerLayout({
       </main>
 
       <nav
-        className="fixed inset-x-3 bottom-3 z-50 grid h-18 grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1 pb-[max(env(safe-area-inset-bottom),0.35rem)] shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.4rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
-          <Link to="/" className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary">
+          <Link to="/" className={navItemClass(isHomeActive)}>
             <House className="size-5" />
-            <span className="text-[10px] font-medium">{t("nav.home")}</span>
+            <span className="font-medium">{t("nav.home")}</span>
           </Link>
 
           <button
@@ -353,10 +366,10 @@ export function CustomerLayout({
                 void navigate({ to: "/customer/categories" });
               }
             }}
-            className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary"
+            className={navItemClass(isSearchActive)}
           >
             <Search className="size-5" />
-            <span className="text-[10px]">{t("nav.search")}</span>
+            <span>{t("nav.search")}</span>
           </button>
 
           <div className="flex h-full w-full items-center justify-center">
@@ -366,7 +379,7 @@ export function CustomerLayout({
                   type="button"
                   dir="ltr"
                   aria-label={t("language.label")}
-                  className="relative -top-5 z-50 mx-auto flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
+                  className="relative -top-4 z-50 mx-auto flex h-[56px] w-[56px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
                 >
                   <Languages className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
                 </button>
@@ -377,7 +390,7 @@ export function CustomerLayout({
           <button
             type="button"
             onClick={openCart}
-            className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary"
+            className={navItemClass(isCartActive)}
             aria-label={cartLabel}
           >
             <span className="relative">
@@ -386,7 +399,7 @@ export function CustomerLayout({
                 {cartCount}
               </span>
             </span>
-            <span className="text-[10px]">{t("nav.cart")}</span>
+            <span>{t("nav.cart")}</span>
           </button>
 
           <button
@@ -394,17 +407,10 @@ export function CustomerLayout({
             onClick={() => {
               setIsProfileHubOpen(true);
             }}
-            className={`flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary ${
-              isProfileHubOpen ||
-              isCustomerAuthModalOpen ||
-              customerPanelView === "profile" ||
-              location.pathname === "/profile"
-                ? "text-primary"
-                : ""
-            }`}
+            className={navItemClass(isProfileActive)}
           >
             <UserCircle2 className="size-5" />
-            <span className="text-[10px]">{t("nav.profile")}</span>
+            <span>{t("nav.profile")}</span>
           </button>
       </nav>
 
