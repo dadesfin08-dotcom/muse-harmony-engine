@@ -788,16 +788,16 @@ function Index() {
       : null;
 
   const selectedLocationLabel = useMemo(() => {
-    if (!selectedCommuneId || !selectedNeighborhoodId) {
+    if (!selectedCommuneId) {
       return t("header.locationFallback");
     }
 
-    if (!selectedCommune || !selectedNeighborhood) {
+    if (!selectedCommune) {
       return t("header.locationFallback");
     }
 
-    return `${getLocalizedCommuneName(selectedCommune)} / ${getLocalizedNeighborhoodName(selectedNeighborhood)}`;
-  }, [selectedCommune, selectedNeighborhood, selectedCommuneId, selectedNeighborhoodId, t]);
+    return getLocalizedCommuneName(selectedCommune);
+  }, [getLocalizedCommuneName, selectedCommune, selectedCommuneId, t]);
 
   const persistLocation = (location: PersistedLocation) => {
     localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(location));
@@ -1936,21 +1936,21 @@ function Index() {
       <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
-            <a href="#" className="inline-flex min-w-0 items-center gap-2">
-              <span className="inline-flex h-[clamp(1.8rem,5.2vw,2.2rem)] w-[clamp(1.8rem,5.2vw,2.2rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+            <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
+              <span className="inline-flex h-[clamp(2rem,5.5vw,2.4rem)] w-[clamp(2rem,5.5vw,2.4rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
                 {dynamicSiteLogoUrl ? (
                   <img
                     src={dynamicSiteLogoUrl}
                     alt={dynamicSiteName}
-                    className="h-[clamp(1.2rem,3.8vw,1.5rem)] w-[clamp(1.2rem,3.8vw,1.5rem)] object-contain"
+                    className="h-[clamp(1.35rem,4.2vw,1.65rem)] w-[clamp(1.35rem,4.2vw,1.65rem)] object-contain"
                     loading="lazy"
                   />
                 ) : (
-                  <Bike className="size-[clamp(0.95rem,3.4vw,1.15rem)]" />
+                  <Bike className="size-[clamp(1.05rem,3.8vw,1.25rem)]" />
                 )}
               </span>
               <span className="min-w-0 leading-tight">
-                <span className="block truncate text-[clamp(0.95rem,3.1vw,1.15rem)] font-extrabold tracking-tight text-gradient-brand">
+                <span className="block truncate text-[clamp(1rem,3.25vw,1.22rem)] font-extrabold tracking-tight text-gradient-brand">
                   {dynamicSiteName}
                 </span>
                 <span className="block truncate text-[clamp(0.56rem,2.05vw,0.68rem)] font-medium text-muted-foreground/80">
