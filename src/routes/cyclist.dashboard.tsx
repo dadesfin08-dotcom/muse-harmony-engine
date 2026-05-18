@@ -425,7 +425,11 @@ function CyclistDashboardPage() {
     setScannerStatus(t("cyclist.scannerVerifying"));
 
     try {
-      if (action === "customer_delivery") {
+      if (scannerMode === "customer") {
+        if (action !== "customer_delivery") {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
         const orderId = String(parsed.order_id ?? "").trim();
         if (!orderId) {
           throw new Error(t("cyclist.invalidQr"));
@@ -445,7 +449,13 @@ function CyclistDashboardPage() {
             ? t("cyclist.deliveryCompletedCash")
             : t("cyclist.deliveryCompleted"),
         );
-      } else if (action === "vendor_handover") {
+        setSuccessAnimationTitle(t("cyclist.deliveryVerifiedTitle"));
+        setSuccessAnimationSubtitle(t("cyclist.deliveryVerifiedSubtitle"));
+      } else if (scannerMode === "merchant_clearance") {
+        if (action !== "vendor_handover") {
+          throw new Error(t("cyclist.invalidQr"));
+        }
+
         const vendorId = String(parsed.vendor_id ?? "").trim();
         if (!vendorId) {
           throw new Error(t("cyclist.invalidQr"));
@@ -460,6 +470,8 @@ function CyclistDashboardPage() {
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
         toast.success(t("cyclist.settlementCompleted"));
+        setSuccessAnimationTitle("تم تسليم النقد بنجاح");
+        setSuccessAnimationSubtitle("تمت تصفية الحساب مع التاجر بنجاح.");
       } else {
         throw new Error(t("cyclist.invalidQr"));
       }
@@ -516,6 +528,7 @@ function CyclistDashboardPage() {
     isProcessing,
     navigate,
     queryClient,
+    scannerMode,
     scannerPaused,
     session?.cyclistId,
     settleVendorHandover,
