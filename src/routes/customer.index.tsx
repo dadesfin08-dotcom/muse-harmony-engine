@@ -378,6 +378,7 @@ function Index() {
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileHeroScrollProgress, setMobileHeroScrollProgress] = useState(0);
+  const [isMobileSearchSticky, setIsMobileSearchSticky] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
@@ -386,6 +387,9 @@ function Index() {
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
   const [authSheetCanScrollDown, setAuthSheetCanScrollDown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchAnchorRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileStickySearchRef = useRef<HTMLDivElement | null>(null);
   const authSheetScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
@@ -578,7 +582,12 @@ function Index() {
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (!searchContainerRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideDesktopSearch = searchContainerRef.current?.contains(target);
+      const insideMobileInlineSearch = mobileSearchContainerRef.current?.contains(target);
+      const insideMobileStickySearch = mobileStickySearchRef.current?.contains(target);
+
+      if (!insideDesktopSearch && !insideMobileInlineSearch && !insideMobileStickySearch) {
         setIsSearchOpen(false);
       }
     };
@@ -1125,11 +1134,13 @@ function Index() {
   useEffect(() => {
     if (!isMobile || typeof window === "undefined") {
       setMobileHeroScrollProgress(0);
+      setIsMobileSearchSticky(false);
       return;
     }
 
     let rafId = 0;
     let ticking = false;
+    const stickyThreshold = 84;
 
     const syncHeroProgress = () => {
       if (ticking) return;
@@ -1137,7 +1148,11 @@ function Index() {
       rafId = window.requestAnimationFrame(() => {
         const y = window.scrollY || 0;
         const nextProgress = Math.min(1, Math.max(0, y / 120));
+        const searchAnchorTop = mobileSearchAnchorRef.current?.getBoundingClientRect().top ?? 9999;
+        const nextSticky = searchAnchorTop <= stickyThreshold;
+
         setMobileHeroScrollProgress((prev) => (Math.abs(prev - nextProgress) > 0.01 ? nextProgress : prev));
+        setIsMobileSearchSticky((prev) => (prev === nextSticky ? prev : nextSticky));
         ticking = false;
       });
     };
