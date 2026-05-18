@@ -4504,6 +4504,41 @@ function AdminPage() {
     await updateSubscriptionOrderStatusMutation.mutateAsync({ orderId, status });
   };
 
+  const handleSendAdminSupportReply = async () => {
+    if (!adminSupportActiveTicketId || !adminSupportReplyInput.trim()) return;
+
+    try {
+      setAdminSupportIsSending(true);
+      await sendAdminSupportReply({
+        data: {
+          ticketId: adminSupportActiveTicketId,
+          message: adminSupportReplyInput.trim(),
+          imageDataUrl: null,
+        },
+      });
+      setAdminSupportReplyInput("");
+      await Promise.all([
+        adminSupportMessagesQuery.refetch(),
+        adminSupportTicketsQuery.refetch(),
+      ]);
+    } catch (error) {
+      console.error("Failed to send support reply:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to send support reply.");
+    } finally {
+      setAdminSupportIsSending(false);
+    }
+  };
+
+  const handleUpdateSupportTicketStatus = async (ticketId: string, status: "open" | "resolved" | "closed" | "archived") => {
+    try {
+      await saveSupportTicketStatus({ data: { ticketId, status } });
+      await adminSupportTicketsQuery.refetch();
+    } catch (error) {
+      console.error("Failed to update support ticket status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update support ticket status.");
+    }
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
