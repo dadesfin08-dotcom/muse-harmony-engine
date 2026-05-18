@@ -1254,23 +1254,36 @@ export const cancelActiveDeliveryByOrder = createServerFn({ method: "POST" })
         }
 
         if (!existingProfile?.id) {
-          throw new Error("Customer profile not found.");
+          const { error: createProfileError } = await (supabaseAdmin as any)
+            .from("profiles")
+            .insert({ id: order.customer_user_id })
+            .select("id, strikes, cod_rejections, fake_orders, cancelled_orders")
+            .single();
+
+          if (createProfileError) {
+            throw new Error(createProfileError.message);
+          }
         }
 
+        const baseStrikes = Number(existingProfile?.strikes ?? 0);
+        const baseCancelledOrders = Number(existingProfile?.cancelled_orders ?? 0);
+        const baseCodRejections = Number(existingProfile?.cod_rejections ?? 0);
+        const baseFakeOrders = Number(existingProfile?.fake_orders ?? 0);
+
         const nextPatch: Record<string, unknown> = {
-          strikes: Number(existingProfile.strikes ?? 0) + 1,
-          cancelled_orders: Number(existingProfile.cancelled_orders ?? 0) + 1,
-          cod_rejections: Number(existingProfile.cod_rejections ?? 0),
-          fake_orders: Number(existingProfile.fake_orders ?? 0),
+          strikes: baseStrikes + 1,
+          cancelled_orders: baseCancelledOrders + 1,
+          cod_rejections: baseCodRejections,
+          fake_orders: baseFakeOrders,
           updated_at: nowIso,
         };
 
         if (data.reason === "cod_rejection") {
-          nextPatch.cod_rejections = Number(existingProfile.cod_rejections ?? 0) + 1;
+          nextPatch.cod_rejections = baseCodRejections + 1;
         }
 
         if (data.reason === "fake_order") {
-          nextPatch.fake_orders = Number(existingProfile.fake_orders ?? 0) + 1;
+          nextPatch.fake_orders = baseFakeOrders + 1;
         }
 
         const { error: profileError } = await (supabaseAdmin as any)
