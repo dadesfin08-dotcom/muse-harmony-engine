@@ -344,7 +344,8 @@ export function CustomerLayout({
     }, 140);
   };
 
-  const isHomeActive = location.pathname === "/customer" || location.pathname === "/customer/";
+  const isHomeRoute = location.pathname === "/customer" || location.pathname === "/customer/";
+  const isHomeActive = isHomeRoute;
   const isSearchActive =
     location.pathname === "/customer/categories" ||
     location.pathname.startsWith("/customer/categories/") ||
@@ -352,10 +353,13 @@ export function CustomerLayout({
   const isCartActive = isCartOpen;
   const isProfileActive =
     isProfileHubOpen || isCustomerAuthModalOpen || customerPanelView === "profile" || location.pathname === "/profile";
-  const shouldHideBottomNav =
-    location.pathname.startsWith("/customer/order/") ||
-    location.pathname.startsWith("/customer/digital-receipt/") ||
-    location.pathname.startsWith("/customer/receipt/");
+  const shouldShowBottomNav =
+    isHomeRoute &&
+    !location.hash &&
+    !isCustomerAuthModalOpen &&
+    !isCartOpen &&
+    !isProfileHubOpen;
+  const shouldHideBottomNav = !shouldShowBottomNav;
   const bottomNavAnimationClass = shouldHideBottomNav
     ? "animate-fade-out opacity-0 pointer-events-none"
     : "animate-fade-in opacity-100 pointer-events-auto";
