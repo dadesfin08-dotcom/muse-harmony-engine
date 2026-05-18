@@ -2927,6 +2927,7 @@ function Index() {
                 onClick={() => {
                   setIsCustomerAuthModalOpen(false);
                   setCustomerPanelView("account");
+                  void navigate({ to: "/customer" });
                 }}
                 aria-label={language === "ar" ? "العودة للرئيسية" : language === "fr" ? "Retour à l'accueil" : "Back to homepage"}
               >
