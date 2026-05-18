@@ -425,13 +425,14 @@ export function CustomerLayout({
         {children}
       </main>
 
-      <AnimatePresence>
+      <AnimatePresence initial={false} mode="wait">
       {shouldShowBottomNav ? (
       <motion.nav
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 16, scale: 0.98 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
+        key="customer-bottom-nav"
+        initial={{ opacity: 0, y: 14, scale: 0.995, filter: "blur(2px)" }}
+        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 10, scale: 0.995, filter: "blur(1px)" }}
+        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className={navItemClass(isHomeActive)}>
