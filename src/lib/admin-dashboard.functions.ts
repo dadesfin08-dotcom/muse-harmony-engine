@@ -383,6 +383,23 @@ type GlobalSettingsRow = {
   updated_at: string;
 };
 
+type HeroSectionRow = {
+  id: string;
+  image_url: string | null;
+  greeting_ar: string;
+  greeting_en: string;
+  greeting_fr: string;
+  headline_ar: string;
+  headline_en: string;
+  headline_fr: string;
+  description_ar: string;
+  description_en: string;
+  description_fr: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 const GLOBAL_SETTINGS_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
 
 function normalizeInvoiceSettingsRow(row: any): InvoiceSettingsRow {
@@ -431,6 +448,27 @@ const uploadPlatformPackAssetInputSchema = z.object({
   contentType: z.string().trim().min(1).max(120),
   dataUrl: z.string().trim().min(1).max(12_000_000),
   folder: z.enum(["platform-packs", "platform-packs/items"]),
+});
+
+const heroSectionSettingsInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  imageUrl: z.string().trim().url().max(2000).nullable(),
+  greetingAr: z.string().trim().min(1).max(120),
+  greetingEn: z.string().trim().min(1).max(120),
+  greetingFr: z.string().trim().min(1).max(120),
+  headlineAr: z.string().trim().min(1).max(200),
+  headlineEn: z.string().trim().min(1).max(200),
+  headlineFr: z.string().trim().min(1).max(200),
+  descriptionAr: z.string().trim().min(1).max(320),
+  descriptionEn: z.string().trim().min(1).max(320),
+  descriptionFr: z.string().trim().min(1).max(320),
+  isActive: z.boolean(),
+});
+
+const uploadHeroSectionImageInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1).max(12_000_000),
 });
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
@@ -2300,6 +2338,165 @@ export const updateGlobalSettings = createServerFn({ method: "POST" })
     }
 
     return normalizeGlobalSettingsRow(updated);
+  });
+
+function normalizeHeroSectionRow(row: any): HeroSectionRow {
+  return {
+    id: row.id,
+    image_url: typeof row.image_url === "string" && row.image_url.trim().length > 0 ? row.image_url.trim() : null,
+    greeting_ar: typeof row.greeting_ar === "string" ? row.greeting_ar.trim() : "",
+    greeting_en: typeof row.greeting_en === "string" ? row.greeting_en.trim() : "",
+    greeting_fr: typeof row.greeting_fr === "string" ? row.greeting_fr.trim() : "",
+    headline_ar: typeof row.headline_ar === "string" ? row.headline_ar.trim() : "",
+    headline_en: typeof row.headline_en === "string" ? row.headline_en.trim() : "",
+    headline_fr: typeof row.headline_fr === "string" ? row.headline_fr.trim() : "",
+    description_ar: typeof row.description_ar === "string" ? row.description_ar.trim() : "",
+    description_en: typeof row.description_en === "string" ? row.description_en.trim() : "",
+    description_fr: typeof row.description_fr === "string" ? row.description_fr.trim() : "",
+    is_active: Boolean(row.is_active),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("hero_sections")
+    .select(
+      "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
+    )
+    .order("is_active", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message ?? "Failed to load hero section settings.");
+  }
+
+  if (data?.id) {
+    return normalizeHeroSectionRow(data);
+  }
+
+  const { data: inserted, error: insertError } = await (supabaseAdmin as any)
+    .from("hero_sections")
+    .insert({
+      greeting_ar: "صباح الخير 👋",
+      greeting_en: "Good morning, 👋",
+      greeting_fr: "Bonjour, 👋",
+      headline_ar: "خضروات طازجة تصلك في 15 دقيقة",
+      headline_en: "Fresh groceries, delivered in 15 min",
+      headline_fr: "Produits frais livrés en 15 min",
+      description_ar: "منتجات محلية، توصيل سريع، ومتاجر موثوقة بالقرب منك.",
+      description_en: "Local produce, fast riders, and trusted vendors near you.",
+      description_fr: "Produits locaux, livraison rapide et vendeurs de confiance près de chez vous.",
+      is_active: true,
+    })
+    .select(
+      "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
+    )
+    .single();
+
+  if (insertError || !inserted?.id) {
+    throw new Error(insertError?.message ?? "Failed to initialize hero section settings.");
+  }
+
+  return normalizeHeroSectionRow(inserted);
+});
+
+export const updateHeroSectionSettings = createServerFn({ method: "POST" })
+  .inputValidator((input) => heroSectionSettingsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (data.isActive) {
+      const { error: deactivateError } = await (supabaseAdmin as any)
+        .from("hero_sections")
+        .update({ is_active: false })
+        .neq("id", data.id ?? "00000000-0000-0000-0000-000000000000")
+        .eq("is_active", true);
+
+      if (deactivateError) {
+        throw new Error(deactivateError.message ?? "Failed to update hero section state.");
+      }
+    }
+
+    const payload = {
+      image_url: data.imageUrl,
+      greeting_ar: data.greetingAr,
+      greeting_en: data.greetingEn,
+      greeting_fr: data.greetingFr,
+      headline_ar: data.headlineAr,
+      headline_en: data.headlineEn,
+      headline_fr: data.headlineFr,
+      description_ar: data.descriptionAr,
+      description_en: data.descriptionEn,
+      description_fr: data.descriptionFr,
+      is_active: data.isActive,
+    };
+
+    const { data: saved, error } = data.id
+      ? await (supabaseAdmin as any)
+          .from("hero_sections")
+          .update(payload)
+          .eq("id", data.id)
+          .select(
+            "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
+          )
+          .single()
+      : await (supabaseAdmin as any)
+          .from("hero_sections")
+          .insert(payload)
+          .select(
+            "id, image_url, greeting_ar, greeting_en, greeting_fr, headline_ar, headline_en, headline_fr, description_ar, description_en, description_fr, is_active, created_at, updated_at",
+          )
+          .single();
+
+    if (error || !saved?.id) {
+      throw new Error(error?.message ?? "Failed to save hero section settings.");
+    }
+
+    return normalizeHeroSectionRow(saved);
+  });
+
+export const uploadHeroSectionImage = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadHeroSectionImageInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (!data.contentType.startsWith("image/")) {
+      throw new Error("Only image uploads are allowed.");
+    }
+
+    const commaIndex = data.dataUrl.indexOf(",");
+    if (commaIndex === -1) {
+      throw new Error("Invalid image payload.");
+    }
+
+    const base64Payload = data.dataUrl.slice(commaIndex + 1);
+    const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+    const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "jpg";
+    const safeBaseName = data.fileName
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .slice(0, 60);
+    const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "hero-image"}.${extensionFromName}`;
+    const path = `hero/${generatedFileName}`;
+
+    const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+      .from("public-assets")
+      .upload(path, bytes, {
+        contentType: data.contentType,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError || !uploadData?.path) {
+      throw new Error(uploadError?.message ?? "Image upload failed.");
+    }
+
+    const { data: publicUrlData } = (supabaseAdmin as any).storage.from("public-assets").getPublicUrl(uploadData.path);
+
+    return {
+      path: uploadData.path,
+      publicUrl: publicUrlData.publicUrl,
+    };
   });
 
 const resetFactoryDataInputSchema = z.object({
