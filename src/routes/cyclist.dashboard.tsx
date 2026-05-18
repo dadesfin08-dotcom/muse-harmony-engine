@@ -29,6 +29,7 @@ import { playActionSound } from "@/lib/sound-alerts";
 import appI18n from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { FulfillmentSuccessAnimation } from "@/components/FulfillmentSuccessAnimation";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -94,7 +95,9 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
-  const [isScannerSuccess, setIsScannerSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [scannerPaused, setScannerPaused] = useState(false);
+  const [successAnimationVisible, setSuccessAnimationVisible] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
@@ -370,8 +373,9 @@ function CyclistDashboardPage() {
         });
     }
     setIsScannerOpen(false);
-    setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.readyToScan"));
+    setScannerPaused(false);
+    setIsProcessing(false);
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
   };
