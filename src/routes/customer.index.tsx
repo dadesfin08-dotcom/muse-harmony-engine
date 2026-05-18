@@ -1238,6 +1238,8 @@ function Index() {
         changePhone: "تغيير رقم الهاتف",
         selectDeliveryLocation: "حدد موقع التوصيل",
         locationHint: "اختر الجماعة الترابية والحي قبل الطلب.",
+        communeLabel: "الجماعة الترابية",
+        neighborhoodLabel: "الحي / الدوار",
         searchCommunePlaceholder: "ابحث عن الجماعة...",
         searchDouarPlaceholder: "ابحث عن الحي...",
         selectCommuneFirst: "اختر جماعة أولًا.",
@@ -1246,6 +1248,8 @@ function Index() {
         noCommune: "لم يتم العثور على جماعة.",
         loadingDouars: "جارٍ تحميل الأحياء...",
         noDouar: "لم يتم العثور على حي في هذه الجماعة.",
+        deliveryFeeHint: "سيتم إضافة هذا الرسم إلى الإجمالي النهائي.",
+        closeModal: "إغلاق نافذة اختيار الموقع",
         confirmLocation: "تأكيد الموقع",
       };
     }
@@ -1317,6 +1321,8 @@ function Index() {
         changePhone: "Changer le numéro",
         selectDeliveryLocation: "Sélectionnez votre zone de livraison",
         locationHint: "Choisissez votre commune et quartier avant de commander.",
+        communeLabel: "Commune",
+        neighborhoodLabel: "Hay / Douar",
         searchCommunePlaceholder: "Rechercher une commune...",
         searchDouarPlaceholder: "Rechercher un quartier...",
         selectCommuneFirst: "Sélectionnez d'abord une commune.",
@@ -1325,6 +1331,8 @@ function Index() {
         noCommune: "Aucune commune trouvée.",
         loadingDouars: "Chargement des quartiers...",
         noDouar: "Aucun quartier trouvé dans cette commune.",
+        deliveryFeeHint: "Ces frais seront ajoutés au total de la commande.",
+        closeModal: "Fermer la fenêtre de sélection de zone",
         confirmLocation: "Confirmer la zone",
       };
     }
@@ -1395,6 +1403,8 @@ function Index() {
       changePhone: "Change phone number",
       selectDeliveryLocation: "Select Your Delivery Location",
       locationHint: "Choose your Jamaa Tourabiya and Hay / Douar before placing orders.",
+      communeLabel: "Jamaa Tourabiya",
+      neighborhoodLabel: "Hay / Douar",
       searchCommunePlaceholder: "Search commune...",
       searchDouarPlaceholder: "Search neighborhood...",
       selectCommuneFirst: "Select a commune first.",
@@ -1403,6 +1413,8 @@ function Index() {
       noCommune: "No commune found.",
       loadingDouars: "Loading neighborhoods...",
       noDouar: "No neighborhood found in this commune.",
+      deliveryFeeHint: "This fee will be added to your total.",
+      closeModal: "Close location selection",
       confirmLocation: "Confirm Location",
     };
   }, [language]);
@@ -4558,32 +4570,56 @@ function Index() {
         )
       ) : null}
 
-      {isLocationModalOpen ? (
-        <div className="fixed inset-0 z-[90]">
-          <div className="absolute inset-0 bg-black/50" />
-          <section className="absolute inset-0 flex items-center justify-center px-4">
-            <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
-              <div className="flex w-full items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-foreground">{customerUiCopy.selectDeliveryLocation}</h2>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-muted-foreground"
-                  onClick={closeLocationModal}
-                  aria-label="Close location drawer"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{customerUiCopy.locationHint}</p>
+      <AnimatePresence>
+        {isLocationModalOpen ? (
+          <motion.div
+            className="fixed inset-0 z-[90]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div className="absolute inset-0 bg-black/38 backdrop-blur-[4px]" />
+            <section className="absolute inset-0 flex items-center justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.85rem)] pt-4 sm:px-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 10 }}
+                transition={{ duration: 0.24, ease: "easeOut" }}
+                className={`w-full max-w-[620px] rounded-[30px] border border-border/70 bg-[color-mix(in_oklab,var(--color-background)_90%,var(--color-secondary)_10%)] p-4 shadow-[0_26px_70px_-34px_rgba(23,34,29,0.56)] sm:p-6 ${isArabic ? "text-right" : "text-left"}`}
+                dir={isArabic ? "rtl" : "ltr"}
+              >
+                <div className={`flex items-start justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
+                  <div className={`flex min-w-0 items-start gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
+                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary/22 to-primary/10 text-primary shadow-[0_12px_24px_-14px_rgba(24,181,106,0.7)]">
+                      <MapPin className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="text-[clamp(1.1rem,4.8vw,1.55rem)] font-bold leading-tight text-foreground">
+                        {customerUiCopy.selectDeliveryLocation}
+                      </h2>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{customerUiCopy.locationHint}</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 rounded-full border border-border/70 bg-background/70 text-muted-foreground transition-all hover:border-primary/30 hover:text-primary active:scale-95"
+                    onClick={closeLocationModal}
+                    aria-label={customerUiCopy.closeModal}
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
 
-              <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الجماعة الترابية" : language === "fr" ? "Commune" : "Commune"}</label>
-                  <div className="sticky top-0 z-50 bg-background pb-2">
+                <div className="mt-5 space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[12px] font-semibold text-primary/90">{customerUiCopy.communeLabel}</label>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Search
+                        className={`pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground ${isArabic ? "right-4" : "left-4"}`}
+                      />
                       <Input
                         value={communeSearchInput}
                         onChange={(event) => {
@@ -4601,61 +4637,72 @@ function Index() {
                           if (event.key === "Enter") event.preventDefault();
                         }}
                         placeholder={customerUiCopy.searchCommunePlaceholder}
-                        className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                        className={`h-12 rounded-2xl border-border/70 bg-card/75 text-[14px] shadow-[0_10px_28px_-20px_rgba(20,37,30,0.45)] ${isArabic ? "pr-11 pl-4 text-right" : "pl-11 pr-4 text-left"}`}
                         role="combobox"
                         aria-expanded={hasEnoughCommuneChars}
                         aria-controls="commune-results"
                       />
                     </div>
+                    <div
+                      id="commune-results"
+                      className="max-h-[24vh] overflow-y-auto rounded-2xl border border-border/70 bg-background/85 p-1"
+                    >
+                      {!hasEnoughCommuneChars ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.startTyping}</p>
+                      ) : communeSearchQuery.isLoading ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingCommunes}</p>
+                      ) : filteredCommuneOptions.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noCommune}</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {filteredCommuneOptions.map((commune) => (
+                            <li key={commune.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextCommuneId = commune.id;
+                                  const communeHasChanged = nextCommuneId !== selectedCommuneId;
+                                  setSelectedCommuneId(nextCommuneId);
+                                  setSelectedCommuneOption(commune);
+                                  if (communeHasChanged) {
+                                    setSelectedNeighborhoodId("");
+                                    setSelectedNeighborhoodOption(null);
+                                    setNeighborhoodSearchInput("");
+                                  }
+                                  setCommuneSearchInput(getLocalizedCommuneName(commune));
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all hover:bg-secondary/70 active:scale-[0.99] ${isArabic ? "flex-row-reverse text-right" : "text-left"}`}
+                              >
+                                <Check
+                                  className={`size-4 ${selectedCommuneId === commune.id ? "text-primary opacity-100" : "opacity-35"}`}
+                                />
+                                <span className="truncate font-medium text-foreground">{getLocalizedCommuneName(commune)}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    {selectedCommuneOption ? (
+                      <div
+                        className={`flex items-center gap-2 rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/16 to-secondary/60 px-3 py-2.5 ${isArabic ? "flex-row-reverse" : ""}`}
+                      >
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                          <Check className="size-4" />
+                        </span>
+                        <p className="min-w-0 truncate text-sm font-semibold text-foreground">
+                          {getLocalizedCommuneName(selectedCommuneOption)}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
-                  <div id="commune-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
-                    {!hasEnoughCommuneChars ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">
-                        {language === "ar"
-                          ? "بدا كتب باش نْقلبو ليك..."
-                          : language === "fr"
-                            ? "Commencez à taper pour rechercher..."
-                            : "Start typing to search..."}
-                      </p>
-                    ) : communeSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingCommunes}</p>
-                    ) : filteredCommuneOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noCommune}</p>
-                    ) : (
-                      <ul className="py-1">
-                        {filteredCommuneOptions.map((commune) => (
-                          <li key={commune.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextCommuneId = commune.id;
-                                const communeHasChanged = nextCommuneId !== selectedCommuneId;
-                                setSelectedCommuneId(nextCommuneId);
-                                setSelectedCommuneOption(commune);
-                                if (communeHasChanged) {
-                                  setSelectedNeighborhoodId("");
-                                  setSelectedNeighborhoodOption(null);
-                                  setNeighborhoodSearchInput("");
-                                }
-                                setCommuneSearchInput(getLocalizedCommuneName(commune));
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                            >
-                              <Check className={`size-4 ${selectedCommuneId === commune.id ? "opacity-100" : "opacity-0"}`} />
-                              <span className="truncate">{getLocalizedCommuneName(commune)}</span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الحي" : language === "fr" ? "Quartier" : "Neighborhood"}</label>
-                  <div className="sticky top-0 z-50 bg-background pb-2">
+                  <div className="space-y-2">
+                    <label className="text-[12px] font-semibold text-primary/90">{customerUiCopy.neighborhoodLabel}</label>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Search
+                        className={`pointer-events-none absolute top-1/2 size-4 -translate-y-1/2 text-muted-foreground ${isArabic ? "right-4" : "left-4"}`}
+                      />
                       <Input
                         value={neighborhoodSearchInput}
                         onChange={(event) => {
@@ -4670,74 +4717,96 @@ function Index() {
                           if (event.key === "Enter") event.preventDefault();
                         }}
                         placeholder={selectedCommuneId ? customerUiCopy.searchDouarPlaceholder : customerUiCopy.selectCommuneFirst}
-                        className="h-10 rounded-xl pl-9 pr-3 text-sm"
+                        className={`h-12 rounded-2xl border-border/70 bg-card/75 text-[14px] shadow-[0_10px_28px_-20px_rgba(20,37,30,0.45)] ${isArabic ? "pr-11 pl-4 text-right" : "pl-11 pr-4 text-left"}`}
                         role="combobox"
                         aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
                         aria-controls="douar-results"
                         disabled={!selectedCommuneId}
                       />
                     </div>
+                    <div
+                      id="douar-results"
+                      className="max-h-[24vh] overflow-y-auto rounded-2xl border border-border/70 bg-background/85 p-1"
+                    >
+                      {!selectedCommuneId ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.selectCommuneFirst}</p>
+                      ) : !hasEnoughNeighborhoodChars ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.startTyping}</p>
+                      ) : neighborhoodSearchQuery.isLoading ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingDouars}</p>
+                      ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
+                        <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noDouar}</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {filteredNeighborhoodOptions.map((neighborhood) => (
+                            <li key={neighborhood.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedNeighborhoodId(neighborhood.id);
+                                  setSelectedNeighborhoodOption(neighborhood);
+                                  setNeighborhoodSearchInput(getLocalizedNeighborhoodName(neighborhood));
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all hover:bg-secondary/70 active:scale-[0.99] ${isArabic ? "flex-row-reverse text-right" : "text-left"}`}
+                              >
+                                <Check
+                                  className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "text-primary opacity-100" : "opacity-35"}`}
+                                />
+                                <span className="truncate font-medium text-foreground">
+                                  {getLocalizedNeighborhoodName(neighborhood)} ({getLocalizedDeliveryLabel()}: {Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
                     {selectedNeighborhoodOption ? (
-                      <p className="mt-2 text-sm font-medium text-primary">
-                        {getLocalizedDeliveryFeeToLocationLabel()}: {Number(selectedNeighborhoodOption.deliveryFee ?? 0).toFixed(0)} MAD
-                      </p>
+                      <div className="space-y-2 pt-1">
+                        <div
+                          className={`flex items-center gap-2 rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/16 to-secondary/60 px-3 py-2.5 ${isArabic ? "flex-row-reverse" : ""}`}
+                        >
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                            <Check className="size-4" />
+                          </span>
+                          <p className="min-w-0 truncate text-sm font-semibold text-foreground">
+                            {getLocalizedNeighborhoodName(selectedNeighborhoodOption)} ({getLocalizedDeliveryLabel()}: {Number(selectedNeighborhoodOption.deliveryFee ?? 0).toFixed(0)} MAD)
+                          </p>
+                        </div>
+
+                        <div
+                          className={`rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/18 via-secondary/65 to-primary/10 px-3 py-3 ${isArabic ? "text-right" : "text-left"}`}
+                        >
+                          <div className={`flex items-center gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+                            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/18 text-primary">
+                              <Bike className="size-4" />
+                            </span>
+                            <p className="text-sm font-bold text-foreground">
+                              {getLocalizedDeliveryFeeToLocationLabel()}: {Number(selectedNeighborhoodOption.deliveryFee ?? 0).toFixed(0)} MAD
+                            </p>
+                          </div>
+                          <p className="mt-1 text-xs leading-5 text-muted-foreground">{customerUiCopy.deliveryFeeHint}</p>
+                        </div>
+                      </div>
                     ) : null}
                   </div>
-                  <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
-                    {!selectedCommuneId ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.selectCommuneFirst}</p>
-                    ) : !hasEnoughNeighborhoodChars ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">
-                        {language === "ar"
-                          ? "بدا كتب باش نْقلبو ليك..."
-                          : language === "fr"
-                            ? "Commencez à taper pour rechercher..."
-                            : "Start typing to search..."}
-                      </p>
-                    ) : neighborhoodSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingDouars}</p>
-                    ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noDouar}</p>
-                    ) : (
-                      <ul className="py-1">
-                        {filteredNeighborhoodOptions.map((neighborhood) => (
-                          <li key={neighborhood.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedNeighborhoodId(neighborhood.id);
-                                setSelectedNeighborhoodOption(neighborhood);
-                                setNeighborhoodSearchInput(getLocalizedNeighborhoodName(neighborhood));
-                              }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                            >
-                              <Check
-                                className={`size-4 ${selectedNeighborhoodId === neighborhood.id ? "opacity-100" : "opacity-0"}`}
-                              />
-                              <span className="truncate">
-                                {getLocalizedNeighborhoodName(neighborhood)} ({getLocalizedDeliveryLabel()}: {Number(neighborhood.deliveryFee ?? 0).toFixed(0)} MAD)
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
                 </div>
-              </div>
 
-              <Button
-                variant="hero"
-                className="mt-5 w-full rounded-xl"
-                onClick={saveLocationSelection}
-                disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
-              >
-                {customerUiCopy.confirmLocation}
-              </Button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+                <Button
+                  variant="hero"
+                  className="mt-5 h-12 w-full rounded-full bg-gradient-to-r from-primary to-highlight text-primary-foreground shadow-[0_16px_28px_-16px_rgba(24,181,106,0.85)] transition-all hover:opacity-95 active:scale-[0.99]"
+                  onClick={saveLocationSelection}
+                  disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
+                >
+                  <MapPin className={`size-4 ${isArabic ? "ml-1" : "mr-1"}`} />
+                  {customerUiCopy.confirmLocation}
+                </Button>
+              </motion.div>
+            </section>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
     </>
   );
