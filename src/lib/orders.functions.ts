@@ -141,7 +141,9 @@ type OrderRow = {
     | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
-    | "cash_transferred_to_vendor";
+    | "cash_transferred_to_vendor"
+    | "completed"
+    | "cancelled";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
