@@ -2344,7 +2344,7 @@ function Index() {
               }}
             >
               <p className="text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
-              <h1 className="mt-0.5 text-balance text-[1.62rem] font-bold leading-[1.04] text-foreground">{localizedHeroTitle}</h1>
+              <h1 className="mt-0.5 text-balance font-bold leading-[1.04] text-foreground text-right font-sans text-sm">{localizedHeroTitle}</h1>
               <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
             </div>
 
