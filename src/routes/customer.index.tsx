@@ -855,6 +855,28 @@ function Index() {
   }, [supportMessages, supportIsTyping]);
 
   useEffect(() => {
+    if (customerPanelView !== "support") return;
+    const latestMessage = supportMessages[supportMessages.length - 1];
+    if (!latestMessage) return;
+    if (latestMessage.senderType !== "admin") return;
+    if (supportLastSeenAt && new Date(latestMessage.createdAt).getTime() <= new Date(supportLastSeenAt).getTime()) return;
+
+    setSupportFloatingNotification(
+      language === "ar" ? "رد جديد من الدعم" : language === "fr" ? "Nouvelle réponse du support" : "New support reply",
+    );
+    const timer = window.setTimeout(() => setSupportFloatingNotification(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [customerPanelView, language, supportLastSeenAt, supportMessages]);
+
+  useEffect(() => {
+    if (customerPanelView !== "support") return;
+    if (!supportActiveTicketId) return;
+    const latestMessage = supportMessages[supportMessages.length - 1];
+    if (!latestMessage) return;
+    setSupportLastSeenAt(latestMessage.createdAt);
+  }, [customerPanelView, supportActiveTicketId, supportMessages]);
+
+  useEffect(() => {
     if (!customerSession?.phoneNumber) return;
 
     const ordersChannel = supabase
@@ -2113,6 +2135,74 @@ function Index() {
       orderId: activeOrder?.id ?? null,
       pickupCode: activeOrder?.id ? `#${String(activeOrder.id).slice(-4).toUpperCase()}` : null,
     });
+  };
+
+  const handleSupportAttachmentChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(language === "ar" ? "الرجاء اختيار صورة فقط." : language === "fr" ? "Veuillez choisir une image." : "Please choose an image only.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    setIsSupportAttachmentUploading(true);
+    reader.onload = () => {
+      setSupportImageDataUrl(typeof reader.result === "string" ? reader.result : null);
+      setIsSupportAttachmentUploading(false);
+    };
+    reader.onerror = () => {
+      setIsSupportAttachmentUploading(false);
+      toast.error(language === "ar" ? "تعذر تحميل الصورة." : language === "fr" ? "Impossible de charger l'image." : "Failed to load image.");
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  };
+
+  const sendSupportMessageNow = async () => {
+    if (!customerSession?.phoneNumber) return;
+
+    try {
+      setSupportIsTyping(true);
+      if (!supportActiveTicketId) {
+        const created = await createCustomerSupportTicket({
+          data: {
+            phoneNumber: customerSession.phoneNumber,
+            subject:
+              language === "ar"
+                ? "طلب دعم جديد"
+                : language === "fr"
+                  ? "Nouvelle demande de support"
+                  : "New support request",
+            category: supportPriority === "high" ? "order_problem" : "other",
+            message: supportMessageInput.trim() || (language === "ar" ? "مرفق صورة" : language === "fr" ? "Image jointe" : "Image attached"),
+            imageDataUrl: supportImageDataUrl,
+            orderId: supportContext?.orderId ?? null,
+          },
+        });
+        setSupportActiveTicketId(created.id);
+      } else {
+        await sendSupportMessage({
+          data: {
+            phoneNumber: customerSession.phoneNumber,
+            ticketId: supportActiveTicketId,
+            message: supportMessageInput.trim() || (language === "ar" ? "مرفق صورة" : language === "fr" ? "Image jointe" : "Image attached"),
+            imageDataUrl: supportImageDataUrl,
+          },
+        });
+      }
+
+      setSupportMessageInput("");
+      setSupportImageDataUrl(null);
+      setSupportPriority("normal");
+      await Promise.all([supportTicketsQuery.refetch(), supportMessagesQuery.refetch()]);
+    } catch (error) {
+      console.error("Failed to send support message:", error);
+      toast.error(language === "ar" ? "تعذر إرسال الرسالة." : language === "fr" ? "Échec d'envoi du message." : "Failed to send message.");
+    } finally {
+      setSupportIsTyping(false);
+    }
   };
 
   const handleScannedOrderNavigation = async (decodedText: string) => {
