@@ -32,6 +32,9 @@ import {
   Flame,
   Clock3,
   ChevronLeft,
+  Bell,
+  Mic,
+  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1930,9 +1933,9 @@ function Index() {
 
   return (
     <>
-      <main className="app-shell min-h-screen bg-muted/20 pb-24 text-foreground md:pb-0">
-        <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm md:z-50 md:border-border/70 md:glass-panel">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+      <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
+        <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
+          <div className="mx-auto flex h-18 w-full max-w-6xl items-center gap-2 px-4 pt-2 sm:px-6">
             <a href="#" className="inline-flex items-center gap-2">
               {dynamicSiteLogoUrl ? (
                 <img
@@ -1942,17 +1945,17 @@ function Index() {
                   loading="lazy"
                 />
               ) : (
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                   <Bike className="size-5" />
                 </span>
               )}
-              <span className="text-base font-semibold tracking-tight text-gradient-brand">{dynamicSiteName}</span>
+              <span className="text-sm font-extrabold tracking-tight text-gradient-brand sm:text-base">{dynamicSiteName}</span>
             </a>
 
             <button
               type="button"
               onClick={() => setIsLocationModalOpen(true)}
-              className="ml-1 hidden items-center gap-1 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted sm:inline-flex"
+              className="ml-1 hidden items-center gap-1 rounded-full border border-border/70 bg-card/90 px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted sm:inline-flex"
             >
               <MapPin className="size-3.5 text-primary" />
               {selectedLocationLabel}
