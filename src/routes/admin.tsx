@@ -4898,6 +4898,21 @@ function AdminPage() {
                   onSaveMarkupRule={saveMarkupRule}
                   isSavingMarkupRule={isSavingMarkupRule}
                   editingMarkupRuleId={editingMarkupRuleId}
+                  heroSections={(heroSectionsQuery.data ?? []) as Array<any>}
+                  activeHeroPreview={activeHeroPreviewQuery.data as any}
+                  heroForm={heroForm}
+                  onHeroFormChange={setHeroForm}
+                  heroImagePreviewUrl={heroImagePreviewUrl}
+                  onHeroImageFileChange={(file: File | null) => setHeroImageFile(file)}
+                  onHeroImagePreviewChange={(url: string | null) => setHeroImagePreviewUrl(url)}
+                  onSaveHeroSection={saveHeroSection}
+                  onEditHeroSection={editHeroSection}
+                  onResetHeroForm={resetHeroForm}
+                  onDeleteHeroSection={removeHeroSection}
+                  onReorderHeroSection={shiftHeroSection}
+                  editingHeroSectionId={editingHeroSectionId}
+                  isHeroSectionLoading={dbHealthQuery.isLoading || heroSectionsQuery.isLoading || activeHeroPreviewQuery.isLoading}
+                  isSavingHeroSection={isSavingHeroSection}
                   onOpenFactoryResetDialog={() => setIsFactoryResetDialogOpen(true)}
                 />
               ) : null}
