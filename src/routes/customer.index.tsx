@@ -1960,7 +1960,7 @@ function Index() {
   }) => {
     const subtotalMad = Number(order.total_price ?? 0);
     const deliveryFeeMad = Number(order.delivery_fee ?? 0);
-    const extraFeesMad = [order.extra_fees, order.extra_fee, order.service_fee, order.additional_fee].reduce((sum, fee) => {
+    const extraFeesMad = [order.extra_fees, order.extra_fee, order.service_fee, order.additional_fee].reduce<number>((sum, fee) => {
       const parsed = Number(fee ?? 0);
       return Number.isFinite(parsed) ? sum + parsed : sum;
     }, 0);
