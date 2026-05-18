@@ -2447,8 +2447,18 @@ export const listHeroSections = createServerFn({ method: "GET" }).handler(async 
 });
 
 export const getHeroSectionSettings = createServerFn({ method: "GET" }).handler(async () => {
-  const rows = await listHeroSections();
-  if (rows.length > 0) return rows[0];
+  const { data: existingRows, error: existingRowsError } = await (supabaseAdmin as any)
+    .from("hero_sections")
+    .select(HERO_SECTION_SELECT)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (existingRowsError) {
+    throw new Error(existingRowsError.message ?? "Failed to load hero section settings.");
+  }
+
+  if ((existingRows ?? []).length > 0) return normalizeHeroSectionRow(existingRows[0]);
 
   const { data: inserted, error: insertError } = await (supabaseAdmin as any)
     .from("hero_sections")
