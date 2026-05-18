@@ -372,6 +372,28 @@ const extractOrderIdentifierFromQrPayload = (rawValue: string): string | null =>
   }
 };
 
+const shouldFallbackToLatestOrderFromQrPayload = (rawValue: string) => {
+  const trimmed = rawValue.trim();
+  if (!trimmed) return false;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const lastPath = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
+      return !/^[a-zA-Z0-9-]{6,64}$/.test(normalizeScannedOrderToken(lastPath));
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 function useCustomerCarnet(
   customerPhone: string | null,
   fetchCustomerCarnetOverview: (input: { data: { customerPhone: string } }) => Promise<any>,
