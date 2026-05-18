@@ -1614,6 +1614,83 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          message: string
+          sender_id: string | null
+          sender_type: Database["public"]["Enums"]["support_sender_type"]
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message: string
+          sender_id?: string | null
+          sender_type: Database["public"]["Enums"]["support_sender_type"]
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          message?: string
+          sender_id?: string | null
+          sender_type?: Database["public"]["Enums"]["support_sender_type"]
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          category: Database["public"]["Enums"]["support_ticket_category"]
+          created_at: string
+          id: string
+          image_url: string | null
+          last_reply_at: string | null
+          message: string
+          status: Database["public"]["Enums"]["support_ticket_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["support_ticket_category"]
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_reply_at?: string | null
+          message: string
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["support_ticket_category"]
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          last_reply_at?: string | null
+          message?: string
+          status?: Database["public"]["Enums"]["support_ticket_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trending_history: {
         Row: {
           brand_id: string | null
@@ -2065,6 +2142,16 @@ export type Database = {
         | "Dairy & Eggs"
         | "Drinks & Water"
         | "Cleaning Supplies"
+      support_sender_type: "user" | "admin"
+      support_ticket_category:
+        | "order_problem"
+        | "payment_problem"
+        | "delivery_delay"
+        | "product_quality"
+        | "refund_request"
+        | "technical_issue"
+        | "other"
+      support_ticket_status: "open" | "resolved" | "closed" | "archived"
       vendor_settlement_status: "pending" | "settled"
     }
     CompositeTypes: {
@@ -2249,6 +2336,17 @@ export const Constants = {
         "Drinks & Water",
         "Cleaning Supplies",
       ],
+      support_sender_type: ["user", "admin"],
+      support_ticket_category: [
+        "order_problem",
+        "payment_problem",
+        "delivery_delay",
+        "product_quality",
+        "refund_request",
+        "technical_issue",
+        "other",
+      ],
+      support_ticket_status: ["open", "resolved", "closed", "archived"],
       vendor_settlement_status: ["pending", "settled"],
     },
   },
