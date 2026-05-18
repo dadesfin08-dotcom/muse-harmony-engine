@@ -798,7 +798,6 @@ export const getVendorDashboardData = createServerFn({ method: "POST" })
         "id, vendor_id, customer_user_id, cyclist_id, neighborhood_id, customer_name, customer_phone, delivery_notes, payment_method, status, delivery_auth_code, delivery_fee, total_price, subtotal_base_price, vendor_revenue, platform_profit, platform_markup, item_count, order_items, vendor_settlement_status, created_at",
       )
       .eq("vendor_id", vendor.id)
-      .neq("status", "cancelled")
       .order("created_at", { ascending: false });
 
     if (ordersError) {
