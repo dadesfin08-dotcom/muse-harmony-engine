@@ -1151,6 +1151,18 @@ function AdminPage() {
         }
       | undefined) ?? { page: 1, pageSize: 20, total: 0, rows: [] };
   const adminCustomers = adminCustomersData.rows;
+  const selectedCustomerProfileQuery = useQuery({
+    queryKey: ["admin", "customers", "profile", selectedCustomerId],
+    enabled: isAdminDataEnabled && !!selectedCustomerId,
+    queryFn: () => fetchAdminCustomerProfile({ data: { customerId: selectedCustomerId! } }),
+    placeholderData: (previousData) => previousData,
+  });
+
+  useEffect(() => {
+    if (selectedCustomerProfileQuery.data?.adminNotes != null) {
+      setCustomerNotesDraft(String(selectedCustomerProfileQuery.data.adminNotes));
+    }
+  }, [selectedCustomerProfileQuery.data?.adminNotes]);
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
