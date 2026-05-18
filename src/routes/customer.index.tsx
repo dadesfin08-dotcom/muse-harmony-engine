@@ -4872,9 +4872,9 @@ function Index() {
         ) : (
           <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DialogContent
-              className={`[&>button]:hidden w-[95vw] rounded-2xl border border-border bg-background shadow-2xl ${
+              className={`[&>button]:hidden w-[95vw] border border-border bg-background shadow-2xl ${
                 customerSession && customerPanelView === "support"
-                  ? "max-w-3xl p-4 md:p-5"
+                  ? "left-1/2 top-1/2 h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] rounded-none border-0 p-0"
                   : "max-w-md p-8"
               }`}
             >
@@ -4900,19 +4900,19 @@ function Index() {
                     ? customerUiCopy.signedIn
                     : customerUiCopy.enterPhoneToContinue}
               </DialogDescription>
-              <div className="relative flex flex-col gap-5">
+              <div className={`relative flex flex-col gap-5 ${isSupportPanelActive ? "h-full gap-0" : ""}`}>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className={`absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground ${isSupportPanelActive ? "hidden" : ""}`}
                   onClick={() => setIsCustomerAuthModalOpen(false)}
                   aria-label="Close login prompt"
                 >
                   <X className="h-5 w-5" />
                 </Button>
 
-                <div className="text-center">
+                <div className={`text-center ${isSupportPanelActive ? "hidden" : ""}`}>
                   <UserCircle2 className="mx-auto mb-4 h-12 w-12 text-primary" strokeWidth={1.5} aria-hidden="true" />
                   <h2 className="text-xl font-bold text-foreground">{customerSession ? "Account" : "Welcome Back"}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
