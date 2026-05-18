@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { evaluateCustomerBehavior, evaluateCustomersBehavior } from "@/utils/customerAlgorithm";
+import { evaluateCustomerBehavior } from "@/utils/customerAlgorithm";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
