@@ -10048,6 +10048,21 @@ function SettingsSection({
   onSaveMarkupRule,
   isSavingMarkupRule,
   editingMarkupRuleId,
+  heroSections,
+  activeHeroPreview,
+  heroForm,
+  onHeroFormChange,
+  heroImagePreviewUrl,
+  onHeroImageFileChange,
+  onHeroImagePreviewChange,
+  onSaveHeroSection,
+  onEditHeroSection,
+  onResetHeroForm,
+  onDeleteHeroSection,
+  onReorderHeroSection,
+  editingHeroSectionId,
+  isHeroSectionLoading,
+  isSavingHeroSection,
   onOpenFactoryResetDialog,
 }: {
   form: {
@@ -10132,6 +10147,21 @@ function SettingsSection({
   onSaveMarkupRule: () => Promise<void>;
   isSavingMarkupRule: boolean;
   editingMarkupRuleId: string | null;
+  heroSections: Array<any>;
+  activeHeroPreview: any;
+  heroForm: any;
+  onHeroFormChange: Dispatch<SetStateAction<any>>;
+  heroImagePreviewUrl: string | null;
+  onHeroImageFileChange: (file: File | null) => void;
+  onHeroImagePreviewChange: (url: string | null) => void;
+  onSaveHeroSection: () => Promise<void>;
+  onEditHeroSection: (row: any) => void;
+  onResetHeroForm: () => void;
+  onDeleteHeroSection: (id: string) => Promise<void>;
+  onReorderHeroSection: (id: string, direction: "up" | "down") => Promise<void>;
+  editingHeroSectionId: string | null;
+  isHeroSectionLoading: boolean;
+  isSavingHeroSection: boolean;
   onOpenFactoryResetDialog: () => void;
 }) {
   const { i18n } = useTranslation();
@@ -10277,6 +10307,128 @@ function SettingsSection({
       >
         {isGlobalSettingsLoading ? "Saving Global Settings..." : "Save Changes (حفظ التغييرات)"}
       </Button>
+
+      <div className="rounded-xl border border-border bg-card p-4 md:p-5" dir={isArabic ? "rtl" : "ltr"}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Homepage Hero Manager</h3>
+            <p className="text-sm text-muted-foreground">Manage multilingual hero content, media, visibility and order.</p>
+          </div>
+          <Button type="button" variant="outline" className="rounded-md" onClick={onResetHeroForm}>New Hero</Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium text-foreground">Hero Image</label>
+            <div className="flex items-center gap-3 rounded-md border border-border bg-background p-3">
+              {heroImagePreviewUrl ? (
+                <img src={heroImagePreviewUrl} alt="Hero preview" className="h-16 w-24 rounded-md border border-border object-cover" />
+              ) : (
+                <div className="flex h-16 w-24 items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">No image</div>
+              )}
+              <input
+                id="hero-image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  onHeroImageFileChange(file);
+                  if (!file) {
+                    onHeroImagePreviewChange(heroForm.imageUrl || null);
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => onHeroImagePreviewChange(typeof reader.result === "string" ? reader.result : null);
+                  reader.onerror = () => toast.error("Unable to preview selected hero image.");
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <Button type="button" variant="outline" className="rounded-md" onClick={() => document.getElementById("hero-image-upload")?.click()}>
+                Upload
+              </Button>
+            </div>
+          </div>
+
+          <Input placeholder="Sort order" value={heroForm.sortOrder} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, sortOrder: e.target.value }))} />
+          <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
+            <span className="text-sm font-medium text-foreground">Active</span>
+            <Switch checked={heroForm.isActive} onCheckedChange={(checked) => onHeroFormChange((c: any) => ({ ...c, isActive: checked }))} />
+          </div>
+
+          <Input placeholder="Badge AR" value={heroForm.badgeAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeAr: e.target.value }))} />
+          <Input placeholder="Badge EN" value={heroForm.badgeEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeEn: e.target.value }))} />
+          <Input placeholder="Badge FR" value={heroForm.badgeFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, badgeFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="Title AR" value={heroForm.titleAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleAr: e.target.value }))} />
+          <Input placeholder="Title EN" value={heroForm.titleEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleEn: e.target.value }))} />
+          <Input placeholder="Title FR" value={heroForm.titleFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, titleFr: e.target.value }))} className="md:col-span-2" />
+
+          <Textarea placeholder="Subtitle AR" value={heroForm.subtitleAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleAr: e.target.value }))} />
+          <Textarea placeholder="Subtitle EN" value={heroForm.subtitleEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleEn: e.target.value }))} />
+          <Textarea placeholder="Subtitle FR" value={heroForm.subtitleFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, subtitleFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="Delivery AR" value={heroForm.deliveryTimingAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingAr: e.target.value }))} />
+          <Input placeholder="Delivery EN" value={heroForm.deliveryTimingEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingEn: e.target.value }))} />
+          <Input placeholder="Delivery FR" value={heroForm.deliveryTimingFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, deliveryTimingFr: e.target.value }))} className="md:col-span-2" />
+
+          <Input placeholder="CTA AR" value={heroForm.ctaTextAr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextAr: e.target.value }))} />
+          <Input placeholder="CTA EN" value={heroForm.ctaTextEn} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextEn: e.target.value }))} />
+          <Input placeholder="CTA FR" value={heroForm.ctaTextFr} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaTextFr: e.target.value }))} className="md:col-span-2" />
+          <Input placeholder="CTA Link" value={heroForm.ctaLink} onChange={(e) => onHeroFormChange((c: any) => ({ ...c, ctaLink: e.target.value }))} className="md:col-span-2" />
+
+          <div className="md:col-span-2 flex flex-wrap gap-2">
+            <Button type="button" variant="hero" className="rounded-md" disabled={isSavingHeroSection} onClick={() => void onSaveHeroSection()}>
+              {isSavingHeroSection ? "Saving..." : editingHeroSectionId ? "Update Hero" : "Create Hero"}
+            </Button>
+            <Button type="button" variant="outline" className="rounded-md" onClick={onResetHeroForm}>Reset</Button>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-md border border-border">
+          <table className="w-full min-w-[780px] text-left text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2">Hero</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Order</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isHeroSectionLoading ? (
+                <tr><td className="px-3 py-5 text-muted-foreground" colSpan={4}>Loading hero sections...</td></tr>
+              ) : heroSections.length === 0 ? (
+                <tr><td className="px-3 py-5 text-muted-foreground" colSpan={4}>No hero sections yet.</td></tr>
+              ) : (
+                heroSections.map((row: any, index: number) => (
+                  <tr key={row.id} className="border-t border-border">
+                    <td className="px-3 py-2 font-medium text-foreground">{row.title_en || row.headline_en || "Untitled"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.is_active ? "Active" : "Inactive"}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{row.sort_order}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => onEditHeroSection(row)}>Edit</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={index === 0} onClick={() => void onReorderHeroSection(row.id, "up")}>Up</Button>
+                        <Button type="button" size="sm" variant="outline" disabled={index === heroSections.length - 1} onClick={() => void onReorderHeroSection(row.id, "down")}>Down</Button>
+                        <Button type="button" size="sm" variant="destructive" onClick={() => void onDeleteHeroSection(row.id)}>Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {activeHeroPreview ? (
+          <div className="mt-4 rounded-xl border border-border bg-muted/25 p-4">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Hero Preview</p>
+            <p className="text-sm font-semibold text-foreground">{activeHeroPreview.title_en || activeHeroPreview.headline_en}</p>
+            <p className="text-xs text-muted-foreground">{activeHeroPreview.subtitle_en || activeHeroPreview.description_en}</p>
+          </div>
+        ) : null}
+      </div>
 
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4">
         <h3 className="text-sm font-semibold text-destructive">Orders Reset (مسح الطلبات فقط)</h3>
