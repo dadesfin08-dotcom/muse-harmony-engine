@@ -3964,42 +3964,69 @@ function Index() {
               return (
                 <article
                   key={`flash-grid-${product.id}`}
-                  className="flex min-h-[258px] w-[170px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-[22px] border border-border/70 bg-card shadow-[0_12px_24px_-18px_rgba(15,23,42,0.35)] sm:w-[186px]"
+                  className="group flex min-h-[236px] w-[172px] flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_10px_24px_-18px_rgba(15,23,42,0.45)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-18px_rgba(15,23,42,0.55)] sm:w-[188px]"
                 >
                   <Link
                     to="/customer/product/$id"
                     params={{ id: product.id }}
                     search={(prev: Record<string, unknown>) => ({ ...prev, deal: true })}
-                    className="block"
+                    className="relative block"
                   >
-                     <div className="aspect-square w-full bg-muted/35 p-2">
+                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/25">
                       <img
                         src={product.image}
                         alt={product.alt}
-                        className="h-full w-full rounded-xl object-cover"
+                        className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
                         loading="lazy"
                       />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/18 to-transparent" />
+                      {product.discountPercent > 0 ? (
+                        <span className="absolute left-2 top-2 inline-flex h-6 items-center rounded-full border border-red-200/70 bg-red-600/95 px-2 text-[10px] font-extrabold leading-none text-white shadow-sm">
+                          -{product.discountPercent}%
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        aria-label="Favorite"
+                        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-background/92 text-muted-foreground shadow-sm backdrop-blur"
+                      >
+                        <Heart className="size-3.5" />
+                      </button>
                     </div>
                   </Link>
 
-                  <div className="flex flex-1 flex-col p-3">
-                    <h3 className={customerTypography.cardTitle}>
+                  <div className="flex flex-1 flex-col p-3.5">
+                    <div className="mb-1.5 inline-flex h-5 w-fit items-center rounded-full border border-primary/20 bg-primary/10 px-2 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                      {language === "ar" ? "عرض سريع" : language === "fr" ? "Flash" : "Flash Deal"}
+                    </div>
+
+                    <h3 className="line-clamp-2 min-h-[2.4rem] text-sm font-semibold leading-[1.2] text-foreground">
                       {product.name}
                     </h3>
 
-                    <div className="mt-auto flex items-end gap-1 pt-2">
-                      <span className="text-[12px] font-bold leading-none text-red-700">
-                        {Number(product.dealPrice ?? 0).toFixed(2)}
-                      </span>
-                      <span className="text-[11px] font-bold leading-none text-[#2A7543]">{homepageUiCopy.currency}</span>
-                      <span className="text-[11px] leading-none text-muted-foreground line-through">
-                        {Number(product.price ?? 0).toFixed(2)}
-                      </span>
+                    <div className="mt-1 text-[11px] font-medium text-muted-foreground">
+                      {product.measurementUnit}
                     </div>
 
-                    <div className="mt-2 flex items-center">
+                    <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+                      <div className="min-w-0">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[15px] font-extrabold leading-none text-[#2A7543]">
+                            {Number(product.dealPrice ?? 0).toFixed(2)}
+                          </span>
+                          <span className="text-[10px] font-bold leading-none text-[#2A7543]">{homepageUiCopy.currency}</span>
+                        </div>
+                        <span className="mt-0.5 block text-[11px] leading-none text-muted-foreground line-through">
+                          {Number(product.price ?? 0).toFixed(2)}
+                        </span>
+                      </div>
+
                        {cartQty > 0 ? (
-                        <div className="inline-flex h-9 items-center gap-1 rounded-full border border-border bg-card px-1.5 leading-none">
+                        <div className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-border bg-card px-1.5 leading-none shadow-sm">
                           <button
                             type="button"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-foreground leading-none"
@@ -4021,7 +4048,7 @@ function Index() {
                       ) : (
                          <button
                           type="button"
-                          className={`${customerTypography.cta} bg-red-700 text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]`}
+                          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#2A7543] px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-12px_rgba(42,117,67,0.8)] transition-all hover:brightness-105 active:scale-[0.98]"
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
