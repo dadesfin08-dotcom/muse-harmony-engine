@@ -707,6 +707,7 @@ function CyclistDashboardPage() {
                     isBusy={isUpdatingOrderId === order.id}
                     onOpenDetails={() => setDetailsOrder(order)}
                     onAction={() => openScanner()}
+                    onCancel={() => openCancelDialog(order)}
                   />
                 </motion.div>
               ))
@@ -951,6 +952,7 @@ function OrderCard({
   isBusy: boolean;
   onOpenDetails?: () => void;
   onAction: () => void;
+  onCancel?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
@@ -1072,6 +1074,15 @@ function OrderCard({
         <Button className={`mt-3 w-full rounded-xl py-3 text-lg font-semibold active:scale-95 ${actionClass}`} onClick={onAction} disabled={isBusy}>
           <ActionIcon className="size-4" />
           {isBusy ? t("cyclist.refreshing") : actionLabel}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-2 w-full text-sm font-bold text-destructive"
+          onClick={() => onCancel?.()}
+          disabled={isBusy}
+        >
+          {t("cyclist.cancelOrder")}
         </Button>
       </article>
     );
