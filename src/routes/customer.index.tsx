@@ -2282,12 +2282,14 @@ function Index() {
               <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
             </div>
 
+            <div ref={mobileSearchAnchorRef} className="h-px w-full" />
             <div
-              ref={searchContainerRef}
-              className="sticky top-[4.4rem] z-30 mt-2 px-0.5 transition-[transform,opacity,box-shadow] duration-300 ease-out"
+              ref={mobileSearchContainerRef}
+              className="relative z-20 mt-2 px-0.5 transition-[transform,opacity] duration-300 ease-out"
               style={{
-                opacity: 1,
+                opacity: isMobileSearchSticky ? 0 : 1,
                 transform: `translateY(${(1 - mobileHeroScrollProgress) * 16}px)`,
+                pointerEvents: isMobileSearchSticky ? "none" : "auto",
               }}
             >
               <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
