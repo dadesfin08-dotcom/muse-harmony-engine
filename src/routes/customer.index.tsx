@@ -2165,11 +2165,11 @@ function Index() {
             <img
               src={heroImageUrl}
               alt="Fresh groceries"
-              className="pointer-events-none absolute right-1 top-0 h-[88px] w-[88px] rounded-2xl object-cover opacity-95"
+              className={`pointer-events-none absolute top-0 h-[88px] w-[88px] rounded-2xl object-cover opacity-95 ${isArabic ? "left-1" : "right-1"}`}
               loading="lazy"
             />
             <div
-              className="max-w-[70%] transition-[opacity,transform] duration-300 ease-out"
+              className={`max-w-[70%] transition-[opacity,transform] duration-300 ease-out ${isArabic ? "ml-auto text-right" : "text-left"}`}
               style={{
                 opacity: 1 - mobileHeroScrollProgress * 0.55,
                 transform: `translateY(${-mobileHeroScrollProgress * 16}px) scale(${1 - mobileHeroScrollProgress * 0.03})`,
@@ -2266,7 +2266,7 @@ function Index() {
             </div>
           </article>
 
-          <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
+          <div className={`animate-fade-in hidden flex-col justify-center gap-4 md:flex ${isArabic ? "md:order-2 md:items-end md:text-right" : "md:order-1 md:items-start md:text-left"}`}>
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
               {localizedHeroBadge}
@@ -2298,7 +2298,7 @@ function Index() {
 
           <div
             ref={bannerScrollRef}
-            className="flex w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide"
+            className={`flex w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide ${isArabic ? "md:order-1" : "md:order-2"}`}
             onMouseEnter={() => setIsBannerInteracting(true)}
             onMouseLeave={() => setIsBannerInteracting(false)}
             onTouchStart={() => setIsBannerInteracting(true)}
