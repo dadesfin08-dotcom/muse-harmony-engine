@@ -2238,8 +2238,9 @@ function Index() {
                 className="rounded-2xl"
                 onClick={() => {
                   const target = activeHeroSection?.cta_link;
-                  if (typeof target === "string" && target.startsWith("/")) {
-                    void navigate({ to: target as "/customer" });
+                  if (typeof target === "string" && target.trim().length > 0) {
+                    if (target.startsWith("/")) window.location.assign(target);
+                    else window.open(target, "_blank", "noopener,noreferrer");
                   }
                 }}
               >
