@@ -2938,16 +2938,6 @@ function Index() {
                 size="icon"
                 variant="soft"
                 className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
-                onClick={() => setCustomerPanelView("account")}
-                aria-label={language === "ar" ? "الرجوع" : language === "fr" ? "Retour" : "Back"}
-              >
-                <ChevronLeft className={`size-4 ${isArabic ? "rotate-180" : ""}`} />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="soft"
-                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
                 onClick={() => {
                   setIsCustomerAuthModalOpen(false);
                   setCustomerPanelView("account");
