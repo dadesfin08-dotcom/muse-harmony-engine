@@ -943,6 +943,7 @@ function OrderCard({
   isBusy,
   onOpenDetails,
   onAction,
+  onCancel,
 }: {
   order: CyclistOrderCard;
   isActiveDelivery?: boolean;
