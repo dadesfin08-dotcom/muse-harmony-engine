@@ -1937,16 +1937,16 @@ function Index() {
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
-              <span className="inline-flex h-[clamp(2rem,5.5vw,2.4rem)] w-[clamp(2rem,5.5vw,2.4rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <span className="inline-flex h-[clamp(2.15rem,5.9vw,2.55rem)] w-[clamp(2.15rem,5.9vw,2.55rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
                 {dynamicSiteLogoUrl ? (
                   <img
                     src={dynamicSiteLogoUrl}
                     alt={dynamicSiteName}
-                    className="h-[clamp(1.68rem,5.25vw,2.08rem)] w-[clamp(1.68rem,5.25vw,2.08rem)] object-contain"
+                    className="h-[clamp(1.82rem,5.7vw,2.22rem)] w-[clamp(1.82rem,5.7vw,2.22rem)] object-contain"
                     loading="lazy"
                   />
                 ) : (
-                  <Bike className="size-[clamp(1.3rem,4.6vw,1.56rem)]" />
+                  <Bike className="size-[clamp(1.42rem,4.95vw,1.7rem)]" />
                 )}
               </span>
               <span className="min-w-0 leading-tight">
