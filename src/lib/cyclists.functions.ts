@@ -1243,23 +1243,39 @@ export const cancelActiveDeliveryByOrder = createServerFn({ method: "POST" })
       }
 
       if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
-        const patch: Record<string, unknown> = {
-          strikes: "strikes + 1",
-          cancelled_orders: "cancelled_orders + 1",
+        const { data: existingProfile, error: existingProfileError } = await (supabaseAdmin as any)
+          .from("profiles")
+          .select("id, strikes, cod_rejections, fake_orders, cancelled_orders")
+          .eq("id", order.customer_user_id)
+          .maybeSingle();
+
+        if (existingProfileError) {
+          throw new Error(existingProfileError.message);
+        }
+
+        if (!existingProfile?.id) {
+          throw new Error("Customer profile not found.");
+        }
+
+        const nextPatch: Record<string, unknown> = {
+          strikes: Number(existingProfile.strikes ?? 0) + 1,
+          cancelled_orders: Number(existingProfile.cancelled_orders ?? 0) + 1,
+          cod_rejections: Number(existingProfile.cod_rejections ?? 0),
+          fake_orders: Number(existingProfile.fake_orders ?? 0),
           updated_at: nowIso,
         };
 
         if (data.reason === "cod_rejection") {
-          patch.cod_rejections = "cod_rejections + 1";
+          nextPatch.cod_rejections = Number(existingProfile.cod_rejections ?? 0) + 1;
         }
 
         if (data.reason === "fake_order") {
-          patch.fake_orders = "fake_orders + 1";
+          nextPatch.fake_orders = Number(existingProfile.fake_orders ?? 0) + 1;
         }
 
         const { error: profileError } = await (supabaseAdmin as any)
           .from("profiles")
-          .update(patch)
+          .update(nextPatch)
           .eq("id", order.customer_user_id);
 
         if (profileError) {
