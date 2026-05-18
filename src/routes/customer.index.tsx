@@ -4851,6 +4851,28 @@ function Index() {
         ) : (
           <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DialogContent className="[&>button]:hidden w-[95vw] max-w-md rounded-2xl border border-border bg-background p-8 shadow-2xl">
+              <DialogTitle className="sr-only">
+                {customerSession && customerPanelView === "support"
+                  ? language === "ar"
+                    ? "مركز الدعم"
+                    : language === "fr"
+                      ? "Centre d’assistance"
+                      : "Support Center"
+                  : customerSession
+                    ? customerUiCopy.account
+                    : customerUiCopy.welcomeBack}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {customerSession && customerPanelView === "support"
+                  ? language === "ar"
+                    ? "دردشة مباشرة مع فريق الدعم"
+                    : language === "fr"
+                      ? "Chat en direct avec l’équipe support"
+                      : "Live chat with the support team"
+                  : customerSession
+                    ? customerUiCopy.signedIn
+                    : customerUiCopy.enterPhoneToContinue}
+              </DialogDescription>
               <div className="relative flex flex-col gap-5">
                 <Button
                   type="button"
@@ -5326,6 +5348,14 @@ function Index() {
         }}
       >
         <DialogContent className={`w-[95vw] max-w-md rounded-2xl ${isArabic ? "text-right" : "text-left"}`} dir={isArabic ? "rtl" : "ltr"}>
+          <DialogTitle className="sr-only">{language === "ar" ? "ماسح رمز الطلب" : language === "fr" ? "Scanner de commande" : "Order QR scanner"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {language === "ar"
+              ? "وجّه الكاميرا إلى رمز الطلب"
+              : language === "fr"
+                ? "Pointez la caméra vers le QR de la commande"
+                : "Point the camera at your order QR code"}
+          </DialogDescription>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{scannerStatusMessage || customerUiCopy.scannerPointToQr}</p>
             <div id="customer-order-qr-reader" className="min-h-[320px] overflow-hidden rounded-xl border border-border" />
