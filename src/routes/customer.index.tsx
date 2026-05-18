@@ -3010,8 +3010,8 @@ function Index() {
           ) : null}
         </section>
 
-        <section className="mx-auto mt-4 w-full max-w-6xl px-4 pb-5 sm:px-6 md:mt-2">
-          <div className={`mb-3.5 space-y-1 ${isArabic ? "text-right" : "text-left"}`}>
+        <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-7 sm:px-6 md:mt-8">
+          <div className={`mb-4 space-y-1.5 ${isArabic ? "text-right" : "text-left"}`}>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90">
               {subscriptionSectionCopy.eyebrow}
             </p>
@@ -3035,7 +3035,7 @@ function Index() {
           ) : (
             <div
               ref={subScrollRef}
-              className="flex w-full snap-x snap-mandatory flex-row gap-3 overflow-x-auto pb-3 pt-1 scrollbar-hide"
+              className="flex w-full snap-x snap-mandatory flex-row gap-3 overflow-x-auto pb-3.5 pt-1.5 scrollbar-hide"
               onMouseEnter={() => setIsSubInteracting(true)}
               onMouseLeave={() => setIsSubInteracting(false)}
               onTouchStart={() => setIsSubInteracting(true)}
@@ -3116,8 +3116,8 @@ function Index() {
         </section>
 
         {flashDeals.length > 0 ? (
-        <section className="mx-auto mt-2 w-full max-w-6xl px-4 pb-3 sm:px-6">
-          <div className="mb-3 overflow-hidden rounded-[24px] border border-red-900/20 bg-gradient-to-r from-red-950 via-red-900 to-red-800 p-3 text-white shadow-[0_10px_26px_-16px_rgba(127,29,29,0.55)]">
+        <section className="mx-auto mt-4 w-full max-w-6xl px-4 pb-4 sm:px-6 md:mt-6">
+          <div className="mb-4 overflow-hidden rounded-[24px] border border-red-900/20 bg-gradient-to-r from-red-950 via-red-900 to-red-800 p-3.5 text-white shadow-[0_10px_26px_-16px_rgba(127,29,29,0.55)]">
             <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-2.5">
                 <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/10 backdrop-blur-sm">
@@ -3149,7 +3149,7 @@ function Index() {
 
           <div
             ref={scrollContainerRef}
-            className="flex flex-row overflow-x-auto gap-3 pb-4 pt-1 scrollbar-hide snap-x snap-mandatory"
+            className="flex snap-x snap-mandatory flex-row gap-3 overflow-x-auto pb-4.5 pt-1.5 scrollbar-hide"
             onMouseEnter={() => setIsInteracting(true)}
             onMouseLeave={() => setIsInteracting(false)}
             onTouchStart={() => setIsInteracting(true)}
