@@ -1223,7 +1223,7 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
       return { ok: true };
     } catch (error) {
       console.error("updateVendorOrderStatus failed:", error);
-      throw new Error("Order status update failed.");
+      throw new Error(error instanceof Error ? error.message : "Order status update failed.");
     }
   });
 

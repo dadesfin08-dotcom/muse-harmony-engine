@@ -1175,10 +1175,25 @@ function VendorDashboardPage() {
     });
   }, [inventoryItems]);
 
+  const resolveMutationErrorMessage = (error: unknown) => {
+    if (error && typeof error === "object") {
+      const candidate = error as { message?: string; details?: string; hint?: string };
+      return (
+        candidate.message ||
+        candidate.details ||
+        candidate.hint ||
+        t("vendorDashboard.toasts.updateOrderFailed")
+      );
+    }
+    return t("vendorDashboard.toasts.updateOrderFailed");
+  };
+
   const handleAcceptOrder = async (orderId: string) => {
+    const dashboardKey = ["vendor", "dashboard", activeLanguage] as const;
+    const previousDashboard = queryClient.getQueryData(dashboardKey);
     try {
       setIsUpdating(orderId);
-      queryClient.setQueryData(["vendor", "dashboard"], (current: any) => {
+      queryClient.setQueryData(dashboardKey, (current: any) => {
         if (!current) {
           return current;
         }
@@ -1192,22 +1207,31 @@ function VendorDashboardPage() {
       });
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "preparing" } });
-      await dashboardQuery.refetch();
+      await Promise.all([
+        dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+      ]);
       toast.success(t("vendorDashboard.toasts.movedToPreparing"));
     } catch (error) {
       console.error("Failed to accept order:", error);
+      if (previousDashboard) {
+        queryClient.setQueryData(dashboardKey, previousDashboard);
+      }
       await dashboardQuery.refetch();
-      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
+      toast.error(resolveMutationErrorMessage(error));
     } finally {
       setIsUpdating(null);
     }
   };
 
   const handleMarkReady = async (orderId: string) => {
+    const dashboardKey = ["vendor", "dashboard", activeLanguage] as const;
+    const previousDashboard = queryClient.getQueryData(dashboardKey);
     try {
       setIsUpdating(orderId);
       const orderForReceipt = orders.find((order) => order.id === orderId) ?? null;
-      queryClient.setQueryData(["vendor", "dashboard"], (current: any) => {
+      queryClient.setQueryData(dashboardKey, (current: any) => {
         if (!current) {
           return current;
         }
@@ -1221,7 +1245,11 @@ function VendorDashboardPage() {
       });
 
       await updateStatus({ data: { phoneNumber: normalizedVendorPhoneNumber, orderId, nextStatus: "ready" } });
-      await dashboardQuery.refetch();
+      await Promise.all([
+        dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+      ]);
       toast.success(t("vendorDashboard.toasts.markedReady"));
 
       if (orderForReceipt) {
@@ -1233,8 +1261,11 @@ function VendorDashboardPage() {
       return true;
     } catch (error) {
       console.error("Failed to mark order as ready:", error);
+      if (previousDashboard) {
+        queryClient.setQueryData(dashboardKey, previousDashboard);
+      }
       await dashboardQuery.refetch();
-      toast.error(t("vendorDashboard.toasts.updateOrderFailed"));
+      toast.error(resolveMutationErrorMessage(error));
       return false;
     } finally {
       setIsUpdating(null);

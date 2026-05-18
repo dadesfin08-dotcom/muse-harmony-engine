@@ -423,10 +423,10 @@ const initialAdminOrders: Array<{
   neighborhoodId: string | null;
   cashToCollectFromCustomer: number;
   status:
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor"
@@ -1327,12 +1327,12 @@ function AdminPage() {
     textColor: "#000000",
   });
   const [ordersStatusFilter, setOrdersStatusFilter] = useState<
-    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
+    "all" | "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "delivered_cash_with_cyclist" | "cash_transferred_to_vendor"
   >("all");
   const [ordersCategoryFilter, setOrdersCategoryFilter] = useState<"all" | "MARKETPLACE" | "PLATFORM_SUBSCRIPTION">("all");
   const [packOrdersSearchTerm, setPackOrdersSearchTerm] = useState("");
   const [packOrdersStatusFilter, setPackOrdersStatusFilter] = useState<
-    "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled"
+    "all" | "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled"
   >("all");
   const [packOrdersCyclistFilter, setPackOrdersCyclistFilter] = useState<"all" | string>("all");
   const [subscriberSearchTerm, setSubscriberSearchTerm] = useState("");
@@ -4040,21 +4040,26 @@ function AdminPage() {
   };
 
   const updateSubscriptionOrderStatusMutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled" }) =>
+    mutationFn: ({ orderId, status }: { orderId: string; status: "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled" }) =>
       updateSubscriptionOrderStatusInDatabase({ data: { orderId, status } }),
     onSuccess: async () => {
-      await adminOrdersQuery.refetch();
+      await Promise.all([
+        adminOrdersQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["admin", "orders-global"] }),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+      ]);
       toast.success("Subscription order status updated.");
     },
     onError: (error) => {
       console.error("Failed to update subscription order status:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to update subscription order status.");
+      const raw = error as { message?: string; details?: string; hint?: string };
+      toast.error(raw?.message || raw?.details || raw?.hint || "Failed to update subscription order status.");
     },
   });
 
   const updateSubscriptionOrderStatusHandler = async (
     orderId: string,
-    status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled",
+    status: "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled",
   ) => {
     await updateSubscriptionOrderStatusMutation.mutateAsync({ orderId, status });
   };
@@ -4205,10 +4210,10 @@ function AdminPage() {
                       createdAt: string;
                       deliveredAt: string | null;
                       status:
-                        | "new"
+                        | "pending"
                         | "preparing"
                         | "ready"
-                        | "delivering"
+                        | "in_delivery"
                         | "delivered"
                         | "delivered_cash_with_cyclist"
                         | "cash_transferred_to_vendor"
@@ -8528,10 +8533,10 @@ function PackOrdersSection({
     cyclistId: string | null;
     cyclistName: string | null;
     status:
-      | "new"
+      | "pending"
       | "preparing"
       | "ready"
-      | "delivering"
+      | "in_delivery"
       | "delivered"
       | "delivered_cash_with_cyclist"
       | "cash_transferred_to_vendor"
@@ -8542,13 +8547,13 @@ function PackOrdersSection({
   isMutating: boolean;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
-  statusFilter: "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
-  onStatusFilterChange: (value: "all" | "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => void;
+  statusFilter: "all" | "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled";
+  onStatusFilterChange: (value: "all" | "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled") => void;
   cyclistFilter: "all" | string;
   onCyclistFilterChange: (value: "all" | string) => void;
   onAssignCyclist: (orderId: string, cyclistId: string) => Promise<void>;
   onAutoDispatch: (orderId: string) => Promise<void>;
-  onUpdateStatus: (orderId: string, status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled") => Promise<void>;
+  onUpdateStatus: (orderId: string, status: "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled") => Promise<void>;
 }) {
   const statusBadgeClass: Record<string, string> = {
     new: "bg-chart-4/20 text-chart-4",
@@ -8597,7 +8602,7 @@ function PackOrdersSection({
 
   const resolveStatusForControl = (
     status: (typeof orders)[number]["status"],
-  ): "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled" => {
+  ): "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled" => {
     if (status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
       return "delivered";
     }
@@ -8633,10 +8638,10 @@ function PackOrdersSection({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="new">Pending</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="preparing">Approved</SelectItem>
                 <SelectItem value="ready">Ready</SelectItem>
-                <SelectItem value="delivering">Active</SelectItem>
+                <SelectItem value="in_delivery">Active</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
@@ -8749,7 +8754,7 @@ function PackOrdersSection({
                           onValueChange={(value) =>
                             void onUpdateStatus(
                               order.id,
-                              value as "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled",
+                              value as "pending" | "preparing" | "ready" | "in_delivery" | "delivered" | "cancelled",
                             )
                           }
                         >
@@ -8757,10 +8762,10 @@ function PackOrdersSection({
                             <SelectValue placeholder="Change status" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="new">Pending</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="preparing">Approved</SelectItem>
                             <SelectItem value="ready">Ready</SelectItem>
-                            <SelectItem value="delivering">Active</SelectItem>
+                            <SelectItem value="in_delivery">Active</SelectItem>
                             <SelectItem value="delivered">Delivered</SelectItem>
                             <SelectItem value="cancelled">Cancelled</SelectItem>
                           </SelectContent>
@@ -8836,10 +8841,10 @@ function SubscribersSection({
     createdAt: string;
     deliveredAt: string | null;
     status:
-      | "new"
+      | "pending"
       | "preparing"
       | "ready"
-      | "delivering"
+      | "in_delivery"
       | "delivered"
       | "delivered_cash_with_cyclist"
       | "cash_transferred_to_vendor"
@@ -9365,10 +9370,10 @@ function OrdersSection({
     neighborhoodId: string | null;
     cashToCollectFromCustomer: number;
     status:
-      | "new"
+      | "pending"
       | "preparing"
       | "ready"
-      | "delivering"
+      | "in_delivery"
       | "delivered"
       | "delivered_cash_with_cyclist"
       | "cash_transferred_to_vendor"
@@ -9379,20 +9384,20 @@ function OrdersSection({
   error: Error | null;
   statusFilter:
     | "all"
-    | "new"
+    | "pending"
     | "preparing"
     | "ready"
-    | "delivering"
+    | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
     | "cash_transferred_to_vendor";
   onStatusFilterChange: Dispatch<
     SetStateAction<
       | "all"
-      | "new"
+      | "pending"
       | "preparing"
       | "ready"
-      | "delivering"
+      | "in_delivery"
       | "delivered"
       | "delivered_cash_with_cyclist"
       | "cash_transferred_to_vendor"
@@ -9424,10 +9429,10 @@ function OrdersSection({
 
   const orderStatusLabel = (
     status:
-      | "new"
+      | "pending"
       | "preparing"
       | "ready"
-      | "delivering"
+      | "in_delivery"
       | "delivered"
       | "delivered_cash_with_cyclist"
       | "cash_transferred_to_vendor"
@@ -9456,10 +9461,10 @@ function OrdersSection({
               onStatusFilterChange(
                 event.target.value as
                   | "all"
-                  | "new"
+                  | "pending"
                   | "preparing"
                   | "ready"
-                  | "delivering"
+                  | "in_delivery"
                   | "delivered"
                   | "delivered_cash_with_cyclist"
                   | "cash_transferred_to_vendor",
@@ -9468,10 +9473,10 @@ function OrdersSection({
             className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
           >
             <option value="all">{t("admin.ordersMonitoring.filters.allStatuses")}</option>
-            <option value="new">{t("admin.ordersMonitoring.statuses.new")}</option>
+            <option value="pending">{t("admin.ordersMonitoring.statuses.new")}</option>
             <option value="preparing">{t("admin.ordersMonitoring.statuses.preparing")}</option>
             <option value="ready">{t("admin.ordersMonitoring.statuses.ready")}</option>
-            <option value="delivering">{t("admin.ordersMonitoring.statuses.delivering")}</option>
+            <option value="in_delivery">{t("admin.ordersMonitoring.statuses.delivering")}</option>
             <option value="delivered">{t("admin.ordersMonitoring.statuses.delivered")}</option>
             <option value="delivered_cash_with_cyclist">{t("admin.ordersMonitoring.statuses.delivered_cash_with_cyclist")}</option>
             <option value="cash_transferred_to_vendor">{t("admin.ordersMonitoring.statuses.cash_transferred_to_vendor")}</option>
