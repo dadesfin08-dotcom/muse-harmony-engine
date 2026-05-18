@@ -8,7 +8,7 @@ import {
   Search,
   ShoppingCart,
   UserCircle2,
-  ScanLine,
+  Package,
   Plus,
   Minus,
   Trash2,
@@ -438,13 +438,13 @@ export function CustomerLayout({
               type="button"
               dir="ltr"
               aria-label={floatingShortcutLabel}
+              aria-disabled={!hasOutForDeliveryShortcut}
               onClick={openLatestOutForDeliveryReceipt}
-              disabled={!hasOutForDeliveryShortcut}
               className={`relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-[0.94] ${
-                hasOutForDeliveryShortcut ? "opacity-100" : "opacity-80"
+                hasOutForDeliveryShortcut ? "opacity-100" : "cursor-default opacity-80"
               }`}
             >
-              <ScanLine className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
+              <Package className="h-6 w-6 shrink-0 text-primary-foreground" />
               {hasOutForDeliveryShortcut ? (
                 <span
                   className={`pointer-events-none absolute top-1.5 inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
