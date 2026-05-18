@@ -3768,20 +3768,22 @@ function Index() {
                           const isCompleted = subscription.status === "completed";
 
                           return (
-                            <article key={subscription.id} className="space-y-2 rounded-xl border border-border bg-background p-3">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">{subscription.packName}</p>
+                            <article key={subscription.id} className={`space-y-2.5 rounded-xl border border-border bg-background ${isArabic ? "p-3.5" : "p-3"}`}>
+                              <div className={`flex items-start justify-between ${isArabic ? "flex-row-reverse gap-4" : "gap-3"}`}>
+                                <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
+                                  <p className={`text-sm text-foreground ${isArabic ? "font-medium leading-6" : "font-semibold"}`}>{subscription.packName}</p>
                                   <p className="text-xs text-muted-foreground">#{subscription.id.slice(0, 8).toUpperCase()}</p>
                                 </div>
                                 <Badge
-                                  className={
+                                  className={`inline-flex h-8 min-w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-[12px] leading-none ${
+                                    isArabic ? "font-medium" : "font-semibold"
+                                  } ${
                                     isPending
                                       ? "border border-chart-4/40 bg-chart-4/20 text-chart-4"
                                       : isCompleted
                                         ? "bg-success/20 text-success"
                                         : "bg-primary/15 text-primary"
-                                  }
+                                  }`}
                                 >
                                   {getSubscriptionStatusLabel(subscription.status)}
                                 </Badge>
@@ -3794,22 +3796,22 @@ function Index() {
                                   indicatorClassName="bg-success"
                                   aria-label={`Subscription progress ${subscription.completionPercent}%`}
                                 />
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                  <span>
+                                <div className={`flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground ${isArabic ? "flex-row-reverse text-right" : ""}`}>
+                                  <span className={isArabic ? "text-right" : ""}>
                                     {subscription.completedDeliveries}/{Math.max(subscription.totalDeliveries, 0)} deliveries
                                   </span>
-                                  <span>{subscription.completionPercent}%</span>
+                                  <span className="shrink-0 whitespace-nowrap">{subscription.completionPercent}%</span>
                                 </div>
                               </div>
 
                               {isPending ? (
-                                <p className="text-xs font-medium text-chart-4">Awaiting platform approval before activation.</p>
+                                <p className={`text-xs font-medium text-chart-4 ${isArabic ? "text-right" : ""}`}>Awaiting platform approval before activation.</p>
                               ) : null}
                               {isActive ? (
-                                <p className="text-xs font-medium text-success">Subscription active — deliveries are being tracked live.</p>
+                                <p className={`text-xs font-medium text-success ${isArabic ? "text-right" : ""}`}>Subscription active — deliveries are being tracked live.</p>
                               ) : null}
                               {isCompleted ? (
-                                <p className="text-xs font-medium text-success">Subscription finished.</p>
+                                <p className={`text-xs font-medium text-success ${isArabic ? "text-right" : ""}`}>Subscription finished.</p>
                               ) : null}
                             </article>
                           );
@@ -4242,20 +4244,22 @@ function Index() {
                             const isCompleted = subscription.status === "completed";
 
                             return (
-                              <article key={subscription.id} className="space-y-2 rounded-xl border border-border bg-background p-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-sm font-semibold text-foreground">{subscription.packName}</p>
+                              <article key={subscription.id} className={`space-y-2.5 rounded-xl border border-border bg-background ${isArabic ? "p-3.5" : "p-3"}`}>
+                                <div className={`flex items-start justify-between ${isArabic ? "flex-row-reverse gap-4" : "gap-3"}`}>
+                                  <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
+                                    <p className={`text-sm text-foreground ${isArabic ? "font-medium leading-6" : "font-semibold"}`}>{subscription.packName}</p>
                                     <p className="text-xs text-muted-foreground">#{subscription.id.slice(0, 8).toUpperCase()}</p>
                                   </div>
                                   <Badge
-                                    className={
+                                    className={`inline-flex h-8 min-w-fit shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-[12px] leading-none ${
+                                      isArabic ? "font-medium" : "font-semibold"
+                                    } ${
                                       isPending
                                         ? "border border-chart-4/40 bg-chart-4/20 text-chart-4"
                                         : isCompleted
                                           ? "bg-success/20 text-success"
                                           : "bg-primary/15 text-primary"
-                                    }
+                                    }`}
                                   >
                                     {getSubscriptionStatusLabel(subscription.status)}
                                   </Badge>
@@ -4268,22 +4272,22 @@ function Index() {
                                     indicatorClassName="bg-success"
                                     aria-label={`Subscription progress ${subscription.completionPercent}%`}
                                   />
-                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>
+                                  <div className={`flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground ${isArabic ? "flex-row-reverse text-right" : ""}`}>
+                                    <span className={isArabic ? "text-right" : ""}>
                                       {subscription.completedDeliveries}/{Math.max(subscription.totalDeliveries, 0)} deliveries
                                     </span>
-                                    <span>{subscription.completionPercent}%</span>
+                                    <span className="shrink-0 whitespace-nowrap">{subscription.completionPercent}%</span>
                                   </div>
                                 </div>
 
                                 {isPending ? (
-                                  <p className="text-xs font-medium text-chart-4">Awaiting platform approval before activation.</p>
+                                  <p className={`text-xs font-medium text-chart-4 ${isArabic ? "text-right" : ""}`}>Awaiting platform approval before activation.</p>
                                 ) : null}
                                 {isActive ? (
-                                  <p className="text-xs font-medium text-success">Subscription active — deliveries are being tracked live.</p>
+                                  <p className={`text-xs font-medium text-success ${isArabic ? "text-right" : ""}`}>Subscription active — deliveries are being tracked live.</p>
                                 ) : null}
                                 {isCompleted ? (
-                                  <p className="text-xs font-medium text-success">Subscription finished.</p>
+                                  <p className={`text-xs font-medium text-success ${isArabic ? "text-right" : ""}`}>Subscription finished.</p>
                                 ) : null}
                               </article>
                             );
