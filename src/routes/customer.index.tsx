@@ -2591,7 +2591,7 @@ function Index() {
             {categories.length === 0 ? (
               <AppEmptyState
                 title={t("categories.noCategories", { defaultValue: "No categories available in your area yet." })}
-                subtitle="We’re preparing your neighborhood catalog."
+                subtitle={homepageUiCopy.categoriesEmptySubtitle}
                 className="w-full"
               />
             ) : (
@@ -2643,7 +2643,7 @@ function Index() {
 
         <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-xl font-bold text-foreground md:text-2xl">
+            <Link to="/customer/all-products" className="text-[clamp(1.06rem,4.45vw,1.35rem)] font-bold leading-tight text-foreground md:text-2xl">
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
@@ -2703,8 +2703,8 @@ function Index() {
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-2xl font-extrabold tracking-tight text-primary">
-                      {product.price} <span className="text-xs font-semibold">MAD</span>
+                    <p className="text-[clamp(1.07rem,4.85vw,1.35rem)] font-extrabold tracking-tight text-primary">
+                      {product.price} <span className="text-[11px] font-semibold">{homepageUiCopy.currency}</span>
                     </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
@@ -2767,11 +2767,7 @@ function Index() {
           ) : null}
 
           {teaserProducts.length === 0 ? (
-            <AppEmptyState
-              title={t("products.empty")}
-              subtitle="Try changing category or search terms."
-              className="mt-4"
-            />
+            <AppEmptyState title={t("products.empty")} subtitle={homepageUiCopy.productsEmptySubtitle} className="mt-4" />
           ) : null}
         </section>
 
