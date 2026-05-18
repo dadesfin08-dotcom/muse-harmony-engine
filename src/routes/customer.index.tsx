@@ -2911,8 +2911,8 @@ function Index() {
 
     return (
       <section className="relative mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden bg-card/90 backdrop-blur-xl md:my-3 md:rounded-3xl md:border md:border-border/70 md:shadow-xl">
-        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-3 pb-3 pt-3 backdrop-blur md:px-4">
-          <div className={`flex items-center justify-between gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
+        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-4 pb-3 pt-3 backdrop-blur md:px-5">
+          <div className={`flex items-center justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
             <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
                 <Headset className="size-4" />
@@ -2920,19 +2920,24 @@ function Index() {
               <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
                 <p className="truncate text-sm font-semibold text-foreground">{supportTitle}</p>
                 <div className={`mt-0.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
-                  <span className="inline-flex h-2 w-2 rounded-full bg-success" aria-hidden="true" />
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_0_4px_hsl(var(--success)/0.12)]" aria-hidden="true" />
                   <span>{language === "ar" ? "الدعم متصل" : language === "fr" ? "Support en ligne" : "Support online"}</span>
                 </div>
               </div>
             </div>
 
-            <div className={`flex items-center gap-1.5 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
               {supportUnreadCount > 0 ? <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge> : null}
+              <div className={`inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-gradient-to-r from-success/20 via-success/12 to-primary/12 px-3 py-1 text-[11px] font-medium text-success shadow-sm ${isArabic ? "flex-row-reverse" : ""}`}>
+                <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden="true" />
+                <span>{language === "ar" ? "الدعم المباشر" : language === "fr" ? "Support en direct" : "LIVE SUPPORT"}</span>
+              </div>
+              <div className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm backdrop-blur ${isArabic ? "flex-row-reverse" : ""}`}>
               <Button
                 type="button"
                 size="icon"
                 variant="soft"
-                className="h-8 w-8 rounded-full"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
                 onClick={() => setCustomerPanelView("account")}
                 aria-label={language === "ar" ? "الرجوع" : language === "fr" ? "Retour" : "Back"}
               >
@@ -2942,7 +2947,7 @@ function Index() {
                 type="button"
                 size="icon"
                 variant="soft"
-                className="h-8 w-8 rounded-full"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
                 onClick={() => {
                   setIsCustomerAuthModalOpen(false);
                   setCustomerPanelView("account");
@@ -2956,22 +2961,23 @@ function Index() {
                 type="button"
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 rounded-full"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
                 onClick={() => setIsCustomerAuthModalOpen(false)}
                 aria-label={language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
               >
                 <X className="size-4" />
               </Button>
+              </div>
             </div>
           </div>
 
           <div className={`mt-2 text-xs text-muted-foreground ${isArabic ? "text-right" : "text-left"}`}>{supportSubtitle}</div>
 
           {supportContext?.orderId ? (
-            <div className={`mt-2 flex flex-wrap gap-1.5 ${isArabic ? "justify-end" : ""}`}>
-              <Badge variant="outline" className="rounded-full">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
-              {supportContext.pickupCode ? <Badge className="rounded-full bg-primary/10 text-primary">{supportContext.pickupCode}</Badge> : null}
-              {supportActiveTicket?.status ? <Badge variant="secondary" className="rounded-full">{supportActiveTicket.status}</Badge> : null}
+            <div className={`mt-2 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
+              <Badge variant="outline" className="h-8 rounded-full px-3 text-[11px] font-semibold tracking-wide">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
+              {supportContext.pickupCode ? <Badge className="h-8 rounded-full bg-primary/10 px-3 text-[11px] font-medium text-primary">{supportContext.pickupCode}</Badge> : null}
+              {supportActiveTicket?.status ? <Badge variant="secondary" className="h-8 rounded-full px-3 text-[11px] font-medium">{supportActiveTicket.status}</Badge> : null}
             </div>
           ) : null}
         </header>
@@ -2997,7 +3003,7 @@ function Index() {
           </section>
         ) : null}
 
-        <div ref={supportMessagesScrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/35 px-3 py-3 md:px-4 md:py-4">
+        <div ref={supportMessagesScrollRef} className="flex-1 space-y-4 overflow-y-auto bg-background/35 px-4 py-4 md:px-5 md:py-5">
           {supportMessagesQuery.isLoading ? (
             <AppEmptyState title={language === "ar" ? "جاري تحميل المحادثة..." : language === "fr" ? "Chargement de la conversation..." : "Loading conversation..."} className="p-4" />
           ) : supportMessagesWithDateMarkers.length === 0 ? (
@@ -3047,15 +3053,15 @@ function Index() {
                     className={`flex ${isMine ? (isArabic ? "justify-start" : "justify-end") : isArabic ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[88%] space-y-1.5 rounded-2xl px-3 py-2.5 sm:max-w-[80%] ${
-                        isMine ? "bg-primary text-primary-foreground" : "border border-border/60 bg-card text-foreground"
+                      className={`max-w-[88%] space-y-1.5 rounded-3xl px-3.5 py-3 shadow-sm sm:max-w-[80%] ${
+                        isMine ? "bg-primary/95 text-primary-foreground" : "border border-border/60 bg-card text-foreground"
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.message}</p>
                       {message.imageUrl ? (
                         <img src={message.imageUrl} alt="support attachment" className="max-h-44 w-full rounded-xl object-cover" loading="lazy" />
                       ) : null}
-                      <div className={`flex items-center gap-1 text-[10px] ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
+                      <div className={`flex items-center gap-1.5 text-[10px] font-medium ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
                         <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                         {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
                       </div>
@@ -3074,7 +3080,7 @@ function Index() {
           ) : null}
         </div>
 
-        <footer className="border-t border-border/60 bg-background/95 px-3 py-2.5 backdrop-blur md:px-4 md:py-3">
+        <footer className="border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur md:px-5 md:py-3.5">
           {supportImageDataUrl ? (
             <div className="relative mb-2 overflow-hidden rounded-xl border border-border">
               <img src={supportImageDataUrl} alt="attachment preview" className="max-h-32 w-full object-cover" />
@@ -3091,18 +3097,18 @@ function Index() {
             </div>
           ) : null}
 
-          <div className={`flex items-end gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
-            <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-background hover:bg-muted">
+          <div className={`flex items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
+            <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/70 bg-background/85 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-muted">
               <Paperclip className="h-4 w-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleSupportAttachmentChange} />
             </label>
-            <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card p-1.5">
+            <div className="min-w-0 flex-1 rounded-2xl border border-border/70 bg-card/90 px-2 py-1.5 shadow-sm">
               <Textarea
                 value={supportMessageInput}
                 onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSupportMessageInput(event.target.value)}
                 placeholder={language === "ar" ? "اكتب رسالتك..." : language === "fr" ? "Écrivez votre message..." : "Write your message..."}
                 rows={2}
-                className={`min-h-[48px] max-h-32 resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0 ${isArabic ? "text-right" : "text-left"}`}
+                className={`min-h-[48px] max-h-32 resize-none border-0 bg-transparent px-2 py-1.5 text-sm leading-relaxed shadow-none focus-visible:ring-0 ${isArabic ? "text-right" : "text-left"}`}
                 onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -3115,7 +3121,7 @@ function Index() {
               type="button"
               variant="hero"
               size="icon"
-              className="h-10 w-10 shrink-0 rounded-full"
+              className="h-10 w-10 shrink-0 rounded-full border border-border/70 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
               disabled={supportSendDisabled}
               onClick={() => void sendSupportMessageNow()}
             >
