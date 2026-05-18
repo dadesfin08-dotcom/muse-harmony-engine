@@ -1935,30 +1935,37 @@ function Index() {
     <>
       <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
-          <div className="mx-auto flex h-18 w-full max-w-6xl items-center gap-2 px-4 pt-2 sm:px-6">
-            <a href="#" className="inline-flex items-center gap-2">
-              {dynamicSiteLogoUrl ? (
-                <img
-                  src={dynamicSiteLogoUrl}
-                  alt={dynamicSiteName}
-                  className="h-8 w-auto max-w-28 object-contain"
-                  loading="lazy"
-                />
-              ) : (
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                  <Bike className="size-5" />
+          <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
+            <a href="#" className="inline-flex min-w-0 items-center gap-2">
+              <span className="inline-flex h-[clamp(1.8rem,5.2vw,2.2rem)] w-[clamp(1.8rem,5.2vw,2.2rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                {dynamicSiteLogoUrl ? (
+                  <img
+                    src={dynamicSiteLogoUrl}
+                    alt={dynamicSiteName}
+                    className="h-[clamp(1.2rem,3.8vw,1.5rem)] w-[clamp(1.2rem,3.8vw,1.5rem)] object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <Bike className="size-[clamp(0.95rem,3.4vw,1.15rem)]" />
+                )}
+              </span>
+              <span className="min-w-0 leading-tight">
+                <span className="block truncate text-[clamp(0.95rem,3.1vw,1.15rem)] font-extrabold tracking-tight text-gradient-brand">
+                  {dynamicSiteName}
                 </span>
-              )}
-              <span className="text-sm font-extrabold tracking-tight text-gradient-brand sm:text-base">{dynamicSiteName}</span>
+                <span className="block truncate text-[clamp(0.56rem,2.05vw,0.68rem)] font-medium text-muted-foreground/80">
+                  Fresh. Local. Yours.
+                </span>
+              </span>
             </a>
 
             <button
               type="button"
               onClick={() => setIsLocationModalOpen(true)}
-              className="ml-1 hidden items-center gap-1 rounded-full border border-border/70 bg-card/90 px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted sm:inline-flex"
+              className="ml-auto inline-flex min-w-0 max-w-[52vw] items-center gap-1.5 rounded-full border border-border/70 bg-card/90 px-[clamp(0.58rem,2.1vw,0.85rem)] py-[clamp(0.37rem,1.25vw,0.55rem)] text-[clamp(0.68rem,2.25vw,0.82rem)] font-medium text-muted-foreground transition hover:bg-muted sm:max-w-[16.75rem]"
             >
-              <MapPin className="size-3.5 text-primary" />
-              {selectedLocationLabel}
+              <MapPin className="size-[clamp(0.78rem,2.8vw,0.95rem)] shrink-0 text-primary" />
+              <span className="min-w-0 truncate">{selectedLocationLabel}</span>
             </button>
 
             <div ref={searchContainerRef} className="relative ml-auto hidden min-w-0 max-w-md flex-1 sm:block">
@@ -2039,9 +2046,9 @@ function Index() {
 
             <button
               aria-label="Notifications"
-              className="relative hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
+              className="relative inline-flex h-[clamp(2rem,7vw,2.35rem)] w-[clamp(2rem,7vw,2.35rem)] shrink-0 items-center justify-center rounded-full border border-border/70 bg-card text-foreground transition hover:bg-muted"
             >
-              <Bell className="size-4.5" />
+              <Bell className="size-[clamp(0.92rem,3.1vw,1.05rem)]" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
             </button>
 
@@ -2077,26 +2084,6 @@ function Index() {
                 {cartCount}
               </span>
             </button>
-          </div>
-          <div className="mx-auto w-full max-w-6xl px-4 pb-2 sm:hidden">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setIsLocationModalOpen(true)}
-                className="inline-flex max-w-[78%] items-center gap-1 rounded-full border border-border/70 bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted"
-              >
-                <MapPin className="size-3.5 shrink-0 text-primary" />
-                <span className="line-clamp-1">{selectedLocationLabel}</span>
-              </button>
-
-              <button
-                aria-label="Notifications"
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground"
-              >
-                <Bell className="size-4.5" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-              </button>
-            </div>
           </div>
         </header>
 
