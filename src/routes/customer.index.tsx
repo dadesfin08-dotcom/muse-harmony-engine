@@ -2841,7 +2841,7 @@ function Index() {
                         <div className={`mt-2 flex items-end justify-between gap-2 ${isArabic ? "flex-row-reverse" : "flex-row"}`}>
                           <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
                             <p className="whitespace-nowrap text-[13px] font-semibold text-success">
-                              {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">MAD</span>
+                              {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">{homepageUiCopy.currency}</span>
                               <span className="ml-1 text-[11px] font-medium text-muted-foreground rtl:ml-0 rtl:mr-1">
                                 {subscriptionSectionCopy.pricingPrefix} {pack.billingLabel.toLowerCase()}
                               </span>
@@ -2887,8 +2887,8 @@ function Index() {
                   <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
                 </span>
                 <div className="leading-tight">
-                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">همزة اليوم</h2>
-                  <p className="text-[10px] font-medium uppercase text-white/85">FRESH DAILY FLASH DEALS</p>
+                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">{homepageUiCopy.flashTitle}</h2>
+                  <p className="text-[10px] font-medium uppercase text-white/85">{homepageUiCopy.flashSubtitle}</p>
                 </div>
               </div>
 
@@ -2901,7 +2901,7 @@ function Index() {
                   to="/customer/flash-deals"
                   className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
                 >
-                  <span>{t("view_all", "عرض الكل")}</span>
+                  <span>{homepageUiCopy.viewAll}</span>
                   <ChevronLeft className="h-3 w-3 rtl:rotate-180" />
                 </Link>
               </div>
@@ -2947,7 +2947,7 @@ function Index() {
                       <span className="text-[11px] font-bold text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
-                      <span className="text-[11px] font-bold text-[#2A7543]">MAD</span>
+                      <span className="text-[11px] font-bold text-[#2A7543]">{homepageUiCopy.currency}</span>
                       <span className="text-[11px] text-muted-foreground line-through">
                         {Number(product.price ?? 0).toFixed(2)}
                       </span>
