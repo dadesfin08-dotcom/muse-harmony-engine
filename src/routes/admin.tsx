@@ -1402,6 +1402,45 @@ function AdminPage() {
   const [siteLogoFile, setSiteLogoFile] = useState<File | null>(null);
   const [siteLogoPreviewUrl, setSiteLogoPreviewUrl] = useState<string | null>(null);
   const [isSavingGlobalSettings, setIsSavingGlobalSettings] = useState(false);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+  const [heroImagePreviewUrl, setHeroImagePreviewUrl] = useState<string | null>(null);
+  const [isSavingHeroSection, setIsSavingHeroSection] = useState(false);
+  const [editingHeroSectionId, setEditingHeroSectionId] = useState<string | null>(null);
+  const [heroForm, setHeroForm] = useState({
+    id: "",
+    sortOrder: "0",
+    isActive: true,
+    imageUrl: "",
+    badgeAr: "",
+    badgeEn: "",
+    badgeFr: "",
+    titleAr: "",
+    titleEn: "",
+    titleFr: "",
+    subtitleAr: "",
+    subtitleEn: "",
+    subtitleFr: "",
+    deliveryTimingAr: "",
+    deliveryTimingEn: "",
+    deliveryTimingFr: "",
+    ctaTextAr: "",
+    ctaTextEn: "",
+    ctaTextFr: "",
+    ctaLink: "",
+    accentFrom: "",
+    accentTo: "",
+    accentChipBg: "",
+    accentChipText: "",
+    greetingAr: "",
+    greetingEn: "",
+    greetingFr: "",
+    headlineAr: "",
+    headlineEn: "",
+    headlineFr: "",
+    descriptionAr: "",
+    descriptionEn: "",
+    descriptionFr: "",
+  });
   const [isFactoryResetDialogOpen, setIsFactoryResetDialogOpen] = useState(false);
   const [factoryResetConfirmationText, setFactoryResetConfirmationText] = useState("");
   const [isResettingFactoryData, setIsResettingFactoryData] = useState(false);
@@ -1486,6 +1525,51 @@ function AdminPage() {
     setReceiptLogoPreviewUrl(row.receipt_logo_url ?? null);
 
   }, [adminInvoiceSettingsQuery.data]);
+
+  useEffect(() => {
+    const rows = (heroSectionsQuery.data ?? []) as Array<any>;
+    if (rows.length === 0) return;
+    if (editingHeroSectionId) return;
+
+    const row = rows[0];
+    setHeroForm({
+      id: row.id,
+      sortOrder: String(Number(row.sort_order ?? 0)),
+      isActive: Boolean(row.is_active),
+      imageUrl: row.image_url ?? "",
+      badgeAr: row.badge_ar ?? "",
+      badgeEn: row.badge_en ?? "",
+      badgeFr: row.badge_fr ?? "",
+      titleAr: row.title_ar ?? "",
+      titleEn: row.title_en ?? "",
+      titleFr: row.title_fr ?? "",
+      subtitleAr: row.subtitle_ar ?? "",
+      subtitleEn: row.subtitle_en ?? "",
+      subtitleFr: row.subtitle_fr ?? "",
+      deliveryTimingAr: row.delivery_timing_ar ?? "",
+      deliveryTimingEn: row.delivery_timing_en ?? "",
+      deliveryTimingFr: row.delivery_timing_fr ?? "",
+      ctaTextAr: row.cta_text_ar ?? "",
+      ctaTextEn: row.cta_text_en ?? "",
+      ctaTextFr: row.cta_text_fr ?? "",
+      ctaLink: row.cta_link ?? "",
+      accentFrom: row.accent_from ?? "",
+      accentTo: row.accent_to ?? "",
+      accentChipBg: row.accent_chip_bg ?? "",
+      accentChipText: row.accent_chip_text ?? "",
+      greetingAr: row.greeting_ar ?? "",
+      greetingEn: row.greeting_en ?? "",
+      greetingFr: row.greeting_fr ?? "",
+      headlineAr: row.headline_ar ?? "",
+      headlineEn: row.headline_en ?? "",
+      headlineFr: row.headline_fr ?? "",
+      descriptionAr: row.description_ar ?? "",
+      descriptionEn: row.description_en ?? "",
+      descriptionFr: row.description_fr ?? "",
+    });
+    setHeroImagePreviewUrl(row.image_url ?? null);
+    setHeroImageFile(null);
+  }, [heroSectionsQuery.data, editingHeroSectionId]);
 
   const analyticsQuery = useQuery({
     queryKey: ["admin", "vendor-analytics", selectedVendor?.id],
