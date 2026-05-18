@@ -4399,7 +4399,6 @@ function Index() {
                 customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
               }`}
               style={{
-                maxHeight: isSupportPanelActive ? "100dvh" : authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
                 height: isSupportPanelActive ? (supportViewportHeight ? `${supportViewportHeight}px` : "100dvh") : undefined,
                 maxHeight: isSupportPanelActive
                   ? supportViewportHeight
