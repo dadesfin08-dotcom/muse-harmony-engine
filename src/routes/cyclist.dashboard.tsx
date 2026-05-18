@@ -10,11 +10,14 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   acceptDeliveryRun,
+  cancelActiveDeliveryByOrder,
   completeCustomerDeliveryByOrder,
   getCyclistDashboardData,
   setCyclistActiveState,
@@ -31,6 +34,7 @@ const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
 
 type CyclistView = "available" | "active" | "platformPacks";
+type CancelReason = "cod_rejection" | "unreachable" | "fake_order";
 type CyclistSession = {
   cyclistId: string;
   phoneNumber: string;
@@ -92,6 +96,9 @@ function CyclistDashboardPage() {
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
   const [isScannerSuccess, setIsScannerSuccess] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
+  const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const previousAvailableRunIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
@@ -121,6 +128,7 @@ function CyclistDashboardPage() {
   const acceptRun = useServerFn(acceptDeliveryRun);
   const completeCustomerDelivery = useServerFn(completeCustomerDeliveryByOrder);
   const settleVendorHandover = useServerFn(settleVendorCashHandover);
+  const cancelDelivery = useServerFn(cancelActiveDeliveryByOrder);
 
   usePushNotifications({
     enabled: Boolean(session?.cyclistId),
