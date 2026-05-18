@@ -4798,6 +4798,98 @@ function AdminPage() {
                   onImageChange={handleCategoryImageChange}
                 />
               ) : null}
+              {tab === "support" ? (
+                <section className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                  <article className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                    <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                      <Input
+                        value={adminSupportSearch}
+                        onChange={(event) => setAdminSupportSearch(event.target.value)}
+                        placeholder={activeLanguage === "ar" ? "بحث في المحادثات..." : activeLanguage === "fr" ? "Rechercher les chats..." : "Search chats..."}
+                      />
+                      <Select value={adminSupportStatusFilter} onValueChange={(value) => setAdminSupportStatusFilter(value as typeof adminSupportStatusFilter)}>
+                        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
+                      {adminSupportTickets.map((ticket) => (
+                        <button
+                          key={ticket.id}
+                          type="button"
+                          onClick={() => setAdminSupportActiveTicketId(ticket.id)}
+                          className={cn(
+                            "w-full rounded-xl border p-3 text-left transition hover:bg-muted/40",
+                            adminSupportActiveTicketId === ticket.id ? "border-primary/40 bg-primary/10" : "border-border bg-background",
+                            isRtl && "text-right",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="line-clamp-1 text-sm font-semibold text-foreground">{ticket.subject}</p>
+                            <Badge variant="outline" className="rounded-full">{ticket.status}</Badge>
+                          </div>
+                          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{ticket.userName} • {ticket.userPhone}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="flex min-h-[65vh] flex-col rounded-2xl border border-border bg-card">
+                    <div className={cn("border-b border-border p-4", isRtl && "text-right")}>
+                      <p className="text-sm font-semibold text-foreground">{adminSupportActiveTicket?.subject ?? "Support Chats"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{adminSupportActiveTicket?.userName ?? ""}</p>
+                    </div>
+                    <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                      {adminSupportMessages.map((message) => {
+                        const isAdminMessage = message.senderType === "admin";
+                        return (
+                          <div key={message.id} className={cn("flex", isAdminMessage ? (isRtl ? "justify-start" : "justify-end") : isRtl ? "justify-end" : "justify-start")}>
+                            <div className={cn("max-w-[80%] rounded-2xl px-3 py-2 text-sm", isAdminMessage ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>
+                              <p className="whitespace-pre-wrap break-words">{message.message}</p>
+                              {message.imageUrl ? <img src={message.imageUrl} alt="attachment" className="mt-2 max-h-44 w-full rounded-lg object-cover" loading="lazy" /> : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="space-y-2 border-t border-border p-4">
+                      <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                        <Textarea
+                          value={adminSupportReplyInput}
+                          onChange={(event) => setAdminSupportReplyInput(event.target.value)}
+                          rows={2}
+                          placeholder={activeLanguage === "ar" ? "اكتب ردك..." : activeLanguage === "fr" ? "Écrivez votre réponse..." : "Write your reply..."}
+                          className={cn("resize-none rounded-xl", isRtl && "text-right")}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              void handleSendAdminSupportReply();
+                            }
+                          }}
+                        />
+                        <Button type="button" className="h-auto rounded-xl" onClick={() => void handleSendAdminSupportReply()} disabled={adminSupportIsSending || !adminSupportReplyInput.trim() || !adminSupportActiveTicketId}>
+                          {adminSupportIsSending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
+                        </Button>
+                      </div>
+                      {adminSupportActiveTicket ? (
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "open")}>Open</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "resolved")}>Resolve</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "closed")}>Close</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "archived")}>Archive</Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                </section>
+              ) : null}
               {tab === "ads-content" ? (
                 <AdsContentSection
                   ads={(siteAdsQuery.data ?? []) as Array<{
