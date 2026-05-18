@@ -2114,21 +2114,21 @@ function Index() {
         </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative mx-auto mb-7 w-full max-w-[352px] overflow-visible px-1 pb-12 pt-2 md:hidden">
+          <article className="relative mx-auto mb-6 w-full max-w-[336px] overflow-visible px-1 pb-10 pt-1 md:hidden">
             <img
               src={fallbackProductImage}
               alt="Fresh groceries"
-              className="pointer-events-none absolute right-1 top-1 h-[108px] w-[108px] rounded-2xl object-cover opacity-95"
+              className="pointer-events-none absolute right-1 top-0 h-[88px] w-[88px] rounded-2xl object-cover opacity-95"
               loading="lazy"
             />
-            <p className="max-w-[58%] text-[15px] font-medium text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 max-w-[66%] text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
+            <p className="max-w-[58%] text-[13px] font-medium text-foreground">Good morning, 👋</p>
+            <h1 className="mt-0.5 max-w-[68%] text-balance text-[1.62rem] font-bold leading-[1.04] text-foreground">
               Fresh groceries,
-              <span className="block text-[1.78rem] leading-[1.08] text-primary">delivered in 15 min</span>
+              <span className="block text-[1.44rem] leading-[1.06] text-primary">delivered in 15 min</span>
             </h1>
-            <p className="mt-2 max-w-[64%] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-1.5 max-w-[66%] text-[11px] leading-4 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
 
-            <div ref={searchContainerRef} className="absolute inset-x-3 -bottom-6 z-20">
+            <div ref={searchContainerRef} className="absolute inset-x-3 -bottom-5 z-20">
               <Search className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
               {predictiveSearchQuery.isFetching && hasSearchTerm ? (
                 <Loader2 className="pointer-events-none absolute right-4 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -2143,7 +2143,7 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-14 w-full rounded-full border border-border/45 bg-card pl-11 pr-24 text-sm shadow-[0_18px_36px_-24px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
+                className="h-12 w-full rounded-full border border-border/45 bg-card pl-11 pr-24 text-sm shadow-[0_16px_30px_-22px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
               />
 
               <div className="absolute right-3 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1.5">
@@ -2170,7 +2170,7 @@ function Index() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    className="no-scrollbar absolute left-0 right-0 top-14 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                    className="no-scrollbar absolute left-0 right-0 top-12 z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
                   >
                     {predictiveSearchResults.length > 0 ? (
                       predictiveSearchResults.map((item) => (
