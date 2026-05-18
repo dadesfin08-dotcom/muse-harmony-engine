@@ -46,6 +46,7 @@ import {
   FileUp,
   Search,
   Plus,
+  Loader2,
   Wallet,
   BikeIcon,
   Landmark,
@@ -60,6 +61,8 @@ import {
   Ban,
   Zap,
   CalendarDays,
+  MessageCircle,
+  SendHorizontal,
   PauseCircle,
   StopCircle,
   PlayCircle,
@@ -177,6 +180,12 @@ import {
   updateAnnouncement,
   updateSiteAd,
 } from "@/lib/ads-content.functions";
+import {
+  listAdminSupportMessages,
+  listAdminSupportTickets,
+  sendAdminSupportMessage,
+  updateSupportTicketStatus,
+} from "@/lib/support.functions";
 import { checkAdminDatabaseHealth } from "@/lib/admin-health.functions";
 import {
   createVendor,
@@ -284,6 +293,7 @@ type AdminTab =
   | "catalog"
   | "brands"
   | "categories"
+  | "support"
   | "ads-content"
   | "settings";
 
@@ -298,6 +308,7 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "admin.nav.catalog", tab: "catalog", icon: Boxes },
   { label: "admin.nav.brands", tab: "brands", icon: Shapes },
   { label: "admin.nav.categories", tab: "categories", icon: Shapes },
+  { label: "admin.nav.support", tab: "support", icon: MessageCircle },
   { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
   { label: "admin.nav.settings", tab: "settings", icon: Settings },
 ];
@@ -735,6 +746,7 @@ export const Route = createFileRoute("/admin")({
         "catalog",
         "brands",
         "categories",
+        "support",
         "ads-content",
         "settings",
       ].includes(tab)
@@ -823,6 +835,10 @@ function AdminPage() {
   const createAnnouncementInDatabase = useServerFn(createAnnouncement);
   const updateAnnouncementInDatabase = useServerFn(updateAnnouncement);
   const deleteAnnouncementInDatabase = useServerFn(deleteAnnouncement);
+  const fetchAdminSupportTickets = useServerFn(listAdminSupportTickets);
+  const fetchAdminSupportMessages = useServerFn(listAdminSupportMessages);
+  const sendAdminSupportReply = useServerFn(sendAdminSupportMessage);
+  const saveSupportTicketStatus = useServerFn(updateSupportTicketStatus);
   const fetchMarkupRules = useServerFn(listMarkupRules);
   const createMarkupRuleInDatabase = useServerFn(createMarkupRule);
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
@@ -1036,6 +1052,65 @@ function AdminPage() {
     refetchInterval: 20_000,
     placeholderData: (previousData) => previousData,
   });
+  const [adminSupportSearch, setAdminSupportSearch] = useState("");
+  const [adminSupportStatusFilter, setAdminSupportStatusFilter] = useState<"all" | "open" | "resolved" | "closed" | "archived">("open");
+  const [adminSupportActiveTicketId, setAdminSupportActiveTicketId] = useState<string | null>(null);
+  const [adminSupportReplyInput, setAdminSupportReplyInput] = useState("");
+  const [adminSupportIsSending, setAdminSupportIsSending] = useState(false);
+  const adminSupportTicketsQuery = useQuery({
+    queryKey: ["admin", "support", "tickets", adminSupportStatusFilter, adminSupportSearch],
+    enabled: isAdminDataEnabled,
+    queryFn: () =>
+      fetchAdminSupportTickets({
+        data: {
+          status: adminSupportStatusFilter === "all" ? undefined : adminSupportStatusFilter,
+          search: adminSupportSearch.trim() || undefined,
+        },
+      }),
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminSupportTickets =
+    (adminSupportTicketsQuery.data ?? []) as Array<{
+      id: string;
+      userName: string;
+      userPhone: string;
+      subject: string;
+      category: string;
+      message: string;
+      imageUrl: string | null;
+      status: "open" | "resolved" | "closed" | "archived";
+      createdAt: string;
+      lastReplyAt: string | null;
+      lastSenderType: "admin" | "user" | null;
+      orderId: string | null;
+      orderStatus: string | null;
+      pickupCode: string | null;
+    }>;
+  const adminSupportActiveTicket =
+    adminSupportTickets.find((ticket) => ticket.id === adminSupportActiveTicketId) ?? null;
+  const adminSupportMessagesQuery = useQuery({
+    queryKey: ["admin", "support", "messages", adminSupportActiveTicketId],
+    enabled: isAdminDataEnabled && !!adminSupportActiveTicketId,
+    queryFn: () =>
+      fetchAdminSupportMessages({
+        data: {
+          ticketId: adminSupportActiveTicketId!,
+        },
+      }),
+    refetchInterval: adminSupportActiveTicketId ? 3_500 : false,
+    refetchIntervalInBackground: true,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminSupportMessages =
+    (adminSupportMessagesQuery.data ?? []) as Array<{
+      id: string;
+      senderType: "admin" | "user";
+      message: string;
+      imageUrl: string | null;
+      createdAt: string;
+    }>;
   const vendors = vendorsQuery.data ?? initialVendors;
   const cyclists = cyclistsQuery.data ?? initialCyclists;
   const serviceZones = serviceZonesQuery.data ?? [];
@@ -1195,6 +1270,42 @@ function AdminPage() {
       setCustomerNotesDraft(String(selectedCustomerProfileQuery.data.adminNotes));
     }
   }, [selectedCustomerProfileQuery.data?.adminNotes]);
+  useEffect(() => {
+    if (!adminSupportActiveTicketId && adminSupportTickets.length > 0) {
+      setAdminSupportActiveTicketId(adminSupportTickets[0]!.id);
+      return;
+    }
+
+    if (!adminSupportActiveTicketId) return;
+    const stillExists = adminSupportTickets.some((ticket) => ticket.id === adminSupportActiveTicketId);
+    if (!stillExists) {
+      setAdminSupportActiveTicketId(adminSupportTickets[0]?.id ?? null);
+    }
+  }, [adminSupportActiveTicketId, adminSupportTickets]);
+
+  useEffect(() => {
+    if (!isAdminDataEnabled) return;
+
+    const ticketsChannel = supabase
+      .channel("admin-support-tickets-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "tickets"] });
+      })
+      .subscribe();
+
+    const messagesChannel = supabase
+      .channel("admin-support-messages-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "tickets"] });
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "messages"] });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ticketsChannel);
+      void supabase.removeChannel(messagesChannel);
+    };
+  }, [isAdminDataEnabled, queryClient]);
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
@@ -4394,6 +4505,41 @@ function AdminPage() {
     await updateSubscriptionOrderStatusMutation.mutateAsync({ orderId, status });
   };
 
+  const handleSendAdminSupportReply = async () => {
+    if (!adminSupportActiveTicketId || !adminSupportReplyInput.trim()) return;
+
+    try {
+      setAdminSupportIsSending(true);
+      await sendAdminSupportReply({
+        data: {
+          ticketId: adminSupportActiveTicketId,
+          message: adminSupportReplyInput.trim(),
+          imageDataUrl: null,
+        },
+      });
+      setAdminSupportReplyInput("");
+      await Promise.all([
+        adminSupportMessagesQuery.refetch(),
+        adminSupportTicketsQuery.refetch(),
+      ]);
+    } catch (error) {
+      console.error("Failed to send support reply:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to send support reply.");
+    } finally {
+      setAdminSupportIsSending(false);
+    }
+  };
+
+  const handleUpdateSupportTicketStatus = async (ticketId: string, status: "open" | "resolved" | "closed" | "archived") => {
+    try {
+      await saveSupportTicketStatus({ data: { ticketId, status } });
+      await adminSupportTicketsQuery.refetch();
+    } catch (error) {
+      console.error("Failed to update support ticket status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update support ticket status.");
+    }
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
@@ -4652,6 +4798,98 @@ function AdminPage() {
                   imagePreviewUrl={categoryImagePreviewUrl}
                   onImageChange={handleCategoryImageChange}
                 />
+              ) : null}
+              {tab === "support" ? (
+                <section className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+                  <article className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                    <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                      <Input
+                        value={adminSupportSearch}
+                        onChange={(event) => setAdminSupportSearch(event.target.value)}
+                        placeholder={activeLanguage === "ar" ? "بحث في المحادثات..." : activeLanguage === "fr" ? "Rechercher les chats..." : "Search chats..."}
+                      />
+                      <Select value={adminSupportStatusFilter} onValueChange={(value) => setAdminSupportStatusFilter(value as typeof adminSupportStatusFilter)}>
+                        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                          <SelectItem value="closed">Closed</SelectItem>
+                          <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
+                      {adminSupportTickets.map((ticket) => (
+                        <button
+                          key={ticket.id}
+                          type="button"
+                          onClick={() => setAdminSupportActiveTicketId(ticket.id)}
+                          className={cn(
+                            "w-full rounded-xl border p-3 text-left transition hover:bg-muted/40",
+                            adminSupportActiveTicketId === ticket.id ? "border-primary/40 bg-primary/10" : "border-border bg-background",
+                            isRtl && "text-right",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="line-clamp-1 text-sm font-semibold text-foreground">{ticket.subject}</p>
+                            <Badge variant="outline" className="rounded-full">{ticket.status}</Badge>
+                          </div>
+                          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{ticket.userName} • {ticket.userPhone}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="flex min-h-[65vh] flex-col rounded-2xl border border-border bg-card">
+                    <div className={cn("border-b border-border p-4", isRtl && "text-right")}>
+                      <p className="text-sm font-semibold text-foreground">{adminSupportActiveTicket?.subject ?? "Support Chats"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{adminSupportActiveTicket?.userName ?? ""}</p>
+                    </div>
+                    <div className="flex-1 space-y-3 overflow-y-auto p-4">
+                      {adminSupportMessages.map((message) => {
+                        const isAdminMessage = message.senderType === "admin";
+                        return (
+                          <div key={message.id} className={cn("flex", isAdminMessage ? (isRtl ? "justify-start" : "justify-end") : isRtl ? "justify-end" : "justify-start")}>
+                            <div className={cn("max-w-[80%] rounded-2xl px-3 py-2 text-sm", isAdminMessage ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>
+                              <p className="whitespace-pre-wrap break-words">{message.message}</p>
+                              {message.imageUrl ? <img src={message.imageUrl} alt="attachment" className="mt-2 max-h-44 w-full rounded-lg object-cover" loading="lazy" /> : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="space-y-2 border-t border-border p-4">
+                      <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                        <Textarea
+                          value={adminSupportReplyInput}
+                          onChange={(event) => setAdminSupportReplyInput(event.target.value)}
+                          rows={2}
+                          placeholder={activeLanguage === "ar" ? "اكتب ردك..." : activeLanguage === "fr" ? "Écrivez votre réponse..." : "Write your reply..."}
+                          className={cn("resize-none rounded-xl", isRtl && "text-right")}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              void handleSendAdminSupportReply();
+                            }
+                          }}
+                        />
+                        <Button type="button" className="h-auto rounded-xl" onClick={() => void handleSendAdminSupportReply()} disabled={adminSupportIsSending || !adminSupportReplyInput.trim() || !adminSupportActiveTicketId}>
+                          {adminSupportIsSending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
+                        </Button>
+                      </div>
+                      {adminSupportActiveTicket ? (
+                        <div className={cn("flex gap-2", isRtl && "flex-row-reverse")}>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "open")}>Open</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "resolved")}>Resolve</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "closed")}>Close</Button>
+                          <Button variant="soft" size="sm" onClick={() => void handleUpdateSupportTicketStatus(adminSupportActiveTicket.id, "archived")}>Archive</Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                </section>
               ) : null}
               {tab === "ads-content" ? (
                 <AdsContentSection
