@@ -73,6 +73,12 @@ import {
   getCustomerOrders,
   upsertCustomerProfile,
 } from "@/lib/orders.functions";
+import {
+  createSupportTicket,
+  listCustomerSupportMessages,
+  listCustomerSupportTickets,
+  sendCustomerSupportMessage,
+} from "@/lib/support.functions";
 import { playSuccessSound } from "@/lib/sound-alerts";
 import { CategoryIcon } from "@/lib/lucide-category-icons";
 import { supabase } from "@/integrations/supabase/client";
