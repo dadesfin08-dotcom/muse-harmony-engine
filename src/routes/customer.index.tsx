@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -25,6 +25,9 @@ import {
   Sparkles,
   ShieldCheck,
   MessageCircle,
+  Headset,
+  SendHorizontal,
+  Paperclip,
   ClipboardList,
   BookOpen,
   Share2,
