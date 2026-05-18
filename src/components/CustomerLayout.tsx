@@ -370,6 +370,18 @@ export function CustomerLayout({
     return matching[0]?.id ?? null;
   }, [customerOrdersQuery.data]);
   const hasOutForDeliveryShortcut = !!latestOutForDeliveryOrderId;
+  const shouldUseHaptics = (() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const savedPreference = window.localStorage.getItem("bzaf.hapticsEnabled");
+      if (savedPreference === "false") return false;
+      if (savedPreference === "true") return true;
+    } catch {
+      // ignore localStorage access issues and keep graceful fallback
+    }
+
+    return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  })();
   const floatingShortcutLabel =
     language === "ar"
       ? "فتح تفاصيل الطلب الجاري توصيله"
@@ -380,7 +392,7 @@ export function CustomerLayout({
   const openLatestOutForDeliveryReceipt = () => {
     if (!latestOutForDeliveryOrderId) return;
 
-    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    if (shouldUseHaptics && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
       navigator.vibrate(16);
     }
 
@@ -440,14 +452,14 @@ export function CustomerLayout({
               aria-label={floatingShortcutLabel}
               aria-disabled={!hasOutForDeliveryShortcut}
               onClick={openLatestOutForDeliveryReceipt}
-              className={`relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-[0.94] ${
+              className={`relative -top-3.5 z-50 mx-auto flex h-[54px] w-[54px] items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-all duration-200 ease-out active:scale-[0.94] ${
                 hasOutForDeliveryShortcut ? "opacity-100" : "cursor-default opacity-80"
               }`}
             >
               <Package className="h-6 w-6 shrink-0 text-primary-foreground" />
               {hasOutForDeliveryShortcut ? (
                 <span
-                  className={`pointer-events-none absolute top-1.5 inline-flex h-2.5 w-2.5 animate-pulse rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
+                  className={`pointer-events-none absolute top-1.5 inline-flex h-2.5 w-2.5 animate-[pulse_1.05s_cubic-bezier(0.4,0,0.6,1)_infinite] rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
                     isArabic ? "left-1.5" : "right-1.5"
                   }`}
                   aria-hidden="true"
