@@ -2114,14 +2114,19 @@ function Index() {
         </section>
 
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
-          <article className="relative mx-auto mb-7 w-full max-w-[352px] overflow-visible rounded-[28px] border border-border/60 bg-card px-4 pb-12 pt-3.5 shadow-[0_12px_32px_-24px_color-mix(in_oklab,var(--foreground)_22%,transparent)] md:hidden">
-            <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-primary/12 blur-2xl" />
-            <p className="text-[15px] font-medium text-foreground">Good morning, 👋</p>
-            <h1 className="mt-1 text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
+          <article className="relative mx-auto mb-7 w-full max-w-[352px] overflow-visible px-1 pb-12 pt-2 md:hidden">
+            <img
+              src={fallbackProductImage}
+              alt="Fresh groceries"
+              className="pointer-events-none absolute right-1 top-1 h-[108px] w-[108px] rounded-2xl object-cover opacity-95"
+              loading="lazy"
+            />
+            <p className="max-w-[58%] text-[15px] font-medium text-foreground">Good morning, 👋</p>
+            <h1 className="mt-1 max-w-[66%] text-balance text-[2rem] font-bold leading-[1.06] text-foreground">
               Fresh groceries,
               <span className="block text-[1.78rem] leading-[1.08] text-primary">delivered in 15 min</span>
             </h1>
-            <p className="mt-2.5 max-w-[280px] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+            <p className="mt-2 max-w-[64%] text-xs leading-5 text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
 
             <div ref={searchContainerRef} className="absolute inset-x-3 -bottom-6 z-20">
               <Search className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -2138,7 +2143,7 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-14 w-full rounded-full border border-border/50 bg-background pl-11 pr-24 text-sm shadow-[0_18px_36px_-24px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
+                className="h-14 w-full rounded-full border border-border/45 bg-card pl-11 pr-24 text-sm shadow-[0_18px_36px_-24px_color-mix(in_oklab,var(--foreground)_28%,transparent)] outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
               />
 
               <div className="absolute right-3 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1.5">
