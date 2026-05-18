@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Bike, Camera, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -29,6 +29,7 @@ import { playActionSound } from "@/lib/sound-alerts";
 import appI18n from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+import { FulfillmentSuccessAnimation } from "@/components/FulfillmentSuccessAnimation";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 const CYCLIST_SOUNDS_STORAGE_KEY = "bzaf.cyclistSoundsEnabled";
@@ -94,7 +95,9 @@ function CyclistDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerStatus, setScannerStatus] = useState(() => runtimeI18n.t("cyclist.readyToScan"));
-  const [isScannerSuccess, setIsScannerSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [scannerPaused, setScannerPaused] = useState(false);
+  const [successAnimationVisible, setSuccessAnimationVisible] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelOrder, setCancelOrder] = useState<CyclistOrderCard | null>(null);
   const [cancelReason, setCancelReason] = useState<CancelReason>("cod_rejection");
@@ -370,14 +373,21 @@ function CyclistDashboardPage() {
         });
     }
     setIsScannerOpen(false);
-    setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.readyToScan"));
+    setScannerPaused(false);
+    setIsProcessing(false);
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
   };
 
   const handleCyclistQrScan = async (rawValue: string) => {
-    if (!session?.cyclistId || isVerifyingCodeRef.current || hasScannedRef.current) {
+    if (
+      !session?.cyclistId ||
+      isProcessing ||
+      scannerPaused ||
+      isVerifyingCodeRef.current ||
+      hasScannedRef.current
+    ) {
       return;
     }
 
@@ -393,6 +403,8 @@ function CyclistDashboardPage() {
     const action = String(parsed.action ?? "").trim();
     let orderIdForStateCheck: string | null = null;
 
+    setIsProcessing(true);
+    setScannerPaused(true);
     isVerifyingCodeRef.current = true;
     setScannerStatus(t("cyclist.scannerVerifying"));
 
@@ -438,7 +450,8 @@ function CyclistDashboardPage() {
         throw new Error(t("cyclist.invalidQr"));
       }
 
-      setIsScannerSuccess(true);
+      setSuccessAnimationVisible(true);
+      setIsScannerOpen(false);
       setScannerStatus(t("cyclist.scannerVerified"));
       await Promise.all([
         dashboardQuery.refetch(),
@@ -446,7 +459,6 @@ function CyclistDashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] }),
       ]);
-      window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Cyclist scanner state-machine failed:", error);
       const refetchResult = await dashboardQuery.refetch();
@@ -460,14 +472,16 @@ function CyclistDashboardPage() {
       const refreshedActiveIds = new Set((refetchResult.data?.activeDeliveries ?? []).map((order) => order.id));
       if (orderIdForStateCheck && isStaleTransitionError && !refreshedActiveIds.has(orderIdForStateCheck)) {
         toast.success(t("cyclist.deliveryCompleted"));
-        setIsScannerSuccess(true);
+        setSuccessAnimationVisible(true);
+        setIsScannerOpen(false);
         setScannerStatus(t("cyclist.scannerVerified"));
-        window.setTimeout(() => closeScanner(), 900);
         return;
       }
 
       setScannerStatus(t("cyclist.scannerFailed"));
       toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
+      setScannerPaused(false);
+      setIsProcessing(false);
       isVerifyingCodeRef.current = false;
       hasScannedRef.current = false;
     } finally {
@@ -476,7 +490,9 @@ function CyclistDashboardPage() {
   };
 
   const openScanner = () => {
-    setIsScannerSuccess(false);
+    setSuccessAnimationVisible(false);
+    setScannerPaused(false);
+    setIsProcessing(false);
     setScannerStatus(t("cyclist.cameraPreparing"));
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
@@ -550,7 +566,7 @@ function CyclistDashboardPage() {
   };
 
   useEffect(() => {
-    if (!isScannerOpen || isScannerSuccess) {
+    if (!isScannerOpen || scannerPaused) {
       return;
     }
 
@@ -600,7 +616,29 @@ function CyclistDashboardPage() {
           });
       }
     };
-  }, [isScannerOpen, isScannerSuccess]);
+  }, [isScannerOpen, scannerPaused]);
+
+  useEffect(() => {
+    if (!successAnimationVisible) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessAnimationVisible(false);
+      setIsScannerOpen(false);
+      setIsProcessing(false);
+      setScannerPaused(false);
+      isVerifyingCodeRef.current = false;
+      hasScannedRef.current = false;
+      setScannerStatus(t("cyclist.readyToScan"));
+      setActiveView("available");
+      void navigate({ to: "/cyclist/dashboard" });
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [navigate, successAnimationVisible, t]);
 
   const handleLogout = async () => {
     clearRoleSessions();
@@ -871,26 +909,26 @@ function CyclistDashboardPage() {
           </DialogHeader>
 
           <div className="flex h-full flex-col gap-3 p-4">
-            {isScannerSuccess ? (
-              <div className="flex flex-1 flex-col items-center justify-center text-center">
-                <span className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-success/15 text-success">
-                  <CheckCircle2 className="size-10" />
-                </span>
-                <p className="mt-4 text-lg font-semibold text-foreground">{t("cyclist.deliveryVerifiedTitle")}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{t("cyclist.deliveryVerifiedSubtitle")}</p>
+            {scannerPaused ? (
+              <div className="flex min-h-[340px] flex-1 items-center justify-center rounded-2xl border border-border bg-muted/30">
+                <p className="text-sm text-muted-foreground">{t("cyclist.scannerVerifying")}</p>
               </div>
             ) : (
-              <>
-                <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
-                  <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
-                </div>
-              </>
+              <div className="overflow-hidden rounded-2xl border border-border bg-black/90 p-2">
+                <div id="delivery-qr-reader" className="min-h-[340px] w-full" />
+              </div>
             )}
 
             <p className="text-center text-xs text-muted-foreground">{scannerStatus}</p>
           </div>
         </DialogContent>
       </Dialog>
+
+      <FulfillmentSuccessAnimation
+        open={successAnimationVisible}
+        title={t("cyclist.deliveryVerifiedTitle")}
+        subtitle={t("cyclist.deliveryVerifiedSubtitle")}
+      />
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 px-3 py-2 pb-safe">
         <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/70 bg-card/85 px-2 py-2 shadow-sm backdrop-blur-xl">
