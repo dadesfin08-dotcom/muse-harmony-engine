@@ -2190,7 +2190,17 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-10">
+        <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
+          <article className="relative overflow-hidden rounded-[24px] border border-border/70 bg-card p-5 shadow-[var(--shadow-soft)] md:hidden">
+            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/15 blur-2xl" />
+            <p className="text-lg font-semibold text-foreground">Good morning, 👋</p>
+            <h1 className="mt-1 text-balance text-4xl font-extrabold leading-tight text-foreground">
+              Fresh groceries,
+              <span className="block text-primary">delivered in 15 min</span>
+            </h1>
+            <p className="mt-3 max-w-xs text-sm text-muted-foreground">Local produce, fast riders, and trusted vendors near you.</p>
+          </article>
+
           <div className="animate-fade-in hidden flex-col justify-center gap-4 md:flex">
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
@@ -2213,15 +2223,15 @@ function Index() {
 
           <div
             ref={bannerScrollRef}
-            className="flex flex-row overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory w-full"
+            className="flex w-full snap-x snap-mandatory flex-row overflow-x-auto pb-2 scrollbar-hide"
             onMouseEnter={() => setIsBannerInteracting(true)}
             onMouseLeave={() => setIsBannerInteracting(false)}
             onTouchStart={() => setIsBannerInteracting(true)}
             onTouchEnd={() => setIsBannerInteracting(false)}
           >
             {displayAdSlides.map((slide) => (
-              <div key={slide.id} className="w-full flex-shrink-0 snap-center px-4">
-                <article className="signature-tilt animate-enter relative h-[28vh] min-h-[170px] max-h-[30vh] w-full overflow-hidden rounded-2xl border border-border/70 bg-card md:h-[410px] md:max-h-none">
+              <div key={slide.id} className="w-full flex-shrink-0 snap-center">
+                <article className="signature-tilt animate-enter relative h-[28vh] min-h-[190px] max-h-[34vh] w-full overflow-hidden rounded-[24px] border border-border/70 bg-card md:h-[410px] md:max-h-none">
                   <img
                     src={slide.image}
                     alt={slide.alt}
@@ -2230,12 +2240,12 @@ function Index() {
                     width={1920}
                     height={1080}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/35 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-3 text-background md:p-5">
-                    <span className="mb-2 inline-flex rounded-md border border-background/60 bg-foreground/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background">
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/35 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-background md:p-5">
+                    <span className="mb-2 inline-flex rounded-full border border-background/60 bg-foreground/45 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-background">
                       {slide.tag}
                     </span>
-                    <p className="text-sm font-semibold leading-tight md:text-lg">{slide.headline}</p>
+                    <p className="text-base font-extrabold leading-tight md:text-lg">{slide.headline}</p>
                     <p className="mt-1 line-clamp-2 text-xs text-background/90 md:text-sm">{slide.copy}</p>
                   </div>
                   {slide.linkUrl ? (
