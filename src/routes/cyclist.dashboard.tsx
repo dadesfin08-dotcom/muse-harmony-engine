@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Bike, Camera, CheckCircle2, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Bike, Camera, ChevronRight, ClipboardList, CreditCard, LayoutGrid, Lock, LogOut, Map, MapPin, MessageCircle, MessageSquareText, Navigation, Package, PackageCheck, PackageOpen, PackageSearch, Phone, PhoneCall, Scale, ShoppingBasket, Tag, Truck, User, Volume2, VolumeX, Wallet, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -381,7 +381,13 @@ function CyclistDashboardPage() {
   };
 
   const handleCyclistQrScan = async (rawValue: string) => {
-    if (!session?.cyclistId || isVerifyingCodeRef.current || hasScannedRef.current) {
+    if (
+      !session?.cyclistId ||
+      isProcessing ||
+      scannerPaused ||
+      isVerifyingCodeRef.current ||
+      hasScannedRef.current
+    ) {
       return;
     }
 
@@ -397,6 +403,8 @@ function CyclistDashboardPage() {
     const action = String(parsed.action ?? "").trim();
     let orderIdForStateCheck: string | null = null;
 
+    setIsProcessing(true);
+    setScannerPaused(true);
     isVerifyingCodeRef.current = true;
     setScannerStatus(t("cyclist.scannerVerifying"));
 
@@ -442,7 +450,8 @@ function CyclistDashboardPage() {
         throw new Error(t("cyclist.invalidQr"));
       }
 
-      setIsScannerSuccess(true);
+      setSuccessAnimationVisible(true);
+      setIsScannerOpen(false);
       setScannerStatus(t("cyclist.scannerVerified"));
       await Promise.all([
         dashboardQuery.refetch(),
@@ -450,7 +459,6 @@ function CyclistDashboardPage() {
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "wallet"] }),
       ]);
-      window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Cyclist scanner state-machine failed:", error);
       const refetchResult = await dashboardQuery.refetch();
@@ -464,14 +472,16 @@ function CyclistDashboardPage() {
       const refreshedActiveIds = new Set((refetchResult.data?.activeDeliveries ?? []).map((order) => order.id));
       if (orderIdForStateCheck && isStaleTransitionError && !refreshedActiveIds.has(orderIdForStateCheck)) {
         toast.success(t("cyclist.deliveryCompleted"));
-        setIsScannerSuccess(true);
+        setSuccessAnimationVisible(true);
+        setIsScannerOpen(false);
         setScannerStatus(t("cyclist.scannerVerified"));
-        window.setTimeout(() => closeScanner(), 900);
         return;
       }
 
       setScannerStatus(t("cyclist.scannerFailed"));
       toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
+      setScannerPaused(false);
+      setIsProcessing(false);
       isVerifyingCodeRef.current = false;
       hasScannedRef.current = false;
     } finally {
@@ -480,7 +490,9 @@ function CyclistDashboardPage() {
   };
 
   const openScanner = () => {
-    setIsScannerSuccess(false);
+    setSuccessAnimationVisible(false);
+    setScannerPaused(false);
+    setIsProcessing(false);
     setScannerStatus(t("cyclist.cameraPreparing"));
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
