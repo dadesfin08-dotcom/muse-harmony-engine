@@ -1179,22 +1179,37 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
         throw new Error("Order not found.");
       }
 
-      const currentStatus = (order as { status: string }).status;
+      const currentStatus = String((order as { status: string }).status ?? "")
+        .trim()
+        .toLowerCase();
+      const targetStatus = String(data.nextStatus).trim().toLowerCase() as "preparing" | "ready";
+
+      if (currentStatus === targetStatus) {
+        return { ok: true };
+      }
+
       const allowed =
-        ((currentStatus === "pending" || currentStatus === "new") && data.nextStatus === "preparing") ||
-        (currentStatus === "preparing" && data.nextStatus === "ready");
+        ((currentStatus === "pending" || currentStatus === "new") && targetStatus === "preparing") ||
+        (currentStatus === "preparing" && targetStatus === "ready");
 
       if (!allowed) {
         throw new Error("Invalid status transition.");
       }
 
-      const { error: updateError } = await (supabaseAdmin as any)
+      const { data: updatedOrder, error: updateError } = await (supabaseAdmin as any)
         .from("orders")
-        .update({ status: data.nextStatus })
-        .eq("id", data.orderId);
+        .update({ status: targetStatus })
+        .eq("id", data.orderId)
+        .eq("status", currentStatus)
+        .select("id")
+        .maybeSingle();
 
       if (updateError) {
         throw new Error(updateError.message);
+      }
+
+      if (!updatedOrder?.id) {
+        throw new Error("Order status changed. Please refresh and try again.");
       }
 
       if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
