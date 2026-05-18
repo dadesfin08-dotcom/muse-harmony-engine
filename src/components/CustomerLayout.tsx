@@ -110,8 +110,12 @@ export function CustomerLayout({
         data: { phoneNumber: customerSessionPhone! },
       }),
     enabled: !!customerSessionPhone,
-    staleTime: 10_000,
-    refetchInterval: customerSessionPhone ? 8_000 : false,
+    staleTime: 0,
+    refetchInterval: customerSessionPhone ? 4_000 : false,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: "always",
+    refetchOnMount: "always",
   });
 
   const cartCount = useMemo(
