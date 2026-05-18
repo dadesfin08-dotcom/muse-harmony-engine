@@ -3824,7 +3824,7 @@ function Index() {
                                     <div className="text-right">
                                       {isCarnetUnpaidOrder(order.payment_method) ? (
                                         <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
-                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                          {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
@@ -3879,7 +3879,7 @@ function Index() {
                                     <div className="text-right">
                                       {isCarnetUnpaidOrder(order.payment_method) ? (
                                         <Badge variant="outline" className="mb-1 border-orange-300 bg-orange-100 text-orange-800">
-                                          Unpaid / Carnet (غير مدفوع / كارني)
+                                          {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
                                       <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
@@ -4547,7 +4547,7 @@ function Index() {
           <section className="absolute inset-0 flex items-center justify-center px-4">
             <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-2xl">
               <div className="flex w-full items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-foreground">Select Your Delivery Location</h2>
+                <h2 className="text-lg font-semibold text-foreground">{customerUiCopy.selectDeliveryLocation}</h2>
                 <Button
                   type="button"
                   variant="ghost"
@@ -4559,13 +4559,11 @@ function Index() {
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Choose your Jamaa Tourabiya and Hay / Douar before placing orders.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{customerUiCopy.locationHint}</p>
 
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Jamaa Tourabiya</label>
+                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الجماعة الترابية" : language === "fr" ? "Commune" : "Commune"}</label>
                   <div className="sticky top-0 z-50 bg-background pb-2">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -4585,7 +4583,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder="Search commune (EN / FR / AR)..."
+                        placeholder={customerUiCopy.searchCommunePlaceholder}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={hasEnoughCommuneChars}
@@ -4603,9 +4601,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : communeSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading communes...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingCommunes}</p>
                     ) : filteredCommuneOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No commune found.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noCommune}</p>
                     ) : (
                       <ul className="py-1">
                         {filteredCommuneOptions.map((commune) => (
@@ -4637,7 +4635,7 @@ function Index() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Hay / Douar</label>
+                  <label className="text-xs font-medium text-muted-foreground">{language === "ar" ? "الحي" : language === "fr" ? "Quartier" : "Neighborhood"}</label>
                   <div className="sticky top-0 z-50 bg-background pb-2">
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -4654,7 +4652,7 @@ function Index() {
                         onKeyDown={(event) => {
                           if (event.key === "Enter") event.preventDefault();
                         }}
-                        placeholder={selectedCommuneId ? "Search douar (EN / FR / AR)..." : "Select a commune first"}
+                        placeholder={selectedCommuneId ? customerUiCopy.searchDouarPlaceholder : customerUiCopy.selectCommuneFirst}
                         className="h-10 rounded-xl pl-9 pr-3 text-sm"
                         role="combobox"
                         aria-expanded={!!selectedCommuneId && hasEnoughNeighborhoodChars}
@@ -4670,7 +4668,7 @@ function Index() {
                   </div>
                   <div id="douar-results" className="max-h-[50vh] overflow-y-auto rounded-xl border border-border bg-background">
                     {!selectedCommuneId ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Select a commune first.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.selectCommuneFirst}</p>
                     ) : !hasEnoughNeighborhoodChars ? (
                       <p className="px-3 py-3 text-sm text-muted-foreground">
                         {language === "ar"
@@ -4680,9 +4678,9 @@ function Index() {
                             : "Start typing to search..."}
                       </p>
                     ) : neighborhoodSearchQuery.isLoading ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">Loading douars...</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.loadingDouars}</p>
                     ) : !selectedNeighborhoodId && filteredNeighborhoodOptions.length === 0 ? (
-                      <p className="px-3 py-3 text-sm text-muted-foreground">No douar found in this commune.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">{customerUiCopy.noDouar}</p>
                     ) : (
                       <ul className="py-1">
                         {filteredNeighborhoodOptions.map((neighborhood) => (
@@ -4717,7 +4715,7 @@ function Index() {
                 onClick={saveLocationSelection}
                 disabled={!selectedCommuneId || !selectedNeighborhoodId || communeSearchQuery.isLoading || neighborhoodSearchQuery.isLoading}
               >
-                Confirm Location
+                {customerUiCopy.confirmLocation}
               </Button>
             </div>
           </section>
