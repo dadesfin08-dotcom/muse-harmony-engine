@@ -1114,6 +1114,45 @@ function Index() {
     };
   }, [language]);
 
+  const homepageUiCopy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        currency: "د.م",
+        noSearchResults: "لم يتم العثور على منتجات",
+        categoriesEmptySubtitle: "نُحضّر كتالوج حيك الآن.",
+        productsEmptySubtitle: "جرّب تغيير الفئة أو عبارة البحث.",
+        brandSlogan: "طازج. محلي. ليك.",
+        flashTitle: "عروض اليوم",
+        flashSubtitle: "عروض يومية طازجة",
+        viewAll: "عرض الكل",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        currency: "MAD",
+        noSearchResults: "Aucun produit trouvé",
+        categoriesEmptySubtitle: "Nous préparons le catalogue de votre quartier.",
+        productsEmptySubtitle: "Essayez de changer la catégorie ou la recherche.",
+        brandSlogan: "Frais. Local. Pour vous.",
+        flashTitle: "Offres du jour",
+        flashSubtitle: "Promos fraîches quotidiennes",
+        viewAll: "Voir tout",
+      };
+    }
+
+    return {
+      currency: "MAD",
+      noSearchResults: "No products found",
+      categoriesEmptySubtitle: "We’re preparing your neighborhood catalog.",
+      productsEmptySubtitle: "Try changing category or search terms.",
+      brandSlogan: "Fresh. Local. Yours.",
+      flashTitle: "Today’s Deals",
+      flashSubtitle: "Fresh daily flash deals",
+      viewAll: "View all",
+    };
+  }, [language]);
+
   const countdownLabel = useMemo(() => {
     if (flashDeals.length === 0) {
       return "00:00:00";
@@ -1942,9 +1981,30 @@ function Index() {
       id: ad.id,
       image: ad.image_url,
       linkUrl: ad.link_url,
-      alt: "Promotional ad banner",
-      headline: "Special Offer",
-      copy: ad.link_url ? "Tap to discover this promotion" : "Featured promotion",
+      alt:
+        language === "ar"
+          ? "بانر عرض ترويجي"
+          : language === "fr"
+            ? "Bannière promotionnelle"
+            : "Promotional ad banner",
+      headline:
+        language === "ar"
+          ? "عرض خاص"
+          : language === "fr"
+            ? "Offre spéciale"
+            : "Special Offer",
+      copy:
+        ad.link_url
+          ? language === "ar"
+            ? "اضغط لاكتشاف هذا العرض"
+            : language === "fr"
+              ? "Touchez pour découvrir cette promotion"
+              : "Tap to discover this promotion"
+          : language === "ar"
+            ? "عرض مميز"
+            : language === "fr"
+              ? "Promotion mise en avant"
+              : "Featured promotion",
       tag: ad.campaign_type === "NEWS" ? "Featured" : "AD",
     })) || [];
   const displayAdSlides = dynamicAdSlides.length > 0 ? dynamicAdSlides : adSlides;
@@ -2087,7 +2147,7 @@ function Index() {
                   {dynamicSiteName}
                 </span>
                 <span className="block truncate text-[clamp(0.56rem,2.05vw,0.68rem)] font-medium text-muted-foreground/80">
-                  Fresh. Local. Yours.
+                  {homepageUiCopy.brandSlogan}
                 </span>
               </span>
             </a>
@@ -2150,7 +2210,7 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
@@ -2165,12 +2225,12 @@ function Index() {
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
                           <span className="shrink-0 text-sm font-bold text-emerald-600">
-                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} {homepageUiCopy.currency}
                           </span>
                         </button>
                       ))
                     ) : (
-                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                      <p className="px-2 py-3 text-sm text-muted-foreground">{homepageUiCopy.noSearchResults}</p>
                     )}
                   </motion.div>
                 ) : null}
@@ -2299,7 +2359,7 @@ function Index() {
                         key={item.id}
                         type="button"
                         onClick={() => handleSearchResultClick(item.id)}
-                        className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                        className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                       >
                         <img
                           src={item.imageUrl || productFallbackImage}
@@ -2314,12 +2374,12 @@ function Index() {
                           <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                         </span>
                         <span className="shrink-0 text-sm font-bold text-emerald-600">
-                          {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                          {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} {homepageUiCopy.currency}
                         </span>
                       </button>
                     ))
                   ) : (
-                    <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                    <p className="px-2 py-3 text-sm text-muted-foreground">{homepageUiCopy.noSearchResults}</p>
                   )}
                 </motion.div>
               ) : null}
@@ -2344,8 +2404,10 @@ function Index() {
               }}
             >
               <p className="text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
-              <h1 className="mt-0.5 text-balance font-bold leading-[1.04] text-foreground text-right font-sans text-sm">{localizedHeroTitle}</h1>
-              <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
+              <h1 className={`mt-1 text-balance font-bold leading-[1.08] text-foreground font-sans text-[clamp(1.05rem,4.9vw,1.24rem)] ${isArabic ? "text-right" : "text-left"}`}>
+                {localizedHeroTitle}
+              </h1>
+              <p className="mt-1.5 text-[clamp(0.68rem,2.95vw,0.8rem)] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
             </div>
 
             <div ref={mobileSearchAnchorRef} className="h-px w-full" />
@@ -2372,7 +2434,7 @@ function Index() {
                   setIsSearchOpen(true);
                 }}
                 placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
-                className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm shadow-[0_20px_36px_-24px_color-mix(in_oklab,var(--foreground)_30%,transparent)] backdrop-blur-xl outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30 border-zinc-900 border-double"
+                className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm shadow-[0_20px_36px_-24px_color-mix(in_oklab,var(--foreground)_30%,transparent)] backdrop-blur-xl outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
               />
 
               <div className="absolute right-2.5 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
@@ -2407,7 +2469,7 @@ function Index() {
                           key={item.id}
                           type="button"
                           onClick={() => handleSearchResultClick(item.id)}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-muted ${isArabic ? "text-right" : "text-left"}`}
                         >
                           <img
                             src={item.imageUrl || productFallbackImage}
@@ -2422,12 +2484,12 @@ function Index() {
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
                           <span className="shrink-0 text-sm font-bold text-emerald-600">
-                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} {homepageUiCopy.currency}
                           </span>
                         </button>
                       ))
                     ) : (
-                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                      <p className="px-2 py-3 text-sm text-muted-foreground">{homepageUiCopy.noSearchResults}</p>
                     )}
                   </motion.div>
                 ) : null}
@@ -2529,7 +2591,7 @@ function Index() {
             {categories.length === 0 ? (
               <AppEmptyState
                 title={t("categories.noCategories", { defaultValue: "No categories available in your area yet." })}
-                subtitle="We’re preparing your neighborhood catalog."
+                subtitle={homepageUiCopy.categoriesEmptySubtitle}
                 className="w-full"
               />
             ) : (
@@ -2581,7 +2643,7 @@ function Index() {
 
         <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-10 sm:px-6 md:mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-xl font-bold text-foreground md:text-2xl">
+            <Link to="/customer/all-products" className="text-[clamp(1.06rem,4.45vw,1.35rem)] font-bold leading-tight text-foreground md:text-2xl">
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
@@ -2641,8 +2703,8 @@ function Index() {
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-2xl font-extrabold tracking-tight text-primary">
-                      {product.price} <span className="text-xs font-semibold">MAD</span>
+                    <p className="text-[clamp(1.07rem,4.85vw,1.35rem)] font-extrabold tracking-tight text-primary">
+                      {product.price} <span className="text-[11px] font-semibold">{homepageUiCopy.currency}</span>
                     </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
@@ -2705,11 +2767,7 @@ function Index() {
           ) : null}
 
           {teaserProducts.length === 0 ? (
-            <AppEmptyState
-              title={t("products.empty")}
-              subtitle="Try changing category or search terms."
-              className="mt-4"
-            />
+            <AppEmptyState title={t("products.empty")} subtitle={homepageUiCopy.productsEmptySubtitle} className="mt-4" />
           ) : null}
         </section>
 
@@ -2783,7 +2841,7 @@ function Index() {
                         <div className={`mt-2 flex items-end justify-between gap-2 ${isArabic ? "flex-row-reverse" : "flex-row"}`}>
                           <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
                             <p className="whitespace-nowrap text-[13px] font-semibold text-success">
-                              {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">MAD</span>
+                              {Number(pack.basePriceMad).toFixed(0)} <span className="font-bold">{homepageUiCopy.currency}</span>
                               <span className="ml-1 text-[11px] font-medium text-muted-foreground rtl:ml-0 rtl:mr-1">
                                 {subscriptionSectionCopy.pricingPrefix} {pack.billingLabel.toLowerCase()}
                               </span>
@@ -2829,8 +2887,8 @@ function Index() {
                   <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
                 </span>
                 <div className="leading-tight">
-                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">همزة اليوم</h2>
-                  <p className="text-[10px] font-medium uppercase text-white/85">FRESH DAILY FLASH DEALS</p>
+                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">{homepageUiCopy.flashTitle}</h2>
+                  <p className="text-[10px] font-medium uppercase text-white/85">{homepageUiCopy.flashSubtitle}</p>
                 </div>
               </div>
 
@@ -2843,7 +2901,7 @@ function Index() {
                   to="/customer/flash-deals"
                   className="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
                 >
-                  <span>{t("view_all", "عرض الكل")}</span>
+                  <span>{homepageUiCopy.viewAll}</span>
                   <ChevronLeft className="h-3 w-3 rtl:rotate-180" />
                 </Link>
               </div>
@@ -2889,7 +2947,7 @@ function Index() {
                       <span className="text-[11px] font-bold text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
-                      <span className="text-[11px] font-bold text-[#2A7543]">MAD</span>
+                      <span className="text-[11px] font-bold text-[#2A7543]">{homepageUiCopy.currency}</span>
                       <span className="text-[11px] text-muted-foreground line-through">
                         {Number(product.price ?? 0).toFixed(2)}
                       </span>
