@@ -90,34 +90,26 @@ function CustomerOrderDetailsPage() {
     handoverDelivered: t("customerOrder.handoverDelivered"),
   }), [t]);
 
-  const normalizeOrderStatus = (status: string) => {
-    const normalized = String(status ?? "").trim().toLowerCase();
-
-    if (["new"].includes(normalized)) return "pending";
-    if (["accepted", "processing"].includes(normalized)) return "preparing";
-    if (["in_transit", "delivering", "out_for_delivery", "picked_up", "on_the_way"].includes(normalized)) return "in_delivery";
-    if (["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor"].includes(normalized)) return "completed";
-
-    return normalized;
-  };
-
-  const normalizedOrderStatus = normalizeOrderStatus(String(order?.status ?? ""));
-
   const statusBadge = useMemo(() => {
-    if (normalizedOrderStatus === "pending") return { label: "الطلب المقدم", className: "bg-secondary text-secondary-foreground border-border" };
-    if (normalizedOrderStatus === "preparing") return { label: "قيد التحضير", className: "bg-secondary text-secondary-foreground border-border" };
-    if (normalizedOrderStatus === "ready") return { label: "تم التجهيز", className: "bg-primary/10 text-primary border-primary/30" };
-    if (normalizedOrderStatus === "in_delivery") return { label: "التوصيل", className: "bg-orange-100 text-orange-800 border-orange-300" };
-    if (normalizedOrderStatus === "completed") return { label: copy.statusDelivered, className: "bg-success text-success-foreground border-success" };
-    if (normalizedOrderStatus === "cancelled") return { label: copy.statusCancelled, className: "bg-destructive/10 text-destructive border-destructive/30" };
-    return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
-  }, [copy.statusCancelled, copy.statusDelivered, copy.statusPending, normalizedOrderStatus]);
+    const status = String(order?.status ?? "new").toLowerCase();
+    const deliveredStatuses = ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"];
+    const outForDeliveryStatuses = ["delivering", "out_for_delivery", "picked_up", "on_the_way"];
+    const preparingStatuses = ["pending", "new", "preparing", "accepted", "processing", "ready"];
 
+    if (deliveredStatuses.includes(status)) return { label: copy.statusDelivered, className: "bg-success text-success-foreground border-success" };
+    if (outForDeliveryStatuses.includes(status)) return { label: copy.statusOutForDelivery, className: "bg-orange-100 text-orange-800 border-orange-300" };
+    if (preparingStatuses.includes(status)) return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
+    if (status === "cancelled") return { label: copy.statusCancelled, className: "bg-destructive/10 text-destructive border-destructive/30" };
+    return { label: copy.statusPending, className: "bg-secondary text-secondary-foreground border-border" };
+  }, [copy.statusCancelled, copy.statusDelivered, copy.statusOutForDelivery, copy.statusPending, order?.status]);
+
+  const normalizedOrderStatus = String(order?.status ?? "").trim().toLowerCase();
   const deliveredStatuses = ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"];
-  const isOutForDelivery = normalizedOrderStatus === "in_delivery";
-  const isReadyForHandover = normalizedOrderStatus === "ready";
+  const isOutForDelivery = ["in_delivery", "in_transit", "delivering", "out_for_delivery", "picked_up", "on_the_way"].includes(
+    normalizedOrderStatus,
+  );
   const isDelivered = deliveredStatuses.includes(normalizedOrderStatus);
-  const shouldShowHandoverQr = (isReadyForHandover || isOutForDelivery) && !isDelivered;
+  const shouldShowHandoverQr = Boolean(order?.deliveryAuthCode) && isOutForDelivery && !isDelivered;
   const handoverQrPayload = useMemo(() => {
     if (!order?.id || !shouldShowHandoverQr) return "";
     return JSON.stringify({ action: "customer_delivery", order_id: order.id });
