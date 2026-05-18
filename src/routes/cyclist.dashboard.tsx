@@ -340,7 +340,19 @@ function CyclistDashboardPage() {
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const isStaleTransitionError =
+        errorMessage.includes("invalid status transition") ||
+        errorMessage.includes("order status changed") ||
+        errorMessage.includes("not an active delivery");
+
+      if (isStaleTransitionError) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+      } else {
+        toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
+      }
     } finally {
       setIsUpdatingOrderId(null);
     }
@@ -437,7 +449,7 @@ function CyclistDashboardPage() {
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Cyclist scanner state-machine failed:", error);
-      await dashboardQuery.refetch();
+      const refetchResult = await dashboardQuery.refetch();
 
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       const isStaleTransitionError =
@@ -445,7 +457,8 @@ function CyclistDashboardPage() {
         errorMessage.includes("invalid status transition") ||
         errorMessage.includes("order status changed");
 
-      if (orderIdForStateCheck && isStaleTransitionError && !activeDeliveryIds.has(orderIdForStateCheck)) {
+      const refreshedActiveIds = new Set((refetchResult.data?.activeDeliveries ?? []).map((order) => order.id));
+      if (orderIdForStateCheck && isStaleTransitionError && !refreshedActiveIds.has(orderIdForStateCheck)) {
         toast.success(t("cyclist.deliveryCompleted"));
         setIsScannerSuccess(true);
         setScannerStatus(t("cyclist.scannerVerified"));
@@ -508,6 +521,7 @@ function CyclistDashboardPage() {
 
       await Promise.all([
         dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["orders"] }),
         queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
