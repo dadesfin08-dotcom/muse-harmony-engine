@@ -907,6 +907,7 @@ function VendorDashboardPage() {
       inDelivery: orders.filter((order) => order.status === "in_delivery" || order.status === "in_transit" || order.status === "delivering"),
       delivered: orders.filter(
         (order) =>
+          order.status === "cancelled" ||
           order.status === "delivered" ||
           order.status === "delivered_cash_with_cyclist" ||
           order.status === "cash_transferred_to_vendor",
