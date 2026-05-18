@@ -1937,7 +1937,7 @@ function Index() {
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
-              <span className="inline-flex h-[clamp(2.15rem,5.9vw,2.55rem)] w-[clamp(2.15rem,5.9vw,2.55rem)] shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <span className="inline-flex h-[clamp(2.15rem,5.9vw,2.55rem)] w-[clamp(2.15rem,5.9vw,2.55rem)] shrink-0 items-center justify-center text-primary">
                 {dynamicSiteLogoUrl ? (
                   <img
                     src={dynamicSiteLogoUrl}
