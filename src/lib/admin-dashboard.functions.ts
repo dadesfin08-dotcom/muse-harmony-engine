@@ -16,10 +16,10 @@ import {
 } from "@/lib/receipt-settings.defaults";
 
 type AdminOrderStatus =
-  | "new"
+  | "pending"
   | "preparing"
   | "ready"
-  | "delivering"
+  | "in_delivery"
   | "delivered"
   | "delivered_cash_with_cyclist"
   | "cash_transferred_to_vendor"
@@ -277,7 +277,7 @@ const autoDispatchSubscriptionOrderInputSchema = z.object({
 
 const updateSubscriptionOrderStatusInputSchema = z.object({
   orderId: z.string().uuid(),
-  status: z.enum(["new", "preparing", "ready", "delivering", "delivered", "cancelled"]),
+  status: z.enum(["pending", "preparing", "ready", "in_delivery", "delivered", "cancelled"]),
 });
 
 const updatePlatformSubscriberStatusInputSchema = z.object({
