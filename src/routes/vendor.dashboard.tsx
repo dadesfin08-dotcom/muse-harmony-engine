@@ -232,11 +232,15 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
     return "pending";
   }
 
+  if (status === "cancelled") {
+    return "cancelled" as DashboardOrder["status"];
+  }
+
   if (status === "preparing" || status === "ready" || status === "delivered" || status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
     return status;
   }
 
-  return "pending";
+  return "cancelled" as DashboardOrder["status"];
 }
 
 type InventoryItem = {
@@ -1186,6 +1190,19 @@ function VendorDashboardPage() {
       );
     }
     return t("vendorDashboard.toasts.updateOrderFailed");
+  };
+
+  const isStaleTransitionError = (error: unknown) => {
+    const rawMessage =
+      (typeof error === "object" && error !== null && "message" in error && typeof (error as { message?: unknown }).message === "string"
+        ? (error as { message: string }).message
+        : "") || "";
+    const normalized = rawMessage.toLowerCase();
+    return (
+      normalized.includes("invalid status transition") ||
+      normalized.includes("order status changed") ||
+      normalized.includes("not an active delivery")
+    );
   };
 
   const handleAcceptOrder = async (orderId: string) => {
