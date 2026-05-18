@@ -2629,7 +2629,7 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: existingProfile, error: existingError } = await (supabaseAdmin as any)
       .from("profiles")
-      .select("id, strikes")
+      .select("id, strikes, cod_rejections")
       .eq("id", data.customerId)
       .maybeSingle();
 
@@ -2651,7 +2651,7 @@ export const updateAdminCustomerState = createServerFn({ method: "POST" })
     }
 
     if (data.addCodRejection) {
-      patch.cod_rejections = (supabaseAdmin as any).raw("cod_rejections + 1");
+      patch.cod_rejections = Number(existingProfile.cod_rejections ?? 0) + 1;
     }
 
     const { error } = await (supabaseAdmin as any).from("profiles").update(patch).eq("id", data.customerId);
