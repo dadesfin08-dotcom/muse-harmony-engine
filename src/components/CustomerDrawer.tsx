@@ -20,6 +20,7 @@ type Profile = {
   strikes: number;
   codRejections: number;
   adminNotes: string;
+  systemTags: string[];
   metrics: {
     totalSpent: number;
     averageOrderValue: number;
@@ -37,6 +38,14 @@ type Profile = {
 
 function formatMad(value: number, locale: string) {
   return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} MAD`;
+}
+
+function getSystemTagTone(tag: string) {
+  if (tag === "عميل موثوق") return "bg-success/15 text-success border-success/30";
+  if (tag === "عميل نشيط") return "bg-primary/15 text-primary border-primary/30";
+  if (tag === "إلغاء متكرر") return "bg-accent/20 text-accent-foreground border-accent/40";
+  if (tag === "سبام" || tag === "رفض COD") return "bg-destructive/15 text-destructive border-destructive/30";
+  return "bg-muted text-muted-foreground border-border";
 }
 
 export function CustomerDrawer({
@@ -104,6 +113,15 @@ export function CustomerDrawer({
                 <Badge variant="secondary">{localizedStatus(profile.status)}</Badge>
                 <Badge variant={profile.riskScore === "high" ? "destructive" : "outline"}>{localizedRisk(profile.riskScore)}</Badge>
               </div>
+              {profile.systemTags.length > 0 ? (
+                <div className={cn("mt-2 flex flex-wrap gap-1", isRtl && "justify-end")}>
+                  {profile.systemTags.map((tag) => (
+                    <Badge key={`${profile.id}-${tag}`} variant="outline" className={cn("text-[10px]", getSystemTagTone(tag))}>
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
             </SheetHeader>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
