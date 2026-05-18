@@ -2914,13 +2914,13 @@ function Index() {
         <header className="sticky top-0 z-20 border-b border-border/60 bg-background/92 px-4 pb-3 pt-3 backdrop-blur md:px-5">
           <div className={`flex items-center justify-between gap-3 ${isArabic ? "flex-row-reverse" : ""}`}>
             <div className={`flex min-w-0 items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm">
                 <Headset className="size-4" />
               </span>
               <div className={`min-w-0 ${isArabic ? "text-right" : "text-left"}`}>
                 <p className="truncate text-sm font-semibold text-foreground">{supportTitle}</p>
                 <div className={`mt-0.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground ${isArabic ? "flex-row-reverse" : ""}`}>
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_0_4px_hsl(var(--success)/0.12)]" aria-hidden="true" />
+                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_0_3px_hsl(var(--success)/0.12)]" aria-hidden="true" />
                   <span>{language === "ar" ? "الدعم متصل" : language === "fr" ? "Support en ligne" : "Support online"}</span>
                 </div>
               </div>
@@ -2928,11 +2928,21 @@ function Index() {
 
             <div className={`flex items-center gap-2 ${isArabic ? "flex-row-reverse" : ""}`}>
               {supportUnreadCount > 0 ? <Badge className="rounded-full bg-primary/15 text-primary">{supportUnreadCount}</Badge> : null}
-              <div className={`inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-gradient-to-r from-success/20 via-success/12 to-primary/12 px-3 py-1 text-[11px] font-medium text-success shadow-sm ${isArabic ? "flex-row-reverse" : ""}`}>
+              <div className={`inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-gradient-to-r from-success/20 via-success/12 to-primary/12 px-3 py-1 text-[11px] font-medium text-success shadow-[0_8px_18px_-14px_hsl(var(--success)/0.95)] ${isArabic ? "flex-row-reverse" : ""}`}>
                 <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-success" aria-hidden="true" />
                 <span>{language === "ar" ? "الدعم المباشر" : language === "fr" ? "Support en direct" : "LIVE SUPPORT"}</span>
               </div>
-              <div className={`inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm backdrop-blur ${isArabic ? "flex-row-reverse" : ""}`}>
+              <div className={`inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 p-1 shadow-sm backdrop-blur ${isArabic ? "flex-row-reverse" : ""}`}>
+              <Button
+                type="button"
+                size="icon"
+                variant="soft"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:shadow-md active:translate-y-0 active:scale-[0.97] active:shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={() => setCustomerPanelView("account")}
+                aria-label={language === "ar" ? "الرجوع" : language === "fr" ? "Retour" : "Back"}
+              >
+                <ChevronLeft className={`size-4 ${isArabic ? "rotate-180" : ""}`} />
+              </Button>
               <Button
                 type="button"
                 size="icon"
@@ -2946,6 +2956,16 @@ function Index() {
                 aria-label={language === "ar" ? "العودة للرئيسية" : language === "fr" ? "Retour à l'accueil" : "Back to homepage"}
               >
                 <House className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:shadow-md active:translate-y-0 active:scale-[0.97] active:shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={() => setIsCustomerAuthModalOpen(false)}
+                aria-label={language === "ar" ? "إغلاق" : language === "fr" ? "Fermer" : "Close"}
+              >
+                <X className="size-4" />
               </Button>
               </div>
             </div>
@@ -3034,14 +3054,16 @@ function Index() {
                   >
                     <div
                       className={`max-w-[88%] space-y-1.5 rounded-3xl px-3.5 py-3 shadow-sm sm:max-w-[80%] ${
-                        isMine ? "bg-primary/95 text-primary-foreground" : "border border-border/60 bg-card text-foreground"
+                        isMine
+                          ? "border border-success/30 bg-success/15 text-foreground shadow-[0_10px_25px_-18px_hsl(var(--success)/0.95)]"
+                          : "border border-border/60 bg-card text-foreground"
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.message}</p>
                       {message.imageUrl ? (
                         <img src={message.imageUrl} alt="support attachment" className="max-h-44 w-full rounded-xl object-cover" loading="lazy" />
                       ) : null}
-                      <div className={`flex items-center gap-1.5 text-[10px] font-medium ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
+                      <div className={`flex items-center gap-1.5 text-[10px] font-medium tabular-nums ${isMine ? "text-foreground/65" : "text-muted-foreground"} ${isArabic ? "flex-row-reverse" : ""}`}>
                         <span>{new Date(message.createdAt).toLocaleTimeString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
                         {isMine ? <span>{hasAdminReplyAfter ? "Read" : "Delivered"}</span> : null}
                       </div>
@@ -3078,11 +3100,11 @@ function Index() {
           ) : null}
 
           <div className={`flex items-center gap-2.5 ${isArabic ? "flex-row-reverse" : ""}`}>
-            <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/70 bg-background/85 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-muted">
+            <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border/70 bg-background/85 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:bg-muted active:scale-[0.97]">
               <Paperclip className="h-4 w-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleSupportAttachmentChange} />
             </label>
-            <div className="min-w-0 flex-1 rounded-2xl border border-border/70 bg-card/90 px-2 py-1.5 shadow-sm">
+            <div className="min-w-0 flex-1 rounded-3xl border border-border/70 bg-card/90 px-2.5 py-1.5 shadow-sm">
               <Textarea
                 value={supportMessageInput}
                 onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSupportMessageInput(event.target.value)}
