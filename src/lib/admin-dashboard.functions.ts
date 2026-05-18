@@ -2586,6 +2586,7 @@ export const listAdminCustomers = createServerFn({ method: "POST" })
           strikes: Number(profile.strikes ?? 0),
           codRejections: Number(profile.cod_rejections ?? 0),
           adminNotes: profile.admin_notes ?? "",
+          systemTags: Array.isArray(profile.system_tags) ? profile.system_tags : [],
         };
       }),
     };
@@ -2597,7 +2598,7 @@ export const getAdminCustomerProfile = createServerFn({ method: "POST" })
     const [profileRes, ordersRes] = await Promise.all([
       (supabaseAdmin as any)
         .from("profiles")
-        .select("id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value")
+        .select("id, full_name, phone, address, created_at, status, risk_score, strikes, cod_rejections, admin_notes, lifetime_value, system_tags")
         .eq("id", data.customerId)
         .maybeSingle(),
       (supabaseAdmin as any)
@@ -2634,6 +2635,7 @@ export const getAdminCustomerProfile = createServerFn({ method: "POST" })
       strikes: Number(profile.strikes ?? 0),
       codRejections: Number(profile.cod_rejections ?? 0),
       adminNotes: profile.admin_notes ?? "",
+      systemTags: Array.isArray(profile.system_tags) ? profile.system_tags : [],
       lifetimeValue,
       metrics: {
         totalSpent: lifetimeValue,
