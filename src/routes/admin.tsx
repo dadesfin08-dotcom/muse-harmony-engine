@@ -745,6 +745,7 @@ export const Route = createFileRoute("/admin")({
         "catalog",
         "brands",
         "categories",
+        "support",
         "ads-content",
         "settings",
       ].includes(tab)
@@ -833,6 +834,10 @@ function AdminPage() {
   const createAnnouncementInDatabase = useServerFn(createAnnouncement);
   const updateAnnouncementInDatabase = useServerFn(updateAnnouncement);
   const deleteAnnouncementInDatabase = useServerFn(deleteAnnouncement);
+  const fetchAdminSupportTickets = useServerFn(listAdminSupportTickets);
+  const fetchAdminSupportMessages = useServerFn(listAdminSupportMessages);
+  const sendAdminSupportReply = useServerFn(sendAdminSupportMessage);
+  const saveSupportTicketStatus = useServerFn(updateSupportTicketStatus);
   const fetchMarkupRules = useServerFn(listMarkupRules);
   const createMarkupRuleInDatabase = useServerFn(createMarkupRule);
   const updateMarkupRuleInDatabase = useServerFn(updateMarkupRule);
