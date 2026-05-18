@@ -118,6 +118,8 @@ function VendorWalletPage() {
       return;
     }
 
+    console.log("[Vendor QR] Listening for vendor clearance updates on orders table:", vendorId);
+
     const channel = supabase
       .channel(`merchant_clearance_sync_${vendorId}`)
       .on(
@@ -129,10 +131,12 @@ function VendorWalletPage() {
           filter: `vendor_id=eq.${vendorId}`,
         },
         (payload) => {
+          console.log("[Vendor QR] Realtime payload:", payload);
           const oldStatus = String((payload.old as { status?: string } | null)?.status ?? "");
           const newStatus = String((payload.new as { status?: string } | null)?.status ?? "");
           const isCashClearanceTransition =
-            oldStatus === "delivered_cash_with_cyclist" && newStatus === "cash_transferred_to_vendor";
+            newStatus === "cash_transferred_to_vendor" ||
+            (oldStatus === "delivered_cash_with_cyclist" && newStatus === "cash_transferred_to_vendor");
 
           if (!isCashClearanceTransition || vendorClearanceToastLockRef.current) {
             return;
