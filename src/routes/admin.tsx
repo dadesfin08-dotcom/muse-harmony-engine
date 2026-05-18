@@ -777,10 +777,14 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchAdminCustomerKpis = useServerFn(getAdminCustomerKpis);
   const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
   const fetchAdminOrders = useServerFn(listAdminOrders);
   const fetchAdminCustomers = useServerFn(listAdminCustomers);
+  const fetchAdminCustomerProfile = useServerFn(getAdminCustomerProfile);
+  const saveAdminCustomerState = useServerFn(updateAdminCustomerState);
+  const saveAdminCustomerNotes = useServerFn(updateAdminCustomerNotes);
   const fetchAdminInvoiceSettings = useServerFn(getAdminInvoiceSettings);
   const saveAdminInvoiceSettings = useServerFn(updateAdminInvoiceSettings);
   const uploadReceiptLogoToStorage = useServerFn(uploadReceiptLogo);
@@ -897,9 +901,26 @@ function AdminPage() {
     placeholderData: (previousData) => previousData,
   });
   const adminCustomersQuery = useQuery({
-    queryKey: ["admin", "customers"],
+    queryKey: ["admin", "customers", crmPage, debouncedCustomerSearch, customerStatusFilter, customerRiskFilter, customerSortBy],
     enabled: isAdminDataEnabled,
-    queryFn: () => fetchAdminCustomers(),
+    queryFn: () =>
+      fetchAdminCustomers({
+        data: {
+          page: crmPage,
+          pageSize: 20,
+          search: debouncedCustomerSearch,
+          status: customerStatusFilter,
+          risk: customerRiskFilter,
+          sortBy: customerSortBy,
+        },
+      }),
+    refetchInterval: 20_000,
+    placeholderData: (previousData) => previousData,
+  });
+  const adminCustomerKpisQuery = useQuery({
+    queryKey: ["admin", "customers", "kpis"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchAdminCustomerKpis(),
     refetchInterval: 20_000,
     placeholderData: (previousData) => previousData,
   });
