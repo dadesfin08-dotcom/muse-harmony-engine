@@ -3989,6 +3989,22 @@ function Index() {
         ) : null}
       </main>
 
+      <AnimatePresence>
+        {supportFloatingNotification ? (
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed bottom-24 left-1/2 z-[80] w-[min(92vw,24rem)] -translate-x-1/2 rounded-full border border-primary/30 bg-background/95 px-4 py-2 text-center text-sm font-medium text-foreground shadow-lg backdrop-blur md:bottom-6"
+            role="status"
+            aria-live="polite"
+          >
+            {supportFloatingNotification}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       {isCheckoutOpen ? (
         <div className="fixed inset-0 z-[60]">
           <div className="absolute inset-0 bg-black/40" />
