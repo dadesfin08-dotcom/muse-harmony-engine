@@ -508,11 +508,27 @@ function CyclistDashboardPage() {
 
       await Promise.all([
         dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }),
       ]);
     } catch (error) {
       console.error("Failed to cancel active delivery:", error);
-      toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const isStaleTransitionError =
+        errorMessage.includes("invalid status transition") ||
+        errorMessage.includes("order status changed") ||
+        errorMessage.includes("order is not an active delivery");
+
+      if (isStaleTransitionError) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+        await dashboardQuery.refetch();
+      } else {
+        toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+      }
     } finally {
       setIsCancellingOrder(false);
       setIsUpdatingOrderId(null);
