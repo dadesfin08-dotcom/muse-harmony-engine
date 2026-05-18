@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getCustomerCarnetBalance, getCustomerCarnetOverview } from "@/lib/carnet.functions";
+import { getLatestOutForDeliveryOrderId } from "@/lib/customer-delivery-shortcut";
 import { getCustomerOrders } from "@/lib/orders.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { listServiceZones } from "@/lib/locations.functions";
@@ -355,69 +356,10 @@ export function CustomerLayout({
     `inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${
       active ? "bg-primary/14 text-primary" : "text-current"
     }`;
-  const latestOutForDeliveryOrderId = useMemo(() => {
-    const normalizeStatus = (value: unknown) =>
-      String(value ?? "")
-        .trim()
-        .toLowerCase()
-        .replace(/[\s-]+/g, "_")
-        .replace(/[^a-z_]/g, "");
-
-    const outForDeliveryStatuses = new Set([
-      "out_for_delivery",
-      "outfordelivery",
-      "in_delivery",
-      "in_transit",
-      "delivering",
-      "on_the_way",
-      "picked_up",
-    ]);
-    const terminalStatuses = new Set([
-      "delivered",
-      "delivered_cash_with_cyclist",
-      "cash_transferred_to_vendor",
-      "completed",
-      "cancelled",
-      "canceled",
-      "rejected",
-      "failed",
-      "refunded",
-      "expired",
-    ]);
-
-    const orders = (customerOrdersQuery.data ?? []) as Array<{
-      id?: string | null;
-      status?: string | null;
-      delivery_status?: string | null;
-      deliveryStatus?: string | null;
-      order_status?: string | null;
-      created_at?: string | null;
-      createdAt?: string | null;
-    }>;
-
-    const getOrderStatus = (order: (typeof orders)[number]) =>
-      order.delivery_status ?? order.deliveryStatus ?? order.order_status ?? order.status ?? "";
-
-    const latestActiveOrder = orders
-      .filter((order) => {
-        const orderId = String(order.id ?? "").trim();
-        if (!orderId) return false;
-        const normalized = normalizeStatus(getOrderStatus(order));
-        return !terminalStatuses.has(normalized);
-      })
-      .sort((a, b) => {
-        const aTime = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
-        const bTime = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
-        return bTime - aTime;
-      })[0];
-
-    if (!latestActiveOrder) return null;
-
-    const normalizedLatestStatus = normalizeStatus(getOrderStatus(latestActiveOrder));
-    return outForDeliveryStatuses.has(normalizedLatestStatus)
-      ? String(latestActiveOrder.id ?? "").trim() || null
-      : null;
-  }, [customerOrdersQuery.data]);
+  const latestOutForDeliveryOrderId = useMemo(
+    () => getLatestOutForDeliveryOrderId(customerOrdersQuery.data),
+    [customerOrdersQuery.data],
+  );
   const hasOutForDeliveryShortcut = !!latestOutForDeliveryOrderId;
   const shouldUseHaptics = (() => {
     if (typeof window === "undefined") return false;
