@@ -492,6 +492,8 @@ function Index() {
   const [supportActiveTicketId, setSupportActiveTicketId] = useState<string | null>(null);
   const [supportIsTyping, setSupportIsTyping] = useState(false);
   const [supportPriority, setSupportPriority] = useState<"normal" | "high">("normal");
+  const [supportLastSeenAt, setSupportLastSeenAt] = useState<string | null>(null);
+  const [supportFloatingNotification, setSupportFloatingNotification] = useState<string | null>(null);
   const supportMessagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
@@ -708,6 +710,32 @@ function Index() {
   const supportMessages = supportMessagesQuery.data ?? [];
   const supportActiveTicket = supportTickets.find((ticket) => ticket.id === supportActiveTicketId) ?? null;
   const supportUnreadCount = supportTickets.filter((ticket) => ticket.lastSenderType === "admin" && ticket.status === "open").length;
+  const supportHasAdminUnread = supportActiveTicket?.lastSenderType === "admin";
+  const supportMessagesWithDateMarkers = useMemo(() => {
+    const rows: Array<{ type: "date" | "message"; key: string; label?: string; message?: (typeof supportMessages)[number] }> = [];
+    let previousDateKey: string | null = null;
+
+    supportMessages.forEach((message) => {
+      const date = new Date(message.createdAt);
+      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      if (dateKey !== previousDateKey) {
+        rows.push({
+          type: "date",
+          key: `date-${dateKey}`,
+          label: date.toLocaleDateString(language === "ar" ? "ar-MA" : language === "fr" ? "fr-FR" : "en-US", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          }),
+        });
+        previousDateKey = dateKey;
+      }
+
+      rows.push({ type: "message", key: `message-${message.id}`, message });
+    });
+
+    return rows;
+  }, [language, supportMessages]);
   const predictiveSearchQuery = useQuery({
     queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
     queryFn: () =>
