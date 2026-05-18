@@ -4367,10 +4367,10 @@ function Index() {
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
               className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out ${
-                customerPanelView === "support" ? "max-h-[94vh] sm:max-h-[95vh]" : "max-h-[85vh] sm:max-h-[90vh]"
+                customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
               }`}
               style={{
-                maxHeight: authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
+                maxHeight: isSupportPanelActive ? "100dvh" : authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
               }}
             >
