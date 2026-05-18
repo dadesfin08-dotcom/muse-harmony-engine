@@ -4428,7 +4428,7 @@ function Index() {
                   scrollBehavior: "smooth",
                 }}
               >
-                <div className="flex flex-col gap-5">
+                <div className={`flex flex-col ${isSupportPanelActive ? "h-full min-h-0 gap-0" : "gap-5"}`}>
                 {customerSession && customerPanelView === "account" ? (
                   <div className="space-y-3">
                   <section className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 p-4">
