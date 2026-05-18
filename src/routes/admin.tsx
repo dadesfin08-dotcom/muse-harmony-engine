@@ -1141,18 +1141,16 @@ function AdminPage() {
     deliveryCompletionPercent: number;
     createdAt: string;
   }>;
-  const adminCustomers =
+  const adminCustomersData =
     (adminCustomersQuery.data as
-      | Array<{
-          id: string;
-          fullName: string;
-          phone: string;
-          address: string;
-          joinedAt: string;
-          totalOrders: number;
-          ltvMad: number;
-        }>
-      | undefined) ?? [];
+      | {
+          page: number;
+          pageSize: number;
+          total: number;
+          rows: AdminCustomerRow[];
+        }
+      | undefined) ?? { page: 1, pageSize: 20, total: 0, rows: [] };
+  const adminCustomers = adminCustomersData.rows;
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
