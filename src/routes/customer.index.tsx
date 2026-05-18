@@ -1787,14 +1787,14 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "Order Placed", statuses: ["pending", "new"] },
-    { label: "Preparing", statuses: ["preparing", "ready", "accepted", "processing"] },
+    { label: customerUiCopy.orderPlaced, statuses: ["pending", "new"] },
+    { label: customerUiCopy.preparing, statuses: ["preparing", "ready", "accepted", "processing"] },
     {
-      label: "Out for Delivery",
+      label: customerUiCopy.outForDelivery,
       statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering"],
     },
     {
-      label: "Delivered",
+      label: customerUiCopy.delivered,
       statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
     },
   ];
@@ -1864,12 +1864,12 @@ function Index() {
   }, [customerSubscriptions]);
   const hasCustomerSubscriptions = customerSubscriptions.length > 0;
   const getSubscriptionStatusLabel = (status: "pending" | "active" | "paused" | "expired" | "cancelled" | "completed") => {
-    if (status === "pending") return "Pending Admin Review / قيد المراجعة";
-    if (status === "active") return "Active";
-    if (status === "completed") return "Subscription finished";
-    if (status === "paused") return "Paused";
-    if (status === "expired") return "Expired";
-    return "Cancelled";
+    if (status === "pending") return customerUiCopy.statusPendingReview;
+    if (status === "active") return customerUiCopy.statusActive;
+    if (status === "completed") return customerUiCopy.statusFinished;
+    if (status === "paused") return customerUiCopy.statusPaused;
+    if (status === "expired") return customerUiCopy.statusExpired;
+    return customerUiCopy.statusCancelled;
   };
 
   const addToCart = (product: Product, selectedVariant?: string | null) => {
