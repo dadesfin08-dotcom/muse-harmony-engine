@@ -42,13 +42,10 @@ const getOrderStatus = (order: CustomerOrderStatusCandidate) =>
   order.delivery_status ?? order.deliveryStatus ?? order.order_status ?? order.status ?? "";
 
 export const getLatestOutForDeliveryOrderId = (orders: CustomerOrderStatusCandidate[] | null | undefined) => {
-  const latestActiveOrder = (orders ?? [])
+  const latestOrder = (orders ?? [])
     .filter((order) => {
       const orderId = String(order.id ?? "").trim();
-      if (!orderId) return false;
-
-      const normalizedStatus = normalizeOrderStatus(getOrderStatus(order));
-      return !terminalStatuses.has(normalizedStatus);
+      return !!orderId;
     })
     .sort((a, b) => {
       const aTime = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
@@ -56,10 +53,12 @@ export const getLatestOutForDeliveryOrderId = (orders: CustomerOrderStatusCandid
       return bTime - aTime;
     })[0];
 
-  if (!latestActiveOrder) return null;
+  if (!latestOrder) return null;
 
-  const normalizedLatestStatus = normalizeOrderStatus(getOrderStatus(latestActiveOrder));
+  const normalizedLatestStatus = normalizeOrderStatus(getOrderStatus(latestOrder));
+  if (terminalStatuses.has(normalizedLatestStatus)) return null;
+
   return outForDeliveryStatuses.has(normalizedLatestStatus)
-    ? String(latestActiveOrder.id ?? "").trim() || null
+    ? String(latestOrder.id ?? "").trim() || null
     : null;
 };
