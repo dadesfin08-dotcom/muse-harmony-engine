@@ -356,18 +356,59 @@ export function CustomerLayout({
       active ? "bg-primary/14 text-primary" : "text-current"
     }`;
   const latestOutForDeliveryOrderId = useMemo(() => {
-    const orders = (customerOrdersQuery.data ?? []) as Array<{ id: string; status?: string | null; created_at?: string | null }>;
-    const outForDeliveryStatuses = new Set(["out_for_delivery"]);
+    const normalizeStatus = (value: unknown) =>
+      String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_")
+        .replace(/[^a-z_]/g, "");
 
-    const matching = orders
-      .filter((order) => outForDeliveryStatuses.has(String(order.status ?? "").trim().toLowerCase()))
+    const outForDeliveryStatuses = new Set(["out_for_delivery", "outfordelivery"]);
+    const terminalStatuses = new Set([
+      "delivered",
+      "delivered_cash_with_cyclist",
+      "cash_transferred_to_vendor",
+      "completed",
+      "cancelled",
+      "canceled",
+      "rejected",
+      "failed",
+      "refunded",
+      "expired",
+    ]);
+
+    const orders = (customerOrdersQuery.data ?? []) as Array<{
+      id?: string | null;
+      status?: string | null;
+      delivery_status?: string | null;
+      deliveryStatus?: string | null;
+      order_status?: string | null;
+      created_at?: string | null;
+      createdAt?: string | null;
+    }>;
+
+    const getOrderStatus = (order: (typeof orders)[number]) =>
+      order.delivery_status ?? order.deliveryStatus ?? order.order_status ?? order.status ?? "";
+
+    const latestActiveOrder = orders
+      .filter((order) => {
+        const orderId = String(order.id ?? "").trim();
+        if (!orderId) return false;
+        const normalized = normalizeStatus(getOrderStatus(order));
+        return !terminalStatuses.has(normalized);
+      })
       .sort((a, b) => {
-        const aTime = new Date(a.created_at ?? 0).getTime();
-        const bTime = new Date(b.created_at ?? 0).getTime();
+        const aTime = new Date(a.created_at ?? a.createdAt ?? 0).getTime();
+        const bTime = new Date(b.created_at ?? b.createdAt ?? 0).getTime();
         return bTime - aTime;
-      });
+      })[0];
 
-    return matching[0]?.id ?? null;
+    if (!latestActiveOrder) return null;
+
+    const normalizedLatestStatus = normalizeStatus(getOrderStatus(latestActiveOrder));
+    return outForDeliveryStatuses.has(normalizedLatestStatus)
+      ? String(latestActiveOrder.id ?? "").trim() || null
+      : null;
   }, [customerOrdersQuery.data]);
   const hasOutForDeliveryShortcut = !!latestOutForDeliveryOrderId;
   const shouldUseHaptics = (() => {
@@ -459,7 +500,7 @@ export function CustomerLayout({
               <Package className="h-6 w-6 shrink-0 text-primary-foreground" />
               {hasOutForDeliveryShortcut ? (
                 <span
-                  className={`pointer-events-none absolute top-1.5 inline-flex h-2.5 w-2.5 animate-[pulse_1.05s_cubic-bezier(0.4,0,0.6,1)_infinite] rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
+                  className={`pointer-events-none absolute top-1.5 z-[70] inline-flex h-2.5 w-2.5 animate-[pulse_1.05s_cubic-bezier(0.4,0,0.6,1)_infinite] rounded-full bg-destructive shadow-[0_0_0_4px_color-mix(in_oklab,var(--destructive)_22%,transparent)] ${
                     isArabic ? "left-1.5" : "right-1.5"
                   }`}
                   aria-hidden="true"
