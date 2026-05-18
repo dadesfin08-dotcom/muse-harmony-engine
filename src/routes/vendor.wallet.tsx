@@ -95,7 +95,7 @@ function VendorWalletPage() {
         .from("orders")
         .select("id, status, updated_at")
         .eq("vendor_id", vendorId as string)
-        .in("status", ["cash_transferred_to_vendor", "cleared", "completed"])
+        .eq("status", "cash_transferred_to_vendor")
         .gte("updated_at", clearancePollStartedAt as string)
         .order("updated_at", { ascending: false })
         .limit(1)
@@ -361,7 +361,13 @@ function VendorWalletPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-2xl font-semibold">{formatMad(summary?.totalReceivedTodayMad)}</p>
-            <Button className="w-full" onClick={() => setIsVendorHandoverQrOpen(true)}>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setClearancePollStartedAt(new Date().toISOString());
+                setIsVendorHandoverQrOpen(true);
+              }}
+            >
               <QrCode className="size-4" />
               {t("vendorDashboard.cash.showVendorHandoverQr")}
             </Button>
@@ -404,7 +410,15 @@ function VendorWalletPage() {
         </Card>
       </div>
 
-      <Dialog open={isVendorHandoverQrOpen} onOpenChange={setIsVendorHandoverQrOpen}>
+      <Dialog
+        open={isVendorHandoverQrOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setClearancePollStartedAt(new Date().toISOString());
+          }
+          setIsVendorHandoverQrOpen(open);
+        }}
+      >
         <DialogContent className="w-[95vw] max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>{t("vendorDashboard.cash.vendorHandoverQrTitle")}</DialogTitle>
