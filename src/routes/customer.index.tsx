@@ -1950,6 +1950,23 @@ function Index() {
     const normalized = String(paymentMethod ?? "").trim().toLowerCase();
     return normalized === "carnet" || normalized === "credit";
   };
+  const getOrderGrandTotalMad = (order: {
+    total_price?: unknown;
+    delivery_fee?: unknown;
+    extra_fees?: unknown;
+    extra_fee?: unknown;
+    service_fee?: unknown;
+    additional_fee?: unknown;
+  }) => {
+    const subtotalMad = Number(order.total_price ?? 0);
+    const deliveryFeeMad = Number(order.delivery_fee ?? 0);
+    const extraFeesMad = [order.extra_fees, order.extra_fee, order.service_fee, order.additional_fee].reduce<number>((sum, fee) => {
+      const parsed = Number(fee ?? 0);
+      return Number.isFinite(parsed) ? sum + parsed : sum;
+    }, 0);
+
+    return Math.round((subtotalMad + deliveryFeeMad + extraFeesMad) * 100) / 100;
+  };
 
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
@@ -4106,7 +4123,7 @@ function Index() {
                                           {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
-                                      <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                      <p className="text-sm font-semibold text-foreground">{getOrderGrandTotalMad(order).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
                                   </div>
@@ -4161,7 +4178,7 @@ function Index() {
                                           {customerUiCopy.unpaidCarnet}
                                         </Badge>
                                       ) : null}
-                                      <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                      <p className="text-sm font-semibold text-foreground">{getOrderGrandTotalMad(order).toFixed(2)} MAD</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                     </div>
                                   </div>
@@ -4577,7 +4594,7 @@ function Index() {
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
-                                        <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                        <p className="text-sm font-semibold text-foreground">{getOrderGrandTotalMad(order).toFixed(2)} MAD</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                       </div>
                                     </div>
@@ -4627,7 +4644,7 @@ function Index() {
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
-                                        <p className="text-sm font-semibold text-foreground">{Number(order.total_price ?? 0).toFixed(2)} MAD</p>
+                                        <p className="text-sm font-semibold text-foreground">{getOrderGrandTotalMad(order).toFixed(2)} MAD</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{order.item_count} items</p>
                                       </div>
                                     </div>
