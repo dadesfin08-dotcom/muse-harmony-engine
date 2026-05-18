@@ -2658,10 +2658,10 @@ function Index() {
               }}
             >
               <p className="text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
-              <h1 className={`mt-1 text-balance font-bold leading-[1.08] text-foreground font-sans text-[clamp(1.05rem,4.9vw,1.24rem)] ${isArabic ? "text-right" : "text-left"}`}>
+              <h1 className={`mt-1 ${customerTypography.heroTitle} ${customerTypography.textAlign}`}>
                 {localizedHeroTitle}
               </h1>
-              <p className="mt-1.5 text-[clamp(0.68rem,2.95vw,0.8rem)] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
+              <p className={`mt-1.5 ${customerTypography.heroSubtitle}`}>{localizedHeroSubtitle}</p>
             </div>
 
             <div ref={mobileSearchAnchorRef} className="h-px w-full" />
@@ -2751,15 +2751,15 @@ function Index() {
             </div>
           </article>
 
-          <div className={`animate-fade-in hidden flex-col justify-center gap-5 md:flex ${isArabic ? "md:order-2 md:items-end md:text-right" : "md:order-1 md:items-start md:text-left"}`}>
+          <div className={`animate-fade-in hidden flex-col justify-center gap-5 md:flex ${isArabic ? "md:order-2 md:items-end" : "md:order-1 md:items-start"}`}>
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
               {localizedHeroBadge}
             </p>
-            <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+            <h1 className={`${customerTypography.heroTitle} ${customerTypography.textAlign} sm:text-[2.05rem]`}>
               {localizedHeroTitle}
             </h1>
-            <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            <p className={`max-w-xl ${customerTypography.heroSubtitle} ${customerTypography.textAlign} sm:text-[1rem]`}>
               {localizedHeroSubtitle}
             </p>
             <div className="flex items-center gap-3 pt-1">
@@ -2823,11 +2823,11 @@ function Index() {
 
         <section className="mx-auto mt-7 w-full max-w-6xl px-4 sm:px-6 md:mt-10">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground md:text-2xl">
+            <h2 className={customerTypography.sectionTitle}>
               {t("categories.title", { defaultValue: "Quick categories" })}
             </h2>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className={customerTypography.sectionMeta}>
                 {t("categories.subtitleDefault", { defaultValue: "Essentials first" })}
               </span>
               <Link to="/customer/categories" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
@@ -2897,11 +2897,11 @@ function Index() {
 
         <section className="mx-auto mt-7 w-full max-w-6xl px-4 pb-9 sm:px-6 md:mt-10">
           <div className="mb-5 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-[clamp(1.06rem,4.45vw,1.35rem)] font-bold leading-tight text-foreground md:text-2xl">
+            <Link to="/customer/all-products" className={customerTypography.sectionTitle}>
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground">{t("products.pricesInMad")}</span>
+              <span className={customerTypography.sectionMeta}>{t("products.pricesInMad")}</span>
               <Link to="/customer/all-products" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
                 {t("categories.viewAll", { defaultValue: "View All" })}
               </Link>
