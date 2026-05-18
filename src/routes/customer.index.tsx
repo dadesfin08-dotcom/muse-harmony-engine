@@ -2035,7 +2035,12 @@ function Index() {
   };
 
   const openSupportCenter = () => {
-    openCustomerPanel("account");
+    const activeOrder = activeCustomerOrders[0] ?? allCustomerOrders[0] ?? null;
+    openSupportPanel({
+      source: "home",
+      orderId: activeOrder?.id ?? null,
+      pickupCode: activeOrder?.id ? `#${String(activeOrder.id).slice(-4).toUpperCase()}` : null,
+    });
   };
 
   const handleScannedOrderNavigation = async (decodedText: string) => {
