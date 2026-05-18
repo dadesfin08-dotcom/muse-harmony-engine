@@ -438,7 +438,9 @@ function Index() {
   const isCustomerAuthModalOpen = useCustomerPanelStore((state) => state.isCustomerAuthModalOpen);
   const setIsCustomerAuthModalOpen = useCustomerPanelStore((state) => state.setIsCustomerAuthModalOpen);
   const customerPanelView = useCustomerPanelStore((state) => state.customerPanelView);
+  const supportContext = useCustomerPanelStore((state) => state.supportContext);
   const setCustomerPanelView = useCustomerPanelStore((state) => state.setCustomerPanelView);
+  const openSupportPanel = useCustomerPanelStore((state) => state.openSupportPanel);
   const openCustomerPanel = useCustomerPanelStore((state) => state.openCustomerPanel);
   const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("details");
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"COD" | "Carnet">("COD");
@@ -484,6 +486,13 @@ function Index() {
   const scannerInstanceRef = useRef<any>(null);
   const scannerMountedRef = useRef(false);
   const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
+  const [supportMessageInput, setSupportMessageInput] = useState("");
+  const [supportImageDataUrl, setSupportImageDataUrl] = useState<string | null>(null);
+  const [isSupportAttachmentUploading, setIsSupportAttachmentUploading] = useState(false);
+  const [supportActiveTicketId, setSupportActiveTicketId] = useState<string | null>(null);
+  const [supportIsTyping, setSupportIsTyping] = useState(false);
+  const [supportPriority, setSupportPriority] = useState<"normal" | "high">("normal");
+  const supportMessagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
   const [authSheetCanScrollDown, setAuthSheetCanScrollDown] = useState(false);
@@ -567,6 +576,10 @@ function Index() {
   const fetchActivePlatformPacks = useServerFn(listActivePlatformPacks);
   const fetchActiveFlashDeals = useServerFn(listActiveFlashDeals);
   const searchProductsFn = useServerFn(searchCustomerProducts);
+  const fetchCustomerSupportTickets = useServerFn(listCustomerSupportTickets);
+  const fetchCustomerSupportMessages = useServerFn(listCustomerSupportMessages);
+  const createCustomerSupportTicket = useServerFn(createSupportTicket);
+  const sendSupportMessage = useServerFn(sendCustomerSupportMessage);
   const normalizedCommuneSearch = normalizeSearchText(communeSearchInput);
   const normalizedNeighborhoodSearch = normalizeSearchText(neighborhoodSearchInput);
   const hasEnoughCommuneChars = normalizedCommuneSearch.length >= 1;
@@ -670,6 +683,26 @@ function Index() {
     enabled: !!selectedNeighborhoodId,
     staleTime: 20_000,
     refetchInterval: selectedNeighborhoodId ? 20_000 : false,
+  });
+  const supportTicketsQuery = useQuery({
+    queryKey: ["customer", "support", "tickets", customerSession?.phoneNumber ?? null],
+    queryFn: () => fetchCustomerSupportTickets({ data: { phoneNumber: customerSession!.phoneNumber } }),
+    enabled: !!customerSession?.phoneNumber,
+    refetchInterval: customerSession?.phoneNumber ? 6_000 : false,
+    refetchIntervalInBackground: true,
+  });
+  const supportMessagesQuery = useQuery({
+    queryKey: ["customer", "support", "messages", customerSession?.phoneNumber ?? null, supportActiveTicketId ?? null],
+    queryFn: () =>
+      fetchCustomerSupportMessages({
+        data: {
+          phoneNumber: customerSession!.phoneNumber,
+          ticketId: supportActiveTicketId!,
+        },
+      }),
+    enabled: !!customerSession?.phoneNumber && !!supportActiveTicketId,
+    refetchInterval: customerSession?.phoneNumber && supportActiveTicketId ? 4_000 : false,
+    refetchIntervalInBackground: true,
   });
   const predictiveSearchQuery = useQuery({
     queryKey: ["customer", "predictive-search", selectedNeighborhoodId, debouncedSearchTerm],
