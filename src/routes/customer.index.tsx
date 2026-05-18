@@ -378,6 +378,7 @@ function Index() {
   const [mobileSearchInput, setMobileSearchInput] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileHeroScrollProgress, setMobileHeroScrollProgress] = useState(0);
+  const [isMobileSearchSticky, setIsMobileSearchSticky] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
@@ -386,6 +387,9 @@ function Index() {
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
   const [authSheetCanScrollDown, setAuthSheetCanScrollDown] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchAnchorRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileStickySearchRef = useRef<HTMLDivElement | null>(null);
   const authSheetScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const subScrollRef = useRef<HTMLDivElement>(null);
@@ -578,7 +582,12 @@ function Index() {
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (!searchContainerRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideDesktopSearch = searchContainerRef.current?.contains(target);
+      const insideMobileInlineSearch = mobileSearchContainerRef.current?.contains(target);
+      const insideMobileStickySearch = mobileStickySearchRef.current?.contains(target);
+
+      if (!insideDesktopSearch && !insideMobileInlineSearch && !insideMobileStickySearch) {
         setIsSearchOpen(false);
       }
     };
@@ -1125,11 +1134,13 @@ function Index() {
   useEffect(() => {
     if (!isMobile || typeof window === "undefined") {
       setMobileHeroScrollProgress(0);
+      setIsMobileSearchSticky(false);
       return;
     }
 
     let rafId = 0;
     let ticking = false;
+    const stickyThreshold = 84;
 
     const syncHeroProgress = () => {
       if (ticking) return;
@@ -1137,7 +1148,11 @@ function Index() {
       rafId = window.requestAnimationFrame(() => {
         const y = window.scrollY || 0;
         const nextProgress = Math.min(1, Math.max(0, y / 120));
+        const searchAnchorTop = mobileSearchAnchorRef.current?.getBoundingClientRect().top ?? 9999;
+        const nextSticky = searchAnchorTop <= stickyThreshold;
+
         setMobileHeroScrollProgress((prev) => (Math.abs(prev - nextProgress) > 0.01 ? nextProgress : prev));
+        setIsMobileSearchSticky((prev) => (prev === nextSticky ? prev : nextSticky));
         ticking = false;
       });
     };
@@ -2160,6 +2175,92 @@ function Index() {
           </div>
         </section>
 
+        <div
+          ref={mobileStickySearchRef}
+          className="pointer-events-none fixed inset-x-0 top-[4.55rem] z-40 px-3.5 md:hidden"
+          style={{
+            opacity: isMobileSearchSticky ? 1 : 0,
+            transform: `translateY(${isMobileSearchSticky ? 0 : -18}px)`,
+            transition: "opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+        >
+          <div className="pointer-events-auto relative rounded-[18px] bg-background/68 p-1.5 shadow-[0_20px_34px_-24px_color-mix(in_oklab,var(--foreground)_35%,transparent)] backdrop-blur-xl">
+            <Search className="pointer-events-none absolute left-4.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
+            {predictiveSearchQuery.isFetching && hasSearchTerm ? (
+              <Loader2 className="pointer-events-none absolute right-5 top-1/2 z-10 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            ) : null}
+            <input
+              aria-label="Search products"
+              value={mobileSearchInput}
+              onFocus={() => setIsSearchOpen(true)}
+              onChange={(event) => {
+                setMobileSearchInput(event.target.value);
+                setIsSearchOpen(true);
+              }}
+              placeholder={t("header.searchPlaceholder", { defaultValue: "Search essentials" })}
+              className="h-11 w-full rounded-[18px] border border-border/45 bg-card/95 pl-10 pr-21 text-sm outline-none transition focus:border-primary/45 focus:ring-2 focus:ring-ring/30"
+            />
+
+            <div className="absolute right-3 top-1/2 z-10 inline-flex -translate-y-1/2 items-center gap-1">
+              <button
+                type="button"
+                aria-label="Voice search"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
+              >
+                <Mic className="size-[13px]" />
+              </button>
+              <button
+                type="button"
+                aria-label="Scan"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border/70 bg-card text-muted-foreground"
+              >
+                <ScanLine className="size-[13px]" />
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {isSearchOpen && hasSearchTerm ? (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="no-scrollbar absolute left-0 right-0 top-[3.35rem] z-[100] max-h-[350px] overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+                >
+                  {predictiveSearchResults.length > 0 ? (
+                    predictiveSearchResults.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSearchResultClick(item.id)}
+                        className="mb-1 flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted"
+                      >
+                        <img
+                          src={item.imageUrl || productFallbackImage}
+                          alt={item.localizedName}
+                          className="h-11 w-11 rounded-lg border border-border object-cover"
+                          loading="lazy"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-1 block text-sm font-semibold text-foreground">
+                            {highlightSearchMatch(item.localizedName, debouncedSearchTerm)}
+                          </span>
+                          <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-emerald-600">
+                          {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                  )}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </div>
+
         <section className="mx-auto grid w-full max-w-6xl gap-4 px-4 pt-4 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-8">
           <article className="relative mx-auto mb-5 w-full overflow-visible px-0 pb-3 pt-1 md:hidden">
             <img
@@ -2181,12 +2282,14 @@ function Index() {
               <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
             </div>
 
+            <div ref={mobileSearchAnchorRef} className="h-px w-full" />
             <div
-              ref={searchContainerRef}
-              className="sticky top-[4.4rem] z-30 mt-2 px-0.5 transition-[transform,opacity,box-shadow] duration-300 ease-out"
+              ref={mobileSearchContainerRef}
+              className="relative z-20 mt-2 px-0.5 transition-[transform,opacity] duration-300 ease-out"
               style={{
-                opacity: 1,
+                opacity: isMobileSearchSticky ? 0 : 1,
                 transform: `translateY(${(1 - mobileHeroScrollProgress) * 16}px)`,
+                pointerEvents: isMobileSearchSticky ? "none" : "auto",
               }}
             >
               <Search className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-[15px] -translate-y-1/2 text-muted-foreground" />
