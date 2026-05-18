@@ -1,4 +1,5 @@
 import { useAppLanguage } from "@/hooks/use-localization";
+import { useTranslation } from "react-i18next";
 
 type CustomerKpis = {
   totalCustomers: number;
@@ -13,12 +14,13 @@ function formatMad(value: number, locale: string) {
 
 export function CustomerKPIs({ kpis }: { kpis: CustomerKpis | null | undefined }) {
   const { intlLocale, isRtl } = useAppLanguage();
+  const { t } = useTranslation();
 
   const cards = [
-    { label: "Total Customers", value: String(kpis?.totalCustomers ?? 0) },
-    { label: "VIP Customers", value: String(kpis?.vipCustomers ?? 0) },
-    { label: "High Risk / Blocked", value: String(kpis?.highRiskOrBlocked ?? 0) },
-    { label: "Average LTV", value: formatMad(Number(kpis?.averageLtv ?? 0), intlLocale) },
+    { label: t("admin.customersCrm.kpis.totalCustomers"), value: String(kpis?.totalCustomers ?? 0) },
+    { label: t("admin.customersCrm.kpis.vipCustomers"), value: String(kpis?.vipCustomers ?? 0) },
+    { label: t("admin.customersCrm.kpis.highRiskBlocked"), value: String(kpis?.highRiskOrBlocked ?? 0) },
+    { label: t("admin.customersCrm.kpis.averageLtv"), value: formatMad(Number(kpis?.averageLtv ?? 0), intlLocale) },
   ];
 
   return (
