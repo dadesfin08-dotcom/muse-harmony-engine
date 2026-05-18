@@ -490,7 +490,12 @@ const heroSectionSettingsInputSchema = z.object({
   ctaTextAr: z.string().trim().max(120).default(""),
   ctaTextEn: z.string().trim().max(120).default(""),
   ctaTextFr: z.string().trim().max(120).default(""),
-  ctaLink: z.string().trim().url().max(2000).nullable(),
+  ctaLink: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((value) => value.length === 0 || value.startsWith("/") || z.string().url().safeParse(value).success, "CTA link must be a valid URL or path.")
+    .nullable(),
   accentFrom: z.string().trim().max(24).nullable().optional(),
   accentTo: z.string().trim().max(24).nullable().optional(),
   accentChipBg: z.string().trim().max(24).nullable().optional(),
