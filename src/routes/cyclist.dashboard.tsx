@@ -110,6 +110,7 @@ function CyclistDashboardPage() {
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
   const scanHandlerRef = useRef<(decodedText: string) => void>(() => undefined);
+  const isScanningRef = useRef(false);
   const isVerifyingCodeRef = useRef(false);
   const hasScannedRef = useRef(false);
 
@@ -392,6 +393,7 @@ function CyclistDashboardPage() {
     setScannerStatus(t("cyclist.readyToScan"));
     setScannerPaused(false);
     setIsProcessing(false);
+    isScanningRef.current = false;
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
   };
@@ -399,19 +401,22 @@ function CyclistDashboardPage() {
   const handleCyclistQrScan = useCallback(async (rawValue: string) => {
     if (
       !session?.cyclistId ||
-      isProcessing ||
       scannerPaused ||
+      isScanningRef.current ||
       isVerifyingCodeRef.current ||
       hasScannedRef.current
     ) {
       return;
     }
 
+    isScanningRef.current = true;
+
     let payload: unknown;
     try {
       payload = JSON.parse(rawValue);
     } catch {
       toast.error(t("cyclist.invalidQr"));
+      isScanningRef.current = false;
       return;
     }
 
@@ -517,6 +522,7 @@ function CyclistDashboardPage() {
       toast.error(error instanceof Error && error.message ? error.message : "فشل غير معروف، يرجى المحاولة.");
       setScannerPaused(false);
       setIsProcessing(false);
+      isScanningRef.current = false;
       isVerifyingCodeRef.current = false;
       hasScannedRef.current = false;
     } finally {
@@ -525,7 +531,6 @@ function CyclistDashboardPage() {
   }, [
     completeCustomerDelivery,
     dashboardQuery,
-    isProcessing,
     navigate,
     queryClient,
     scannerMode,
@@ -551,6 +556,7 @@ function CyclistDashboardPage() {
     setSuccessAnimationVisible(false);
     setScannerPaused(false);
     setIsProcessing(false);
+    isScanningRef.current = false;
     setScannerStatus(t("cyclist.cameraPreparing"));
     isVerifyingCodeRef.current = false;
     hasScannedRef.current = false;
@@ -683,6 +689,7 @@ function CyclistDashboardPage() {
       setIsScannerOpen(false);
       setIsProcessing(false);
       setScannerPaused(false);
+      isScanningRef.current = false;
       isVerifyingCodeRef.current = false;
       hasScannedRef.current = false;
       setScannerStatus(t("cyclist.readyToScan"));
