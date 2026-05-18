@@ -447,6 +447,11 @@ function Index() {
   const [isInteracting, setIsInteracting] = useState(false);
   const [isSubInteracting, setIsSubInteracting] = useState(false);
   const [isBannerInteracting, setIsBannerInteracting] = useState(false);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [scannerStatusMessage, setScannerStatusMessage] = useState("");
+  const [isProcessingQrResult, setIsProcessingQrResult] = useState(false);
+  const scannerInstanceRef = useRef<any>(null);
+  const scannerMountedRef = useRef(false);
   const [authKeyboardInset, setAuthKeyboardInset] = useState(0);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [authSheetCanScrollUp, setAuthSheetCanScrollUp] = useState(false);
