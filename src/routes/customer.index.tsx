@@ -398,6 +398,23 @@ function Index() {
   const bannerScrollRef = useRef<HTMLDivElement>(null);
   const activeSearchTerm = isMobile ? mobileSearchInput : desktopSearchInput;
   const debouncedSearchTerm = useDebouncedValue(activeSearchTerm, 300);
+  const customerTypography = useMemo(
+    () => ({
+      textAlign: isArabic ? "text-right" : "text-left",
+      heroTitle: "text-balance font-sans text-[clamp(1.18rem,5.2vw,1.46rem)] font-bold leading-[1.08] text-foreground",
+      heroSubtitle: "text-[clamp(0.78rem,3.2vw,0.92rem)] font-normal leading-[1.5] text-muted-foreground",
+      sectionTitle: "text-[clamp(1.2rem,4.6vw,1.55rem)] font-bold leading-tight tracking-tight text-foreground",
+      sectionMeta: "text-[11px] font-medium leading-4 text-muted-foreground",
+      eyebrow: "text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90",
+      cardTitle: "min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.28] text-foreground",
+      cardBody: "text-xs leading-5 text-muted-foreground",
+      priceMain: "whitespace-nowrap text-[clamp(1.02rem,4.5vw,1.22rem)] font-extrabold leading-none tracking-tight text-primary",
+      priceCurrency: "text-[11px] font-semibold leading-none",
+      cta: "inline-flex h-9 items-center gap-1.5 rounded-[16px] px-3 text-xs font-semibold leading-none",
+      flashTitle: "text-[15px] font-extrabold uppercase tracking-wide leading-tight",
+    }),
+    [isArabic],
+  );
   const bottomPromoAutoplayRef = useRef(
     Autoplay({ delay: 4500, stopOnMouseEnter: true, stopOnFocusIn: true, stopOnInteraction: false }),
   );
@@ -2641,10 +2658,10 @@ function Index() {
               }}
             >
               <p className="text-[13px] font-medium text-foreground">{localizedHeroBadge}</p>
-              <h1 className={`mt-1 text-balance font-bold leading-[1.08] text-foreground font-sans text-[clamp(1.05rem,4.9vw,1.24rem)] ${isArabic ? "text-right" : "text-left"}`}>
+              <h1 className={`mt-1 ${customerTypography.heroTitle} ${customerTypography.textAlign}`}>
                 {localizedHeroTitle}
               </h1>
-              <p className="mt-1.5 text-[clamp(0.68rem,2.95vw,0.8rem)] leading-4 text-muted-foreground">{localizedHeroSubtitle}</p>
+              <p className={`mt-1.5 ${customerTypography.heroSubtitle}`}>{localizedHeroSubtitle}</p>
             </div>
 
             <div ref={mobileSearchAnchorRef} className="h-px w-full" />
@@ -2734,15 +2751,15 @@ function Index() {
             </div>
           </article>
 
-          <div className={`animate-fade-in hidden flex-col justify-center gap-5 md:flex ${isArabic ? "md:order-2 md:items-end md:text-right" : "md:order-1 md:items-start md:text-left"}`}>
+          <div className={`animate-fade-in hidden flex-col justify-center gap-5 md:flex ${isArabic ? "md:order-2 md:items-end" : "md:order-1 md:items-start"}`}>
             <p className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
               {localizedHeroBadge}
             </p>
-            <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+            <h1 className={`${customerTypography.heroTitle} ${customerTypography.textAlign} sm:text-[2.05rem]`}>
               {localizedHeroTitle}
             </h1>
-            <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            <p className={`max-w-xl ${customerTypography.heroSubtitle} ${customerTypography.textAlign} sm:text-[1rem]`}>
               {localizedHeroSubtitle}
             </p>
             <div className="flex items-center gap-3 pt-1">
@@ -2806,11 +2823,11 @@ function Index() {
 
         <section className="mx-auto mt-7 w-full max-w-6xl px-4 sm:px-6 md:mt-10">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground md:text-2xl">
+            <h2 className={customerTypography.sectionTitle}>
               {t("categories.title", { defaultValue: "Quick categories" })}
             </h2>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className={customerTypography.sectionMeta}>
                 {t("categories.subtitleDefault", { defaultValue: "Essentials first" })}
               </span>
               <Link to="/customer/categories" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
@@ -2880,11 +2897,11 @@ function Index() {
 
         <section className="mx-auto mt-7 w-full max-w-6xl px-4 pb-9 sm:px-6 md:mt-10">
           <div className="mb-5 flex items-center justify-between">
-            <Link to="/customer/all-products" className="text-[clamp(1.06rem,4.45vw,1.35rem)] font-bold leading-tight text-foreground md:text-2xl">
+            <Link to="/customer/all-products" className={customerTypography.sectionTitle}>
               {t("products.title")}
             </Link>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-muted-foreground">{t("products.pricesInMad")}</span>
+              <span className={customerTypography.sectionMeta}>{t("products.pricesInMad")}</span>
               <Link to="/customer/all-products" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
                 {t("categories.viewAll", { defaultValue: "View All" })}
               </Link>
@@ -2936,14 +2953,14 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.22] text-foreground">
+                    <h3 className={`w-full ${customerTypography.cardTitle}`}>
                       {product.name}
                     </h3>
                   </Link>
 
                   <div className="mt-auto flex items-end justify-between gap-2 pt-2">
-                    <p className="whitespace-nowrap text-[clamp(1.03rem,4.6vw,1.26rem)] font-extrabold tracking-tight text-primary">
-                      {product.price} <span className="text-[11px] font-semibold">{homepageUiCopy.currency}</span>
+                    <p className={customerTypography.priceMain}>
+                      {product.price} <span className={customerTypography.priceCurrency}>{homepageUiCopy.currency}</span>
                     </p>
 
                     {getCartQuantity(product.id, product.productVariants?.[0] ?? null) > 0 ? (
@@ -2979,7 +2996,7 @@ function Index() {
                     ) : (
                       <button
                         type="button"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-[16px] bg-primary px-3 text-xs font-semibold leading-none text-primary-foreground shadow-[0_10px_20px_-15px_rgba(24,181,106,0.95)] transition hover:brightness-95"
+                        className={`${customerTypography.cta} bg-primary text-primary-foreground shadow-[0_10px_20px_-15px_rgba(24,181,106,0.95)] transition hover:brightness-95`}
                         onClick={() => addToCart(product, product.productVariants?.[0] ?? null)}
                       >
                         <ShoppingCart className="size-4" />
@@ -3012,10 +3029,10 @@ function Index() {
 
         <section className="mx-auto mt-6 w-full max-w-6xl px-4 pb-7 sm:px-6 md:mt-8">
           <div className={`mb-4 space-y-1.5 ${isArabic ? "text-right" : "text-left"}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/90">
+            <p className={customerTypography.eyebrow}>
               {subscriptionSectionCopy.eyebrow}
             </p>
-            <h2 className={`flex items-center gap-2 text-[1.1rem] font-bold leading-tight text-foreground md:text-[1.35rem] ${isArabic ? "flex-row-reverse" : ""}`}>
+            <h2 className={`flex items-center gap-2 ${customerTypography.sectionTitle} ${isArabic ? "flex-row-reverse" : ""}`}>
               <Sparkles className="size-4 text-primary" />
               <span>{subscriptionSectionCopy.title}</span>
             </h2>
@@ -3071,8 +3088,8 @@ function Index() {
 
                       <div className={`flex flex-1 flex-col justify-between px-3.5 py-3 ${isArabic ? "text-right" : "text-left"}`}>
                         <div className="space-y-1">
-                          <h3 className="line-clamp-1 text-[15px] font-semibold leading-tight text-foreground">{pack.name}</h3>
-                          <p className="line-clamp-1 text-[11px] font-medium text-muted-foreground/90">
+                          <h3 className="line-clamp-1 text-[14px] font-semibold leading-[1.25] text-foreground">{pack.name}</h3>
+                          <p className={customerTypography.cardBody}>
                             {pack.description || subscriptionSectionCopy.fallbackDescription}
                           </p>
                         </div>
@@ -3126,7 +3143,7 @@ function Index() {
                   <Flame className="absolute -right-0.5 -top-0.5 size-3.5 text-red-200" />
                 </span>
                 <div className="leading-tight">
-                  <h2 className="text-[15px] font-extrabold uppercase tracking-wide">{homepageUiCopy.flashTitle}</h2>
+                  <h2 className={customerTypography.flashTitle}>{homepageUiCopy.flashTitle}</h2>
                   <p className="text-[10px] font-medium uppercase text-white/85">{homepageUiCopy.flashSubtitle}</p>
                 </div>
               </div>
@@ -3180,16 +3197,16 @@ function Index() {
                   </Link>
 
                   <div className="flex flex-1 flex-col p-3">
-                    <h3 className="min-h-[2.8rem] break-words line-clamp-2 text-[14px] font-semibold leading-[1.22] text-foreground">
+                    <h3 className={customerTypography.cardTitle}>
                       {product.name}
                     </h3>
 
                     <div className="mt-auto flex items-end gap-1 pt-2">
-                      <span className="text-[11px] font-bold text-red-700">
+                      <span className="text-[12px] font-bold leading-none text-red-700">
                         {Number(product.dealPrice ?? 0).toFixed(2)}
                       </span>
-                      <span className="text-[11px] font-bold text-[#2A7543]">{homepageUiCopy.currency}</span>
-                      <span className="text-[11px] text-muted-foreground line-through">
+                      <span className="text-[11px] font-bold leading-none text-[#2A7543]">{homepageUiCopy.currency}</span>
+                      <span className="text-[11px] leading-none text-muted-foreground line-through">
                         {Number(product.price ?? 0).toFixed(2)}
                       </span>
                     </div>
@@ -3218,7 +3235,7 @@ function Index() {
                       ) : (
                          <button
                           type="button"
-                          className="inline-flex h-9 items-center gap-1.5 rounded-[16px] bg-red-700 px-3 text-xs font-semibold leading-none text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]"
+                          className={`${customerTypography.cta} bg-red-700 text-white shadow-[0_8px_18px_-12px_rgba(16,185,129,0.65)] transition-all active:scale-[0.98]`}
                           onClick={() => addFlashDealToCart(product)}
                         >
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#2A7543] leading-none">
