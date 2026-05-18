@@ -4347,7 +4347,9 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out sm:max-h-[90vh]"
+              className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl transition-[max-height,padding-bottom] duration-300 ease-out ${
+                customerPanelView === "support" ? "max-h-[94vh] sm:max-h-[95vh]" : "max-h-[85vh] sm:max-h-[90vh]"
+              }`}
               style={{
                 maxHeight: authSheetMaxHeight ? `${authSheetMaxHeight}px` : undefined,
                 paddingBottom: authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
@@ -4850,7 +4852,13 @@ function Index() {
           </Drawer>
         ) : (
           <Dialog open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
-            <DialogContent className="[&>button]:hidden w-[95vw] max-w-md rounded-2xl border border-border bg-background p-8 shadow-2xl">
+            <DialogContent
+              className={`[&>button]:hidden w-[95vw] rounded-2xl border border-border bg-background shadow-2xl ${
+                customerSession && customerPanelView === "support"
+                  ? "max-w-3xl p-4 md:p-5"
+                  : "max-w-md p-8"
+              }`}
+            >
               <DialogTitle className="sr-only">
                 {customerSession && customerPanelView === "support"
                   ? language === "ar"
