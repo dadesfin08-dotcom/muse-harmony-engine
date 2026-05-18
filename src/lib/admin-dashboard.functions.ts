@@ -1596,7 +1596,7 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: currentOrder, error: currentOrderError } = await (supabaseAdmin as any)
       .from("orders")
-      .select("id, subscription_id")
+      .select("id, subscription_id, customer_user_id")
       .eq("id", data.orderId)
       .eq("order_category", "PLATFORM_SUBSCRIPTION")
       .single();
@@ -1663,6 +1663,10 @@ export const updateSubscriptionOrderStatus = createServerFn({ method: "POST" })
       if (subscriptionUpdateError) {
         throw new Error(subscriptionUpdateError.message ?? "Failed to update subscription completion progress.");
       }
+    }
+
+    if (typeof currentOrder.customer_user_id === "string" && currentOrder.customer_user_id.length > 0) {
+      await evaluateCustomerBehavior(currentOrder.customer_user_id);
     }
 
     return { ok: true, status: updated.status };
