@@ -2905,6 +2905,11 @@ function Index() {
                 </div>
 
                 <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-background/95 p-4 backdrop-blur">
+                  {isAccountRestricted ? (
+                    <div className="mb-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2">
+                      <p className="text-sm font-semibold text-destructive">{accountRestrictionMessage}</p>
+                    </div>
+                  ) : null}
                   <Button
                     variant="hero"
                     size="lg"
@@ -2912,7 +2917,7 @@ function Index() {
                     onClick={confirmOrder}
                     disabled={!canConfirmOrder}
                   >
-                    {isSubmittingOrder ? "Confirming..." : "Confirm Order"}
+                    {isAccountRestricted ? "Account Restricted" : isSubmittingOrder ? "Confirming..." : "Confirm Order"}
                   </Button>
                 </div>
               </>
