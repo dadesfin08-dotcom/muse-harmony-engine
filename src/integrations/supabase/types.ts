@@ -559,6 +559,57 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_sections: {
+        Row: {
+          created_at: string
+          description_ar: string
+          description_en: string
+          description_fr: string
+          greeting_ar: string
+          greeting_en: string
+          greeting_fr: string
+          headline_ar: string
+          headline_en: string
+          headline_fr: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          description_fr?: string
+          greeting_ar?: string
+          greeting_en?: string
+          greeting_fr?: string
+          headline_ar?: string
+          headline_en?: string
+          headline_fr?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          description_en?: string
+          description_fr?: string
+          greeting_ar?: string
+          greeting_en?: string
+          greeting_fr?: string
+          headline_ar?: string
+          headline_en?: string
+          headline_fr?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_settings: {
         Row: {
           address: string | null
