@@ -1114,6 +1114,45 @@ function Index() {
     };
   }, [language]);
 
+  const homepageUiCopy = useMemo(() => {
+    if (language === "ar") {
+      return {
+        currency: "د.م",
+        noSearchResults: "لم يتم العثور على منتجات",
+        categoriesEmptySubtitle: "نُحضّر كتالوج حيك الآن.",
+        productsEmptySubtitle: "جرّب تغيير الفئة أو عبارة البحث.",
+        brandSlogan: "طازج. محلي. ليك.",
+        flashTitle: "عروض اليوم",
+        flashSubtitle: "عروض يومية طازجة",
+        viewAll: "عرض الكل",
+      };
+    }
+
+    if (language === "fr") {
+      return {
+        currency: "MAD",
+        noSearchResults: "Aucun produit trouvé",
+        categoriesEmptySubtitle: "Nous préparons le catalogue de votre quartier.",
+        productsEmptySubtitle: "Essayez de changer la catégorie ou la recherche.",
+        brandSlogan: "Frais. Local. Pour vous.",
+        flashTitle: "Offres du jour",
+        flashSubtitle: "Promos fraîches quotidiennes",
+        viewAll: "Voir tout",
+      };
+    }
+
+    return {
+      currency: "MAD",
+      noSearchResults: "No products found",
+      categoriesEmptySubtitle: "We’re preparing your neighborhood catalog.",
+      productsEmptySubtitle: "Try changing category or search terms.",
+      brandSlogan: "Fresh. Local. Yours.",
+      flashTitle: "Today’s Deals",
+      flashSubtitle: "Fresh daily flash deals",
+      viewAll: "View all",
+    };
+  }, [language]);
+
   const countdownLabel = useMemo(() => {
     if (flashDeals.length === 0) {
       return "00:00:00";
@@ -1942,9 +1981,30 @@ function Index() {
       id: ad.id,
       image: ad.image_url,
       linkUrl: ad.link_url,
-      alt: "Promotional ad banner",
-      headline: "Special Offer",
-      copy: ad.link_url ? "Tap to discover this promotion" : "Featured promotion",
+      alt:
+        language === "ar"
+          ? "بانر عرض ترويجي"
+          : language === "fr"
+            ? "Bannière promotionnelle"
+            : "Promotional ad banner",
+      headline:
+        language === "ar"
+          ? "عرض خاص"
+          : language === "fr"
+            ? "Offre spéciale"
+            : "Special Offer",
+      copy:
+        ad.link_url
+          ? language === "ar"
+            ? "اضغط لاكتشاف هذا العرض"
+            : language === "fr"
+              ? "Touchez pour découvrir cette promotion"
+              : "Tap to discover this promotion"
+          : language === "ar"
+            ? "عرض مميز"
+            : language === "fr"
+              ? "Promotion mise en avant"
+              : "Featured promotion",
       tag: ad.campaign_type === "NEWS" ? "Featured" : "AD",
     })) || [];
   const displayAdSlides = dynamicAdSlides.length > 0 ? dynamicAdSlides : adSlides;
