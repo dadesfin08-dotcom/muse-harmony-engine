@@ -784,6 +784,13 @@ function AdminPage() {
   const fetchAnnouncements = useServerFn(listAnnouncements);
   const fetchAdminOverviewAnalytics = useServerFn(getAdminOverviewAnalytics);
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchHeroSections = useServerFn(listHeroSections);
+  const fetchActiveHero = useServerFn(getActiveHeroSection);
+  const fetchFallbackHero = useServerFn(getHeroSectionSettings);
+  const saveHeroSectionToDatabase = useServerFn(updateHeroSectionSettings);
+  const uploadHeroSectionImageToStorage = useServerFn(uploadHeroSectionImage);
+  const deleteHeroSectionFromDatabase = useServerFn(deleteHeroSection);
+  const reorderHeroSectionsInDatabase = useServerFn(reorderHeroSections);
   const fetchAdminCustomerKpis = useServerFn(getAdminCustomerKpis);
   const resetFactoryDataInDatabase = useServerFn(resetFactoryData);
   const saveGlobalSettingsToDatabase = useServerFn(updateGlobalSettings);
@@ -964,6 +971,24 @@ function AdminPage() {
     queryKey: ["admin", "global-settings"],
     enabled: isAdminDataEnabled,
     queryFn: () => fetchGlobalSettings(),
+    placeholderData: (previousData) => previousData,
+  });
+  const heroSectionsQuery = useQuery({
+    queryKey: ["admin", "hero-sections"],
+    enabled: isAdminDataEnabled,
+    queryFn: async () => {
+      const rows = await fetchHeroSections();
+      if (rows.length > 0) return rows;
+
+      await fetchFallbackHero();
+      return fetchHeroSections();
+    },
+    placeholderData: (previousData) => previousData,
+  });
+  const activeHeroPreviewQuery = useQuery({
+    queryKey: ["admin", "hero-sections", "active-preview"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchActiveHero(),
     placeholderData: (previousData) => previousData,
   });
   const markupRulesQuery = useQuery({
