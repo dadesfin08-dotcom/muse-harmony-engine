@@ -3189,7 +3189,6 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
                           {activeCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
-                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
                             const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
                             const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
@@ -3231,11 +3230,8 @@ function Index() {
                                       return (
                                         <div key={step.label} className="space-y-1">
                                           <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
-                                          <div className={`flex items-center gap-1 rounded-md border px-1.5 py-1 ${style.circleClassName}`}>
-                                            <style.Icon className="size-3" />
-                                            <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
-                                              {step.label}
-                                            </p>
+                                          <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                            <style.Icon className="size-3.5" />
                                           </div>
                                           <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                             {step.label}
@@ -3258,7 +3254,6 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order History</p>
                           {deliveredCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
-                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
                             const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
                             const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
@@ -3300,11 +3295,8 @@ function Index() {
                                       return (
                                         <div key={step.label} className="space-y-1">
                                           <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
-                                          <div className={`flex items-center gap-1 rounded-md border px-1.5 py-1 ${style.circleClassName}`}>
-                                            <style.Icon className="size-3" />
-                                            <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
-                                              {step.label}
-                                            </p>
+                                          <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                            <style.Icon className="size-3.5" />
                                           </div>
                                           <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                             {step.label}
