@@ -1269,6 +1269,42 @@ function AdminPage() {
       setCustomerNotesDraft(String(selectedCustomerProfileQuery.data.adminNotes));
     }
   }, [selectedCustomerProfileQuery.data?.adminNotes]);
+  useEffect(() => {
+    if (!adminSupportActiveTicketId && adminSupportTickets.length > 0) {
+      setAdminSupportActiveTicketId(adminSupportTickets[0]!.id);
+      return;
+    }
+
+    if (!adminSupportActiveTicketId) return;
+    const stillExists = adminSupportTickets.some((ticket) => ticket.id === adminSupportActiveTicketId);
+    if (!stillExists) {
+      setAdminSupportActiveTicketId(adminSupportTickets[0]?.id ?? null);
+    }
+  }, [adminSupportActiveTicketId, adminSupportTickets]);
+
+  useEffect(() => {
+    if (!isAdminDataEnabled) return;
+
+    const ticketsChannel = supabase
+      .channel("admin-support-tickets-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "tickets"] });
+      })
+      .subscribe();
+
+    const messagesChannel = supabase
+      .channel("admin-support-messages-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "tickets"] });
+        void queryClient.invalidateQueries({ queryKey: ["admin", "support", "messages"] });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ticketsChannel);
+      void supabase.removeChannel(messagesChannel);
+    };
+  }, [isAdminDataEnabled, queryClient]);
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
