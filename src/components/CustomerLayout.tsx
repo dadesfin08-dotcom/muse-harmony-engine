@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CustomerStatusAlert } from "@/components/CustomerStatusAlert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -261,7 +262,12 @@ export function CustomerLayout({
 
   return (
     <>
-      <main className="pb-24 md:pb-0">{children}</main>
+      <main className="pb-24 md:pb-0">
+        <div className="mx-auto w-full max-w-4xl px-4 pt-4 sm:px-6">
+          <CustomerStatusAlert />
+        </div>
+        {children}
+      </main>
 
       <nav
         className="fixed bottom-0 w-full grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden"
