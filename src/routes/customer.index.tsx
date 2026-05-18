@@ -2937,7 +2937,7 @@ function Index() {
                 type="button"
                 size="icon"
                 variant="soft"
-                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:shadow-md active:translate-y-0 active:scale-[0.97] active:shadow-sm focus-visible:ring-2 focus-visible:ring-primary/40"
                 onClick={() => {
                   setIsCustomerAuthModalOpen(false);
                   setCustomerPanelView("account");
