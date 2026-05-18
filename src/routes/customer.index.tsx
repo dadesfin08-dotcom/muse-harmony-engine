@@ -32,6 +32,7 @@ import {
   Flame,
   Clock3,
   ChevronLeft,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1397,15 +1398,12 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "Order Placed", statuses: ["pending", "new"] },
-    { label: "Preparing", statuses: ["preparing", "ready", "accepted", "processing"] },
+    { label: "الطلب المقدم", statuses: ["pending", "new"] },
+    { label: "قيد التحضير", statuses: ["preparing", "accepted", "processing"] },
+    { label: "تم التجهيز", statuses: ["ready"] },
     {
-      label: "Out for Delivery",
-      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering"],
-    },
-    {
-      label: "Delivered",
-      statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
+      label: "التوصيل",
+      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
     },
   ];
 
@@ -1415,6 +1413,41 @@ function Index() {
     const normalizedStatus = String(status ?? "").trim().toLowerCase();
     const index = statusSteps.findIndex((step) => step.statuses.includes(normalizedStatus));
     return index < 0 ? 0 : index;
+  };
+
+  const getTimelineStageStyle = (
+    orderStatus: string,
+    cancelledAtStatus: string | null | undefined,
+    stageIndex: number,
+    activeStepIndex: number,
+  ) => {
+    const normalizedOrderStatus = String(orderStatus ?? "").trim().toLowerCase();
+    const isCancelled = normalizedOrderStatus === "cancelled";
+
+    if (isCancelled) {
+      const cancellationIndex = cancelledAtStatus ? getOrderStepIndex(cancelledAtStatus) : 0;
+      const isCompletedBeforeCancellation = stageIndex < cancellationIndex;
+      return {
+        lineClassName: isCompletedBeforeCancellation ? "bg-success" : "bg-destructive",
+        titleClassName: isCompletedBeforeCancellation ? "text-success" : "text-destructive",
+        circleClassName: isCompletedBeforeCancellation
+          ? "border-success/30 bg-success/15 text-success"
+          : "border-destructive/30 bg-destructive/15 text-destructive",
+        Icon: isCompletedBeforeCancellation ? CheckCircle2 : XCircle,
+      };
+    }
+
+    const reached = stageIndex <= activeStepIndex;
+    return {
+      lineClassName: reached ? (isDeliveredOrderStatus(orderStatus) ? "bg-success" : "bg-primary") : "bg-muted",
+      titleClassName: reached ? "text-foreground" : "text-muted-foreground",
+      circleClassName: reached
+        ? isDeliveredOrderStatus(orderStatus)
+          ? "border-success/30 bg-success/15 text-success"
+          : "border-primary/30 bg-primary/10 text-primary"
+        : "border-border bg-muted/40 text-muted-foreground",
+      Icon: reached ? CheckCircle2 : Package,
+    };
   };
 
   const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").trim().toLowerCase());
