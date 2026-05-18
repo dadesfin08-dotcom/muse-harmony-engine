@@ -445,17 +445,11 @@ export function CustomerLayout({
       navigator.vibrate(16);
     }
 
-    const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: latestOutForDeliveryOrderId } });
-    const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
-
-    if (typeof startViewTransition === "function") {
-      startViewTransition(() => {
-        goToReceipt();
-      });
-      return;
-    }
-
-    goToReceipt();
+    void navigate({
+      to: "/customer/order/$orderId",
+      params: { orderId: latestOutForDeliveryOrderId },
+      resetScroll: false,
+    });
   };
 
   return (
