@@ -32,6 +32,7 @@ import {
   Flame,
   Clock3,
   ChevronLeft,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1397,15 +1398,12 @@ function Index() {
   };
 
   const statusSteps: Array<{ label: string; statuses: string[] }> = [
-    { label: "Order Placed", statuses: ["pending", "new"] },
-    { label: "Preparing", statuses: ["preparing", "ready", "accepted", "processing"] },
+    { label: "الطلب المقدم", statuses: ["pending", "new"] },
+    { label: "قيد التحضير", statuses: ["preparing", "accepted", "processing"] },
+    { label: "تم التجهيز", statuses: ["ready"] },
     {
-      label: "Out for Delivery",
-      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering"],
-    },
-    {
-      label: "Delivered",
-      statuses: ["delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
+      label: "التوصيل",
+      statuses: ["in_delivery", "in_transit", "out_for_delivery", "picked_up", "on_the_way", "delivering", "delivered", "delivered_cash_with_cyclist", "cash_transferred_to_vendor", "completed"],
     },
   ];
 
@@ -1415,6 +1413,41 @@ function Index() {
     const normalizedStatus = String(status ?? "").trim().toLowerCase();
     const index = statusSteps.findIndex((step) => step.statuses.includes(normalizedStatus));
     return index < 0 ? 0 : index;
+  };
+
+  const getTimelineStageStyle = (
+    orderStatus: string,
+    cancelledAtStatus: string | null | undefined,
+    stageIndex: number,
+    activeStepIndex: number,
+  ) => {
+    const normalizedOrderStatus = String(orderStatus ?? "").trim().toLowerCase();
+    const isCancelled = normalizedOrderStatus === "cancelled";
+
+    if (isCancelled) {
+      const cancellationIndex = cancelledAtStatus ? getOrderStepIndex(cancelledAtStatus) : 0;
+      const isCompletedBeforeCancellation = stageIndex < cancellationIndex;
+      return {
+        lineClassName: isCompletedBeforeCancellation ? "bg-success" : "bg-destructive",
+        titleClassName: isCompletedBeforeCancellation ? "text-success" : "text-destructive",
+        circleClassName: isCompletedBeforeCancellation
+          ? "border-success/30 bg-success/15 text-success"
+          : "border-destructive/30 bg-destructive/15 text-destructive",
+        Icon: isCompletedBeforeCancellation ? CheckCircle2 : XCircle,
+      };
+    }
+
+    const reached = stageIndex <= activeStepIndex;
+    return {
+      lineClassName: reached ? (isDeliveredOrderStatus(orderStatus) ? "bg-success" : "bg-primary") : "bg-muted",
+      titleClassName: reached ? "text-foreground" : "text-muted-foreground",
+      circleClassName: reached
+        ? isDeliveredOrderStatus(orderStatus)
+          ? "border-success/30 bg-success/15 text-success"
+          : "border-primary/30 bg-primary/10 text-primary"
+        : "border-border bg-muted/40 text-muted-foreground",
+      Icon: reached ? CheckCircle2 : Package,
+    };
   };
 
   const isDeliveredOrderStatus = (status: string) => deliveredStatuses.has(String(status ?? "").trim().toLowerCase());
@@ -3156,8 +3189,9 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
                           {activeCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
-                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
+                            const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
+                            const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
 
                             return (
                               <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
@@ -3184,13 +3218,22 @@ function Index() {
                                     </div>
                                   </div>
 
+                                  {isCancelledOrder ? (
+                                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+                                      {`تم إلغاء الطلب${cancelledAtDate && !Number.isNaN(cancelledAtDate.getTime()) ? ` - ${cancelledAtDate.toLocaleString("ar-MA")}` : ""}`}
+                                    </div>
+                                  ) : null}
+
                                   <div className="mt-4 grid grid-cols-4 gap-2">
                                     {statusSteps.map((step, index) => {
-                                      const reached = index <= activeStepIndex;
+                                      const style = getTimelineStageStyle(order.status, order.cancelled_at_status, index, activeStepIndex);
                                       return (
                                         <div key={step.label} className="space-y-1">
-                                          <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
-                                          <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                          <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
+                                          <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                            <style.Icon className="size-3.5" />
+                                          </div>
+                                          <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                             {step.label}
                                           </p>
                                         </div>
@@ -3211,8 +3254,9 @@ function Index() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order History</p>
                           {deliveredCustomerOrders.map((order) => {
                             const activeStepIndex = getOrderStepIndex(order.status);
-                            const isDeliveredState = isDeliveredOrderStatus(order.status);
                             const orderDate = new Date(order.created_at);
+                            const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
+                            const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
 
                             return (
                               <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
@@ -3239,13 +3283,22 @@ function Index() {
                                     </div>
                                   </div>
 
+                                  {isCancelledOrder ? (
+                                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+                                      {`تم إلغاء الطلب${cancelledAtDate && !Number.isNaN(cancelledAtDate.getTime()) ? ` - ${cancelledAtDate.toLocaleString("ar-MA")}` : ""}`}
+                                    </div>
+                                  ) : null}
+
                                   <div className="mt-4 grid grid-cols-4 gap-2">
                                     {statusSteps.map((step, index) => {
-                                      const reached = index <= activeStepIndex;
+                                      const style = getTimelineStageStyle(order.status, order.cancelled_at_status, index, activeStepIndex);
                                       return (
                                         <div key={step.label} className="space-y-1">
-                                          <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
-                                          <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                          <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
+                                          <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                            <style.Icon className="size-3.5" />
+                                          </div>
+                                          <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                             {step.label}
                                           </p>
                                         </div>
@@ -3630,8 +3683,9 @@ function Index() {
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Active Orders</p>
                             {activeCustomerOrders.map((order) => {
                               const activeStepIndex = getOrderStepIndex(order.status);
-                              const isDeliveredState = isDeliveredOrderStatus(order.status);
                               const orderDate = new Date(order.created_at);
+                              const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
+                              const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
 
                               return (
                                 <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
@@ -3653,13 +3707,22 @@ function Index() {
                                       </div>
                                     </div>
 
+                                    {isCancelledOrder ? (
+                                      <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+                                        {`تم إلغاء الطلب${cancelledAtDate && !Number.isNaN(cancelledAtDate.getTime()) ? ` - ${cancelledAtDate.toLocaleString("ar-MA")}` : ""}`}
+                                      </div>
+                                    ) : null}
+
                                     <div className="mt-4 grid grid-cols-4 gap-2">
                                       {statusSteps.map((step, index) => {
-                                        const reached = index <= activeStepIndex;
+                                        const style = getTimelineStageStyle(order.status, order.cancelled_at_status, index, activeStepIndex);
                                         return (
                                           <div key={step.label} className="space-y-1">
-                                            <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
-                                            <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                            <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
+                                            <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                              <style.Icon className="size-3.5" />
+                                            </div>
+                                            <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                               {step.label}
                                             </p>
                                           </div>
@@ -3680,8 +3743,9 @@ function Index() {
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order History</p>
                             {deliveredCustomerOrders.map((order) => {
                               const activeStepIndex = getOrderStepIndex(order.status);
-                              const isDeliveredState = isDeliveredOrderStatus(order.status);
                               const orderDate = new Date(order.created_at);
+                              const isCancelledOrder = String(order.status ?? "").trim().toLowerCase() === "cancelled";
+                              const cancelledAtDate = order.cancelled_at ? new Date(order.cancelled_at) : null;
 
                               return (
                                 <article key={order.id} className="rounded-2xl border border-border bg-card p-4">
@@ -3703,13 +3767,22 @@ function Index() {
                                       </div>
                                     </div>
 
+                                    {isCancelledOrder ? (
+                                      <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
+                                        {`تم إلغاء الطلب${cancelledAtDate && !Number.isNaN(cancelledAtDate.getTime()) ? ` - ${cancelledAtDate.toLocaleString("ar-MA")}` : ""}`}
+                                      </div>
+                                    ) : null}
+
                                     <div className="mt-4 grid grid-cols-4 gap-2">
                                       {statusSteps.map((step, index) => {
-                                        const reached = index <= activeStepIndex;
+                                        const style = getTimelineStageStyle(order.status, order.cancelled_at_status, index, activeStepIndex);
                                         return (
                                           <div key={step.label} className="space-y-1">
-                                            <div className={`h-1.5 rounded-full ${reached ? (isDeliveredState ? "bg-success" : "bg-primary") : "bg-muted"}`} />
-                                            <p className={`text-[10px] leading-tight ${reached ? "text-foreground" : "text-muted-foreground"}`}>
+                                            <div className={`h-1.5 rounded-full ${style.lineClassName}`} />
+                                            <div className={`flex h-6 w-6 items-center justify-center rounded-full border ${style.circleClassName}`}>
+                                              <style.Icon className="size-3.5" />
+                                            </div>
+                                            <p className={`text-[10px] leading-tight ${style.titleClassName}`}>
                                               {step.label}
                                             </p>
                                           </div>

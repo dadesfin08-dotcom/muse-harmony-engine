@@ -141,7 +141,9 @@ type OrderRow = {
     | "in_delivery"
     | "delivered"
     | "delivered_cash_with_cyclist"
-    | "cash_transferred_to_vendor";
+    | "cash_transferred_to_vendor"
+    | "completed"
+    | "cancelled";
   delivery_auth_code: string;
   delivery_fee: number;
   total_price: number;
@@ -167,6 +169,8 @@ type OrderRow = {
     avatarUrl?: string | null;
   } | null;
   vendor_settlement_status?: "pending" | "settled";
+  cancelled_at_status?: string | null;
+  cancelled_at?: string | null;
   created_at: string;
 };
 
@@ -1890,6 +1894,10 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
       }
 
       const rows = (orders ?? []) as Array<CustomerOrderRow & { subscription_id?: string | null; order_category?: string | null }>;
+      const cancelledOrderIds = rows
+        .filter((row) => String(row.status ?? "").trim().toLowerCase() === "cancelled")
+        .map((row) => row.id)
+        .filter((value): value is string => typeof value === "string" && value.length > 0);
       const subscriptionIds = Array.from(
         new Set(
           rows
@@ -1914,8 +1922,34 @@ export const getCustomerOrders = createServerFn({ method: "POST" })
         }
       }
 
+      const cancelledStatusByOrderId = new Map<string, { cancelledAtStatus: string | null; cancelledAt: string | null }>();
+      if (cancelledOrderIds.length > 0) {
+        const { data: auditRows, error: auditError } = await (supabaseAdmin as any)
+          .from("order_audit_logs")
+          .select("order_id, previous_status, created_at")
+          .in("order_id", cancelledOrderIds)
+          .eq("new_status", "cancelled")
+          .order("created_at", { ascending: false });
+
+        if (auditError) {
+          throw new Error(auditError.message);
+        }
+
+        for (const logRow of (auditRows ?? []) as Array<{ order_id: string | null; previous_status: string | null; created_at: string | null }>) {
+          const orderId = typeof logRow.order_id === "string" ? logRow.order_id : null;
+          if (!orderId || cancelledStatusByOrderId.has(orderId)) continue;
+
+          cancelledStatusByOrderId.set(orderId, {
+            cancelledAtStatus: typeof logRow.previous_status === "string" ? logRow.previous_status : null,
+            cancelledAt: typeof logRow.created_at === "string" ? logRow.created_at : null,
+          });
+        }
+      }
+
       return rows.map((row) => ({
         ...row,
+        cancelled_at_status: cancelledStatusByOrderId.get(row.id)?.cancelledAtStatus ?? null,
+        cancelled_at: cancelledStatusByOrderId.get(row.id)?.cancelledAt ?? null,
         subscription_status:
           typeof row.subscription_id === "string" && row.subscription_id.length > 0
             ? (subscriptionStatusById.get(row.subscription_id) ?? null)
