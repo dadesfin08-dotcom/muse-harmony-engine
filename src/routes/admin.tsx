@@ -4446,6 +4446,7 @@ function AdminPage() {
                       strikes: number;
                       codRejections: number;
                       adminNotes: string;
+                      systemTags: string[];
                       metrics: {
                         totalSpent: number;
                         averageOrderValue: number;
