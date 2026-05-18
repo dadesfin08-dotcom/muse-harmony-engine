@@ -1617,27 +1617,33 @@ export type Database = {
       support_messages: {
         Row: {
           created_at: string
+          delivered_at: string | null
           id: string
           image_url: string | null
           message: string
+          read_at: string | null
           sender_id: string | null
           sender_type: Database["public"]["Enums"]["support_sender_type"]
           ticket_id: string
         }
         Insert: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           image_url?: string | null
           message: string
+          read_at?: string | null
           sender_id?: string | null
           sender_type: Database["public"]["Enums"]["support_sender_type"]
           ticket_id: string
         }
         Update: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           image_url?: string | null
           message?: string
+          read_at?: string | null
           sender_id?: string | null
           sender_type?: Database["public"]["Enums"]["support_sender_type"]
           ticket_id?: string
