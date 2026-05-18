@@ -696,13 +696,21 @@ function Index() {
   });
   const supportMessagesQuery = useQuery({
     queryKey: ["customer", "support", "messages", customerSession?.phoneNumber ?? null, supportActiveTicketId ?? null],
-    queryFn: () =>
-      fetchCustomerSupportMessages({
+    queryFn: () => {
+      const phoneNumber = customerSession?.phoneNumber;
+      const ticketId = supportActiveTicketId;
+
+      if (!phoneNumber || !ticketId) {
+        return Promise.resolve([]);
+      }
+
+      return fetchCustomerSupportMessages({
         data: {
-          phoneNumber: customerSession!.phoneNumber,
-          ticketId: supportActiveTicketId!,
+          phoneNumber,
+          ticketId,
         },
-      }),
+      });
+    },
     enabled: !!customerSession?.phoneNumber && !!supportActiveTicketId,
     refetchInterval: customerSession?.phoneNumber && supportActiveTicketId ? 4_000 : false,
     refetchIntervalInBackground: true,
