@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   House,
   Search,
@@ -415,9 +416,14 @@ export function CustomerLayout({
         {children}
       </main>
 
+      <AnimatePresence>
       {shouldShowBottomNav ? (
-      <nav
-        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl transition-all duration-300 ease-out md:hidden"
+      <motion.nav
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.98 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className={navItemClass(isHomeActive)}>
             <span className={navIconWrapClass(isHomeActive)}>
@@ -495,8 +501,9 @@ export function CustomerLayout({
             </span>
             <span>{t("nav.profile")}</span>
           </button>
-      </nav>
+      </motion.nav>
       ) : null}
+      </AnimatePresence>
 
       {isProfileHubOpen ? (
         <div className="fixed inset-0 z-[110] md:hidden">
