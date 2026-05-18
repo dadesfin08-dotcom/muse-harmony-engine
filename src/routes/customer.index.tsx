@@ -2147,7 +2147,7 @@ function Index() {
                   {dynamicSiteName}
                 </span>
                 <span className="block truncate text-[clamp(0.56rem,2.05vw,0.68rem)] font-medium text-muted-foreground/80">
-                  Fresh. Local. Yours.
+                  {homepageUiCopy.brandSlogan}
                 </span>
               </span>
             </a>
@@ -2225,12 +2225,12 @@ function Index() {
                             <span className="line-clamp-1 block text-xs text-muted-foreground">{item.localizedBrand || item.category}</span>
                           </span>
                           <span className="shrink-0 text-sm font-bold text-emerald-600">
-                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} MAD
+                            {Number(item.finalVendorPrice ?? item.vendorPrice ?? 0)} {homepageUiCopy.currency}
                           </span>
                         </button>
                       ))
                     ) : (
-                      <p className="px-2 py-3 text-sm text-muted-foreground">No products found</p>
+                      <p className="px-2 py-3 text-sm text-muted-foreground">{homepageUiCopy.noSearchResults}</p>
                     )}
                   </motion.div>
                 ) : null}
