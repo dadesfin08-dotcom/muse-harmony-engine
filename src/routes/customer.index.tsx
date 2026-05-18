@@ -1942,11 +1942,11 @@ function Index() {
                   <img
                     src={dynamicSiteLogoUrl}
                     alt={dynamicSiteName}
-                    className="h-[clamp(1.35rem,4.2vw,1.65rem)] w-[clamp(1.35rem,4.2vw,1.65rem)] object-contain"
+                    className="h-[clamp(1.52rem,4.8vw,1.9rem)] w-[clamp(1.52rem,4.8vw,1.9rem)] object-contain"
                     loading="lazy"
                   />
                 ) : (
-                  <Bike className="size-[clamp(1.05rem,3.8vw,1.25rem)]" />
+                  <Bike className="size-[clamp(1.18rem,4.25vw,1.42rem)]" />
                 )}
               </span>
               <span className="min-w-0 leading-tight">
