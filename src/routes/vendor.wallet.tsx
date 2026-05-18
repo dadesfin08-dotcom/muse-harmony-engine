@@ -129,8 +129,12 @@ function VendorWalletPage() {
           filter: `vendor_id=eq.${vendorId}`,
         },
         (payload) => {
+          const oldStatus = String((payload.old as { status?: string } | null)?.status ?? "");
           const newStatus = String((payload.new as { status?: string } | null)?.status ?? "");
-          if (newStatus !== "cash_transferred_to_vendor" || vendorClearanceToastLockRef.current) {
+          const isCashClearanceTransition =
+            oldStatus === "delivered_cash_with_cyclist" && newStatus === "cash_transferred_to_vendor";
+
+          if (!isCashClearanceTransition || vendorClearanceToastLockRef.current) {
             return;
           }
 
