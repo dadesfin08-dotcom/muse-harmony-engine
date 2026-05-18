@@ -1931,6 +1931,112 @@ function Index() {
   const allCustomerOrders = customerOrdersQuery.data ?? [];
   const activeCustomerOrders = allCustomerOrders.filter((order) => !isDeliveredOrderStatus(order.status));
   const deliveredCustomerOrders = allCustomerOrders.filter((order) => isDeliveredOrderStatus(order.status));
+  const resolveOrderIdFromScan = (decodedOrderToken: string): string | null => {
+    const normalizedToken = normalizeScannedOrderToken(decodedOrderToken).toLowerCase();
+    if (!normalizedToken) return null;
+
+    const matchedOrder = allCustomerOrders.find((order) => {
+      const orderId = String(order.id ?? "").trim().toLowerCase();
+      const shortOrderId = orderId.slice(0, 8);
+      return normalizedToken === orderId || normalizedToken === shortOrderId;
+    });
+
+    if (matchedOrder?.id) return matchedOrder.id;
+    return activeCustomerOrders[0]?.id ?? allCustomerOrders[0]?.id ?? null;
+  };
+
+  const openOrderQrScanner = () => {
+    setScannerStatusMessage(customerUiCopy.scannerPointToQr);
+    setIsProcessingQrResult(false);
+    setIsQrScannerOpen(true);
+  };
+
+  const handleScannedOrderNavigation = async (decodedText: string) => {
+    const extractedOrderId = extractOrderIdentifierFromQrPayload(decodedText);
+    if (!extractedOrderId) {
+      toast.error(customerUiCopy.scannerInvalidQr);
+      return;
+    }
+
+    const resolvedOrderId = resolveOrderIdFromScan(extractedOrderId);
+    if (!resolvedOrderId) {
+      toast.error(customerUiCopy.scannerOrderNotFound);
+      return;
+    }
+
+    setIsProcessingQrResult(true);
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(18);
+    }
+
+    toast.success(customerUiCopy.scannerSuccess);
+    setIsQrScannerOpen(false);
+
+    const goToReceipt = () => void navigate({ to: "/customer/order/$orderId", params: { orderId: resolvedOrderId } });
+    const startViewTransition = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+
+    if (typeof startViewTransition === "function") {
+      startViewTransition(() => {
+        goToReceipt();
+      });
+      return;
+    }
+
+    goToReceipt();
+  };
+
+  useEffect(() => {
+    if (!isQrScannerOpen) return;
+
+    let mounted = true;
+    scannerMountedRef.current = true;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (!mounted) return;
+
+        const scanner = new Html5Qrcode("customer-order-qr-reader");
+        scannerInstanceRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 260 } },
+          (decodedText: string) => {
+            if (!scannerMountedRef.current || isProcessingQrResult) return;
+            void handleScannedOrderNavigation(decodedText);
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        const message = String((error as Error)?.message ?? "").toLowerCase();
+        const denied =
+          message.includes("notallowed") || message.includes("permission") || message.includes("denied") || message.includes("not readable");
+        const nextMessage = denied ? customerUiCopy.scannerPermissionDenied : customerUiCopy.scannerCameraUnavailable;
+        setScannerStatusMessage(nextMessage);
+        toast.error(nextMessage);
+      }
+    };
+
+    setScannerStatusMessage(customerUiCopy.scannerPointToQr);
+    void startScanner();
+
+    return () => {
+      mounted = false;
+      scannerMountedRef.current = false;
+      const scanner = scannerInstanceRef.current;
+      scannerInstanceRef.current = null;
+      if (scanner) {
+        void scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            void scanner.clear().catch(() => undefined);
+          });
+      }
+    };
+  }, [customerUiCopy.scannerCameraUnavailable, customerUiCopy.scannerPermissionDenied, customerUiCopy.scannerPointToQr, isProcessingQrResult, isQrScannerOpen]);
+
   const customerSubscriptions =
     (customerSubscriptionsQuery.data ?? []) as Array<{
       id: string;
