@@ -103,6 +103,7 @@ function CyclistDashboardPage() {
   const hasInitializedRunsRef = useRef(false);
   const qrScannerRef = useRef<any>(null);
   const isVerifyingCodeRef = useRef(false);
+  const hasScannedRef = useRef(false);
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -339,21 +340,44 @@ function CyclistDashboardPage() {
     } catch (error) {
       console.error("Failed to accept delivery:", error);
       await dashboardQuery.refetch();
-      toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const isStaleTransitionError =
+        errorMessage.includes("invalid status transition") ||
+        errorMessage.includes("order status changed") ||
+        errorMessage.includes("not an active delivery");
+
+      if (isStaleTransitionError) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+      } else {
+        toast.error(error instanceof Error ? error.message : t("cyclist.failedAccept"));
+      }
     } finally {
       setIsUpdatingOrderId(null);
     }
   };
 
   const closeScanner = () => {
+    const scanner = qrScannerRef.current;
+    qrScannerRef.current = null;
+    if (scanner) {
+      void scanner
+        .stop()
+        .catch(() => undefined)
+        .finally(() => {
+          void scanner.clear().catch(() => undefined);
+        });
+    }
     setIsScannerOpen(false);
     setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.readyToScan"));
     isVerifyingCodeRef.current = false;
+    hasScannedRef.current = false;
   };
 
   const handleCyclistQrScan = async (rawValue: string) => {
-    if (!session?.cyclistId || isVerifyingCodeRef.current) {
+    if (!session?.cyclistId || isVerifyingCodeRef.current || hasScannedRef.current) {
       return;
     }
 
@@ -367,6 +391,7 @@ function CyclistDashboardPage() {
 
     const parsed = payload as { action?: string; order_id?: string; vendor_id?: string };
     const action = String(parsed.action ?? "").trim();
+    let orderIdForStateCheck: string | null = null;
 
     isVerifyingCodeRef.current = true;
     setScannerStatus(t("cyclist.scannerVerifying"));
@@ -377,7 +402,15 @@ function CyclistDashboardPage() {
         if (!orderId) {
           throw new Error(t("cyclist.invalidQr"));
         }
+        orderIdForStateCheck = orderId;
 
+        hasScannedRef.current = true;
+        const scanner = qrScannerRef.current;
+        qrScannerRef.current = null;
+        if (scanner) {
+          await scanner.stop().catch(() => undefined);
+          await scanner.clear().catch(() => undefined);
+        }
         setIsUpdatingOrderId(orderId);
         const completionResult = await completeCustomerDelivery({ data: { cyclistId: session.cyclistId, orderId } });
         toast.success(
@@ -391,6 +424,13 @@ function CyclistDashboardPage() {
           throw new Error(t("cyclist.invalidQr"));
         }
 
+        hasScannedRef.current = true;
+        const scanner = qrScannerRef.current;
+        qrScannerRef.current = null;
+        if (scanner) {
+          await scanner.stop().catch(() => undefined);
+          await scanner.clear().catch(() => undefined);
+        }
         setIsUpdatingOrderId(`vendor:${vendorId}`);
         await settleVendorHandover({ data: { cyclistId: session.cyclistId, vendorId } });
         toast.success(t("cyclist.settlementCompleted"));
@@ -409,10 +449,27 @@ function CyclistDashboardPage() {
       window.setTimeout(() => closeScanner(), 900);
     } catch (error) {
       console.error("Cyclist scanner state-machine failed:", error);
-      await dashboardQuery.refetch();
+      const refetchResult = await dashboardQuery.refetch();
+
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const isStaleTransitionError =
+        errorMessage.includes("order is not an active delivery") ||
+        errorMessage.includes("invalid status transition") ||
+        errorMessage.includes("order status changed");
+
+      const refreshedActiveIds = new Set((refetchResult.data?.activeDeliveries ?? []).map((order) => order.id));
+      if (orderIdForStateCheck && isStaleTransitionError && !refreshedActiveIds.has(orderIdForStateCheck)) {
+        toast.success(t("cyclist.deliveryCompleted"));
+        setIsScannerSuccess(true);
+        setScannerStatus(t("cyclist.scannerVerified"));
+        window.setTimeout(() => closeScanner(), 900);
+        return;
+      }
+
       setScannerStatus(t("cyclist.scannerFailed"));
       toast.error(error instanceof Error ? error.message : t("cyclist.invalidQr"));
       isVerifyingCodeRef.current = false;
+      hasScannedRef.current = false;
     } finally {
       setIsUpdatingOrderId(null);
     }
@@ -421,6 +478,8 @@ function CyclistDashboardPage() {
   const openScanner = () => {
     setIsScannerSuccess(false);
     setScannerStatus(t("cyclist.cameraPreparing"));
+    isVerifyingCodeRef.current = false;
+    hasScannedRef.current = false;
     setIsScannerOpen(true);
   };
 
@@ -462,11 +521,28 @@ function CyclistDashboardPage() {
 
       await Promise.all([
         dashboardQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["vendor", "dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["live-orders"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "customers"] }),
       ]);
     } catch (error) {
       console.error("Failed to cancel active delivery:", error);
-      toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const isStaleTransitionError =
+        errorMessage.includes("invalid status transition") ||
+        errorMessage.includes("order status changed") ||
+        errorMessage.includes("order is not an active delivery");
+
+      if (isStaleTransitionError) {
+        toast.info("Order status changed", {
+          description: "This order was updated by another user. Refreshing...",
+        });
+        await dashboardQuery.refetch();
+      } else {
+        toast.error(error instanceof Error ? error.message : t("cyclist.cancelFailed"));
+      }
     } finally {
       setIsCancellingOrder(false);
       setIsUpdatingOrderId(null);
