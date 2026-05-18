@@ -2263,7 +2263,7 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto mt-5 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
+        <section className="mx-auto mt-3 w-full max-w-6xl px-4 sm:px-6 md:mt-8">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-foreground md:text-2xl">
               {t("categories.title", { defaultValue: "Quick categories" })}
@@ -2311,7 +2311,7 @@ function Index() {
                       to="/customer/categories/$id"
                       params={{ id: item.id }}
                       key={shouldAnimateCategories ? `${item.id}-${index}` : item.id}
-                      className={`mx-1 inline-flex min-w-[96px] snap-start flex-col items-center gap-2 rounded-[22px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
+                      className={`mx-1 inline-flex min-w-[92px] snap-start flex-col items-center gap-2 rounded-[24px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
                     >
                       <span
                         className="flex h-14 w-14 items-center justify-center rounded-2xl"
@@ -2328,7 +2328,7 @@ function Index() {
                           <CategoryIcon iconName={item.icon_name} className="h-8 w-8 text-foreground" />
                         )}
                       </span>
-                      <span className="line-clamp-1 text-xs font-semibold text-foreground">{categoryName}</span>
+                      <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-foreground">{categoryName}</span>
                     </Link>
                   );
                 })}
@@ -2354,7 +2354,7 @@ function Index() {
             {teaserProducts.map((product) => (
               <article
                 key={product.id}
-                className="group relative overflow-hidden rounded-[24px] border border-border/70 bg-card pb-1 shadow-[0_14px_30px_-22px_rgba(17,24,39,0.3)] transition-all duration-300 hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-[30px] border border-border/70 bg-card pb-1 shadow-[0_14px_30px_-22px_rgba(17,24,39,0.3)] transition-all duration-300 hover:-translate-y-0.5"
               >
                 <Link to="/customer/product/$id" params={{ id: product.id }} className="block">
                   <div className="relative aspect-square overflow-hidden bg-muted/35">
@@ -2377,7 +2377,7 @@ function Index() {
                   <Heart className="size-4 text-teal-700" />
                 </button>
 
-                <div className="p-3.5">
+                <div className="p-3">
                   <div className="flex flex-row justify-between items-center w-full mb-2">
                     <span className="inline-block rounded-full bg-primary/12 px-2.5 py-1 text-[10px] font-bold leading-none text-primary">
                       {getLocalizedText({
@@ -2395,11 +2395,11 @@ function Index() {
                   </div>
 
                   <Link to="/customer/product/$id" params={{ id: product.id }} className="block w-full min-w-0">
-                    <h3 className="w-full line-clamp-2 min-h-[2.75rem] text-[15px] font-semibold leading-snug text-foreground">{product.name}</h3>
+                    <h3 className="w-full line-clamp-2 min-h-[2.5rem] text-[16px] font-semibold leading-snug text-foreground">{product.name}</h3>
                   </Link>
 
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="text-2xl font-extrabold tracking-tight text-primary">
+                    <p className="text-[34px] font-extrabold tracking-tight text-primary leading-none">
                       {product.price} <span className="text-xs font-semibold">MAD</span>
                     </p>
 
@@ -2507,7 +2507,7 @@ function Index() {
                 return (
                 <article
                   key={pack.id}
-                  className="h-full w-[290px] flex-shrink-0 snap-center overflow-hidden rounded-[24px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)] sm:w-[320px]"
+                  className="h-full w-[320px] flex-shrink-0 snap-center overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_14px_34px_-24px_rgba(17,24,39,0.45)]"
                 >
                   <button
                     type="button"
@@ -2525,7 +2525,7 @@ function Index() {
                         {Number(pack.basePriceMad).toFixed(0)} MAD / {pack.billingLabel}
                       </div>
                     </div>
-                    <div className="space-y-2 p-3">
+                      <div className="space-y-2 p-4">
                       <h3 className="line-clamp-1 text-base font-semibold text-foreground">{pack.name}</h3>
                       {pack.description ? (
                         <p className="line-clamp-2 text-xs text-muted-foreground">{pack.description}</p>
@@ -2535,7 +2535,7 @@ function Index() {
                     </div>
                   </button>
 
-                  <div className="space-y-3 px-3 pb-3">
+                    <div className="space-y-3 px-4 pb-4">
                     {packSubscriptionState?.status === "pending" ? (
                       <div className="inline-flex w-full items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400">
                         Pending Review / قيد المراجعة
