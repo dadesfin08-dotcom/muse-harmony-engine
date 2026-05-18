@@ -234,14 +234,14 @@ function normalizeVendorLiveStatus(status: string): DashboardOrder["status"] {
   }
 
   if (status === "cancelled") {
-    return "cancelled" as DashboardOrder["status"];
+    return "cancelled";
   }
 
   if (status === "preparing" || status === "ready" || status === "delivered" || status === "delivered_cash_with_cyclist" || status === "cash_transferred_to_vendor") {
     return status;
   }
 
-  return "cancelled" as DashboardOrder["status"];
+  return "cancelled";
 }
 
 type InventoryItem = {
