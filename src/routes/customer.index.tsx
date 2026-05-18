@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -3004,11 +3004,11 @@ function Index() {
             </label>
             <Textarea
               value={supportMessageInput}
-              onChange={(event) => setSupportMessageInput(event.target.value)}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setSupportMessageInput(event.target.value)}
               placeholder={language === "ar" ? "اكتب رسالتك..." : language === "fr" ? "Écrivez votre message..." : "Write your message..."}
               rows={2}
               className={`min-h-[44px] max-h-32 resize-none rounded-2xl ${isArabic ? "text-right" : "text-left"}`}
-              onKeyDown={(event) => {
+              onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
                   void sendSupportMessageNow();
