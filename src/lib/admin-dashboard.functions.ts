@@ -383,6 +383,23 @@ type GlobalSettingsRow = {
   updated_at: string;
 };
 
+type HeroSectionRow = {
+  id: string;
+  image_url: string | null;
+  greeting_ar: string;
+  greeting_en: string;
+  greeting_fr: string;
+  headline_ar: string;
+  headline_en: string;
+  headline_fr: string;
+  description_ar: string;
+  description_en: string;
+  description_fr: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 const GLOBAL_SETTINGS_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
 
 function normalizeInvoiceSettingsRow(row: any): InvoiceSettingsRow {
@@ -431,6 +448,27 @@ const uploadPlatformPackAssetInputSchema = z.object({
   contentType: z.string().trim().min(1).max(120),
   dataUrl: z.string().trim().min(1).max(12_000_000),
   folder: z.enum(["platform-packs", "platform-packs/items"]),
+});
+
+const heroSectionSettingsInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  imageUrl: z.string().trim().url().max(2000).nullable(),
+  greetingAr: z.string().trim().min(1).max(120),
+  greetingEn: z.string().trim().min(1).max(120),
+  greetingFr: z.string().trim().min(1).max(120),
+  headlineAr: z.string().trim().min(1).max(200),
+  headlineEn: z.string().trim().min(1).max(200),
+  headlineFr: z.string().trim().min(1).max(200),
+  descriptionAr: z.string().trim().min(1).max(320),
+  descriptionEn: z.string().trim().min(1).max(320),
+  descriptionFr: z.string().trim().min(1).max(320),
+  isActive: z.boolean(),
+});
+
+const uploadHeroSectionImageInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  contentType: z.string().trim().min(1).max(120),
+  dataUrl: z.string().trim().min(1).max(12_000_000),
 });
 
 export const getAdminOverviewAnalytics = createServerFn({ method: "GET" }).handler(async () => {
