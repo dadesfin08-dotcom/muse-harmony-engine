@@ -270,13 +270,9 @@ export function CustomerLayout({
       </main>
 
       <nav
-        className="fixed bottom-0 w-full grid grid-cols-5 items-center justify-items-center h-16 pb-safe z-50 md:hidden"
-        style={{
-          background: "radial-gradient(circle at 50% 0%, transparent 36px, rgba(255, 255, 255, 0.95) 37px)",
-          backdropFilter: "blur(10px)",
-        }}
+        className="fixed inset-x-3 bottom-3 z-50 grid h-18 grid-cols-5 items-center justify-items-center rounded-[32px] border border-border/70 bg-card/90 px-1 pb-safe shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
       >
-          <Link to="/" className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors">
+          <Link to="/" className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary">
             <House className="size-5" />
             <span className="text-[10px] font-medium">{t("nav.home")}</span>
           </Link>
@@ -290,22 +286,22 @@ export function CustomerLayout({
                 void navigate({ to: "/customer/categories" });
               }
             }}
-            className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors"
+            className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary"
           >
             <Search className="size-5" />
             <span className="text-[10px]">{t("nav.search")}</span>
           </button>
 
-          <div className="flex items-center justify-center w-full h-full">
+          <div className="flex h-full w-full items-center justify-center">
             <LanguageSwitcher
               trigger={
                 <button
                   type="button"
                   dir="ltr"
                   aria-label={t("language.label")}
-                  className="relative -top-5 z-50 mx-auto flex h-14 w-14 items-center justify-center rounded-full border-4 border-white bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 transition-transform active:scale-95"
+                  className="relative -top-5 z-50 mx-auto flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-primary text-primary-foreground shadow-[0_18px_32px_-16px_rgba(24,181,106,0.85)] transition-transform active:scale-95"
                 >
-                  <Languages className="h-6 w-6 shrink-0 text-white" style={{ transform: "scaleX(1)" }} />
+                  <Languages className="h-6 w-6 shrink-0 text-primary-foreground" style={{ transform: "scaleX(1)" }} />
                 </button>
               }
             />
@@ -314,7 +310,7 @@ export function CustomerLayout({
           <button
             type="button"
             onClick={openCart}
-            className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors"
+            className="flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary"
             aria-label={cartLabel}
           >
             <span className="relative">
@@ -331,12 +327,12 @@ export function CustomerLayout({
             onClick={() => {
               setIsProfileHubOpen(true);
             }}
-            className={`flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-emerald-600 transition-colors ${
+            className={`flex h-full w-full flex-col items-center justify-center text-muted-foreground transition-colors hover:text-primary ${
               isProfileHubOpen ||
               isCustomerAuthModalOpen ||
               customerPanelView === "profile" ||
               location.pathname === "/profile"
-                ? "text-emerald-600"
+                ? "text-primary"
                 : ""
             }`}
           >
