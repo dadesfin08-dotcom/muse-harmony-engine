@@ -65,6 +65,24 @@ type OrderWebhookContext = {
   neighborhoodId: string | null;
 };
 
+function sanitizeOrderId(orderId: string | null | undefined) {
+  const normalized = String(orderId ?? "").trim();
+  if (!normalized) return "UNKNOWN";
+  return normalized;
+}
+
+function formatOrderReference(orderId: string | null | undefined) {
+  const normalized = sanitizeOrderId(orderId);
+  const compact = normalized.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const shortCode = compact.slice(0, 4);
+  return `#${shortCode || "UNKNOWN"}`;
+}
+
+function buildOrderIdLine(orderId: string | null | undefined, locale: "ar" | "en") {
+  const reference = formatOrderReference(orderId);
+  return locale === "ar" ? `رقم الطلب: ${reference}` : `Order ID: ${reference}`;
+}
+
 const WORKFLOW_WEBHOOK_BASE_URL = "https://n8n.srv961724.hstgr.cloud/webhook";
 const WORKFLOW_MAX_RETRIES = 3;
 
@@ -95,15 +113,24 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
         total: context.total,
       };
     case "order-out-for-delivery":
+      {
+        const orderIdLineAr = buildOrderIdLine(context.id, "ar");
+        const orderIdLineEn = buildOrderIdLine(context.id, "en");
       return {
         order_id: context.id,
+        order_reference: formatOrderReference(context.id),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
         customer_name: context.customerName,
         cyclist_name: context.cyclistName,
         payment_method: context.paymentMethod,
+        message_ar: `الطلب في الطريق\n${orderIdLineAr}`,
+        message_en: `Order is out for delivery\n${orderIdLineEn}`,
+        order_id_line_ar: orderIdLineAr,
+        order_id_line_en: orderIdLineEn,
       };
+      }
     case "cyclist-broadcast-alert":
       return {
         order_id: context.id,
@@ -365,6 +392,8 @@ function mapOrderEventTemplate(input: {
   statusAfter: string | null;
 }) {
   const eventType = String(input.eventType ?? "STATUS_UPDATE").toUpperCase();
+  const orderIdLineAr = buildOrderIdLine(input.orderId, "ar");
+  const orderIdLineEn = buildOrderIdLine(input.orderId, "en");
 
   switch (eventType) {
     case "ORDER_CREATED":
@@ -404,7 +433,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "الطلب في الطريق",
-          body: "السائق استلم طلبك وهو الآن في الطريق إليك.",
+          body: `السائق استلم طلبك وهو الآن في الطريق إليك.\n${orderIdLineAr}`,
+          body_en: `Your rider picked up the order and is on the way.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "RIDER_PICKED_UP",
         },
