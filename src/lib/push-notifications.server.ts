@@ -65,6 +65,24 @@ type OrderWebhookContext = {
   neighborhoodId: string | null;
 };
 
+function sanitizeOrderId(orderId: string | null | undefined) {
+  const normalized = String(orderId ?? "").trim();
+  if (!normalized) return "UNKNOWN";
+  return normalized;
+}
+
+function formatOrderReference(orderId: string | null | undefined) {
+  const normalized = sanitizeOrderId(orderId);
+  const compact = normalized.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const shortCode = compact.slice(0, 4);
+  return `#${shortCode || "UNKNOWN"}`;
+}
+
+function buildOrderIdLine(orderId: string | null | undefined, locale: "ar" | "en") {
+  const reference = formatOrderReference(orderId);
+  return locale === "ar" ? `رقم الطلب: ${reference}` : `Order ID: ${reference}`;
+}
+
 const WORKFLOW_WEBHOOK_BASE_URL = "https://n8n.srv961724.hstgr.cloud/webhook";
 const WORKFLOW_MAX_RETRIES = 3;
 
@@ -84,10 +102,12 @@ async function delay(ms: number) {
 }
 
 function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookContext) {
+  const resolvedOrderId = sanitizeOrderId(context.id);
+
   switch (workflow) {
     case "order-accepted-alert":
       return {
-        order_id: context.id,
+        order_id: resolvedOrderId,
         event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
@@ -95,18 +115,33 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
         total: context.total,
       };
     case "order-out-for-delivery":
-      return {
-        order_id: context.id,
+      {
+        const orderIdLineAr = buildOrderIdLine(resolvedOrderId, "ar");
+        const orderIdLineEn = buildOrderIdLine(resolvedOrderId, "en");
+        return {
+          order_id: resolvedOrderId,
+          order_reference: formatOrderReference(resolvedOrderId),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
         customer_name: context.customerName,
         cyclist_name: context.cyclistName,
         payment_method: context.paymentMethod,
-      };
+          message_ar: `الطلب في الطريق\n${orderIdLineAr}`,
+          message_en: `Order is out for delivery\n${orderIdLineEn}`,
+          order_id_line_ar: orderIdLineAr,
+          order_id_line_en: orderIdLineEn,
+          realtime_notification_ar: `الطلب في الطريق\n${orderIdLineAr}`,
+          realtime_notification_en: `Order is out for delivery\n${orderIdLineEn}`,
+          customer_alert_ar: orderIdLineAr,
+          customer_alert_en: orderIdLineEn,
+          rider_delivery_flow_ar: orderIdLineAr,
+          rider_delivery_flow_en: orderIdLineEn,
+        };
+      }
     case "cyclist-broadcast-alert":
       return {
-        order_id: context.id,
+        order_id: resolvedOrderId,
         event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
@@ -365,6 +400,8 @@ function mapOrderEventTemplate(input: {
   statusAfter: string | null;
 }) {
   const eventType = String(input.eventType ?? "STATUS_UPDATE").toUpperCase();
+  const orderIdLineAr = buildOrderIdLine(input.orderId, "ar");
+  const orderIdLineEn = buildOrderIdLine(input.orderId, "en");
 
   switch (eventType) {
     case "ORDER_CREATED":
@@ -404,7 +441,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "الطلب في الطريق",
-          body: "السائق استلم طلبك وهو الآن في الطريق إليك.",
+          body: `السائق استلم طلبك وهو الآن في الطريق إليك.\n${orderIdLineAr}`,
+          body_en: `Your rider picked up the order and is on the way.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "RIDER_PICKED_UP",
         },
@@ -654,9 +692,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
 
   for (const event of events) {
     try {
+      const resolvedOrderId = sanitizeOrderId(event.order_id);
       const template = mapOrderEventTemplate({
         eventType: event.event_type,
-        orderId: event.order_id,
+        orderId: resolvedOrderId,
         statusAfter: event.status_after,
       });
 
@@ -665,7 +704,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         const workflowContext = await loadOrderWebhookContext(event.order_id);
         if (workflowContext) {
           const workflowPayload = buildWorkflowPayload(workflowName, workflowContext);
-          await postWorkflowWebhook(workflowName, workflowPayload, event.order_id);
+          await postWorkflowWebhook(workflowName, workflowPayload, resolvedOrderId);
           summary.triggeredWorkflows += 1;
         }
       }
@@ -676,10 +715,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           body: template.customer.body,
           role: "customer",
           url: template.customer.url,
-          orderId: event.order_id,
+          orderId: resolvedOrderId,
           locationLabel: event.neighborhood_id ?? undefined,
           eventType: template.customer.eventType,
-          tag: `order-${event.order_id}-${template.customer.eventType}`,
+          tag: `order-${resolvedOrderId}-${template.customer.eventType}`,
         });
 
         summary.sentToCustomers += customerResult.sent;
@@ -691,10 +730,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           body: template.cyclist.body,
           role: "cyclist",
           url: template.cyclist.url,
-          orderId: event.order_id,
+          orderId: resolvedOrderId,
           locationLabel: event.neighborhood_id,
           eventType: template.cyclist.eventType,
-          tag: `order-${event.order_id}-${template.cyclist.eventType}`,
+          tag: `order-${resolvedOrderId}-${template.cyclist.eventType}`,
         });
 
         summary.sentToCyclists += cyclistResult.sent;
