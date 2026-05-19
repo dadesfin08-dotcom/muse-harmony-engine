@@ -5228,7 +5228,7 @@ function Index() {
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
-                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
@@ -5278,7 +5278,7 @@ function Index() {
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
-                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
