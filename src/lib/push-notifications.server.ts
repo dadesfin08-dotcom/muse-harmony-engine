@@ -119,19 +119,25 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
         const orderIdLineAr = buildOrderIdLine(resolvedOrderId, "ar");
         const orderIdLineEn = buildOrderIdLine(resolvedOrderId, "en");
         return {
-        order_id: resolvedOrderId,
-        order_reference: formatOrderReference(resolvedOrderId),
+          order_id: resolvedOrderId,
+          order_reference: formatOrderReference(resolvedOrderId),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
         customer_name: context.customerName,
         cyclist_name: context.cyclistName,
         payment_method: context.paymentMethod,
-        message_ar: `الطلب في الطريق\n${orderIdLineAr}`,
-        message_en: `Order is out for delivery\n${orderIdLineEn}`,
-        order_id_line_ar: orderIdLineAr,
-        order_id_line_en: orderIdLineEn,
-      };
+          message_ar: `الطلب في الطريق\n${orderIdLineAr}`,
+          message_en: `Order is out for delivery\n${orderIdLineEn}`,
+          order_id_line_ar: orderIdLineAr,
+          order_id_line_en: orderIdLineEn,
+          realtime_notification_ar: `الطلب في الطريق\n${orderIdLineAr}`,
+          realtime_notification_en: `Order is out for delivery\n${orderIdLineEn}`,
+          customer_alert_ar: orderIdLineAr,
+          customer_alert_en: orderIdLineEn,
+          rider_delivery_flow_ar: orderIdLineAr,
+          rider_delivery_flow_en: orderIdLineEn,
+        };
       }
     case "cyclist-broadcast-alert":
       return {
@@ -698,7 +704,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         const workflowContext = await loadOrderWebhookContext(event.order_id);
         if (workflowContext) {
           const workflowPayload = buildWorkflowPayload(workflowName, workflowContext);
-          await postWorkflowWebhook(workflowName, workflowPayload, event.order_id);
+          await postWorkflowWebhook(workflowName, workflowPayload, resolvedOrderId);
           summary.triggeredWorkflows += 1;
         }
       }
