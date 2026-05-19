@@ -415,7 +415,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "تمت الموافقة من التاجر",
-          body: "التاجر وافق على طلبك وبدأ التحضير.",
+          body: `التاجر وافق على طلبك وبدأ التحضير.\n${orderIdLineAr}`,
+          body_en: `Your merchant accepted the order and started preparing it.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "MERCHANT_ACCEPTED",
         },
@@ -424,7 +425,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "طلبك جاهز",
-          body: "تم تجهيز الطلب وهو في انتظار السائق.",
+          body: `تم تجهيز الطلب وهو في انتظار السائق.\n${orderIdLineAr}`,
+          body_en: `Your order is ready and waiting for the rider.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "ORDER_READY",
         },
@@ -443,7 +445,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "تم التسليم بنجاح",
-          body: "تم تسليم الطلب. شكراً لاستخدامك التطبيق.",
+          body: `تم تسليم الطلب. شكراً لاستخدامك التطبيق.\n${orderIdLineAr}`,
+          body_en: `Order delivered successfully.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "ORDER_COMPLETED",
         },
