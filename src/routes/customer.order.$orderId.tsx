@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCustomerOrderDetails } from "@/lib/orders.functions";
+import { toPublicOrderCode } from "@/lib/order-code";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/customer/order/$orderId")({
@@ -130,8 +131,7 @@ function CustomerOrderDetailsPage() {
     };
   }, [copy.paymentCarnet, copy.paymentCash, order?.paymentMethod]);
 
-  const pickupCode = order ? `#${order.id.slice(-4).toUpperCase()}` : "";
-  const internalRef = order ? `#${order.id.slice(0, 8).toUpperCase()}` : "";
+  const pickupCode = order ? toPublicOrderCode(order.id) : "";
 
   return (
     <main dir={isArabic ? "rtl" : "ltr"} className="min-h-screen bg-muted/20 px-4 py-4">
@@ -158,7 +158,6 @@ function CustomerOrderDetailsPage() {
               {order ? (
                 <div className="mt-1">
                   <p className="text-sm font-semibold text-foreground">{t("customerOrder.pickupCode", { code: pickupCode })}</p>
-                  <p className="text-xs text-muted-foreground">{t("customerOrder.internalRef", { id: internalRef })}</p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{copy.loadingOrder}</p>
