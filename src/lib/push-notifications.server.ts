@@ -46,7 +46,236 @@ export type PushQueueProcessingResult = {
   failed: number;
   sentToCustomers: number;
   sentToCyclists: number;
+  triggeredWorkflows: number;
 };
+
+type WorkflowName = "order-accepted-alert" | "order-out-for-delivery" | "cyclist-broadcast-alert";
+
+type OrderWebhookContext = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  total: number;
+  deliveryFee: number;
+  paymentMethod: string | null;
+  vendorName: string;
+  cyclistName: string;
+  pickupLocation: string;
+  cyclistPhones: string[];
+  neighborhoodId: string | null;
+};
+
+const WORKFLOW_WEBHOOK_BASE_URL = "https://n8n.srv961724.hstgr.cloud/webhook";
+const WORKFLOW_MAX_RETRIES = 3;
+
+function getWorkflowFromOrderEvent(eventType: string): WorkflowName | null {
+  const normalized = String(eventType ?? "").toUpperCase();
+
+  if (normalized === "MERCHANT_ACCEPTED") return "order-accepted-alert";
+  if (normalized === "RIDER_PICKED_UP") return "order-out-for-delivery";
+  if (normalized === "ORDER_READY") return "cyclist-broadcast-alert";
+  return null;
+}
+
+async function delay(ms: number) {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookContext) {
+  switch (workflow) {
+    case "order-accepted-alert":
+      return {
+        order_id: context.id,
+        customer_name: context.customerName,
+        customer_phone: context.customerPhone,
+        vendor_name: context.vendorName,
+        total: context.total,
+      };
+    case "order-out-for-delivery":
+      return {
+        order_id: context.id,
+        total: context.total,
+        customer_phone: context.customerPhone,
+        customer_name: context.customerName,
+        cyclist_name: context.cyclistName,
+        payment_method: context.paymentMethod,
+      };
+    case "cyclist-broadcast-alert":
+      return {
+        order_id: context.id,
+        vendor_name: context.vendorName,
+        pickup_location: context.pickupLocation,
+        delivery_fee: context.deliveryFee,
+        cyclist_phones: context.cyclistPhones,
+        no_cyclists_in_zone: context.cyclistPhones.length === 0,
+      };
+  }
+}
+
+async function postWorkflowWebhook(workflow: WorkflowName, payload: Record<string, unknown>, orderId: string) {
+  const webhookUrl = `${WORKFLOW_WEBHOOK_BASE_URL}/${workflow}`;
+  const sharedSecret = process.env.N8N_WEBHOOK_SECRET;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= WORKFLOW_MAX_RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(sharedSecret ? { "x-webhook-secret": sharedSecret } : {}),
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutHandle);
+
+      if (!response.ok) {
+        const body = (await response.text()).slice(0, 500);
+        throw new Error(`Webhook ${workflow} responded ${response.status}: ${body}`);
+      }
+
+      console.info("Workflow webhook dispatched", {
+        workflow,
+        orderId,
+        status: response.status,
+        attempt,
+      });
+      return;
+    } catch (error) {
+      clearTimeout(timeoutHandle);
+      lastError = error;
+      console.error("Workflow webhook dispatch attempt failed", {
+        workflow,
+        orderId,
+        attempt,
+        message: error instanceof Error ? error.message : String(error),
+      });
+
+      if (attempt < WORKFLOW_MAX_RETRIES) {
+        await delay(250 * attempt);
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to dispatch ${workflow} for order ${orderId}: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+  );
+}
+
+async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookContext | null> {
+  const { data: order, error: orderError } = await (supabaseAdmin as any)
+    .from("orders")
+    .select(
+      "id, customer_name, customer_phone, total_price, delivery_fee, payment_method, vendor_id, cyclist_id, neighborhood_id",
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (orderError) {
+    throw new Error(orderError.message);
+  }
+
+  if (!order?.id) {
+    return null;
+  }
+
+  const vendorId = typeof order.vendor_id === "string" ? order.vendor_id : null;
+  const cyclistId = typeof order.cyclist_id === "string" ? order.cyclist_id : null;
+  const neighborhoodId = typeof order.neighborhood_id === "string" ? order.neighborhood_id : null;
+
+  const [vendorRes, cyclistRes, locationRes, coverageRes] = await Promise.all([
+    vendorId
+      ? (supabaseAdmin as any).from("vendors").select("store_name").eq("id", vendorId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    cyclistId
+      ? (supabaseAdmin as any).from("cyclists").select("full_name").eq("id", cyclistId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    neighborhoodId
+      ? (supabaseAdmin as any)
+          .from("neighborhoods")
+          .select("name_en, name_fr, name_ar, commune_id")
+          .eq("id", neighborhoodId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    neighborhoodId
+      ? (supabaseAdmin as any)
+          .from("cyclist_coverage")
+          .select("cyclists(phone_number, is_active)")
+          .eq("neighborhood_id", neighborhoodId)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (vendorRes.error) throw new Error(vendorRes.error.message);
+  if (cyclistRes.error) throw new Error(cyclistRes.error.message);
+  if (locationRes.error) throw new Error(locationRes.error.message);
+  if (coverageRes.error) throw new Error(coverageRes.error.message);
+
+  const communeId =
+    locationRes.data && typeof locationRes.data === "object" && "commune_id" in locationRes.data
+      ? String((locationRes.data as { commune_id?: unknown }).commune_id ?? "").trim() || null
+      : null;
+
+  const communeRes = communeId
+    ? await (supabaseAdmin as any)
+        .from("communes")
+        .select("name_en, name_fr, name_ar")
+        .eq("id", communeId)
+        .maybeSingle()
+    : { data: null, error: null };
+
+  if (communeRes.error) throw new Error(communeRes.error.message);
+
+  const coverage = (coverageRes.data ?? []) as Array<{ cyclists?: { phone_number?: string | null; is_active?: boolean | null } | null }>;
+  const cyclistPhones = Array.from(
+    new Set(
+      coverage
+        .map((row) => row.cyclists)
+        .filter((cyclist): cyclist is { phone_number?: string | null; is_active?: boolean | null } => Boolean(cyclist))
+        .filter((cyclist) => cyclist.is_active !== false)
+        .map((cyclist) => String(cyclist.phone_number ?? "").trim())
+        .filter((phone) => phone.length > 0),
+    ),
+  );
+
+  const neighborhoodName =
+    locationRes.data && typeof locationRes.data === "object"
+      ? String(
+          (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_ar ??
+            (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_fr ??
+            (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_en ??
+            "",
+        ).trim()
+      : "";
+  const communeName = String(
+    (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_ar ??
+      (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_fr ??
+      (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_en ??
+      "",
+  ).trim();
+
+  const vendorName = String((vendorRes.data as { store_name?: unknown } | null)?.store_name ?? "").trim();
+
+  return {
+    id: String(order.id),
+    customerName: String(order.customer_name ?? "").trim(),
+    customerPhone: String(order.customer_phone ?? "").trim(),
+    total: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
+    deliveryFee: Number(order.delivery_fee ?? 0),
+    paymentMethod: typeof order.payment_method === "string" ? order.payment_method : null,
+    vendorName,
+    cyclistName: String((cyclistRes.data as { full_name?: unknown } | null)?.full_name ?? "").trim(),
+    pickupLocation: neighborhoodName || communeName || vendorName,
+    cyclistPhones,
+    neighborhoodId,
+  };
+}
 
 let vapidConfigured = false;
 
@@ -355,11 +584,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
     failed: 0,
     sentToCustomers: 0,
     sentToCyclists: 0,
+    triggeredWorkflows: 0,
   };
 
-  if (!ensureVapidConfig()) {
-    return summary;
-  }
+  const pushEnabled = ensureVapidConfig();
 
   const events = await claimPendingOrderPushEvents(limit);
   summary.claimed = events.length;
@@ -372,7 +600,17 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         statusAfter: event.status_after,
       });
 
-      if (event.customer_user_id && template.customer) {
+      const workflowName = getWorkflowFromOrderEvent(event.event_type);
+      if (workflowName) {
+        const workflowContext = await loadOrderWebhookContext(event.order_id);
+        if (workflowContext) {
+          const workflowPayload = buildWorkflowPayload(workflowName, workflowContext);
+          await postWorkflowWebhook(workflowName, workflowPayload, event.order_id);
+          summary.triggeredWorkflows += 1;
+        }
+      }
+
+      if (pushEnabled && event.customer_user_id && template.customer) {
         const customerResult = await sendPushToUser("customer", event.customer_user_id, {
           title: template.customer.title,
           body: template.customer.body,
@@ -387,7 +625,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         summary.sentToCustomers += customerResult.sent;
       }
 
-      if (event.neighborhood_id && template.cyclist) {
+      if (pushEnabled && event.neighborhood_id && template.cyclist) {
         const cyclistResult = await sendPushToCyclistsByNeighborhood(event.neighborhood_id, {
           title: template.cyclist.title,
           body: template.cyclist.body,
