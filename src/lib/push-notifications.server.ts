@@ -102,10 +102,12 @@ async function delay(ms: number) {
 }
 
 function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookContext) {
+  const resolvedOrderId = sanitizeOrderId(context.id);
+
   switch (workflow) {
     case "order-accepted-alert":
       return {
-        order_id: context.id,
+        order_id: resolvedOrderId,
         event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
@@ -114,11 +116,11 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
       };
     case "order-out-for-delivery":
       {
-        const orderIdLineAr = buildOrderIdLine(context.id, "ar");
-        const orderIdLineEn = buildOrderIdLine(context.id, "en");
-      return {
-        order_id: context.id,
-        order_reference: formatOrderReference(context.id),
+        const orderIdLineAr = buildOrderIdLine(resolvedOrderId, "ar");
+        const orderIdLineEn = buildOrderIdLine(resolvedOrderId, "en");
+        return {
+        order_id: resolvedOrderId,
+        order_reference: formatOrderReference(resolvedOrderId),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
@@ -133,7 +135,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
       }
     case "cyclist-broadcast-alert":
       return {
-        order_id: context.id,
+        order_id: resolvedOrderId,
         event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
@@ -684,9 +686,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
 
   for (const event of events) {
     try {
+      const resolvedOrderId = sanitizeOrderId(event.order_id);
       const template = mapOrderEventTemplate({
         eventType: event.event_type,
-        orderId: event.order_id,
+        orderId: resolvedOrderId,
         statusAfter: event.status_after,
       });
 
@@ -706,10 +709,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           body: template.customer.body,
           role: "customer",
           url: template.customer.url,
-          orderId: event.order_id,
+          orderId: resolvedOrderId,
           locationLabel: event.neighborhood_id ?? undefined,
           eventType: template.customer.eventType,
-          tag: `order-${event.order_id}-${template.customer.eventType}`,
+          tag: `order-${resolvedOrderId}-${template.customer.eventType}`,
         });
 
         summary.sentToCustomers += customerResult.sent;
@@ -721,10 +724,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           body: template.cyclist.body,
           role: "cyclist",
           url: template.cyclist.url,
-          orderId: event.order_id,
+          orderId: resolvedOrderId,
           locationLabel: event.neighborhood_id,
           eventType: template.cyclist.eventType,
-          tag: `order-${event.order_id}-${template.cyclist.eventType}`,
+          tag: `order-${resolvedOrderId}-${template.cyclist.eventType}`,
         });
 
         summary.sentToCyclists += cyclistResult.sent;
