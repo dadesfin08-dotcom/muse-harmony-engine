@@ -1,6 +1,7 @@
 import webpush from "web-push";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { toOrderCodeLine, toPublicOrderCode } from "@/lib/order-code";
 
 export type PushRole = "customer" | "cyclist";
 
@@ -69,18 +70,6 @@ function sanitizeOrderId(orderId: string | null | undefined) {
   const normalized = String(orderId ?? "").trim();
   if (!normalized) return "UNKNOWN";
   return normalized;
-}
-
-function formatOrderReference(orderId: string | null | undefined) {
-  const normalized = sanitizeOrderId(orderId);
-  const compact = normalized.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  const shortCode = compact.slice(0, 4);
-  return `#${shortCode || "UNKNOWN"}`;
-}
-
-function buildOrderIdLine(orderId: string | null | undefined, locale: "ar" | "en") {
-  const reference = formatOrderReference(orderId);
-  return locale === "ar" ? `رقم الطلب: ${reference}` : `Order ID: ${reference}`;
 }
 
 const WORKFLOW_WEBHOOK_BASE_URL = "https://n8n.srv961724.hstgr.cloud/webhook";
