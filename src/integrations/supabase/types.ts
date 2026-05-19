@@ -2004,6 +2004,57 @@ export type Database = {
           },
         ]
       }
+      webhook_execution_logs: {
+        Row: {
+          attempt: number
+          completed_at: string
+          created_at: string
+          duration_ms: number
+          error_message: string | null
+          event_type: string
+          execution_status: string
+          id: string
+          order_id: string | null
+          order_push_event_id: string | null
+          payload: Json
+          response_status: number | null
+          started_at: string
+          workflow_name: string
+        }
+        Insert: {
+          attempt?: number
+          completed_at: string
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          event_type: string
+          execution_status: string
+          id?: string
+          order_id?: string | null
+          order_push_event_id?: string | null
+          payload?: Json
+          response_status?: number | null
+          started_at?: string
+          workflow_name: string
+        }
+        Update: {
+          attempt?: number
+          completed_at?: string
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          event_type?: string
+          execution_status?: string
+          id?: string
+          order_id?: string | null
+          order_push_event_id?: string | null
+          payload?: Json
+          response_status?: number | null
+          started_at?: string
+          workflow_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -88,6 +88,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-accepted-alert":
       return {
         order_id: context.id,
+        event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
         vendor_name: context.vendorName,
@@ -96,6 +97,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-out-for-delivery":
       return {
         order_id: context.id,
+        event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
         customer_name: context.customerName,
@@ -105,6 +107,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "cyclist-broadcast-alert":
       return {
         order_id: context.id,
+        event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
         delivery_fee: context.deliveryFee,
@@ -119,9 +122,43 @@ async function postWorkflowWebhook(workflow: WorkflowName, payload: Record<strin
   const sharedSecret = process.env.N8N_WEBHOOK_SECRET;
   let lastError: unknown = null;
 
+  const persistExecutionLog = async (input: {
+    status: "success" | "failed";
+    attempt: number;
+    startedAt: Date;
+    completedAt: Date;
+    responseStatus?: number | null;
+    errorMessage?: string | null;
+  }) => {
+    const durationMs = Math.max(0, input.completedAt.getTime() - input.startedAt.getTime());
+    const { error } = await (supabaseAdmin as any).from("webhook_execution_logs").insert({
+      order_id: orderId,
+      workflow_name: workflow,
+      event_type: String(payload.event_type ?? payload.eventType ?? workflow),
+      execution_status: input.status,
+      started_at: input.startedAt.toISOString(),
+      completed_at: input.completedAt.toISOString(),
+      duration_ms: durationMs,
+      attempt: input.attempt,
+      response_status: input.responseStatus ?? null,
+      error_message: input.errorMessage ?? null,
+      payload,
+    });
+
+    if (error) {
+      console.error("Failed to persist webhook execution log", {
+        workflow,
+        orderId,
+        attempt: input.attempt,
+        message: error.message,
+      });
+    }
+  };
+
   for (let attempt = 1; attempt <= WORKFLOW_MAX_RETRIES; attempt += 1) {
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => controller.abort(), 8000);
+    const startedAt = new Date();
 
     try {
       const response = await fetch(webhookUrl, {
@@ -138,8 +175,24 @@ async function postWorkflowWebhook(workflow: WorkflowName, payload: Record<strin
 
       if (!response.ok) {
         const body = (await response.text()).slice(0, 500);
+        await persistExecutionLog({
+          status: "failed",
+          attempt,
+          startedAt,
+          completedAt: new Date(),
+          responseStatus: response.status,
+          errorMessage: `Webhook ${workflow} responded ${response.status}: ${body}`,
+        });
         throw new Error(`Webhook ${workflow} responded ${response.status}: ${body}`);
       }
+
+      await persistExecutionLog({
+        status: "success",
+        attempt,
+        startedAt,
+        completedAt: new Date(),
+        responseStatus: response.status,
+      });
 
       console.info("Workflow webhook dispatched", {
         workflow,
@@ -151,6 +204,13 @@ async function postWorkflowWebhook(workflow: WorkflowName, payload: Record<strin
     } catch (error) {
       clearTimeout(timeoutHandle);
       lastError = error;
+      await persistExecutionLog({
+        status: "failed",
+        attempt,
+        startedAt,
+        completedAt: new Date(),
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
       console.error("Workflow webhook dispatch attempt failed", {
         workflow,
         orderId,
