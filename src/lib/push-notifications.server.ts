@@ -22,6 +22,7 @@ type PushPayload = {
   role: PushRole;
   url?: string;
   orderId?: string;
+  shortOrderId?: string;
   locationLabel?: string;
   eventType?: string;
   icon?: string;
@@ -97,6 +98,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-accepted-alert":
       return {
         order_id: resolvedOrderId,
+        short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
@@ -131,6 +133,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "cyclist-broadcast-alert":
       return {
         order_id: resolvedOrderId,
+        short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
@@ -705,6 +708,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           role: "customer",
           url: template.customer.url,
           orderId: resolvedOrderId,
+          shortOrderId: toPublicOrderCode(resolvedOrderId),
           locationLabel: event.neighborhood_id ?? undefined,
           eventType: template.customer.eventType,
           tag: `order-${resolvedOrderId}-${template.customer.eventType}`,
@@ -720,6 +724,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           role: "cyclist",
           url: template.cyclist.url,
           orderId: resolvedOrderId,
+          shortOrderId: toPublicOrderCode(resolvedOrderId),
           locationLabel: event.neighborhood_id,
           eventType: template.cyclist.eventType,
           tag: `order-${resolvedOrderId}-${template.cyclist.eventType}`,
