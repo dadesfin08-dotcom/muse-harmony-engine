@@ -869,26 +869,48 @@ function Index() {
   }, [supportMessages, supportIsTyping]);
 
   useEffect(() => {
-    if (customerPanelView !== "support") return;
-    const latestMessage = supportMessages[supportMessages.length - 1];
-    if (!latestMessage) return;
-    if (latestMessage.senderType !== "admin") return;
-    if (supportLastSeenAt && new Date(latestMessage.createdAt).getTime() <= new Date(supportLastSeenAt).getTime()) return;
+    if (supportNotificationTicketRef.current !== supportActiveTicketId) {
+      supportNotificationTicketRef.current = supportActiveTicketId;
+      lastNotifiedSupportMessageIdRef.current = null;
+      if (supportToastTimerRef.current) {
+        window.clearTimeout(supportToastTimerRef.current);
+        supportToastTimerRef.current = null;
+      }
+      setSupportFloatingNotification(null);
+    }
 
-    setSupportFloatingNotification(
-      language === "ar" ? "رد جديد من الدعم" : language === "fr" ? "Nouvelle réponse du support" : "New support reply",
-    );
-    const timer = window.setTimeout(() => setSupportFloatingNotification(null), 1800);
-    return () => window.clearTimeout(timer);
-  }, [customerPanelView, language, supportLastSeenAt, supportMessages]);
-
-  useEffect(() => {
     if (customerPanelView !== "support") return;
     if (!supportActiveTicketId) return;
     const latestMessage = supportMessages[supportMessages.length - 1];
-    if (!latestMessage) return;
-    setSupportLastSeenAt(latestMessage.createdAt);
-  }, [customerPanelView, supportActiveTicketId, supportMessages]);
+    if (!latestMessage || latestMessage.senderType !== "admin") return;
+
+    const latestMessageId = String(latestMessage.id ?? "");
+    if (!latestMessageId) return;
+    if (lastNotifiedSupportMessageIdRef.current === latestMessageId) return;
+
+    lastNotifiedSupportMessageIdRef.current = latestMessageId;
+    setSupportFloatingNotification(
+      language === "ar" ? "رد جديد من الدعم" : language === "fr" ? "Nouvelle réponse du support" : "New support reply",
+    );
+
+    if (supportToastTimerRef.current) {
+      window.clearTimeout(supportToastTimerRef.current);
+    }
+
+    supportToastTimerRef.current = window.setTimeout(() => {
+      setSupportFloatingNotification(null);
+      supportToastTimerRef.current = null;
+    }, 1800);
+  }, [customerPanelView, language, supportActiveTicketId, supportMessages]);
+
+  useEffect(() => {
+    return () => {
+      if (supportToastTimerRef.current) {
+        window.clearTimeout(supportToastTimerRef.current);
+        supportToastTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!customerSession?.phoneNumber) return;
