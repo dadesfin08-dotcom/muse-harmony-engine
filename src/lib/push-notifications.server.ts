@@ -200,7 +200,7 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
     neighborhoodId
       ? (supabaseAdmin as any)
           .from("neighborhoods")
-          .select("name, commune_id")
+          .select("name_en, name_fr, name_ar, commune_id")
           .eq("id", neighborhoodId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -241,8 +241,13 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
   );
 
   const neighborhoodName =
-    locationRes.data && typeof locationRes.data === "object" && "name" in locationRes.data
-      ? String((locationRes.data as { name?: unknown }).name ?? "").trim()
+    locationRes.data && typeof locationRes.data === "object"
+      ? String(
+          (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_ar ??
+            (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_fr ??
+            (locationRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown }).name_en ??
+            "",
+        ).trim()
       : "";
   const communeName = String((communeRes.data as { name?: unknown } | null)?.name ?? "").trim();
 
