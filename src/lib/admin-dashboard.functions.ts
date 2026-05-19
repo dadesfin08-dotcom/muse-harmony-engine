@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { evaluateCustomerBehavior } from "@/utils/customerAlgorithm";
+import { processPendingOrderPushEvents } from "@/lib/push-notifications.server";
 import {
   DEFAULT_RECEIPT_ADDRESS,
   DEFAULT_RECEIPT_FOOTER_CONTENT,
@@ -1592,6 +1593,10 @@ export const assignSubscriptionOrderCyclist = createServerFn({ method: "POST" })
       await evaluateCustomerBehavior(currentOrder.customer_user_id);
     }
 
+    void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+      console.error("Push queue processing after admin cyclist assignment failed:", pushQueueError);
+    });
+
     return { ok: true };
   });
 
@@ -1680,6 +1685,10 @@ export const autoDispatchSubscriptionOrder = createServerFn({ method: "POST" })
     if (typeof order.customer_user_id === "string" && order.customer_user_id.length > 0) {
       await evaluateCustomerBehavior(order.customer_user_id);
     }
+
+    void processPendingOrderPushEvents(20).catch((pushQueueError) => {
+      console.error("Push queue processing after auto-dispatch failed:", pushQueueError);
+    });
 
     return { ok: true, cyclistId: selectedCyclistId };
   });
