@@ -498,6 +498,7 @@ function Index() {
   const supportToastTimerRef = useRef<number | null>(null);
   const lastNotifiedSupportMessageIdRef = useRef<string | null>(null);
   const supportNotificationTicketRef = useRef<string | null>(null);
+  const primedSupportToastTicketsRef = useRef<Set<string>>(new Set());
   const supportMessagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [supportViewportHeight, setSupportViewportHeight] = useState<number | null>(null);
@@ -886,6 +887,15 @@ function Index() {
     if (!supportActiveTicketId) return;
     const latestMessage = supportMessages[supportMessages.length - 1];
     if (!latestMessage || latestMessage.senderType !== "admin") return;
+
+    if (!primedSupportToastTicketsRef.current.has(supportActiveTicketId)) {
+      const latestAdminMessage = [...supportMessages]
+        .reverse()
+        .find((message) => message.senderType === "admin");
+      lastNotifiedSupportMessageIdRef.current = latestAdminMessage ? String(latestAdminMessage.id) : null;
+      primedSupportToastTicketsRef.current.add(supportActiveTicketId);
+      return;
+    }
 
     const latestMessageId = String(latestMessage.id ?? "");
     if (!latestMessageId) return;
