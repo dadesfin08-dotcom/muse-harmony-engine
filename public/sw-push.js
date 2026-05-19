@@ -43,7 +43,7 @@ self.addEventListener("push", (event) => {
     icon,
     badge,
     url: incoming.url || (role === "cyclist" ? "/cyclist/dashboard" : "/customer#orders"),
-    tag: incoming.tag || (incoming.orderId ? `order-${incoming.orderId}` : `push-${Date.now()}`),
+    tag: incoming.tag || (incoming.shortOrderId ? `order-${incoming.shortOrderId}` : `push-${Date.now()}`),
   };
 
   const options = {
