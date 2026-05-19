@@ -108,6 +108,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { toPublicOrderCode } from "@/lib/order-code";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -2165,8 +2166,9 @@ function Index() {
 
     const matchedOrder = allCustomerOrders.find((order) => {
       const orderId = String(order.id ?? "").trim().toLowerCase();
-      const shortOrderId = orderId.slice(0, 8);
-      return normalizedToken === orderId || normalizedToken === shortOrderId;
+      const publicCode = toPublicOrderCode(order.id).replace("#", "").toLowerCase();
+      const legacyShortOrderId = orderId.slice(0, 8);
+      return normalizedToken === orderId || normalizedToken === publicCode || normalizedToken === legacyShortOrderId;
     });
 
     if (matchedOrder?.id) return matchedOrder.id;
@@ -2186,7 +2188,7 @@ function Index() {
     openSupportPanel({
       source: "home",
       orderId: activeOrder?.id ?? null,
-      pickupCode: activeOrder?.id ? `#${String(activeOrder.id).slice(-4).toUpperCase()}` : null,
+      pickupCode: activeOrder?.id ? toPublicOrderCode(activeOrder.id) : null,
     });
   };
 
