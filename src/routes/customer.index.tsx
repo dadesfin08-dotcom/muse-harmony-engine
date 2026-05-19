@@ -494,8 +494,10 @@ function Index() {
   const [supportActiveTicketId, setSupportActiveTicketId] = useState<string | null>(null);
   const [supportIsTyping, setSupportIsTyping] = useState(false);
   const [supportPriority, setSupportPriority] = useState<"normal" | "high">("normal");
-  const [supportLastSeenAt, setSupportLastSeenAt] = useState<string | null>(null);
   const [supportFloatingNotification, setSupportFloatingNotification] = useState<string | null>(null);
+  const supportToastTimerRef = useRef<number | null>(null);
+  const lastNotifiedSupportMessageIdRef = useRef<string | null>(null);
+  const supportNotificationTicketRef = useRef<string | null>(null);
   const supportMessagesScrollRef = useRef<HTMLDivElement | null>(null);
   const [authSheetMaxHeight, setAuthSheetMaxHeight] = useState<number | null>(null);
   const [supportViewportHeight, setSupportViewportHeight] = useState<number | null>(null);
