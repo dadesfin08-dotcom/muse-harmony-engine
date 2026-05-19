@@ -131,7 +131,7 @@ async function postWorkflowWebhook(workflow: WorkflowName, payload: Record<strin
     const { error } = await (supabaseAdmin as any).from("webhook_execution_logs").insert({
       order_id: orderId,
       workflow_name: workflow,
-      event_type: workflow,
+      event_type: String(payload.event_type ?? payload.eventType ?? workflow),
       execution_status: input.status,
       started_at: input.startedAt.toISOString(),
       completed_at: input.completedAt.toISOString(),
