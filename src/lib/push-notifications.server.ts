@@ -223,7 +223,11 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
       : null;
 
   const communeRes = communeId
-    ? await (supabaseAdmin as any).from("communes").select("name").eq("id", communeId).maybeSingle()
+    ? await (supabaseAdmin as any)
+        .from("communes")
+        .select("name_en, name_fr, name_ar")
+        .eq("id", communeId)
+        .maybeSingle()
     : { data: null, error: null };
 
   if (communeRes.error) throw new Error(communeRes.error.message);
@@ -249,7 +253,12 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
             "",
         ).trim()
       : "";
-  const communeName = String((communeRes.data as { name?: unknown } | null)?.name ?? "").trim();
+  const communeName = String(
+    (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_ar ??
+      (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_fr ??
+      (communeRes.data as { name_ar?: unknown; name_fr?: unknown; name_en?: unknown } | null)?.name_en ??
+      "",
+  ).trim();
 
   const vendorName = String((vendorRes.data as { store_name?: unknown } | null)?.store_name ?? "").trim();
 
