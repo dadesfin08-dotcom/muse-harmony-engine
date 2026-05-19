@@ -59,7 +59,7 @@ function FlashDealsPage() {
 
   const flashDealsQuery = useQuery({
     queryKey: ["customer", "flash-deals-page", neighborhoodId],
-    queryFn: () => fetchFlashDeals({ data: { neighborhoodId: neighborhoodId! } }),
+    queryFn: () => fetchFlashDeals({ data: { neighborhoodId: neighborhoodId!, limit: 1000 } }),
     enabled: !!neighborhoodId,
     refetchInterval: 10_000,
   });
