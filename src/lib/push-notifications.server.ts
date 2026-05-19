@@ -200,7 +200,7 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
     neighborhoodId
       ? (supabaseAdmin as any)
           .from("neighborhoods")
-          .select("name, communes(name)")
+          .select("name, commune_id")
           .eq("id", neighborhoodId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -216,6 +216,17 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
   if (cyclistRes.error) throw new Error(cyclistRes.error.message);
   if (locationRes.error) throw new Error(locationRes.error.message);
   if (coverageRes.error) throw new Error(coverageRes.error.message);
+
+  const communeId =
+    locationRes.data && typeof locationRes.data === "object" && "commune_id" in locationRes.data
+      ? String((locationRes.data as { commune_id?: unknown }).commune_id ?? "").trim() || null
+      : null;
+
+  const communeRes = communeId
+    ? await (supabaseAdmin as any).from("communes").select("name").eq("id", communeId).maybeSingle()
+    : { data: null, error: null };
+
+  if (communeRes.error) throw new Error(communeRes.error.message);
 
   const coverage = (coverageRes.data ?? []) as Array<{ cyclists?: { phone_number?: string | null; is_active?: boolean | null } | null }>;
   const cyclistPhones = Array.from(
@@ -233,13 +244,7 @@ async function loadOrderWebhookContext(orderId: string): Promise<OrderWebhookCon
     locationRes.data && typeof locationRes.data === "object" && "name" in locationRes.data
       ? String((locationRes.data as { name?: unknown }).name ?? "").trim()
       : "";
-  const communeNameRaw =
-    locationRes.data && typeof locationRes.data === "object" && "communes" in locationRes.data
-      ? (locationRes.data as { communes?: { name?: unknown } | Array<{ name?: unknown }> | null }).communes
-      : null;
-  const communeName = Array.isArray(communeNameRaw)
-    ? String(communeNameRaw[0]?.name ?? "").trim()
-    : String(communeNameRaw && typeof communeNameRaw === "object" ? communeNameRaw.name ?? "" : "").trim();
+  const communeName = String((communeRes.data as { name?: unknown } | null)?.name ?? "").trim();
 
   const vendorName = String((vendorRes.data as { store_name?: unknown } | null)?.store_name ?? "").trim();
 
