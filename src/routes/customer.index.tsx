@@ -3020,7 +3020,7 @@ function Index() {
 
           {supportContext?.orderId ? (
             <div className={`mt-2 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
-              <Badge variant="outline" className="h-8 rounded-full px-3 text-[11px] font-semibold tracking-wide">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
+              <Badge variant="outline" className="h-8 rounded-full px-3 text-[11px] font-semibold tracking-wide">{toPublicOrderCode(supportContext.orderId)}</Badge>
               {supportContext.pickupCode ? <Badge className="h-8 rounded-full bg-primary/10 px-3 text-[11px] font-medium text-primary">{supportContext.pickupCode}</Badge> : null}
               {supportActiveTicket?.status ? <Badge variant="secondary" className="h-8 rounded-full px-3 text-[11px] font-medium">{supportActiveTicket.status}</Badge> : null}
             </div>
@@ -4722,7 +4722,7 @@ function Index() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                      <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
@@ -4777,7 +4777,7 @@ function Index() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                      <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
