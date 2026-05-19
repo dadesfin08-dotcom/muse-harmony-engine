@@ -151,6 +151,7 @@ const updateVendorFlashSaleInputSchema = z.object({
 
 const activeFlashDealsInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
+  limit: z.number().int().min(1).max(1000).default(4),
 });
 
 const customerSearchInputSchema = z.object({
@@ -1356,7 +1357,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
         .gt("flash_sale_end_time", nowIso)
         .eq("master_products.is_active", true)
         .order("flash_sale_end_time", { ascending: true })
-        .limit(4);
+        .limit(data.limit ?? 4);
 
       if (error) {
         throw new Error(error.message);
