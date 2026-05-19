@@ -26,6 +26,7 @@ import { Route as CustomerFlashDealsRouteImport } from './routes/customer.flash-
 import { Route as CustomerCategoriesRouteImport } from './routes/customer.categories'
 import { Route as CustomerAllProductsRouteImport } from './routes/customer.all-products'
 import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
+import { Route as AdminWebhookLogsRouteImport } from './routes/admin.webhook-logs'
 import { Route as VendorOrderOrderIdRouteImport } from './routes/vendor.order.$orderId'
 import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
 import { Route as CustomerPlatformPacksPackIdRouteImport } from './routes/customer.platform-packs.$packId'
@@ -118,6 +119,11 @@ const CategoriesIdRoute = CategoriesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => CategoriesRoute,
 } as any)
+const AdminWebhookLogsRoute = AdminWebhookLogsRouteImport.update({
+  id: '/webhook-logs',
+  path: '/webhook-logs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VendorOrderOrderIdRoute = VendorOrderOrderIdRouteImport.update({
   id: '/vendor/order/$orderId',
   path: '/vendor/order/$orderId',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
   '/staff-portal': typeof StaffPortalRoute
+  '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -182,6 +189,7 @@ export interface FileRoutesByTo {
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/staff-portal': typeof StaffPortalRoute
+  '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -208,6 +216,7 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
   '/staff-portal': typeof StaffPortalRoute
+  '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/customer'
     | '/staff-portal'
+    | '/admin/webhook-logs'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/categories'
     | '/staff-portal'
+    | '/admin/webhook-logs'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/customer'
     | '/staff-portal'
+    | '/admin/webhook-logs'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -440,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesIdRouteImport
       parentRoute: typeof CategoriesRoute
     }
+    '/admin/webhook-logs': {
+      id: '/admin/webhook-logs'
+      path: '/webhook-logs'
+      fullPath: '/admin/webhook-logs'
+      preLoaderRoute: typeof AdminWebhookLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/vendor/order/$orderId': {
       id: '/vendor/order/$orderId'
       path: '/vendor/order/$orderId'
@@ -486,10 +505,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminWebhookLogsRoute: typeof AdminWebhookLogsRoute
   AdminServiceZonesCommuneIdRoute: typeof AdminServiceZonesCommuneIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminWebhookLogsRoute: AdminWebhookLogsRoute,
   AdminServiceZonesCommuneIdRoute: AdminServiceZonesCommuneIdRoute,
 }
 

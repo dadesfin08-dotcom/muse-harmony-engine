@@ -88,6 +88,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-accepted-alert":
       return {
         order_id: context.id,
+        event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
         vendor_name: context.vendorName,
@@ -96,6 +97,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-out-for-delivery":
       return {
         order_id: context.id,
+        event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
         customer_name: context.customerName,
@@ -105,6 +107,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "cyclist-broadcast-alert":
       return {
         order_id: context.id,
+        event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
         delivery_fee: context.deliveryFee,
