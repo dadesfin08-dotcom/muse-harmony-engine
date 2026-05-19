@@ -1,6 +1,7 @@
 import webpush from "web-push";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { toOrderCodeLine, toPublicOrderCode } from "@/lib/order-code";
 
 export type PushRole = "customer" | "cyclist";
 
@@ -21,6 +22,7 @@ type PushPayload = {
   role: PushRole;
   url?: string;
   orderId?: string;
+  shortOrderId?: string;
   locationLabel?: string;
   eventType?: string;
   icon?: string;
@@ -71,18 +73,6 @@ function sanitizeOrderId(orderId: string | null | undefined) {
   return normalized;
 }
 
-function formatOrderReference(orderId: string | null | undefined) {
-  const normalized = sanitizeOrderId(orderId);
-  const compact = normalized.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  const shortCode = compact.slice(0, 4);
-  return `#${shortCode || "UNKNOWN"}`;
-}
-
-function buildOrderIdLine(orderId: string | null | undefined, locale: "ar" | "en") {
-  const reference = formatOrderReference(orderId);
-  return locale === "ar" ? `رقم الطلب: ${reference}` : `Order ID: ${reference}`;
-}
-
 const WORKFLOW_WEBHOOK_BASE_URL = "https://n8n.srv961724.hstgr.cloud/webhook";
 const WORKFLOW_MAX_RETRIES = 3;
 
@@ -108,6 +98,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "order-accepted-alert":
       return {
         order_id: resolvedOrderId,
+        short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "MERCHANT_ACCEPTED",
         customer_name: context.customerName,
         customer_phone: context.customerPhone,
@@ -116,11 +107,11 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
       };
     case "order-out-for-delivery":
       {
-        const orderIdLineAr = buildOrderIdLine(resolvedOrderId, "ar");
-        const orderIdLineEn = buildOrderIdLine(resolvedOrderId, "en");
+        const orderIdLineAr = toOrderCodeLine(resolvedOrderId, "ar");
+        const orderIdLineEn = toOrderCodeLine(resolvedOrderId, "en");
         return {
           order_id: resolvedOrderId,
-          order_reference: formatOrderReference(resolvedOrderId),
+          short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
@@ -142,6 +133,7 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
     case "cyclist-broadcast-alert":
       return {
         order_id: resolvedOrderId,
+        short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "ORDER_READY",
         vendor_name: context.vendorName,
         pickup_location: context.pickupLocation,
@@ -400,8 +392,8 @@ function mapOrderEventTemplate(input: {
   statusAfter: string | null;
 }) {
   const eventType = String(input.eventType ?? "STATUS_UPDATE").toUpperCase();
-  const orderIdLineAr = buildOrderIdLine(input.orderId, "ar");
-  const orderIdLineEn = buildOrderIdLine(input.orderId, "en");
+  const orderIdLineAr = toOrderCodeLine(input.orderId, "ar");
+  const orderIdLineEn = toOrderCodeLine(input.orderId, "en");
 
   switch (eventType) {
     case "ORDER_CREATED":
@@ -423,7 +415,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "تمت الموافقة من التاجر",
-          body: "التاجر وافق على طلبك وبدأ التحضير.",
+          body: `التاجر وافق على طلبك وبدأ التحضير.\n${orderIdLineAr}`,
+          body_en: `Your merchant accepted the order and started preparing it.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "MERCHANT_ACCEPTED",
         },
@@ -432,7 +425,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "طلبك جاهز",
-          body: "تم تجهيز الطلب وهو في انتظار السائق.",
+          body: `تم تجهيز الطلب وهو في انتظار السائق.\n${orderIdLineAr}`,
+          body_en: `Your order is ready and waiting for the rider.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "ORDER_READY",
         },
@@ -451,7 +445,8 @@ function mapOrderEventTemplate(input: {
       return {
         customer: {
           title: "تم التسليم بنجاح",
-          body: "تم تسليم الطلب. شكراً لاستخدامك التطبيق.",
+          body: `تم تسليم الطلب. شكراً لاستخدامك التطبيق.\n${orderIdLineAr}`,
+          body_en: `Order delivered successfully.\n${orderIdLineEn}`,
           url: "/customer#orders",
           eventType: "ORDER_COMPLETED",
         },
@@ -716,6 +711,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           role: "customer",
           url: template.customer.url,
           orderId: resolvedOrderId,
+          shortOrderId: toPublicOrderCode(resolvedOrderId),
           locationLabel: event.neighborhood_id ?? undefined,
           eventType: template.customer.eventType,
           tag: `order-${resolvedOrderId}-${template.customer.eventType}`,
@@ -731,6 +727,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
           role: "cyclist",
           url: template.cyclist.url,
           orderId: resolvedOrderId,
+          shortOrderId: toPublicOrderCode(resolvedOrderId),
           locationLabel: event.neighborhood_id,
           eventType: template.cyclist.eventType,
           tag: `order-${resolvedOrderId}-${template.cyclist.eventType}`,

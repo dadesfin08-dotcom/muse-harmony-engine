@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
+import { toPublicOrderCode } from "@/lib/order-code";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
@@ -316,7 +317,7 @@ function CyclistWalletPage() {
                     <div key={delivery.orderId} className="rounded-md border border-border bg-background px-3 py-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-medium">{t("cyclistWallet.orderPrefix")} #{delivery.orderId.slice(0, 8)}</p>
+                          <p className="truncate text-xs font-medium">{t("cyclistWallet.orderPrefix")} {toPublicOrderCode(delivery.orderId)}</p>
                           <p className="text-[11px] text-muted-foreground">{formatOrderDateTime(delivery.deliveredAt)}</p>
                         </div>
                         <p className="shrink-0 text-sm font-semibold text-primary">+ {delivery.deliveryFeeMad.toFixed(2)} MAD</p>

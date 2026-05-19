@@ -108,6 +108,7 @@ import { Badge } from "@/components/ui/badge";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useAppLanguage, useLocalizedText } from "@/hooks/use-localization";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { toPublicOrderCode } from "@/lib/order-code";
 
 export const Route = createFileRoute("/customer/")({
   head: () => ({
@@ -2165,8 +2166,9 @@ function Index() {
 
     const matchedOrder = allCustomerOrders.find((order) => {
       const orderId = String(order.id ?? "").trim().toLowerCase();
-      const shortOrderId = orderId.slice(0, 8);
-      return normalizedToken === orderId || normalizedToken === shortOrderId;
+      const publicCode = toPublicOrderCode(order.id).replace("#", "").toLowerCase();
+      const legacyShortOrderId = orderId.slice(0, 8);
+      return normalizedToken === orderId || normalizedToken === publicCode || normalizedToken === legacyShortOrderId;
     });
 
     if (matchedOrder?.id) return matchedOrder.id;
@@ -2186,7 +2188,7 @@ function Index() {
     openSupportPanel({
       source: "home",
       orderId: activeOrder?.id ?? null,
-      pickupCode: activeOrder?.id ? `#${String(activeOrder.id).slice(-4).toUpperCase()}` : null,
+      pickupCode: activeOrder?.id ? toPublicOrderCode(activeOrder.id) : null,
     });
   };
 
@@ -3018,7 +3020,7 @@ function Index() {
 
           {supportContext?.orderId ? (
             <div className={`mt-2 flex flex-wrap gap-2 ${isArabic ? "justify-end" : ""}`}>
-              <Badge variant="outline" className="h-8 rounded-full px-3 text-[11px] font-semibold tracking-wide">#{supportContext.orderId.slice(0, 8).toUpperCase()}</Badge>
+              <Badge variant="outline" className="h-8 rounded-full px-3 text-[11px] font-semibold tracking-wide">{toPublicOrderCode(supportContext.orderId)}</Badge>
               {supportContext.pickupCode ? <Badge className="h-8 rounded-full bg-primary/10 px-3 text-[11px] font-medium text-primary">{supportContext.pickupCode}</Badge> : null}
               {supportActiveTicket?.status ? <Badge variant="secondary" className="h-8 rounded-full px-3 text-[11px] font-medium">{supportActiveTicket.status}</Badge> : null}
             </div>
@@ -4720,7 +4722,7 @@ function Index() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                      <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
@@ -4775,7 +4777,7 @@ function Index() {
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                      <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                       <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
@@ -5226,7 +5228,7 @@ function Index() {
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
-                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
@@ -5276,7 +5278,7 @@ function Index() {
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
-                                        <p className="text-sm font-semibold text-foreground">Order #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <p className="text-sm font-semibold text-foreground">Order {toPublicOrderCode(order.id)}</p>
                                         <p className="mt-1 text-xs text-muted-foreground">{orderDate.toLocaleString()}</p>
                                       </div>
                                       <div className="text-right">
