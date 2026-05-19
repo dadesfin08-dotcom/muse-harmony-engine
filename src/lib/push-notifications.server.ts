@@ -105,11 +105,11 @@ function buildWorkflowPayload(workflow: WorkflowName, context: OrderWebhookConte
       };
     case "order-out-for-delivery":
       {
-        const orderIdLineAr = buildOrderIdLine(resolvedOrderId, "ar");
-        const orderIdLineEn = buildOrderIdLine(resolvedOrderId, "en");
+        const orderIdLineAr = toOrderCodeLine(resolvedOrderId, "ar");
+        const orderIdLineEn = toOrderCodeLine(resolvedOrderId, "en");
         return {
           order_id: resolvedOrderId,
-          order_reference: formatOrderReference(resolvedOrderId),
+          short_order_id: toPublicOrderCode(resolvedOrderId),
         event_type: "RIDER_PICKED_UP",
         total: context.total,
         customer_phone: context.customerPhone,
@@ -389,8 +389,8 @@ function mapOrderEventTemplate(input: {
   statusAfter: string | null;
 }) {
   const eventType = String(input.eventType ?? "STATUS_UPDATE").toUpperCase();
-  const orderIdLineAr = buildOrderIdLine(input.orderId, "ar");
-  const orderIdLineEn = buildOrderIdLine(input.orderId, "en");
+  const orderIdLineAr = toOrderCodeLine(input.orderId, "ar");
+  const orderIdLineEn = toOrderCodeLine(input.orderId, "en");
 
   switch (eventType) {
     case "ORDER_CREATED":
