@@ -871,7 +871,10 @@ function Index() {
   useEffect(() => {
     if (supportNotificationTicketRef.current !== supportActiveTicketId) {
       supportNotificationTicketRef.current = supportActiveTicketId;
-      lastNotifiedSupportMessageIdRef.current = null;
+      const latestAdminMessage = [...supportMessages]
+        .reverse()
+        .find((message) => message.senderType === "admin");
+      lastNotifiedSupportMessageIdRef.current = latestAdminMessage ? String(latestAdminMessage.id) : null;
       if (supportToastTimerRef.current) {
         window.clearTimeout(supportToastTimerRef.current);
         supportToastTimerRef.current = null;
