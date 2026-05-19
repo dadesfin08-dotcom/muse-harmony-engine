@@ -565,11 +565,10 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
     failed: 0,
     sentToCustomers: 0,
     sentToCyclists: 0,
+    triggeredWorkflows: 0,
   };
 
-  if (!ensureVapidConfig()) {
-    return summary;
-  }
+  const pushEnabled = ensureVapidConfig();
 
   const events = await claimPendingOrderPushEvents(limit);
   summary.claimed = events.length;
@@ -582,7 +581,17 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         statusAfter: event.status_after,
       });
 
-      if (event.customer_user_id && template.customer) {
+      const workflowName = getWorkflowFromOrderEvent(event.event_type);
+      if (workflowName) {
+        const workflowContext = await loadOrderWebhookContext(event.order_id);
+        if (workflowContext) {
+          const workflowPayload = buildWorkflowPayload(workflowName, workflowContext);
+          await postWorkflowWebhook(workflowName, workflowPayload, event.order_id);
+          summary.triggeredWorkflows += 1;
+        }
+      }
+
+      if (pushEnabled && event.customer_user_id && template.customer) {
         const customerResult = await sendPushToUser("customer", event.customer_user_id, {
           title: template.customer.title,
           body: template.customer.body,
@@ -597,7 +606,7 @@ export async function processPendingOrderPushEvents(limit = 25): Promise<PushQue
         summary.sentToCustomers += customerResult.sent;
       }
 
-      if (event.neighborhood_id && template.cyclist) {
+      if (pushEnabled && event.neighborhood_id && template.cyclist) {
         const cyclistResult = await sendPushToCyclistsByNeighborhood(event.neighborhood_id, {
           title: template.cyclist.title,
           body: template.cyclist.body,
