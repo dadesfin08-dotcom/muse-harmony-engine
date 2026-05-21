@@ -73,6 +73,9 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
+  UploadCloud,
+  Camera,
+  X,
   ShieldAlert,
   Sparkles,
   Filter,
@@ -1391,6 +1394,7 @@ function AdminPage() {
     nameFr: "",
     nameAr: "",
     imageUrl: "",
+    visualType: "icon" as "icon" | "image",
     iconName: "Carrot" as CategoryIconName,
     accentColor: "#f3f4f6",
     sortOrder: "0",
@@ -1398,6 +1402,8 @@ function AdminPage() {
   });
   const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
   const [categoryImagePreviewUrl, setCategoryImagePreviewUrl] = useState<string | null>(null);
+  const [categoryImageUploadProgress, setCategoryImageUploadProgress] = useState(0);
+  const [isCategoryImageReading, setIsCategoryImageReading] = useState(false);
   const categoryImageInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -3262,22 +3268,76 @@ function AdminPage() {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      toast.error(t("admin.categories.form.imageTypeValidation"));
+      return;
+    }
+
+    const maxSizeInBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      toast.error(t("admin.categories.form.imageSizeValidation"));
       return;
     }
 
     const reader = new FileReader();
+    setIsCategoryImageReading(true);
+    setCategoryImageUploadProgress(0);
+    setCategoryForm((current) => ({ ...current, visualType: "image", iconName: "Carrot" }));
+
+    reader.onprogress = (progressEvent) => {
+      if (!progressEvent.lengthComputable) {
+        return;
+      }
+      const progress = Math.min(100, Math.round((progressEvent.loaded / progressEvent.total) * 100));
+      setCategoryImageUploadProgress(progress);
+    };
+
     reader.onload = () => {
       setCategoryImageFile(file);
       setCategoryImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
+      setCategoryImageUploadProgress(100);
+      setIsCategoryImageReading(false);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => {
+      setCategoryImageUploadProgress(0);
+      setIsCategoryImageReading(false);
+      toast.error("Unable to preview selected image.");
+    };
     reader.readAsDataURL(file);
   };
 
   const handleCategoryImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     applyCategoryImageFile(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  };
+
+  const handleCategoryImageDrop = (file: File | null) => {
+    applyCategoryImageFile(file);
+  };
+
+  const removeCategoryImage = () => {
+    setCategoryImageFile(null);
+    setCategoryImagePreviewUrl(null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
+    setCategoryForm((current) => ({ ...current, imageUrl: "" }));
+  };
+
+  const handleCategoryVisualTypeChange = (visualType: "icon" | "image") => {
+    setCategoryForm((current) => ({
+      ...current,
+      visualType,
+      iconName: visualType === "image" ? "Carrot" : current.iconName,
+      imageUrl: visualType === "icon" ? "" : current.imageUrl,
+    }));
+
+    if (visualType === "icon") {
+      setCategoryImageFile(null);
+      setCategoryImagePreviewUrl(null);
+      setCategoryImageUploadProgress(0);
+      setIsCategoryImageReading(false);
+    }
   };
 
   const applyPlatformPackImageFile = (file: File | null) => {
@@ -3307,6 +3367,7 @@ function AdminPage() {
       nameFr: "",
       nameAr: "",
       imageUrl: "",
+      visualType: "icon",
       iconName: "Carrot",
       accentColor: "#f3f4f6",
       sortOrder: "0",
@@ -3314,6 +3375,8 @@ function AdminPage() {
     });
     setCategoryImageFile(null);
     setCategoryImagePreviewUrl(null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
   };
 
   const editCategory = (category: CategoryAdminRow) => {
@@ -3327,6 +3390,7 @@ function AdminPage() {
       nameFr: category.name_fr,
       nameAr: category.name_ar,
       imageUrl: category.image_url ?? "",
+      visualType: category.image_url ? "image" : "icon",
       iconName: resolvedIconName,
       accentColor: category.accent_color ?? "#f3f4f6",
       sortOrder: String(category.sort_order),
@@ -3334,6 +3398,8 @@ function AdminPage() {
     });
     setCategoryImageFile(null);
     setCategoryImagePreviewUrl(category.image_url ?? null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
   };
 
   const saveCategory = async () => {
@@ -3344,9 +3410,9 @@ function AdminPage() {
 
     setIsSavingCategory(true);
     try {
-      let finalImageUrl = categoryForm.imageUrl.trim() || null;
+      let finalImageUrl = categoryForm.visualType === "image" ? categoryForm.imageUrl.trim() || null : null;
 
-      if (categoryImageFile) {
+      if (categoryForm.visualType === "image" && categoryImageFile) {
         const extension = categoryImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
         const sanitizedBaseName = categoryImageFile.name
           .replace(/\.[^/.]+$/, "")
@@ -3375,7 +3441,7 @@ function AdminPage() {
         nameFr: categoryForm.nameFr.trim(),
         nameAr: categoryForm.nameAr.trim(),
         imageUrl: finalImageUrl,
-        iconName: categoryForm.iconName,
+        iconName: categoryForm.visualType === "icon" ? categoryForm.iconName : "Carrot",
         accentColor: categoryForm.accentColor.trim() || "#f3f4f6",
         sortOrder: Number.parseInt(categoryForm.sortOrder || "0", 10) || 0,
         isActive: categoryForm.isActive,
