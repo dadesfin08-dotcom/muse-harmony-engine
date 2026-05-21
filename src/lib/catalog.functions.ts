@@ -771,6 +771,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           name_fr: row.nameFr,
           name_ar: row.nameAr,
           category_id: matchedCategory.id,
+          category_ids: [matchedCategory.id],
           category: parsedCategory.data,
           brand_id: matchedBrandId,
           product_variants: row.productVariants,
