@@ -2456,6 +2456,68 @@ function AdminPage() {
     [productForm.productVariants],
   );
 
+  const selectedProductCategories = useMemo(
+    () => activeCategories.filter((category) => productForm.categoryIds.includes(category.id)),
+    [activeCategories, productForm.categoryIds],
+  );
+
+  const filteredCategoryOptions = useMemo(() => {
+    const needle = categorySearchTerm.trim().toLocaleLowerCase();
+    if (!needle) {
+      return activeCategories;
+    }
+
+    return activeCategories.filter((category) =>
+      [category.name_en, category.name_fr ?? "", category.name_ar ?? ""]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(needle),
+    );
+  }, [activeCategories, categorySearchTerm]);
+
+  useEffect(() => {
+    const trimmedName = productForm.name.trim();
+    if (trimmedName.length < 2) {
+      setSimilarNameSuggestions([]);
+      setIsLoadingSimilarProducts(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingSimilarProducts(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const suggestions = await fetchSimilarMasterProducts({
+          data: {
+            name: trimmedName,
+            brandId: productForm.brandId.trim() ? productForm.brandId : null,
+            categoryIds: productForm.categoryIds,
+            excludeProductId: editingProductId ?? undefined,
+            limit: 5,
+          },
+        });
+
+        if (!cancelled) {
+          setSimilarNameSuggestions(suggestions ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setSimilarNameSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSimilarProducts(false);
+        }
+      }
+    }, 260);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [editingProductId, fetchSimilarMasterProducts, productForm.brandId, productForm.categoryIds, productForm.name]);
+
   const addProductVariantTag = (rawValue: string) => {
     const normalizedValue = rawValue.trim();
     if (!normalizedValue) return;
@@ -2488,7 +2550,7 @@ function AdminPage() {
       nameAr: productForm.nameAr,
       productVariants: parsedProductVariants,
       brandId: productForm.brandId.trim() ? productForm.brandId : null,
-      categoryId: productForm.categoryId,
+      categoryIds: productForm.categoryIds,
       measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
       popularityScore: Number(productForm.popularityScore),
@@ -2499,8 +2561,8 @@ function AdminPage() {
       return;
     }
 
-    const selectedCategory = activeCategories.find((category) => category.id === productForm.categoryId);
-    if (!selectedCategory) {
+    const selectedCategories = activeCategories.filter((category) => productForm.categoryIds.includes(category.id));
+    if (selectedCategories.length !== productForm.categoryIds.length || selectedCategories.length === 0) {
       toast.error(t("admin.toast.invalidSelectedCategory"));
       return;
     }
@@ -2544,7 +2606,8 @@ function AdminPage() {
           nameAr: productForm.nameAr.trim(),
           productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
-          categoryId: productForm.categoryId,
+          categoryId: productForm.categoryIds[0],
+          categoryIds: productForm.categoryIds,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
@@ -2566,7 +2629,8 @@ function AdminPage() {
           nameAr: productForm.nameAr.trim(),
           productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
-          categoryId: productForm.categoryId,
+          categoryId: productForm.categoryIds[0],
+          categoryIds: productForm.categoryIds,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
@@ -2589,11 +2653,14 @@ function AdminPage() {
         nameAr: "",
         productVariants: "",
         brandId: "",
-        categoryId: "",
+        categoryIds: [],
         measurementValue: "",
         measurementUnit: "Piece",
         popularityScore: "0",
       });
+      setCategoryPickerOpen(false);
+      setCategorySearchTerm("");
+      setSimilarNameSuggestions([]);
       setProductVariantInput("");
       setEditingProductId(null);
       setProductImageFile(null);
@@ -2646,7 +2713,7 @@ function AdminPage() {
       nameAr: "",
       productVariants: "",
       brandId: "",
-      categoryId: "",
+      categoryIds: [],
       measurementValue: "",
       measurementUnit: "Piece",
       popularityScore: "0",
@@ -2655,6 +2722,9 @@ function AdminPage() {
     setProductImageFile(null);
     setProductImagePreviewUrl(null);
     setCurrentProductImageUrl(null);
+    setCategoryPickerOpen(false);
+    setCategorySearchTerm("");
+    setSimilarNameSuggestions([]);
     setIsProductModalOpen(true);
   };
 
@@ -2666,7 +2736,12 @@ function AdminPage() {
       nameAr: product.nameAr ?? product.name,
       productVariants: Array.isArray(product.productVariants) ? product.productVariants.join(", ") : "",
       brandId: product.brandId ?? "",
-      categoryId: product.categoryId ?? "",
+      categoryIds:
+        Array.isArray(product.categoryIds) && product.categoryIds.length > 0
+          ? product.categoryIds
+          : product.categoryId
+            ? [product.categoryId]
+            : [],
       measurementValue:
         product.measurementValue != null && Number.isFinite(product.measurementValue)
           ? String(product.measurementValue)
@@ -2678,6 +2753,8 @@ function AdminPage() {
     setProductImageFile(null);
     setCurrentProductImageUrl(product.imageUrl ?? null);
     setProductImagePreviewUrl(product.imageUrl ?? fallbackProductImage);
+    setCategoryPickerOpen(false);
+    setCategorySearchTerm("");
     setIsProductModalOpen(true);
   };
 
