@@ -4856,6 +4856,7 @@ function AdminPage() {
                   isLoading={dbHealthQuery.isLoading || categoriesQuery.isLoading}
                   form={categoryForm}
                   onFormChange={setCategoryForm}
+                  onVisualTypeChange={handleCategoryVisualTypeChange}
                   onSave={saveCategory}
                   onEdit={editCategory}
                   onReset={resetCategoryForm}
@@ -4863,6 +4864,10 @@ function AdminPage() {
                   imageInputRef={categoryImageInputRef}
                   imagePreviewUrl={categoryImagePreviewUrl}
                   onImageChange={handleCategoryImageChange}
+                  onImageDrop={handleCategoryImageDrop}
+                  onImageRemove={removeCategoryImage}
+                  imageUploadProgress={categoryImageUploadProgress}
+                  isImageLoading={isCategoryImageReading}
                 />
               ) : null}
               {tab === "support" ? (
@@ -7690,6 +7695,7 @@ function CategoriesSection({
     nameFr: string;
     nameAr: string;
     imageUrl: string;
+    visualType: "icon" | "image";
     iconName: CategoryIconName;
     accentColor: string;
     sortOrder: string;
@@ -7702,12 +7708,14 @@ function CategoriesSection({
       nameFr: string;
       nameAr: string;
       imageUrl: string;
+      visualType: "icon" | "image";
       iconName: CategoryIconName;
       accentColor: string;
       sortOrder: string;
       isActive: boolean;
     }>
   >;
+  onVisualTypeChange: (visualType: "icon" | "image") => void;
   onSave: () => void;
   onEdit: (category: CategoryAdminRow) => void;
   onReset: () => void;
@@ -7715,6 +7723,10 @@ function CategoriesSection({
   imageInputRef: RefObject<HTMLInputElement | null>;
   imagePreviewUrl: string | null;
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageDrop: (file: File | null) => void;
+  onImageRemove: () => void;
+  imageUploadProgress: number;
+  isImageLoading: boolean;
 }) {
   const { t } = useTranslation();
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
