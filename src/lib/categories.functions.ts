@@ -19,6 +19,12 @@ const categoryInputSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+const uploadCategoryImageInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(255),
+  contentType: z.string().trim().min(1).max(255),
+  dataUrl: z.string().trim().min(1),
+});
+
 const updateCategoryInputSchema = categoryInputSchema.extend({
   id: z.string().uuid(),
 });
@@ -148,6 +154,48 @@ export const updateCategory = createServerFn({ method: "POST" })
     }
 
     return updated as CategoryRow;
+  });
+
+export const uploadCategoryImage = createServerFn({ method: "POST" })
+  .inputValidator((input) => uploadCategoryImageInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (!data.contentType.startsWith("image/")) {
+      throw new Error("Only image uploads are allowed.");
+    }
+
+    const commaIndex = data.dataUrl.indexOf(",");
+    if (commaIndex === -1) {
+      throw new Error("Invalid image payload.");
+    }
+
+    const base64Payload = data.dataUrl.slice(commaIndex + 1);
+    const bytes = Uint8Array.from(Buffer.from(base64Payload, "base64"));
+    const extensionFromName = data.fileName.split(".").pop()?.toLowerCase() ?? "jpg";
+    const safeBaseName = data.fileName
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-_]/g, "-")
+      .slice(0, 60);
+    const generatedFileName = `${crypto.randomUUID()}-${safeBaseName || "category"}.${extensionFromName}`;
+    const path = `categories/${generatedFileName}`;
+
+    const { data: uploadData, error: uploadError } = await (supabaseAdmin as any).storage
+      .from("products")
+      .upload(path, bytes, {
+        contentType: data.contentType,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError || !uploadData?.path) {
+      throw new Error(uploadError?.message ?? "Category image upload failed.");
+    }
+
+    const { data: publicUrlData } = (supabaseAdmin as any).storage.from("products").getPublicUrl(uploadData.path);
+
+    return {
+      path: uploadData.path,
+      publicUrl: publicUrlData.publicUrl,
+    };
   });
 
 export const listActiveCategories = createServerFn({ method: "POST" })
