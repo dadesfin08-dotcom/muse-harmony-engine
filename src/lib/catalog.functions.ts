@@ -962,28 +962,6 @@ export const createMasterProduct = createServerFn({ method: "POST" })
         throw new Error(`Selected category '${primaryCategoryName}' is not supported by master_products.category enum.`);
       }
 
-      const normalizedIncomingName = normalizeProductNameForComparison(data.name);
-      if (normalizedIncomingName.length > 0) {
-        const duplicateScopeQuery = (supabaseAdmin as any)
-          .from("master_products")
-          .select("id, product_name")
-          .eq("is_active", true)
-          .eq("brand_id", data.brandId)
-          .contains("category_ids", [primaryCategoryId])
-          .limit(200);
-
-        const { data: potentialDuplicates, error: duplicateError } = await duplicateScopeQuery;
-        if (duplicateError) {
-          throw createDbError(duplicateError, "Failed to validate similar products.");
-        }
-
-        for (const row of (potentialDuplicates ?? []) as Array<{ id: string; product_name: string }>) {
-          if (normalizeProductNameForComparison(row.product_name) === normalizedIncomingName) {
-            throw new Error("DB Warning: Similar product already exists. You can still save this product.");
-          }
-        }
-      }
-
       const { data: inserted, error } = await (supabaseAdmin as any)
         .from("master_products")
         .insert({
