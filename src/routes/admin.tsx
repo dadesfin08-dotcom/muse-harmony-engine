@@ -73,6 +73,9 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
+  UploadCloud,
+  Camera,
+  X,
   ShieldAlert,
   Sparkles,
   Filter,
@@ -1391,6 +1394,7 @@ function AdminPage() {
     nameFr: "",
     nameAr: "",
     imageUrl: "",
+    visualType: "icon" as "icon" | "image",
     iconName: "Carrot" as CategoryIconName,
     accentColor: "#f3f4f6",
     sortOrder: "0",
@@ -1398,6 +1402,8 @@ function AdminPage() {
   });
   const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
   const [categoryImagePreviewUrl, setCategoryImagePreviewUrl] = useState<string | null>(null);
+  const [categoryImageUploadProgress, setCategoryImageUploadProgress] = useState(0);
+  const [isCategoryImageReading, setIsCategoryImageReading] = useState(false);
   const categoryImageInputRef = useRef<HTMLInputElement | null>(null);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -3262,22 +3268,76 @@ function AdminPage() {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload a valid image file.");
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      toast.error(t("admin.categories.form.imageTypeValidation"));
+      return;
+    }
+
+    const maxSizeInBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      toast.error(t("admin.categories.form.imageSizeValidation"));
       return;
     }
 
     const reader = new FileReader();
+    setIsCategoryImageReading(true);
+    setCategoryImageUploadProgress(0);
+    setCategoryForm((current) => ({ ...current, visualType: "image", iconName: "Carrot" }));
+
+    reader.onprogress = (progressEvent) => {
+      if (!progressEvent.lengthComputable) {
+        return;
+      }
+      const progress = Math.min(100, Math.round((progressEvent.loaded / progressEvent.total) * 100));
+      setCategoryImageUploadProgress(progress);
+    };
+
     reader.onload = () => {
       setCategoryImageFile(file);
       setCategoryImagePreviewUrl(typeof reader.result === "string" ? reader.result : null);
+      setCategoryImageUploadProgress(100);
+      setIsCategoryImageReading(false);
     };
-    reader.onerror = () => toast.error("Unable to preview selected image.");
+    reader.onerror = () => {
+      setCategoryImageUploadProgress(0);
+      setIsCategoryImageReading(false);
+      toast.error("Unable to preview selected image.");
+    };
     reader.readAsDataURL(file);
   };
 
   const handleCategoryImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     applyCategoryImageFile(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  };
+
+  const handleCategoryImageDrop = (file: File | null) => {
+    applyCategoryImageFile(file);
+  };
+
+  const removeCategoryImage = () => {
+    setCategoryImageFile(null);
+    setCategoryImagePreviewUrl(null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
+    setCategoryForm((current) => ({ ...current, imageUrl: "" }));
+  };
+
+  const handleCategoryVisualTypeChange = (visualType: "icon" | "image") => {
+    setCategoryForm((current) => ({
+      ...current,
+      visualType,
+      iconName: visualType === "image" ? "Carrot" : current.iconName,
+      imageUrl: visualType === "icon" ? "" : current.imageUrl,
+    }));
+
+    if (visualType === "icon") {
+      setCategoryImageFile(null);
+      setCategoryImagePreviewUrl(null);
+      setCategoryImageUploadProgress(0);
+      setIsCategoryImageReading(false);
+    }
   };
 
   const applyPlatformPackImageFile = (file: File | null) => {
@@ -3307,6 +3367,7 @@ function AdminPage() {
       nameFr: "",
       nameAr: "",
       imageUrl: "",
+      visualType: "icon",
       iconName: "Carrot",
       accentColor: "#f3f4f6",
       sortOrder: "0",
@@ -3314,6 +3375,8 @@ function AdminPage() {
     });
     setCategoryImageFile(null);
     setCategoryImagePreviewUrl(null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
   };
 
   const editCategory = (category: CategoryAdminRow) => {
@@ -3327,6 +3390,7 @@ function AdminPage() {
       nameFr: category.name_fr,
       nameAr: category.name_ar,
       imageUrl: category.image_url ?? "",
+      visualType: category.image_url ? "image" : "icon",
       iconName: resolvedIconName,
       accentColor: category.accent_color ?? "#f3f4f6",
       sortOrder: String(category.sort_order),
@@ -3334,6 +3398,8 @@ function AdminPage() {
     });
     setCategoryImageFile(null);
     setCategoryImagePreviewUrl(category.image_url ?? null);
+    setCategoryImageUploadProgress(0);
+    setIsCategoryImageReading(false);
   };
 
   const saveCategory = async () => {
@@ -3344,9 +3410,9 @@ function AdminPage() {
 
     setIsSavingCategory(true);
     try {
-      let finalImageUrl = categoryForm.imageUrl.trim() || null;
+      let finalImageUrl = categoryForm.visualType === "image" ? categoryForm.imageUrl.trim() || null : null;
 
-      if (categoryImageFile) {
+      if (categoryForm.visualType === "image" && categoryImageFile) {
         const extension = categoryImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
         const sanitizedBaseName = categoryImageFile.name
           .replace(/\.[^/.]+$/, "")
@@ -3375,7 +3441,7 @@ function AdminPage() {
         nameFr: categoryForm.nameFr.trim(),
         nameAr: categoryForm.nameAr.trim(),
         imageUrl: finalImageUrl,
-        iconName: categoryForm.iconName,
+        iconName: categoryForm.visualType === "icon" ? categoryForm.iconName : "Carrot",
         accentColor: categoryForm.accentColor.trim() || "#f3f4f6",
         sortOrder: Number.parseInt(categoryForm.sortOrder || "0", 10) || 0,
         isActive: categoryForm.isActive,
@@ -4790,6 +4856,7 @@ function AdminPage() {
                   isLoading={dbHealthQuery.isLoading || categoriesQuery.isLoading}
                   form={categoryForm}
                   onFormChange={setCategoryForm}
+                  onVisualTypeChange={handleCategoryVisualTypeChange}
                   onSave={saveCategory}
                   onEdit={editCategory}
                   onReset={resetCategoryForm}
@@ -4797,6 +4864,10 @@ function AdminPage() {
                   imageInputRef={categoryImageInputRef}
                   imagePreviewUrl={categoryImagePreviewUrl}
                   onImageChange={handleCategoryImageChange}
+                  onImageDrop={handleCategoryImageDrop}
+                  onImageRemove={removeCategoryImage}
+                  imageUploadProgress={categoryImageUploadProgress}
+                  isImageLoading={isCategoryImageReading}
                 />
               ) : null}
               {tab === "support" ? (
@@ -7606,6 +7677,7 @@ function CategoriesSection({
   isLoading,
   form,
   onFormChange,
+  onVisualTypeChange,
   onSave,
   onEdit,
   onReset,
@@ -7613,6 +7685,10 @@ function CategoriesSection({
   imageInputRef,
   imagePreviewUrl,
   onImageChange,
+  onImageDrop,
+  onImageRemove,
+  imageUploadProgress,
+  isImageLoading,
 }: {
   categories: CategoryAdminRow[];
   activeLanguage: "en" | "fr" | "ar";
@@ -7624,6 +7700,7 @@ function CategoriesSection({
     nameFr: string;
     nameAr: string;
     imageUrl: string;
+    visualType: "icon" | "image";
     iconName: CategoryIconName;
     accentColor: string;
     sortOrder: string;
@@ -7636,12 +7713,14 @@ function CategoriesSection({
       nameFr: string;
       nameAr: string;
       imageUrl: string;
+      visualType: "icon" | "image";
       iconName: CategoryIconName;
       accentColor: string;
       sortOrder: string;
       isActive: boolean;
     }>
   >;
+  onVisualTypeChange: (visualType: "icon" | "image") => void;
   onSave: () => void;
   onEdit: (category: CategoryAdminRow) => void;
   onReset: () => void;
@@ -7649,9 +7728,32 @@ function CategoriesSection({
   imageInputRef: RefObject<HTMLInputElement | null>;
   imagePreviewUrl: string | null;
   onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImageDrop: (file: File | null) => void;
+  onImageRemove: () => void;
+  imageUploadProgress: number;
+  isImageLoading: boolean;
 }) {
   const { t } = useTranslation();
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+  const [isImageDragActive, setIsImageDragActive] = useState(false);
+
+  const visualPreviewUrl = imagePreviewUrl || form.imageUrl || null;
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsImageDragActive(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsImageDragActive(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsImageDragActive(false);
+    onImageDrop(event.dataTransfer.files?.[0] ?? null);
+  };
 
   return (
     <section dir={isRtl ? "rtl" : "ltr"} className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
@@ -7662,38 +7764,176 @@ function CategoriesSection({
 
       <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
         <div className="space-y-3 rounded-md border border-border bg-background p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              className="rounded-md border border-dashed border-border bg-muted/40 p-3 text-center transition hover:border-primary/60"
-            >
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onImageChange}
-              />
-              {imagePreviewUrl ? (
-                <img
-                  src={imagePreviewUrl}
-                  alt={t("admin.categories.form.imagePreviewAlt")}
-                  className="mx-auto aspect-square w-full max-w-[220px] rounded-md object-cover"
-                />
-              ) : (
-                <span className="text-sm text-muted-foreground">{t("admin.categories.form.uploadCategoryCover")}</span>
-              )}
-            </button>
-
-            <div className="rounded-md border border-dashed border-border bg-muted/40 p-3 text-center">
-              <div
-                className="mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center rounded-2xl"
-                style={{ backgroundColor: form.accentColor || "#f3f4f6" }}
-              >
-                <CategoryIcon iconName={form.iconName} className="h-20 w-20 text-foreground" />
+          <div className="space-y-3 rounded-md border border-border bg-card p-3">
+            <div className="space-y-2">
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>
+                {t("admin.categories.form.categoryVisual")}
+              </label>
+              <div className={cn("flex items-center gap-2", isRtl && "flex-row-reverse justify-end")}>
+                <button
+                  type="button"
+                  onClick={() => onVisualTypeChange("icon")}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition",
+                    form.visualType === "icon"
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/40",
+                  )}
+                  aria-pressed={form.visualType === "icon"}
+                >
+                  <span className={cn("h-2.5 w-2.5 rounded-full", form.visualType === "icon" ? "bg-primary" : "bg-muted-foreground/50")} />
+                  {t("admin.categories.form.visualTypeIcon")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onVisualTypeChange("image")}
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition",
+                    form.visualType === "image"
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/40",
+                  )}
+                  aria-pressed={form.visualType === "image"}
+                >
+                  <span className={cn("h-2.5 w-2.5 rounded-full", form.visualType === "image" ? "bg-primary" : "bg-muted-foreground/50")} />
+                  {t("admin.categories.form.visualTypeImage")}
+                </button>
               </div>
             </div>
+
+            {form.visualType === "icon" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.uploadCategoryIconImage")}</label>
+                  <Popover open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isIconPickerOpen}
+                        className={cn("h-10 w-full justify-between rounded-md", isRtl && "flex-row-reverse")}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <CategoryIcon iconName={form.iconName} className="h-4 w-4" />
+                          {form.iconName}
+                        </span>
+                        <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder={t("admin.categories.form.searchIcon")} />
+                        <CommandList>
+                          <CommandEmpty>{t("admin.categories.form.noIconFound")}</CommandEmpty>
+                          {CATEGORY_ICON_OPTIONS.map((iconName) => (
+                            <CommandItem
+                              key={iconName}
+                              value={iconName}
+                              onSelect={() => {
+                                onFormChange((current) => ({ ...current, iconName }));
+                                setIsIconPickerOpen(false);
+                              }}
+                            >
+                              <CategoryIcon iconName={iconName} className="h-4 w-4" />
+                              <span>{iconName}</span>
+                              <span className={cn("ml-auto text-xs", form.iconName === iconName ? "text-primary" : "text-transparent")}>{t("admin.categories.form.selected")}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="rounded-md border border-dashed border-border bg-muted/40 p-3 text-center">
+                  <div
+                    className="mx-auto flex aspect-square w-full max-w-[220px] items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: form.accentColor || "#f3f4f6" }}
+                  >
+                    <CategoryIcon iconName={form.iconName} className="h-20 w-20 text-foreground" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => imageInputRef.current?.click()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      imageInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "rounded-md border border-dashed bg-muted/40 p-4 text-center transition",
+                    isImageDragActive ? "border-primary shadow-sm" : "border-border hover:border-primary/60",
+                  )}
+                >
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={onImageChange}
+                  />
+                  <UploadCloud className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+                  <p className="text-sm font-medium text-foreground">{t("admin.categories.form.uploadCategoryCover")}</p>
+                  <p className="text-xs text-muted-foreground">{t("admin.categories.form.uploadFormats")}</p>
+                  {isImageLoading ? (
+                    <div className="mt-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">{t("admin.categories.form.uploading")}</p>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${imageUploadProgress}%` }} />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-md border border-dashed border-border bg-muted/40 p-3">
+                  <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-md bg-background">
+                    {visualPreviewUrl ? (
+                      <img
+                        src={visualPreviewUrl}
+                        alt={t("admin.categories.form.imagePreviewAlt")}
+                        className="h-full w-full object-cover animate-fade-in"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    <div className="absolute right-2 top-2 flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7 rounded-md"
+                        onClick={() => imageInputRef.current?.click()}
+                        aria-label={t("admin.categories.form.replaceImage")}
+                      >
+                        <Camera className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7 rounded-md"
+                        onClick={onImageRemove}
+                        aria-label={t("admin.categories.form.removeImage")}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -7738,46 +7978,10 @@ function CategoriesSection({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.categoryIcon")}</label>
-              <Popover open={isIconPickerOpen} onOpenChange={setIsIconPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={isIconPickerOpen}
-                    className={cn("h-10 w-full justify-between rounded-md", isRtl && "flex-row-reverse")}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <CategoryIcon iconName={form.iconName} className="h-4 w-4" />
-                      {form.iconName}
-                    </span>
-                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder={t("admin.categories.form.searchIcon")} />
-                    <CommandList>
-                      <CommandEmpty>{t("admin.categories.form.noIconFound")}</CommandEmpty>
-                      {CATEGORY_ICON_OPTIONS.map((iconName) => (
-                        <CommandItem
-                          key={iconName}
-                          value={iconName}
-                          onSelect={() => {
-                            onFormChange((current) => ({ ...current, iconName }));
-                            setIsIconPickerOpen(false);
-                          }}
-                        >
-                          <CategoryIcon iconName={iconName} className="h-4 w-4" />
-                          <span>{iconName}</span>
-                          <span className={cn("ml-auto text-xs", form.iconName === iconName ? "text-primary" : "text-transparent")}>{t("admin.categories.form.selected")}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.uploadCategoryIconImage")}</label>
+              <p className={cn("text-xs text-muted-foreground", isRtl && "text-right")}>
+                {form.visualType === "icon" ? t("admin.categories.form.iconModeHint") : t("admin.categories.form.imageModeHint")}
+              </p>
             </div>
             <div className="space-y-2">
               <label className={cn("text-sm font-medium text-foreground", isRtl && "text-right")}>{t("admin.categories.form.accentColor")}</label>
