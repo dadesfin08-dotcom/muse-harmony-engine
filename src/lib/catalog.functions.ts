@@ -1745,6 +1745,61 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
     }
   });
 
+export const listSimilarMasterProducts = createServerFn({ method: "POST" })
+  .inputValidator((input) => similarMasterProductsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const normalizedNeedle = normalizeProductNameForComparison(data.name);
+      if (!normalizedNeedle) {
+        return [] as Array<{ id: string; name: string }>;
+      }
+
+      const scopedCategoryIds = (data.categoryIds ?? []).slice(0, 4);
+      const query = (supabaseAdmin as any)
+        .from("master_products")
+        .select("id, product_name, brand_id, category_ids")
+        .eq("is_active", true)
+        .order("popularity_score", { ascending: false })
+        .limit(250);
+
+      const { data: rows, error } = await query;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const filtered = ((rows ?? []) as Array<{
+        id: string;
+        product_name: string;
+        brand_id: string | null;
+        category_ids: string[] | null;
+      }>)
+        .filter((row) => row.id !== data.excludeProductId)
+        .filter((row) => {
+          if (data.brandId && row.brand_id !== data.brandId) {
+            return false;
+          }
+          if (scopedCategoryIds.length === 0) {
+            return true;
+          }
+          const rowCategories = Array.isArray(row.category_ids) ? row.category_ids : [];
+          return rowCategories.some((id) => scopedCategoryIds.includes(id));
+        })
+        .filter((row) => {
+          const normalizedCandidate = normalizeProductNameForComparison(row.product_name);
+          return (
+            normalizedCandidate.includes(normalizedNeedle) || normalizedNeedle.includes(normalizedCandidate)
+          );
+        })
+        .slice(0, data.limit)
+        .map((row) => ({ id: row.id, name: row.product_name }));
+
+      return filtered;
+    } catch (error) {
+      console.error("listSimilarMasterProducts failed:", error);
+      throw new Error("Failed to load similar master products.");
+    }
+  });
+
 export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" })
   .inputValidator((input) => customerCatalogInputSchema.parse(input))
   .handler(async ({ data }) => {
