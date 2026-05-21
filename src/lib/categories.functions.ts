@@ -3,8 +3,6 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const productCategorySchema = z.enum(["Groceries", "Vegetables & Fruits", "Meat & Poultry", "Bakery & Pastry", "Dairy & Eggs", "Drinks & Water", "Cleaning Supplies"]);
-
 const optionalNeighborhoodSchema = z.object({
   neighborhoodId: z.string().uuid().nullable().optional(),
 });
@@ -102,15 +100,10 @@ export const listAdminCategories = createServerFn({ method: "GET" }).handler(asy
 export const createCategory = createServerFn({ method: "POST" })
   .inputValidator((input) => categoryInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const parsedCategory = productCategorySchema.safeParse(data.nameEn);
-    if (!parsedCategory.success) {
-      throw new Error("Category English name must be one of: Groceries, Vegetables & Fruits, Meat & Poultry, Bakery & Pastry, Dairy & Eggs, Drinks & Water, Cleaning Supplies.");
-    }
-
     const { data: inserted, error } = await (supabaseAdmin as any)
       .from("categories")
       .insert({
-        name_en: parsedCategory.data,
+        name_en: data.nameEn,
         name_fr: data.nameFr,
         name_ar: data.nameAr,
         image_url: data.imageUrl,
@@ -133,15 +126,10 @@ export const createCategory = createServerFn({ method: "POST" })
 export const updateCategory = createServerFn({ method: "POST" })
   .inputValidator((input) => updateCategoryInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const parsedCategory = productCategorySchema.safeParse(data.nameEn);
-    if (!parsedCategory.success) {
-      throw new Error("Category English name must be one of: Groceries, Vegetables & Fruits, Meat & Poultry, Bakery & Pastry, Dairy & Eggs, Drinks & Water, Cleaning Supplies.");
-    }
-
     const { data: updated, error } = await (supabaseAdmin as any)
       .from("categories")
       .update({
-        name_en: parsedCategory.data,
+        name_en: data.nameEn,
         name_fr: data.nameFr,
         name_ar: data.nameAr,
         image_url: data.imageUrl,
