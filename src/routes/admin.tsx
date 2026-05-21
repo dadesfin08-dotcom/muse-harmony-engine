@@ -171,6 +171,7 @@ import {
 import {
   createCategory,
   listAdminCategories,
+  uploadCategoryImage,
   updateCategory,
 } from "@/lib/categories.functions";
 import {
@@ -831,6 +832,7 @@ function AdminPage() {
   const deleteBrandInDatabase = useServerFn(deleteBrand);
   const uploadBrandLogoToStorage = useServerFn(uploadBrandLogo);
   const createCategoryInDatabase = useServerFn(createCategory);
+  const uploadCategoryImageToStorage = useServerFn(uploadCategoryImage);
   const updateCategoryInDatabase = useServerFn(updateCategory);
   const createSiteAdInDatabase = useServerFn(createSiteAd);
   const updateSiteAdInDatabase = useServerFn(updateSiteAd);
@@ -3413,27 +3415,25 @@ function AdminPage() {
       let finalImageUrl = categoryForm.visualType === "image" ? categoryForm.imageUrl.trim() || null : null;
 
       if (categoryForm.visualType === "image" && categoryImageFile) {
-        const extension = categoryImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-        const sanitizedBaseName = categoryImageFile.name
-          .replace(/\.[^/.]+$/, "")
-          .replace(/[^a-zA-Z0-9-_]/g, "-")
-          .slice(0, 60);
-        const fileName = `${crypto.randomUUID()}-${sanitizedBaseName || "category"}.${extension}`;
-        const filePath = `categories/${fileName}`;
+        const imageDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === "string") resolve(reader.result);
+            else reject(new Error("Failed to read category image."));
+          };
+          reader.onerror = () => reject(new Error("Failed to read category image."));
+          reader.readAsDataURL(categoryImageFile);
+        });
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("products")
-          .upload(filePath, categoryImageFile, {
-            cacheControl: "3600",
-            upsert: false,
-          });
+        const uploaded = await uploadCategoryImageToStorage({
+          data: {
+            fileName: categoryImageFile.name,
+            contentType: categoryImageFile.type || "image/jpeg",
+            dataUrl: imageDataUrl,
+          },
+        });
 
-        if (uploadError || !uploadData?.path) {
-          throw new Error(uploadError?.message || "Category image upload failed.");
-        }
-
-        const { data: publicUrlData } = supabase.storage.from("products").getPublicUrl(uploadData.path);
-        finalImageUrl = publicUrlData.publicUrl;
+        finalImageUrl = uploaded.publicUrl;
       }
 
       const payload = {
