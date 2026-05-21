@@ -27,7 +27,8 @@ const createMasterProductInputSchema = z.object({
   nameAr: z.string().trim().min(1).max(140),
   productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
-  categoryId: z.string().uuid(),
+  categoryId: z.string().uuid().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).min(1).max(4).optional(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
@@ -58,7 +59,8 @@ const updateMasterProductInputSchema = z.object({
   nameAr: z.string().trim().min(1).max(140),
   productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
-  categoryId: z.string().uuid(),
+  categoryId: z.string().uuid().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).min(1).max(4).optional(),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: measurementUnitSchema,
   popularityScore: z.number().int().min(0).max(1_000_000),
@@ -160,6 +162,14 @@ const customerSearchInputSchema = z.object({
   limit: z.number().int().min(1).max(6).default(6),
 });
 
+const similarMasterProductsInputSchema = z.object({
+  name: z.string().trim().min(1).max(140),
+  brandId: z.string().uuid().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).max(4).optional(),
+  excludeProductId: z.string().uuid().optional(),
+  limit: z.number().int().min(1).max(10).default(5),
+});
+
 const activePlatformPacksInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
 });
@@ -250,6 +260,7 @@ type MasterProductRow = {
     logo_url: string | null;
   } | null;
   category_id: string | null;
+  category_ids: string[];
   category: ProductCategory;
   measurement_value: number | null;
   measurement_unit: MeasurementUnit;
@@ -338,7 +349,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
@@ -760,6 +771,7 @@ export const importMasterProductsBulk = createServerFn({ method: "POST" })
           name_fr: row.nameFr,
           name_ar: row.nameAr,
           category_id: matchedCategory.id,
+          category_ids: [matchedCategory.id],
           category: parsedCategory.data,
           brand_id: matchedBrandId,
           product_variants: row.productVariants,
@@ -917,23 +929,47 @@ export const uploadBrandLogo = createServerFn({ method: "POST" })
     }
   });
 
+function normalizeProductNameForComparison(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function resolveSelectedCategoryIds(input: { categoryId?: string | null; categoryIds?: string[] }) {
+  const ids = input.categoryIds?.length
+    ? input.categoryIds
+    : input.categoryId
+      ? [input.categoryId]
+      : [];
+  return Array.from(new Set(ids));
+}
+
 export const createMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => createMasterProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: categoryRow, error: categoryError } = await (supabaseAdmin as any)
-        .from("categories")
-        .select("name_en")
-        .eq("id", data.categoryId)
-        .maybeSingle();
+      const selectedCategoryIds = resolveSelectedCategoryIds(data);
+      if (selectedCategoryIds.length === 0 || selectedCategoryIds.length > 4) {
+        throw new Error("Please select between 1 and 4 categories.");
+      }
 
-      if (categoryError || !categoryRow?.name_en) {
+      const { data: categoryRows, error: categoryError } = await (supabaseAdmin as any)
+        .from("categories")
+        .select("id, name_en")
+        .in("id", selectedCategoryIds);
+
+      if (categoryError || !categoryRows || categoryRows.length !== selectedCategoryIds.length) {
         throw createDbError(categoryError ?? new Error("Invalid category selected."), "Invalid category selected.");
       }
 
-      const parsedCategory = productCategorySchema.safeParse(categoryRow.name_en);
+      const primaryCategoryId = selectedCategoryIds[0];
+      const primaryCategoryName = ((categoryRows as Array<{ id: string; name_en: string }>).find((row) => row.id === primaryCategoryId)?.name_en ?? "").trim();
+      const parsedCategory = productCategorySchema.safeParse(primaryCategoryName);
       if (!parsedCategory.success) {
-        throw new Error(`Selected category '${categoryRow.name_en}' is not supported by master_products.category enum.`);
+        throw new Error(`Selected category '${primaryCategoryName}' is not supported by master_products.category enum.`);
       }
 
       const { data: inserted, error } = await (supabaseAdmin as any)
@@ -944,7 +980,8 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           name_ar: data.nameAr,
           product_variants: data.productVariants,
           brand_id: data.brandId,
-          category_id: data.categoryId,
+          category_id: primaryCategoryId,
+          category_ids: selectedCategoryIds,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
@@ -953,7 +990,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -1020,19 +1057,25 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => updateMasterProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: categoryRow, error: categoryError } = await (supabaseAdmin as any)
-        .from("categories")
-        .select("name_en")
-        .eq("id", data.categoryId)
-        .maybeSingle();
+      const selectedCategoryIds = resolveSelectedCategoryIds(data);
+      if (selectedCategoryIds.length === 0 || selectedCategoryIds.length > 4) {
+        throw new Error("Please select between 1 and 4 categories.");
+      }
 
-      if (categoryError || !categoryRow?.name_en) {
+      const { data: categoryRows, error: categoryError } = await (supabaseAdmin as any)
+        .from("categories")
+        .select("id, name_en")
+        .in("id", selectedCategoryIds);
+
+      if (categoryError || !categoryRows || categoryRows.length !== selectedCategoryIds.length) {
         throw createDbError(categoryError ?? new Error("Invalid category selected."), "Invalid category selected.");
       }
 
-      const parsedCategory = productCategorySchema.safeParse(categoryRow.name_en);
+      const primaryCategoryId = selectedCategoryIds[0];
+      const primaryCategoryName = ((categoryRows as Array<{ id: string; name_en: string }>).find((row) => row.id === primaryCategoryId)?.name_en ?? "").trim();
+      const parsedCategory = productCategorySchema.safeParse(primaryCategoryName);
       if (!parsedCategory.success) {
-        throw new Error(`Selected category '${categoryRow.name_en}' is not supported by master_products.category enum.`);
+        throw new Error(`Selected category '${primaryCategoryName}' is not supported by master_products.category enum.`);
       }
 
       const { data: updated, error } = await (supabaseAdmin as any)
@@ -1043,7 +1086,8 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           name_ar: data.nameAr,
           product_variants: data.productVariants,
           brand_id: data.brandId,
-          category_id: data.categoryId,
+          category_id: primaryCategoryId,
+          category_ids: selectedCategoryIds,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
@@ -1052,7 +1096,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -1698,6 +1742,61 @@ export const searchCustomerProducts = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("searchCustomerProducts failed:", error);
       throw new Error("Failed to search products.");
+    }
+  });
+
+export const listSimilarMasterProducts = createServerFn({ method: "POST" })
+  .inputValidator((input) => similarMasterProductsInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const normalizedNeedle = normalizeProductNameForComparison(data.name);
+      if (!normalizedNeedle) {
+        return [] as Array<{ id: string; name: string }>;
+      }
+
+      const scopedCategoryIds = (data.categoryIds ?? []).slice(0, 4);
+      const query = (supabaseAdmin as any)
+        .from("master_products")
+        .select("id, product_name, brand_id, category_ids")
+        .eq("is_active", true)
+        .order("popularity_score", { ascending: false })
+        .limit(250);
+
+      const { data: rows, error } = await query;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const filtered = ((rows ?? []) as Array<{
+        id: string;
+        product_name: string;
+        brand_id: string | null;
+        category_ids: string[] | null;
+      }>)
+        .filter((row) => row.id !== data.excludeProductId)
+        .filter((row) => {
+          if (data.brandId && row.brand_id !== data.brandId) {
+            return false;
+          }
+          if (scopedCategoryIds.length === 0) {
+            return true;
+          }
+          const rowCategories = Array.isArray(row.category_ids) ? row.category_ids : [];
+          return rowCategories.some((id) => scopedCategoryIds.includes(id));
+        })
+        .filter((row) => {
+          const normalizedCandidate = normalizeProductNameForComparison(row.product_name);
+          return (
+            normalizedCandidate.includes(normalizedNeedle) || normalizedNeedle.includes(normalizedCandidate)
+          );
+        })
+        .slice(0, data.limit)
+        .map((row) => ({ id: row.id, name: row.product_name }));
+
+      return filtered;
+    } catch (error) {
+      console.error("listSimilarMasterProducts failed:", error);
+      throw new Error("Failed to load similar master products.");
     }
   });
 

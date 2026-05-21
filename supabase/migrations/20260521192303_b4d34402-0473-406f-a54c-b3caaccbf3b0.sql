@@ -1,0 +1,2 @@
+ALTER TABLE public.master_products
+DROP CONSTRAINT IF EXISTS master_products_product_name_key;

@@ -773,6 +773,7 @@ export type Database = {
           brand_id: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id: string | null
+          category_ids: string[]
           created_at: string
           id: string
           image_url: string | null
@@ -792,6 +793,7 @@ export type Database = {
           brand_id?: string | null
           category: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
+          category_ids?: string[]
           created_at?: string
           id?: string
           image_url?: string | null
@@ -811,6 +813,7 @@ export type Database = {
           brand_id?: string | null
           category?: Database["public"]["Enums"]["product_category"]
           category_id?: string | null
+          category_ids?: string[]
           created_at?: string
           id?: string
           image_url?: string | null

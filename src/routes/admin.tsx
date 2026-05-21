@@ -157,6 +157,7 @@ import {
   createBrand,
   createMasterProduct,
   importMasterProductsBulk,
+  listSimilarMasterProducts,
   listMasterProductsForExport,
   deleteBrand,
   importBrandsBulk,
@@ -470,7 +471,7 @@ const masterProductFormSchema = z.object({
   nameAr: z.string().trim().min(1),
   productVariants: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
   brandId: z.string().uuid().nullable(),
-  categoryId: z.string().uuid(),
+  categoryIds: z.array(z.string().uuid()).min(1).max(4),
   measurementValue: z.number().positive().max(10_000).nullable(),
   measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
   popularityScore: z.number().int().min(0).max(1_000_000),
@@ -822,6 +823,7 @@ function AdminPage() {
   const uploadPlatformPackAssetToStorage = useServerFn(uploadPlatformPackAsset);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
+  const fetchSimilarMasterProducts = useServerFn(listSimilarMasterProducts);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
@@ -1196,6 +1198,11 @@ function AdminPage() {
         brandNameAr: row.brands?.name_ar,
         brandLogoUrl: row.brands?.logo_url,
         categoryId: row.category_id,
+        categoryIds: Array.isArray(row.category_ids)
+          ? row.category_ids.filter((value): value is string => typeof value === "string")
+          : row.category_id
+            ? [row.category_id]
+            : [],
         category: row.category,
         measurementValue: row.measurement_value != null ? Number(row.measurement_value) : null,
         measurementUnit: row.measurement_unit,
@@ -1384,11 +1391,16 @@ function AdminPage() {
     nameAr: "",
     productVariants: "",
     brandId: "",
-    categoryId: "",
+    categoryIds: [] as string[],
     measurementValue: "",
     measurementUnit: "Piece" as MeasurementUnit,
     popularityScore: "0",
   });
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [categorySelectionWarning, setCategorySelectionWarning] = useState<string | null>(null);
+  const [similarNameSuggestions, setSimilarNameSuggestions] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoadingSimilarProducts, setIsLoadingSimilarProducts] = useState(false);
   const [productVariantInput, setProductVariantInput] = useState("");
   const [categoryForm, setCategoryForm] = useState({
     id: "",
@@ -2450,6 +2462,68 @@ function AdminPage() {
     [productForm.productVariants],
   );
 
+  const selectedProductCategories = useMemo(
+    () => activeCategories.filter((category) => productForm.categoryIds.includes(category.id)),
+    [activeCategories, productForm.categoryIds],
+  );
+
+  const filteredCategoryOptions = useMemo(() => {
+    const needle = categorySearchTerm.trim().toLocaleLowerCase();
+    if (!needle) {
+      return activeCategories;
+    }
+
+    return activeCategories.filter((category) =>
+      [category.name_en, category.name_fr ?? "", category.name_ar ?? ""]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(needle),
+    );
+  }, [activeCategories, categorySearchTerm]);
+
+  useEffect(() => {
+    const trimmedName = productForm.name.trim();
+    if (trimmedName.length < 2) {
+      setSimilarNameSuggestions([]);
+      setIsLoadingSimilarProducts(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingSimilarProducts(true);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const suggestions = await fetchSimilarMasterProducts({
+          data: {
+            name: trimmedName,
+            brandId: productForm.brandId.trim() ? productForm.brandId : null,
+            categoryIds: productForm.categoryIds,
+            excludeProductId: editingProductId ?? undefined,
+            limit: 5,
+          },
+        });
+
+        if (!cancelled) {
+          setSimilarNameSuggestions(suggestions ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setSimilarNameSuggestions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSimilarProducts(false);
+        }
+      }
+    }, 260);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [editingProductId, fetchSimilarMasterProducts, productForm.brandId, productForm.categoryIds, productForm.name]);
+
   const addProductVariantTag = (rawValue: string) => {
     const normalizedValue = rawValue.trim();
     if (!normalizedValue) return;
@@ -2482,7 +2556,7 @@ function AdminPage() {
       nameAr: productForm.nameAr,
       productVariants: parsedProductVariants,
       brandId: productForm.brandId.trim() ? productForm.brandId : null,
-      categoryId: productForm.categoryId,
+      categoryIds: productForm.categoryIds,
       measurementValue: parsedMeasurementValue,
       measurementUnit: productForm.measurementUnit,
       popularityScore: Number(productForm.popularityScore),
@@ -2493,8 +2567,8 @@ function AdminPage() {
       return;
     }
 
-    const selectedCategory = activeCategories.find((category) => category.id === productForm.categoryId);
-    if (!selectedCategory) {
+    const selectedCategories = activeCategories.filter((category) => productForm.categoryIds.includes(category.id));
+    if (selectedCategories.length !== productForm.categoryIds.length || selectedCategories.length === 0) {
       toast.error(t("admin.toast.invalidSelectedCategory"));
       return;
     }
@@ -2538,7 +2612,8 @@ function AdminPage() {
           nameAr: productForm.nameAr.trim(),
           productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
-          categoryId: productForm.categoryId,
+          categoryId: productForm.categoryIds[0],
+          categoryIds: productForm.categoryIds,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
@@ -2560,7 +2635,8 @@ function AdminPage() {
           nameAr: productForm.nameAr.trim(),
           productVariants: parsedForm.data.productVariants,
           brandId: productForm.brandId.trim() ? productForm.brandId : null,
-          categoryId: productForm.categoryId,
+          categoryId: productForm.categoryIds[0],
+          categoryIds: productForm.categoryIds,
           measurementValue: parsedMeasurementValue,
           measurementUnit: productForm.measurementUnit,
           popularityScore: Number(productForm.popularityScore),
@@ -2583,11 +2659,14 @@ function AdminPage() {
         nameAr: "",
         productVariants: "",
         brandId: "",
-        categoryId: "",
+        categoryIds: [],
         measurementValue: "",
         measurementUnit: "Piece",
         popularityScore: "0",
       });
+      setCategoryPickerOpen(false);
+      setCategorySearchTerm("");
+      setSimilarNameSuggestions([]);
       setProductVariantInput("");
       setEditingProductId(null);
       setProductImageFile(null);
@@ -2640,7 +2719,7 @@ function AdminPage() {
       nameAr: "",
       productVariants: "",
       brandId: "",
-      categoryId: "",
+      categoryIds: [],
       measurementValue: "",
       measurementUnit: "Piece",
       popularityScore: "0",
@@ -2649,6 +2728,9 @@ function AdminPage() {
     setProductImageFile(null);
     setProductImagePreviewUrl(null);
     setCurrentProductImageUrl(null);
+    setCategoryPickerOpen(false);
+    setCategorySearchTerm("");
+    setSimilarNameSuggestions([]);
     setIsProductModalOpen(true);
   };
 
@@ -2660,7 +2742,12 @@ function AdminPage() {
       nameAr: product.nameAr ?? product.name,
       productVariants: Array.isArray(product.productVariants) ? product.productVariants.join(", ") : "",
       brandId: product.brandId ?? "",
-      categoryId: product.categoryId ?? "",
+      categoryIds:
+        Array.isArray(product.categoryIds) && product.categoryIds.length > 0
+          ? product.categoryIds
+          : product.categoryId
+            ? [product.categoryId]
+            : [],
       measurementValue:
         product.measurementValue != null && Number.isFinite(product.measurementValue)
           ? String(product.measurementValue)
@@ -2672,6 +2759,8 @@ function AdminPage() {
     setProductImageFile(null);
     setCurrentProductImageUrl(product.imageUrl ?? null);
     setProductImagePreviewUrl(product.imageUrl ?? fallbackProductImage);
+    setCategoryPickerOpen(false);
+    setCategorySearchTerm("");
     setIsProductModalOpen(true);
   };
 
@@ -5823,6 +5912,10 @@ function AdminPage() {
             setProductImageFile(null);
             setProductImagePreviewUrl(null);
             setCurrentProductImageUrl(null);
+            setCategoryPickerOpen(false);
+            setCategorySearchTerm("");
+            setCategorySelectionWarning(null);
+            setSimilarNameSuggestions([]);
           }
         }}
       >
@@ -5879,6 +5972,20 @@ function AdminPage() {
                 placeholder={t("admin.catalog.modals.placeholders.productNameEn")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+              {(isLoadingSimilarProducts || similarNameSuggestions.length > 0) && (
+                <div className="rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <p className="font-medium">Similar product already exists. You can still save this product.</p>
+                  {isLoadingSimilarProducts ? (
+                    <p className="mt-1 text-amber-800/80">Checking similar products…</p>
+                  ) : (
+                    <ul className="mt-1 list-disc space-y-0.5 ps-4">
+                      {similarNameSuggestions.map((item) => (
+                        <li key={item.id}>{item.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -5959,27 +6066,97 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="category" className="text-sm font-medium text-foreground">
+              <label htmlFor="category-picker" className="text-sm font-medium text-foreground">
                 {t("admin.catalog.modals.category")}
               </label>
-              <select
-                id="category"
-                value={productForm.categoryId}
-                onChange={(event) =>
-                  setProductForm((current) => ({
-                    ...current,
-                    categoryId: event.target.value,
-                  }))
-                }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              >
-                <option value="">{t("admin.catalog.modals.selectCategory")}</option>
-                {activeCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name_en}
-                  </option>
-                ))}
-              </select>
+              <Popover open={categoryPickerOpen} onOpenChange={setCategoryPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="category-picker"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={categoryPickerOpen}
+                    className="h-10 w-full justify-between rounded-md"
+                  >
+                    <span className="truncate">
+                      {selectedProductCategories.length > 0
+                        ? `${selectedProductCategories.length} selected`
+                        : t("admin.catalog.modals.selectCategory")}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      value={categorySearchTerm}
+                      onValueChange={setCategorySearchTerm}
+                      placeholder="Search category..."
+                    />
+                    <CommandList>
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      {filteredCategoryOptions.map((category) => {
+                        const isSelected = productForm.categoryIds.includes(category.id);
+                        return (
+                          <CommandItem
+                            key={category.id}
+                            value={`${category.name_en} ${category.name_fr ?? ""} ${category.name_ar ?? ""}`}
+                            onSelect={() => {
+                              setCategorySelectionWarning(null);
+                              setProductForm((current) => {
+                                const alreadySelected = current.categoryIds.includes(category.id);
+                                if (alreadySelected) {
+                                  return {
+                                    ...current,
+                                    categoryIds: current.categoryIds.filter((id) => id !== category.id),
+                                  };
+                                }
+
+                                if (current.categoryIds.length >= 4) {
+                                  setCategorySelectionWarning("Maximum 4 categories allowed");
+                                  return current;
+                                }
+
+                                return {
+                                  ...current,
+                                  categoryIds: [...current.categoryIds, category.id],
+                                };
+                              });
+                            }}
+                          >
+                            <span className="truncate">{category.name_en}</span>
+                            {isSelected ? <span className="ms-auto text-xs text-primary">✓</span> : null}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {selectedProductCategories.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedProductCategories.map((category) => (
+                    <Badge key={category.id} variant="secondary" className="gap-1 rounded-full px-2.5 py-1 text-xs">
+                      {category.name_en}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${category.name_en}`}
+                        onClick={() =>
+                          setProductForm((current) => ({
+                            ...current,
+                            categoryIds: current.categoryIds.filter((id) => id !== category.id),
+                          }))
+                        }
+                        className="opacity-70 transition hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+              {categorySelectionWarning ? <p className="text-xs text-amber-700">{categorySelectionWarning}</p> : null}
             </div>
 
             <div className="space-y-2">
