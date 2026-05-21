@@ -316,6 +316,7 @@ export type Database = {
           name_fr: string | null
           sort_order: number
           updated_at: string
+          visual_type: Database["public"]["Enums"]["category_visual_type"]
         }
         Insert: {
           accent_color?: string | null
@@ -330,6 +331,7 @@ export type Database = {
           name_fr?: string | null
           sort_order?: number
           updated_at?: string
+          visual_type?: Database["public"]["Enums"]["category_visual_type"]
         }
         Update: {
           accent_color?: string | null
@@ -344,6 +346,7 @@ export type Database = {
           name_fr?: string | null
           sort_order?: number
           updated_at?: string
+          visual_type?: Database["public"]["Enums"]["category_visual_type"]
         }
         Relationships: []
       }
@@ -2174,6 +2177,7 @@ export type Database = {
         | "CREDIT_ISSUED"
         | "CREDIT_REPAID"
         | "CREDIT_CANCELLED"
+      category_visual_type: "icon" | "image"
       customer_risk_score: "low" | "medium" | "high"
       customer_status: "active" | "vip" | "warning" | "suspicious" | "blocked"
       markup_type: "fixed" | "percentage"
@@ -2364,6 +2368,7 @@ export const Constants = {
         "CREDIT_REPAID",
         "CREDIT_CANCELLED",
       ],
+      category_visual_type: ["icon", "image"],
       customer_risk_score: ["low", "medium", "high"],
       customer_status: ["active", "vip", "warning", "suspicious", "blocked"],
       markup_type: ["fixed", "percentage"],
