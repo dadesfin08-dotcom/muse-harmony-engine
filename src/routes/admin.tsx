@@ -3471,7 +3471,12 @@ function AdminPage() {
       resetCategoryForm();
     } catch (error) {
       console.error("Failed to save category:", error);
-      toast.error(t("admin.categories.toast.saveFailed"));
+      const errorMessage = error instanceof Error ? error.message : null;
+      if (errorMessage) {
+        toast.error(`${t("admin.categories.toast.saveFailed")} ${errorMessage}`);
+      } else {
+        toast.error(t("admin.categories.toast.saveFailed"));
+      }
     } finally {
       setIsSavingCategory(false);
     }
