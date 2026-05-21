@@ -162,6 +162,14 @@ const customerSearchInputSchema = z.object({
   limit: z.number().int().min(1).max(6).default(6),
 });
 
+const similarMasterProductsInputSchema = z.object({
+  name: z.string().trim().min(1).max(140),
+  brandId: z.string().uuid().nullable().optional(),
+  categoryIds: z.array(z.string().uuid()).max(4).optional(),
+  excludeProductId: z.string().uuid().optional(),
+  limit: z.number().int().min(1).max(10).default(5),
+});
+
 const activePlatformPacksInputSchema = z.object({
   neighborhoodId: z.string().uuid(),
 });
@@ -252,6 +260,7 @@ type MasterProductRow = {
     logo_url: string | null;
   } | null;
   category_id: string | null;
+  category_ids: string[];
   category: ProductCategory;
   measurement_value: number | null;
   measurement_unit: MeasurementUnit;
@@ -340,7 +349,7 @@ export const listMasterProducts = createServerFn({ method: "GET" }).handler(asyn
     const { data, error } = await (supabaseAdmin as any)
       .from("master_products")
       .select(
-        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+        "id, product_name, name_fr, name_ar, product_variants, barcode, brand_id, category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false });
