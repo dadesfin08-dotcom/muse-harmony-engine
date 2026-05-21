@@ -989,7 +989,7 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           is_active: true,
         })
         .select(
-          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
@@ -1095,7 +1095,7 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
         })
         .eq("id", data.id)
         .select(
-          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
+          "id, product_name, name_fr, name_ar, product_variants, brand_id, brands:brand_id(id, name_en, name_fr, name_ar, logo_url), category_id, category_ids, category, measurement_value, measurement_unit, image_url, popularity_score, is_active, created_at",
         )
         .single();
 
