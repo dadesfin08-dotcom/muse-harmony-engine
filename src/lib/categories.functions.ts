@@ -14,6 +14,7 @@ const categoryInputSchema = z.object({
   nameFr: z.string().trim().min(1).max(120),
   nameAr: z.string().trim().min(1).max(120),
   imageUrl: z.string().url().max(2000).nullable(),
+  visualType: z.enum(["icon", "image"]).default("icon"),
   iconName: z.string().trim().max(120).nullable(),
   accentColor: z.string().trim().min(4).max(32).default("#f3f4f6"),
   sortOrder: z.number().int().min(0).max(9999).default(0),
@@ -35,6 +36,7 @@ type CategoryRow = {
   name_fr: string;
   name_ar: string;
   image_url: string | null;
+  visual_type: "icon" | "image";
   icon_name: string | null;
   accent_color: string;
   sort_order: number;
@@ -86,7 +88,7 @@ async function getNeighborhoodVendorIds(neighborhoodId?: string | null) {
 export const listAdminCategories = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (supabaseAdmin as any)
     .from("categories")
-    .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+    .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -112,12 +114,13 @@ export const createCategory = createServerFn({ method: "POST" })
         name_fr: data.nameFr,
         name_ar: data.nameAr,
         image_url: data.imageUrl,
+        visual_type: data.visualType,
         icon_name: data.iconName,
         accent_color: data.accentColor,
         sort_order: data.sortOrder,
         is_active: data.isActive,
       })
-      .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+      .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
       .single();
 
     if (error || !inserted) {
@@ -142,13 +145,14 @@ export const updateCategory = createServerFn({ method: "POST" })
         name_fr: data.nameFr,
         name_ar: data.nameAr,
         image_url: data.imageUrl,
+        visual_type: data.visualType,
         icon_name: data.iconName,
         accent_color: data.accentColor,
         sort_order: data.sortOrder,
         is_active: data.isActive,
       })
       .eq("id", data.id)
-      .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+      .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
       .single();
 
     if (error || !updated) {
@@ -163,7 +167,7 @@ export const listActiveCategories = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: categories, error: categoriesError } = await (supabaseAdmin as any)
       .from("categories")
-      .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+      .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
@@ -225,7 +229,7 @@ export const getCategoryProducts = createServerFn({ method: "POST" })
     const [{ data: category, error: categoryError }, vendorIds] = await Promise.all([
       (supabaseAdmin as any)
         .from("categories")
-        .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+        .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
         .eq("id", data.categoryId)
         .eq("is_active", true)
         .single(),
@@ -330,7 +334,7 @@ export const getCategoryById = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: category, error } = await (supabaseAdmin as any)
       .from("categories")
-      .select("id, name_en, name_fr, name_ar, image_url, icon_name, accent_color, sort_order, is_active, created_at")
+    .select("id, name_en, name_fr, name_ar, image_url, visual_type, icon_name, accent_color, sort_order, is_active, created_at")
       .eq("id", data.categoryId)
       .eq("is_active", true)
       .maybeSingle();
