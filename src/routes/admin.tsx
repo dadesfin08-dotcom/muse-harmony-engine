@@ -5907,6 +5907,10 @@ function AdminPage() {
             setProductImageFile(null);
             setProductImagePreviewUrl(null);
             setCurrentProductImageUrl(null);
+            setCategoryPickerOpen(false);
+            setCategorySearchTerm("");
+            setCategorySelectionWarning(null);
+            setSimilarNameSuggestions([]);
           }
         }}
       >
@@ -5963,6 +5967,20 @@ function AdminPage() {
                 placeholder={t("admin.catalog.modals.placeholders.productNameEn")}
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
               />
+              {(isLoadingSimilarProducts || similarNameSuggestions.length > 0) && (
+                <div className="rounded-md border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <p className="font-medium">Similar product already exists. You can still save this product.</p>
+                  {isLoadingSimilarProducts ? (
+                    <p className="mt-1 text-amber-800/80">Checking similar products…</p>
+                  ) : (
+                    <ul className="mt-1 list-disc space-y-0.5 ps-4">
+                      {similarNameSuggestions.map((item) => (
+                        <li key={item.id}>{item.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -6043,27 +6061,97 @@ function AdminPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="category" className="text-sm font-medium text-foreground">
+              <label htmlFor="category-picker" className="text-sm font-medium text-foreground">
                 {t("admin.catalog.modals.category")}
               </label>
-              <select
-                id="category"
-                value={productForm.categoryId}
-                onChange={(event) =>
-                  setProductForm((current) => ({
-                    ...current,
-                    categoryId: event.target.value,
-                  }))
-                }
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-ring/30"
-              >
-                <option value="">{t("admin.catalog.modals.selectCategory")}</option>
-                {activeCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name_en}
-                  </option>
-                ))}
-              </select>
+              <Popover open={categoryPickerOpen} onOpenChange={setCategoryPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="category-picker"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={categoryPickerOpen}
+                    className="h-10 w-full justify-between rounded-md"
+                  >
+                    <span className="truncate">
+                      {selectedProductCategories.length > 0
+                        ? `${selectedProductCategories.length} selected`
+                        : t("admin.catalog.modals.selectCategory")}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      value={categorySearchTerm}
+                      onValueChange={setCategorySearchTerm}
+                      placeholder="Search category..."
+                    />
+                    <CommandList>
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      {filteredCategoryOptions.map((category) => {
+                        const isSelected = productForm.categoryIds.includes(category.id);
+                        return (
+                          <CommandItem
+                            key={category.id}
+                            value={`${category.name_en} ${category.name_fr ?? ""} ${category.name_ar ?? ""}`}
+                            onSelect={() => {
+                              setCategorySelectionWarning(null);
+                              setProductForm((current) => {
+                                const alreadySelected = current.categoryIds.includes(category.id);
+                                if (alreadySelected) {
+                                  return {
+                                    ...current,
+                                    categoryIds: current.categoryIds.filter((id) => id !== category.id),
+                                  };
+                                }
+
+                                if (current.categoryIds.length >= 4) {
+                                  setCategorySelectionWarning("Maximum 4 categories allowed");
+                                  return current;
+                                }
+
+                                return {
+                                  ...current,
+                                  categoryIds: [...current.categoryIds, category.id],
+                                };
+                              });
+                            }}
+                          >
+                            <span className="truncate">{category.name_en}</span>
+                            {isSelected ? <span className="ms-auto text-xs text-primary">✓</span> : null}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {selectedProductCategories.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedProductCategories.map((category) => (
+                    <Badge key={category.id} variant="secondary" className="gap-1 rounded-full px-2.5 py-1 text-xs">
+                      {category.name_en}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${category.name_en}`}
+                        onClick={() =>
+                          setProductForm((current) => ({
+                            ...current,
+                            categoryIds: current.categoryIds.filter((id) => id !== category.id),
+                          }))
+                        }
+                        className="opacity-70 transition hover:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+              {categorySelectionWarning ? <p className="text-xs text-amber-700">{categorySelectionWarning}</p> : null}
             </div>
 
             <div className="space-y-2">
