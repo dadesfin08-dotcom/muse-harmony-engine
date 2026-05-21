@@ -1393,6 +1393,7 @@ function AdminPage() {
   });
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [categorySelectionWarning, setCategorySelectionWarning] = useState<string | null>(null);
   const [similarNameSuggestions, setSimilarNameSuggestions] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoadingSimilarProducts, setIsLoadingSimilarProducts] = useState(false);
   const [productVariantInput, setProductVariantInput] = useState("");
