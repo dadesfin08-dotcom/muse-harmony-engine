@@ -919,23 +919,69 @@ export const uploadBrandLogo = createServerFn({ method: "POST" })
     }
   });
 
+function normalizeProductNameForComparison(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function resolveSelectedCategoryIds(input: { categoryId?: string | null; categoryIds?: string[] }) {
+  const ids = input.categoryIds?.length
+    ? input.categoryIds
+    : input.categoryId
+      ? [input.categoryId]
+      : [];
+  return Array.from(new Set(ids));
+}
+
 export const createMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => createMasterProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: categoryRow, error: categoryError } = await (supabaseAdmin as any)
-        .from("categories")
-        .select("name_en")
-        .eq("id", data.categoryId)
-        .maybeSingle();
+      const selectedCategoryIds = resolveSelectedCategoryIds(data);
+      if (selectedCategoryIds.length === 0 || selectedCategoryIds.length > 4) {
+        throw new Error("Please select between 1 and 4 categories.");
+      }
 
-      if (categoryError || !categoryRow?.name_en) {
+      const { data: categoryRows, error: categoryError } = await (supabaseAdmin as any)
+        .from("categories")
+        .select("id, name_en")
+        .in("id", selectedCategoryIds);
+
+      if (categoryError || !categoryRows || categoryRows.length !== selectedCategoryIds.length) {
         throw createDbError(categoryError ?? new Error("Invalid category selected."), "Invalid category selected.");
       }
 
-      const parsedCategory = productCategorySchema.safeParse(categoryRow.name_en);
+      const primaryCategoryId = selectedCategoryIds[0];
+      const primaryCategoryName = ((categoryRows as Array<{ id: string; name_en: string }>).find((row) => row.id === primaryCategoryId)?.name_en ?? "").trim();
+      const parsedCategory = productCategorySchema.safeParse(primaryCategoryName);
       if (!parsedCategory.success) {
-        throw new Error(`Selected category '${categoryRow.name_en}' is not supported by master_products.category enum.`);
+        throw new Error(`Selected category '${primaryCategoryName}' is not supported by master_products.category enum.`);
+      }
+
+      const normalizedIncomingName = normalizeProductNameForComparison(data.name);
+      if (normalizedIncomingName.length > 0) {
+        const duplicateScopeQuery = (supabaseAdmin as any)
+          .from("master_products")
+          .select("id, product_name")
+          .eq("is_active", true)
+          .eq("brand_id", data.brandId)
+          .contains("category_ids", [primaryCategoryId])
+          .limit(200);
+
+        const { data: potentialDuplicates, error: duplicateError } = await duplicateScopeQuery;
+        if (duplicateError) {
+          throw createDbError(duplicateError, "Failed to validate similar products.");
+        }
+
+        for (const row of (potentialDuplicates ?? []) as Array<{ id: string; product_name: string }>) {
+          if (normalizeProductNameForComparison(row.product_name) === normalizedIncomingName) {
+            throw new Error("DB Warning: Similar product already exists. You can still save this product.");
+          }
+        }
       }
 
       const { data: inserted, error } = await (supabaseAdmin as any)
@@ -946,7 +992,8 @@ export const createMasterProduct = createServerFn({ method: "POST" })
           name_ar: data.nameAr,
           product_variants: data.productVariants,
           brand_id: data.brandId,
-          category_id: data.categoryId,
+          category_id: primaryCategoryId,
+          category_ids: selectedCategoryIds,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
@@ -1022,19 +1069,25 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => updateMasterProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: categoryRow, error: categoryError } = await (supabaseAdmin as any)
-        .from("categories")
-        .select("name_en")
-        .eq("id", data.categoryId)
-        .maybeSingle();
+      const selectedCategoryIds = resolveSelectedCategoryIds(data);
+      if (selectedCategoryIds.length === 0 || selectedCategoryIds.length > 4) {
+        throw new Error("Please select between 1 and 4 categories.");
+      }
 
-      if (categoryError || !categoryRow?.name_en) {
+      const { data: categoryRows, error: categoryError } = await (supabaseAdmin as any)
+        .from("categories")
+        .select("id, name_en")
+        .in("id", selectedCategoryIds);
+
+      if (categoryError || !categoryRows || categoryRows.length !== selectedCategoryIds.length) {
         throw createDbError(categoryError ?? new Error("Invalid category selected."), "Invalid category selected.");
       }
 
-      const parsedCategory = productCategorySchema.safeParse(categoryRow.name_en);
+      const primaryCategoryId = selectedCategoryIds[0];
+      const primaryCategoryName = ((categoryRows as Array<{ id: string; name_en: string }>).find((row) => row.id === primaryCategoryId)?.name_en ?? "").trim();
+      const parsedCategory = productCategorySchema.safeParse(primaryCategoryName);
       if (!parsedCategory.success) {
-        throw new Error(`Selected category '${categoryRow.name_en}' is not supported by master_products.category enum.`);
+        throw new Error(`Selected category '${primaryCategoryName}' is not supported by master_products.category enum.`);
       }
 
       const { data: updated, error } = await (supabaseAdmin as any)
@@ -1045,7 +1098,8 @@ export const updateMasterProduct = createServerFn({ method: "POST" })
           name_ar: data.nameAr,
           product_variants: data.productVariants,
           brand_id: data.brandId,
-          category_id: data.categoryId,
+          category_id: primaryCategoryId,
+          category_ids: selectedCategoryIds,
           category: parsedCategory.data,
           measurement_value: data.measurementValue,
           measurement_unit: data.measurementUnit,
