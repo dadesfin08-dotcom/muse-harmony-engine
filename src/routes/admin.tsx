@@ -1198,6 +1198,11 @@ function AdminPage() {
         brandNameAr: row.brands?.name_ar,
         brandLogoUrl: row.brands?.logo_url,
         categoryId: row.category_id,
+        categoryIds: Array.isArray(row.category_ids)
+          ? row.category_ids.filter((value): value is string => typeof value === "string")
+          : row.category_id
+            ? [row.category_id]
+            : [],
         category: row.category,
         measurementValue: row.measurement_value != null ? Number(row.measurement_value) : null,
         measurementUnit: row.measurement_unit,
