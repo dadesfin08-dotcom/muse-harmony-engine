@@ -823,6 +823,7 @@ function AdminPage() {
   const uploadPlatformPackAssetToStorage = useServerFn(uploadPlatformPackAsset);
   const fetchDatabaseHealth = useServerFn(checkAdminDatabaseHealth);
   const saveMasterProductToDatabase = useServerFn(createMasterProduct);
+  const fetchSimilarMasterProducts = useServerFn(listSimilarMasterProducts);
   const importMasterProductsBulkInDatabase = useServerFn(importMasterProductsBulk);
   const uploadMasterProductImageToStorage = useServerFn(uploadMasterProductImage);
   const updateMasterProductInDatabase = useServerFn(updateMasterProduct);
@@ -1385,11 +1386,15 @@ function AdminPage() {
     nameAr: "",
     productVariants: "",
     brandId: "",
-    categoryId: "",
+    categoryIds: [] as string[],
     measurementValue: "",
     measurementUnit: "Piece" as MeasurementUnit,
     popularityScore: "0",
   });
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [similarNameSuggestions, setSimilarNameSuggestions] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoadingSimilarProducts, setIsLoadingSimilarProducts] = useState(false);
   const [productVariantInput, setProductVariantInput] = useState("");
   const [categoryForm, setCategoryForm] = useState({
     id: "",
