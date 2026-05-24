@@ -11440,3 +11440,119 @@ function SettingsSection({
     </section>
   );
 }
+
+function MobileApiKeysSection({
+  keys,
+  keyNameInput,
+  onKeyNameInputChange,
+  onGenerateKey,
+  isGenerating,
+  revealedKey,
+  onCopyRevealedKey,
+  onDismissRevealedKey,
+  onRevokeKey,
+  revokingKeyId,
+  isLoading,
+  isRtl,
+}: {
+  keys: MobileApiKeyAdminRow[];
+  keyNameInput: string;
+  onKeyNameInputChange: Dispatch<SetStateAction<string>>;
+  onGenerateKey: () => void;
+  isGenerating: boolean;
+  revealedKey: { id: string; keyName: string; keyPrefix: string; token: string; createdAt: string } | null;
+  onCopyRevealedKey: () => void;
+  onDismissRevealedKey: () => void;
+  onRevokeKey: (id: string) => void;
+  revokingKeyId: string | null;
+  isLoading: boolean;
+  isRtl: boolean;
+}) {
+  return (
+    <section dir={isRtl ? "rtl" : "ltr"} className="space-y-4 rounded-lg border border-border bg-card p-4 shadow-sm md:p-5">
+      <div>
+        <h2 className={cn("text-base font-semibold text-foreground", isRtl && "text-right")}>Mobile App Keys</h2>
+        <p className={cn("text-sm text-muted-foreground", isRtl && "text-right")}>Generate and revoke REST API keys for the native mobile app.</p>
+      </div>
+
+      <div className="rounded-md border border-border bg-background p-3">
+        <div className={cn("flex flex-col gap-2 sm:flex-row", isRtl && "sm:flex-row-reverse")}>
+          <Input
+            value={keyNameInput}
+            onChange={(event) => onKeyNameInputChange(event.target.value)}
+            placeholder="Key name (optional)"
+            className={cn("h-10", isRtl && "text-right")}
+          />
+          <Button type="button" variant="hero" className="rounded-md" onClick={onGenerateKey} disabled={isGenerating}>
+            {isGenerating ? "Generating..." : "Generate New Mobile API Key"}
+          </Button>
+        </div>
+      </div>
+
+      {revealedKey ? (
+        <div className="rounded-md border border-primary/30 bg-primary/10 p-3">
+          <p className="text-sm font-semibold text-foreground">Copy this key now — it will only be shown once.</p>
+          <div className="mt-2 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs text-foreground break-all">
+            {revealedKey.token}
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <Button type="button" size="sm" className="rounded-md" onClick={onCopyRevealedKey}>Copy</Button>
+            <Button type="button" size="sm" variant="outline" className="rounded-md" onClick={onDismissRevealedKey}>Done</Button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full min-w-[680px] text-sm">
+          <thead className="bg-muted/40 text-left text-muted-foreground">
+            <tr>
+              <th className="px-3 py-2 font-medium">Key Name</th>
+              <th className="px-3 py-2 font-medium">Key Prefix</th>
+              <th className="px-3 py-2 font-medium">Created Date</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>Loading mobile API keys...</td>
+              </tr>
+            ) : keys.length === 0 ? (
+              <tr>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={5}>No API keys yet.</td>
+              </tr>
+            ) : (
+              keys.map((keyRow) => (
+                <tr key={keyRow.id} className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-foreground">{keyRow.key_name}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{keyRow.key_prefix}...</td>
+                  <td className="px-3 py-2 text-muted-foreground">{new Date(keyRow.created_at).toLocaleString()}</td>
+                  <td className="px-3 py-2">
+                    <Badge variant={keyRow.is_active ? "secondary" : "outline"}>{keyRow.is_active ? "Active" : "Revoked"}</Badge>
+                  </td>
+                  <td className="px-3 py-2">
+                    {keyRow.is_active ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        className="rounded-md"
+                        onClick={() => onRevokeKey(keyRow.id)}
+                        disabled={revokingKeyId === keyRow.id}
+                      >
+                        {revokingKeyId === keyRow.id ? "Revoking..." : "Revoke"}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{keyRow.revoked_at ? new Date(keyRow.revoked_at).toLocaleString() : "—"}</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
