@@ -79,6 +79,7 @@ import {
   ShieldAlert,
   Sparkles,
   Filter,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -248,6 +249,11 @@ import {
 } from "@/lib/admin-dashboard.functions";
 import { getAdminInvoiceSettings, updateAdminInvoiceSettings } from "@/lib/admin-dashboard.functions";
 import {
+  generateMobileApiKey,
+  listMobileApiKeys,
+  revokeMobileApiKey,
+} from "@/lib/mobile-api-keys.functions";
+import {
   createMarkupRule,
   deleteMarkupRule,
   listMarkupRules,
@@ -298,6 +304,7 @@ type AdminTab =
   | "catalog"
   | "brands"
   | "categories"
+  | "mobile-app-keys"
   | "support"
   | "ads-content"
   | "settings";
@@ -313,6 +320,7 @@ const navItems: Array<{ label: string; tab: AdminTab; icon: ComponentType<{ clas
   { label: "admin.nav.catalog", tab: "catalog", icon: Boxes },
   { label: "admin.nav.brands", tab: "brands", icon: Shapes },
   { label: "admin.nav.categories", tab: "categories", icon: Shapes },
+  { label: "Mobile App Keys", tab: "mobile-app-keys", icon: KeyRound },
   { label: "admin.nav.support", tab: "support", icon: MessageCircle },
   { label: "admin.nav.adsContent", tab: "ads-content", icon: Megaphone },
   { label: "admin.nav.settings", tab: "settings", icon: Settings },
