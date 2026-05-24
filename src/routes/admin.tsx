@@ -363,6 +363,14 @@ type BrandAdminRow = {
   logo_url: string | null;
   created_at: string;
 };
+type MobileApiKeyAdminRow = {
+  id: string;
+  key_name: string;
+  key_prefix: string;
+  is_active: boolean;
+  revoked_at: string | null;
+  created_at: string;
+};
 type MarkupRuleAdminRow = {
   id: string;
   minPrice: number;
