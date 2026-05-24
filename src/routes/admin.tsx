@@ -880,6 +880,9 @@ function AdminPage() {
   const assignSubscriptionOrderCyclistInDatabase = useServerFn(assignSubscriptionOrderCyclist);
   const autoDispatchSubscriptionOrderInDatabase = useServerFn(autoDispatchSubscriptionOrder);
   const updateSubscriptionOrderStatusInDatabase = useServerFn(updateSubscriptionOrderStatus);
+  const fetchMobileApiKeys = useServerFn(listMobileApiKeys);
+  const generateMobileApiKeyInDatabase = useServerFn(generateMobileApiKey);
+  const revokeMobileApiKeyInDatabase = useServerFn(revokeMobileApiKey);
   const triggerManualBoost = useServerFn(manualBoostBrandScore);
   const toggleBrandBlacklist = useServerFn(setBrandBlacklistState);
   const triggerScoreReset = useServerFn(resetBrandEngineScore);
