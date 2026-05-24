@@ -1346,6 +1346,7 @@ function AdminPage() {
   }, [isAdminDataEnabled, queryClient]);
   const categories = (categoriesQuery.data ?? initialCategories) as CategoryAdminRow[];
   const brands = (brandsQuery.data ?? initialBrands) as BrandAdminRow[];
+  const mobileApiKeys = (mobileApiKeysQuery.data ?? []) as MobileApiKeyAdminRow[];
   const markupRules = (markupRulesQuery.data ?? []) as MarkupRuleAdminRow[];
   const brandEngineAnalytics = brandEngineQuery.data as BrandEngineAnalytics | undefined;
   const activeCategories = categories.filter((category) => category.is_active);
