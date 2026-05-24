@@ -1626,6 +1626,16 @@ function AdminPage() {
     markupValue: "",
     isActive: true,
   });
+  const [mobileApiKeyName, setMobileApiKeyName] = useState("");
+  const [revealedMobileApiKey, setRevealedMobileApiKey] = useState<{
+    id: string;
+    keyName: string;
+    keyPrefix: string;
+    token: string;
+    createdAt: string;
+  } | null>(null);
+  const [isGeneratingMobileApiKey, setIsGeneratingMobileApiKey] = useState(false);
+  const [revokingMobileApiKeyId, setRevokingMobileApiKeyId] = useState<string | null>(null);
 
   useEffect(() => {
     const row = globalSettingsQuery.data;
