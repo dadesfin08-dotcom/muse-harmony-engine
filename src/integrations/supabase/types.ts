@@ -844,6 +844,42 @@ export type Database = {
           },
         ]
       }
+      mobile_api_keys: {
+        Row: {
+          api_key_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+          key_prefix: string
+          revoked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_key_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+          key_prefix: string
+          revoked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_key_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+          key_prefix?: string
+          revoked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       neighborhoods: {
         Row: {
           commune_id: string
