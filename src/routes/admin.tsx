@@ -5052,6 +5052,22 @@ function AdminPage() {
                   isImageLoading={isCategoryImageReading}
                 />
               ) : null}
+              {tab === "mobile-app-keys" ? (
+                <MobileApiKeysSection
+                  keys={mobileApiKeys}
+                  keyNameInput={mobileApiKeyName}
+                  onKeyNameInputChange={setMobileApiKeyName}
+                  onGenerateKey={handleGenerateMobileApiKey}
+                  isGenerating={isGeneratingMobileApiKey}
+                  revealedKey={revealedMobileApiKey}
+                  onCopyRevealedKey={handleCopyMobileApiKey}
+                  onDismissRevealedKey={() => setRevealedMobileApiKey(null)}
+                  onRevokeKey={handleRevokeMobileApiKey}
+                  revokingKeyId={revokingMobileApiKeyId}
+                  isLoading={dbHealthQuery.isLoading || mobileApiKeysQuery.isLoading}
+                  isRtl={isRtl}
+                />
+              ) : null}
               {tab === "support" ? (
                 <section className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
                   <article className="space-y-3 rounded-2xl border border-border bg-card p-4">
