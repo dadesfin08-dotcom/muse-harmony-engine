@@ -1079,6 +1079,12 @@ function AdminPage() {
     refetchInterval: 20_000,
     placeholderData: (previousData) => previousData,
   });
+  const mobileApiKeysQuery = useQuery({
+    queryKey: ["admin", "mobile-api-keys"],
+    enabled: isAdminDataEnabled,
+    queryFn: () => fetchMobileApiKeys(),
+    placeholderData: (previousData) => previousData,
+  });
   const [adminSupportSearch, setAdminSupportSearch] = useState("");
   const [adminSupportStatusFilter, setAdminSupportStatusFilter] = useState<"all" | "open" | "resolved" | "closed" | "archived">("open");
   const [adminSupportActiveTicketId, setAdminSupportActiveTicketId] = useState<string | null>(null);
