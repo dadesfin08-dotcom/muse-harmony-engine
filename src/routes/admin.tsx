@@ -4737,6 +4737,57 @@ function AdminPage() {
     }
   };
 
+  const handleGenerateMobileApiKey = async () => {
+    try {
+      setIsGeneratingMobileApiKey(true);
+      const created = await generateMobileApiKeyInDatabase({
+        data: {
+          keyName: mobileApiKeyName.trim() || undefined,
+        },
+      });
+      setRevealedMobileApiKey(created);
+      setMobileApiKeyName("");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "mobile-api-keys"] });
+      toast.success("Mobile API key generated. Copy it now — it won't be shown again.");
+    } catch (error) {
+      console.error("Failed to generate mobile API key:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate mobile API key.");
+    } finally {
+      setIsGeneratingMobileApiKey(false);
+    }
+  };
+
+  const handleCopyMobileApiKey = async () => {
+    if (!revealedMobileApiKey?.token) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(revealedMobileApiKey.token);
+      toast.success("Mobile API key copied.");
+    } catch (error) {
+      console.error("Failed to copy mobile API key:", error);
+      toast.error("Failed to copy key. Please copy it manually.");
+    }
+  };
+
+  const handleRevokeMobileApiKey = async (id: string) => {
+    try {
+      setRevokingMobileApiKeyId(id);
+      await revokeMobileApiKeyInDatabase({ data: { id } });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "mobile-api-keys"] });
+      if (revealedMobileApiKey?.id === id) {
+        setRevealedMobileApiKey(null);
+      }
+      toast.success("Mobile API key revoked.");
+    } catch (error) {
+      console.error("Failed to revoke mobile API key:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to revoke mobile API key.");
+    } finally {
+      setRevokingMobileApiKeyId(null);
+    }
+  };
+
   const handleLogout = async () => {
     clearRoleSessions();
     await supabase.auth.signOut();
