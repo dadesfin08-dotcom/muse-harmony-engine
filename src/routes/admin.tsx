@@ -759,6 +759,7 @@ export const Route = createFileRoute("/admin")({
         "catalog",
         "brands",
         "categories",
+        "mobile-app-keys",
         "support",
         "ads-content",
         "settings",
