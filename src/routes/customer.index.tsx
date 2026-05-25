@@ -4473,8 +4473,8 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className={`flex max-h-[80vh] flex-col overflow-hidden rounded-t-3xl border-border bg-[#FCFBF4] shadow-2xl ${
-                customerPanelView === "support" ? "rounded-none border-0" : ""
+              className={`flex flex-col overflow-hidden rounded-t-3xl border-border bg-[#FCFBF4] shadow-2xl ${
+                customerPanelView === "support" ? "max-h-none rounded-none border-0" : "max-h-[80vh]"
               } ${customerPanelView === "support" ? "transition-none" : "transition-[max-height,padding-bottom] duration-300 ease-out"}`}
             >
               <div
