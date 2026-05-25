@@ -355,6 +355,67 @@
     animation: otp-shake 280ms ease-in-out;
   }
 
+  .login-luxury-bg {
+    background-image:
+      radial-gradient(42% 28% at 86% 10%, color-mix(in oklab, var(--color-primary) 24%, transparent), transparent 80%),
+      radial-gradient(36% 24% at 10% 92%, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent 80%),
+      linear-gradient(180deg, #f6f5f1 0%, color-mix(in oklab, #f6f5f1 88%, var(--color-card) 12%) 100%);
+  }
+
+  .login-glass-card {
+    background: color-mix(in oklab, var(--color-card) 94%, white 6%);
+    border: 1px solid color-mix(in oklab, var(--color-border) 75%, white 25%);
+    box-shadow:
+      0 30px 50px -26px color-mix(in oklab, var(--color-foreground) 25%, transparent),
+      0 12px 18px -16px color-mix(in oklab, var(--color-primary) 18%, transparent),
+      inset 0 1px 0 0 color-mix(in oklab, white 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .login-soft-orb {
+    border-radius: 999px;
+    background: radial-gradient(circle at 32% 24%, color-mix(in oklab, white 85%, transparent), color-mix(in oklab, var(--color-primary) 18%, transparent));
+    box-shadow:
+      0 12px 20px -14px color-mix(in oklab, var(--color-primary) 38%, transparent),
+      inset 0 1px 0 0 color-mix(in oklab, white 70%, transparent);
+  }
+
+  .login-input-shell {
+    box-shadow:
+      inset 0 1px 2px color-mix(in oklab, var(--color-foreground) 8%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--color-primary) 16%, transparent);
+  }
+
+  .login-wa-button {
+    background: linear-gradient(130deg, color-mix(in oklab, var(--color-primary) 92%, white 8%), color-mix(in oklab, var(--color-primary) 74%, white 26%));
+    box-shadow:
+      0 16px 24px -20px color-mix(in oklab, var(--color-primary) 70%, transparent),
+      inset 0 1px 0 color-mix(in oklab, white 35%, transparent);
+  }
+
+  .login-wa-button:active {
+    transform: translateY(1px) scale(0.995);
+  }
+
+  .login-float {
+    animation: login-float 5.6s ease-in-out infinite;
+  }
+
+  .login-float-delayed {
+    animation: login-float 6.4s ease-in-out infinite;
+    animation-delay: 1.2s;
+  }
+
+  @keyframes login-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
   @keyframes marquee-scroll {
     from {
       transform: translateX(0);
