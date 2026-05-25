@@ -3208,7 +3208,10 @@ function Index() {
 
   return (
     <>
-      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-[100dvh] bg-background pb-24 text-foreground md:pb-0">
+      <main
+        dir={isArabic ? "rtl" : "ltr"}
+        className="app-shell min-h-[100dvh] bg-background pb-[calc(6.25rem+env(safe-area-inset-bottom))] text-foreground md:pb-0"
+      >
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
@@ -3358,13 +3361,13 @@ function Index() {
         </header>
 
         <section
-          className="overflow-hidden border-b border-border/70 py-2"
+          className="overflow-hidden border-b border-border/70 px-4 py-2 sm:px-6"
           style={{ backgroundColor: tickerBgColor, color: tickerTextColor }}
           aria-label="Global announcement ticker"
         >
           <div className={`marquee-track whitespace-nowrap text-sm font-medium ${isArabic ? "marquee-track-rtl" : ""}`}>
-            <span className="mx-6">{tickerText}</span>
-            <span className="mx-6" aria-hidden="true">
+            <span className="px-6">{tickerText}</span>
+            <span className="px-6" aria-hidden="true">
               {tickerText}
             </span>
           </div>
