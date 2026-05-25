@@ -3208,7 +3208,7 @@ function Index() {
 
   return (
     <>
-      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
+      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-[100dvh] bg-background pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
@@ -4466,8 +4466,8 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className={`fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-border bg-background shadow-2xl ${
-                customerPanelView === "support" ? "h-[100dvh] max-h-[100dvh] rounded-none border-0" : "max-h-[85vh] sm:max-h-[90vh]"
+              className={`inset-x-0 bottom-0 z-50 flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-3xl border-border bg-background shadow-2xl ${
+                customerPanelView === "support" ? "rounded-none border-0" : "max-h-[85dvh] sm:max-h-[90dvh]"
               } ${customerPanelView === "support" ? "transition-none" : "transition-[max-height,padding-bottom] duration-300 ease-out"}`}
               style={{
                 height: isSupportPanelActive ? (supportViewportHeight ? `${supportViewportHeight}px` : "100dvh") : undefined,
@@ -4921,7 +4921,7 @@ function Index() {
                         placeholder="6XXXXXXXX"
                         inputMode="numeric"
                         autoComplete="tel"
-                        className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-lg outline-none"
+                        className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-base outline-none"
                       />
                     </div>
                   </div>
@@ -5417,7 +5417,7 @@ function Index() {
                           placeholder="6XXXXXXXX"
                           inputMode="numeric"
                           autoComplete="tel"
-                          className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-lg outline-none"
+                          className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-base outline-none"
                         />
                       </div>
                     </div>
