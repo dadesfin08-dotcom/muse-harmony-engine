@@ -364,7 +364,7 @@
   }
 
   .login-hero-zone {
-    min-height: 11.5rem;
+    min-height: 10.5rem;
   }
 
   .login-logo-glow {
@@ -388,8 +388,8 @@
 
   .login-logo-image {
     filter:
-      drop-shadow(0 14px 18px color-mix(in oklab, var(--color-foreground) 20%, transparent))
-      drop-shadow(0 5px 10px color-mix(in oklab, var(--color-primary) 16%, transparent));
+      drop-shadow(0 10px 14px color-mix(in oklab, var(--color-foreground) 18%, transparent))
+      drop-shadow(0 4px 8px color-mix(in oklab, var(--color-primary) 15%, transparent));
   }
 
   .login-glass-card {
