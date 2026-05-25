@@ -140,13 +140,13 @@ function CustomerLoginPage() {
       </div>
 
       <section className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-start pb-10 pt-6">
-        <div className="login-hero-zone pointer-events-none relative z-10 mx-auto mb-6 flex w-full justify-center">
-          <div className="login-logo-glow absolute inset-x-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full" />
-          <div className="login-logo-plate login-float relative flex h-44 w-44 items-center justify-center rounded-full">
+        <div className="login-hero-zone pointer-events-none relative z-10 mx-auto mb-5 flex w-full justify-center">
+          <div className="login-logo-glow absolute inset-x-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+          <div className="login-logo-plate login-float relative flex h-40 w-40 items-center justify-center overflow-hidden rounded-full">
             <img
               src={asugLogo}
               alt="ASUG logo"
-              className="login-logo-image h-full w-full scale-[2.7] object-cover object-center opacity-95"
+              className="login-logo-image h-[72%] w-[72%] object-contain object-center opacity-95"
             />
           </div>
         </div>
