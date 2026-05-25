@@ -146,8 +146,7 @@ function CustomerLoginPage() {
             <img
               src={asugLogo}
               alt="ASUG logo"
-              className="login-logo-image h-32 w-32 object-contain"
-              loading="lazy"
+              className="login-logo-image h-full w-full scale-[2.7] object-cover object-center opacity-95"
             />
           </div>
         </div>
