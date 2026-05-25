@@ -146,8 +146,8 @@ function CustomerLoginPage() {
 
       <section className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-10 pt-8">
         <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2">
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-emerald-200/85 shadow-[0_14px_24px_-18px_rgba(16,185,129,0.7)]">
-            <MapPin className="size-8 text-emerald-500" strokeWidth={2.2} />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 shadow-sm">
+            <MapPin className="size-8 text-primary" strokeWidth={2.2} />
           </div>
           <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm">
             <Cloud className="size-5 text-muted-foreground" />
@@ -155,17 +155,17 @@ function CustomerLoginPage() {
         </div>
 
         <div className="pointer-events-none absolute -right-1 top-10 z-20 flex h-16 w-16 items-center justify-center rounded-full bg-card shadow-lg">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400/90">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/80">
             <MessageCircle className="size-6 text-white" />
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-2xl bg-amber-200/90 shadow-[0_20px_24px_-20px_rgba(120,53,15,0.7)]">
-          <Bike className="size-8 text-amber-950/75" strokeWidth={2} />
+        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-2xl bg-secondary shadow-sm">
+          <Bike className="size-8 text-foreground/70" strokeWidth={2} />
         </div>
 
-        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full bg-orange-100/95 shadow-[0_22px_30px_-24px_rgba(185,28,28,0.7)]">
-          <ShoppingBasket className="size-11 text-orange-700/80" strokeWidth={1.8} />
+        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full bg-accent/20 shadow-sm">
+          <ShoppingBasket className="size-11 text-accent-foreground/80" strokeWidth={1.8} />
         </div>
 
         <div className="w-full rounded-[2rem] border border-border/60 bg-card/95 p-5 shadow-[0_28px_42px_-28px_rgba(15,23,42,0.4)] backdrop-blur-[1px]">
@@ -196,7 +196,7 @@ function CustomerLoginPage() {
 
               <Button
                 variant="hero"
-                className="h-12 w-full rounded-full font-semibold shadow-[0_16px_24px_-20px_rgba(22,163,74,0.8)]"
+                className="h-12 w-full rounded-full font-semibold shadow-sm"
                 onClick={sendCustomerOtp}
                 disabled={!isAuthPhoneValid || isSendingAuthCode}
               >
@@ -225,7 +225,7 @@ function CustomerLoginPage() {
 
               <Button
                 variant="hero"
-                className="w-full rounded-full shadow-[0_16px_24px_-20px_rgba(22,163,74,0.8)]"
+                className="w-full rounded-full shadow-sm"
                 onClick={verifyCustomerOtpAndLogin}
                 disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
               >
