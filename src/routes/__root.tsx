@@ -14,6 +14,7 @@ import { I18nextProvider } from "react-i18next";
 
 import i18n from "@/lib/i18n";
 import { applyLanguageToDocument, persistLanguagePreference, resolveAppLanguage } from "@/lib/localization";
+import { registerPwaServiceWorker } from "@/lib/pwa";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ensureAuthSessionHydrated,
@@ -90,6 +91,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
       },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "ASUG" },
+      { name: "theme-color", content: "#0f172a" },
       { title: "ASUG" },
       { name: "description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { name: "author", content: "Lovable" },
@@ -110,7 +116,73 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "apple-touch-icon",
-        href: "/icons/app-192.png",
+        href: "/icons/apple-touch-icon-180.png",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-640-1136.png",
+        media:
+          "screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-750-1334.png",
+        media:
+          "screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-828-1792.png",
+        media:
+          "screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1125-2436.png",
+        media:
+          "screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1170-2532.png",
+        media:
+          "screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1242-2208.png",
+        media:
+          "screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1284-2778.png",
+        media:
+          "screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1290-2796.png",
+        media:
+          "screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1536-2048.png",
+        media:
+          "screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-1668-2388.png",
+        media:
+          "screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
+      },
+      {
+        rel: "apple-touch-startup-image",
+        href: "/splash/apple-splash-2048-2732.png",
+        media:
+          "screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)",
       },
       {
         rel: "stylesheet",
@@ -140,6 +212,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    void registerPwaServiceWorker();
+  }, []);
 
   useEffect(() => {
     const applyLanguageDirection = (language: string) => {

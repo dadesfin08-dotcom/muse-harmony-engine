@@ -1,21 +1,28 @@
 {
+  "id": "/",
   "name": "ASUG",
   "short_name": "ASUG",
+  "description": "ASUG grocery operations platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "lang": "en",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
     {
       "src": "/icons/app-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/app-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
