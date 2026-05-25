@@ -4936,11 +4936,11 @@ function Index() {
                       maxLength={4}
                       inputMode="numeric"
                     >
-                      <InputOTPGroup className="gap-2">
-                        <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                        <InputOTPGroup className="gap-2">
+                        <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-base" />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
@@ -5433,10 +5433,10 @@ function Index() {
                         inputMode="numeric"
                       >
                         <InputOTPGroup className="gap-2">
-                          <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                          <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-base" />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
