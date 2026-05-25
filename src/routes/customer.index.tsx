@@ -4473,20 +4473,9 @@ function Index() {
         isMobile ? (
           <Drawer open={isCustomerAuthModalOpen} onOpenChange={setIsCustomerAuthModalOpen}>
             <DrawerContent
-              className={`inset-x-0 bottom-0 z-50 flex h-[100dvh] max-h-[100dvh] flex-col rounded-t-3xl border-border bg-background shadow-2xl ${
-                customerPanelView === "support" ? "rounded-none border-0" : "max-h-[85dvh] sm:max-h-[90dvh]"
+              className={`flex flex-col overflow-hidden rounded-t-3xl border-border bg-[#FCFBF4] shadow-2xl ${
+                customerPanelView === "support" ? "max-h-none rounded-none border-0" : "max-h-[80vh]"
               } ${customerPanelView === "support" ? "transition-none" : "transition-[max-height,padding-bottom] duration-300 ease-out"}`}
-              style={{
-                height: isSupportPanelActive ? (supportViewportHeight ? `${supportViewportHeight}px` : "100dvh") : undefined,
-                maxHeight: isSupportPanelActive
-                  ? supportViewportHeight
-                    ? `${supportViewportHeight}px`
-                    : "100dvh"
-                  : authSheetMaxHeight
-                    ? `${authSheetMaxHeight}px`
-                    : undefined,
-                paddingBottom: isSupportPanelActive ? undefined : authKeyboardInset > 0 ? `${authKeyboardInset}px` : undefined,
-              }}
             >
               <div
                 className={`relative shrink-0 border-b border-border/60 bg-background px-6 pb-4 ${customerPanelView === "support" ? "hidden" : ""}`}
@@ -4520,14 +4509,8 @@ function Index() {
               <div
                 ref={authSheetScrollRef}
                 onScroll={(event) => updateAuthSheetScrollState(event.currentTarget)}
-                className={`flex-1 overflow-y-auto overscroll-contain ${customerPanelView === "support" ? "overflow-hidden px-0 pb-0 pt-0 transition-none" : "px-6 pb-8 pb-[env(safe-area-inset-bottom)] pt-2 transition-[padding-bottom] duration-300 ease-out"}`}
+                className={`flex-1 overflow-y-auto overscroll-contain ${customerPanelView === "support" ? "overflow-hidden px-0 pb-0 pt-0 transition-none" : "max-h-[80vh] px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-2 transition-[padding-bottom] duration-300 ease-out"}`}
                 style={{
-                  paddingBottom:
-                    customerPanelView === "support"
-                      ? undefined
-                      : authKeyboardInset > 0
-                        ? `max(${authKeyboardInset + 96}px, calc(env(safe-area-inset-bottom) + 120px))`
-                        : undefined,
                   WebkitOverflowScrolling: "touch",
                   scrollBehavior: "smooth",
                 }}
@@ -4953,11 +4936,11 @@ function Index() {
                       maxLength={4}
                       inputMode="numeric"
                     >
-                      <InputOTPGroup className="gap-2">
-                        <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                        <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                        <InputOTPGroup className="gap-2">
+                        <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-base" />
+                        <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-base" />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
@@ -5450,10 +5433,10 @@ function Index() {
                         inputMode="numeric"
                       >
                         <InputOTPGroup className="gap-2">
-                          <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                          <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                          <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-base" />
+                          <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-base" />
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
