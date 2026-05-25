@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Bike, Cloud, MapPin, MessageCircle, ShoppingBasket } from "lucide-react";
+import { ArrowLeft, Bike, Circle, Cloud, MapPin, MessageCircle, ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -122,19 +122,13 @@ function CustomerLoginPage() {
   };
 
   return (
-    <main
-      className="relative flex min-h-screen flex-col overflow-hidden bg-background p-4"
-      style={{
-        background:
-          "radial-gradient(42% 28% at 86% 10%, rgba(132,204,166,0.22) 0%, rgba(252,251,244,0) 80%), radial-gradient(36% 24% at 10% 92%, rgba(132,204,166,0.2) 0%, rgba(252,251,244,0) 80%), #FCFBF4",
-      }}
-    >
+    <main className="login-luxury-bg relative flex min-h-screen flex-col overflow-hidden p-4">
       <div className="mx-auto flex w-full max-w-md items-center justify-start pt-1">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-full text-foreground"
+          className="h-10 w-10 rounded-full border border-border/70 bg-card/70 text-foreground shadow-sm backdrop-blur"
           onClick={() => {
             void navigate({ to: "/customer" });
           }}
@@ -145,43 +139,55 @@ function CustomerLoginPage() {
       </div>
 
       <section className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-10 pt-8">
-        <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2">
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 shadow-sm">
-            <MapPin className="size-8 text-primary" strokeWidth={2.2} />
+        <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2 login-float">
+          <div className="login-soft-orb relative flex h-16 w-16 items-center justify-center">
+            <MapPin className="size-8 text-primary" strokeWidth={2.15} />
           </div>
-          <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm">
+          <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-card/95 shadow-sm">
             <Cloud className="size-5 text-muted-foreground" />
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -right-1 top-10 z-20 flex h-16 w-16 items-center justify-center rounded-full bg-card shadow-lg">
+        <div className="pointer-events-none absolute -right-1 top-10 z-20 flex h-16 w-16 items-center justify-center rounded-full border border-border/50 bg-card/95 shadow-lg login-float-delayed">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/80">
             <MessageCircle className="size-6 text-white" />
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-2xl bg-secondary shadow-sm">
+        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-3xl border border-border/50 bg-secondary/95 shadow-[0_18px_26px_-22px_rgba(15,23,42,0.6)] login-float">
           <Bike className="size-8 text-foreground/70" strokeWidth={2} />
         </div>
 
-        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full bg-accent/20 shadow-sm">
+        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full border border-border/40 bg-accent/20 shadow-[0_18px_28px_-22px_rgba(15,23,42,0.5)] login-float-delayed">
           <ShoppingBasket className="size-11 text-accent-foreground/80" strokeWidth={1.8} />
         </div>
 
-        <div className="w-full rounded-[2rem] border border-border/60 bg-card/95 p-5 shadow-[0_28px_42px_-28px_rgba(15,23,42,0.4)] backdrop-blur-[1px]">
-          <div className="mb-5 pt-1 text-center">
-            <h1 className="text-xl font-bold text-foreground">Welcome Back</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Enter your phone number to continue</p>
+        <div className="pointer-events-none absolute left-8 top-32 z-10 opacity-40">
+          <Circle className="size-3 fill-primary/30 text-primary/35" strokeWidth={1.2} />
+        </div>
+        <div className="pointer-events-none absolute right-8 top-44 z-10 opacity-35">
+          <Circle className="size-2.5 fill-muted-foreground/35 text-muted-foreground/40" strokeWidth={1.2} />
+        </div>
+        <div className="pointer-events-none absolute right-24 bottom-24 z-10 opacity-30">
+          <Circle className="size-2 fill-primary/25 text-primary/30" strokeWidth={1.2} />
+        </div>
+        <div className="pointer-events-none absolute bottom-10 left-14 z-0 h-20 w-20 rounded-full bg-primary/10 blur-2xl" />
+        <div className="pointer-events-none absolute right-6 top-24 z-0 h-24 w-24 rounded-full bg-primary/10 blur-[44px]" />
+
+        <div className="login-glass-card w-full rounded-[32px] p-6">
+          <div className="mb-6 pt-1 text-center">
+            <h1 className="text-[2rem] font-bold leading-[1.05] text-foreground">Welcome Back</h1>
+            <p className="mt-2 text-base text-muted-foreground">Enter your phone number to continue</p>
           </div>
 
           {authStep === "phone" ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label htmlFor="customer-auth-phone" className="text-xs font-medium text-muted-foreground">
+            <div className="space-y-4">
+              <div className="space-y-2.5">
+                <label htmlFor="customer-auth-phone" className="text-sm font-medium text-foreground/85">
                   Phone Number
                 </label>
-                <div className="flex h-14 items-center overflow-hidden rounded-xl border border-input bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20">
-                  <span className="px-3 text-sm font-medium text-muted-foreground">+212</span>
+                <div className="login-input-shell flex h-14 items-center overflow-hidden rounded-2xl border border-input bg-background/90 transition-all focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+                  <span className="px-3 text-base font-medium text-foreground/90">+212</span>
                   <input
                     id="customer-auth-phone"
                     value={authPhoneInput}
@@ -189,14 +195,14 @@ function CustomerLoginPage() {
                     placeholder="6XXXXXXXX"
                     inputMode="numeric"
                     autoComplete="tel"
-                    className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-base outline-none"
+                    className="h-full w-full border-0 bg-transparent px-1.5 pr-3 text-base text-foreground outline-none placeholder:text-muted-foreground/80"
                   />
                 </div>
               </div>
 
               <Button
                 variant="hero"
-                className="h-12 w-full rounded-full font-semibold shadow-sm"
+                className="login-wa-button h-12 w-full rounded-full font-semibold text-primary-foreground"
                 onClick={sendCustomerOtp}
                 disabled={!isAuthPhoneValid || isSendingAuthCode}
               >
@@ -225,7 +231,7 @@ function CustomerLoginPage() {
 
               <Button
                 variant="hero"
-                className="w-full rounded-full shadow-sm"
+                className="login-wa-button w-full rounded-full text-primary-foreground"
                 onClick={verifyCustomerOtpAndLogin}
                 disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
               >
