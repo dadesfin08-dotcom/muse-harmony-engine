@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft, Bike, Cloud, MapPin, MessageCircle, ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -122,13 +122,19 @@ function CustomerLoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-[#FCFBF4] p-4">
+    <main
+      className="relative flex min-h-screen flex-col overflow-hidden bg-background p-4"
+      style={{
+        background:
+          "radial-gradient(42% 28% at 86% 10%, rgba(132,204,166,0.22) 0%, rgba(252,251,244,0) 80%), radial-gradient(36% 24% at 10% 92%, rgba(132,204,166,0.2) 0%, rgba(252,251,244,0) 80%), #FCFBF4",
+      }}
+    >
       <div className="mx-auto flex w-full max-w-md items-center justify-start pt-1">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-full"
+          className="h-10 w-10 rounded-full text-foreground"
           onClick={() => {
             void navigate({ to: "/customer" });
           }}
@@ -138,8 +144,31 @@ function CustomerLoginPage() {
         </Button>
       </div>
 
-      <section className="mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-8">
-        <div className="w-full rounded-2xl border border-border bg-background p-5 shadow-sm">
+      <section className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-10 pt-8">
+        <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 shadow-sm">
+            <MapPin className="size-8 text-primary" strokeWidth={2.2} />
+          </div>
+          <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-sm">
+            <Cloud className="size-5 text-muted-foreground" />
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute -right-1 top-10 z-20 flex h-16 w-16 items-center justify-center rounded-full bg-card shadow-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/80">
+            <MessageCircle className="size-6 text-white" />
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-2xl bg-secondary shadow-sm">
+          <Bike className="size-8 text-foreground/70" strokeWidth={2} />
+        </div>
+
+        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full bg-accent/20 shadow-sm">
+          <ShoppingBasket className="size-11 text-accent-foreground/80" strokeWidth={1.8} />
+        </div>
+
+        <div className="w-full rounded-[2rem] border border-border/60 bg-card/95 p-5 shadow-[0_28px_42px_-28px_rgba(15,23,42,0.4)] backdrop-blur-[1px]">
           <div className="mb-5 pt-1 text-center">
             <h1 className="text-xl font-bold text-foreground">Welcome Back</h1>
             <p className="mt-1 text-sm text-muted-foreground">Enter your phone number to continue</p>
@@ -167,7 +196,7 @@ function CustomerLoginPage() {
 
               <Button
                 variant="hero"
-                className="h-12 w-full rounded-xl font-semibold"
+                className="h-12 w-full rounded-full font-semibold shadow-sm"
                 onClick={sendCustomerOtp}
                 disabled={!isAuthPhoneValid || isSendingAuthCode}
               >
@@ -196,7 +225,7 @@ function CustomerLoginPage() {
 
               <Button
                 variant="hero"
-                className="w-full rounded-xl"
+                className="w-full rounded-full shadow-sm"
                 onClick={verifyCustomerOtpAndLogin}
                 disabled={authOtpCode.length !== 4 || isVerifyingAuthOtp}
               >
