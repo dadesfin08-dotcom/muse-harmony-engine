@@ -3691,6 +3691,7 @@ function Index() {
                     fr: item.name_fr,
                     ar: item.name_ar,
                   });
+                  const isGroceriesCategory = item.name_en.trim().toLowerCase() === "groceries";
 
                   return (
                     <Link
@@ -3700,18 +3701,21 @@ function Index() {
                       className={`mx-1 inline-flex min-w-[96px] snap-start flex-col items-center gap-2 rounded-[22px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
                     >
                       <span
-                        className="flex h-14 w-14 items-center justify-center rounded-2xl"
+                        className={`flex items-center justify-center rounded-2xl ${isGroceriesCategory ? "h-16 w-16" : "h-14 w-14"}`}
                         style={{ backgroundColor: item.accent_color || "var(--color-muted)" }}
                       >
                         {item.image_url ? (
                           <img
                             src={item.image_url || fallbackProductImage}
                             alt={categoryName}
-                            className="h-8 w-8 object-contain"
+                            className={isGroceriesCategory ? "h-9 w-9 object-contain" : "h-8 w-8 object-contain"}
                             loading="lazy"
                           />
                         ) : (
-                          <CategoryIcon iconName={item.icon_name} className="h-8 w-8 text-foreground" />
+                          <CategoryIcon
+                            iconName={item.icon_name}
+                            className={isGroceriesCategory ? "h-9 w-9 text-foreground" : "h-8 w-8 text-foreground"}
+                          />
                         )}
                       </span>
                       <span className="line-clamp-1 text-xs font-semibold text-foreground">{categoryName}</span>
