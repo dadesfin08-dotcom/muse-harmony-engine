@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StaffPortalRouteImport } from './routes/staff-portal'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
@@ -37,6 +38,11 @@ import { Route as AdminServiceZonesCommuneIdRouteImport } from './routes/admin.s
 const StaffPortalRoute = StaffPortalRouteImport.update({
   id: '/staff-portal',
   path: '/staff-portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomerRoute = CustomerRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
+  '/login': typeof LoginRoute
   '/staff-portal': typeof StaffPortalRoute
   '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
+  '/login': typeof LoginRoute
   '/staff-portal': typeof StaffPortalRoute
   '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/admin-login': typeof AdminLoginRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
+  '/login': typeof LoginRoute
   '/staff-portal': typeof StaffPortalRoute
   '/admin/webhook-logs': typeof AdminWebhookLogsRoute
   '/categories/$id': typeof CategoriesIdRoute
@@ -243,6 +252,7 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/categories'
     | '/customer'
+    | '/login'
     | '/staff-portal'
     | '/admin/webhook-logs'
     | '/categories/$id'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-login'
     | '/categories'
+    | '/login'
     | '/staff-portal'
     | '/admin/webhook-logs'
     | '/categories/$id'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/admin-login'
     | '/categories'
     | '/customer'
+    | '/login'
     | '/staff-portal'
     | '/admin/webhook-logs'
     | '/categories/$id'
@@ -321,6 +333,7 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   CustomerRoute: typeof CustomerRouteWithChildren
+  LoginRoute: typeof LoginRoute
   StaffPortalRoute: typeof StaffPortalRoute
   CyclistDashboardRoute: typeof CyclistDashboardRoute
   CyclistLoginRoute: typeof CyclistLoginRoute
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/staff-portal'
       fullPath: '/staff-portal'
       preLoaderRoute: typeof StaffPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customer': {
@@ -569,6 +589,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   CustomerRoute: CustomerRouteWithChildren,
+  LoginRoute: LoginRoute,
   StaffPortalRoute: StaffPortalRoute,
   CyclistDashboardRoute: CyclistDashboardRoute,
   CyclistLoginRoute: CyclistLoginRoute,

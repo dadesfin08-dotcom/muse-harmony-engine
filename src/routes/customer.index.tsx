@@ -2529,7 +2529,7 @@ function Index() {
 
     if (!customerSession?.phoneNumber) {
       closeCart();
-      setIsCustomerAuthModalOpen(true);
+      void navigate({ to: "/login" });
       toast.error(customerUiCopy.toastLoginRequired);
       return;
     }
@@ -2561,7 +2561,7 @@ function Index() {
 
   const confirmOrder = async () => {
     if (!customerSession?.phoneNumber) {
-      setIsCustomerAuthModalOpen(true);
+      void navigate({ to: "/login" });
       toast.error(customerUiCopy.toastPleaseLoginFirst);
       return;
     }
@@ -2736,9 +2736,17 @@ function Index() {
       return;
     }
 
-    setIsCustomerAuthModalOpen(true);
-    void navigate({ to: "/customer", replace: true });
-  }, [location.hash, navigate, setIsCustomerAuthModalOpen]);
+    void navigate({ to: "/login", replace: true });
+  }, [location.hash, navigate]);
+
+  useEffect(() => {
+    if (!isCustomerAuthModalOpen || customerSession?.phoneNumber) {
+      return;
+    }
+
+    setIsCustomerAuthModalOpen(false);
+    void navigate({ to: "/login" });
+  }, [customerSession?.phoneNumber, isCustomerAuthModalOpen, navigate, setIsCustomerAuthModalOpen]);
 
   const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
   const accountStatus = customerProfileQuery.data?.status;
@@ -3328,7 +3336,12 @@ function Index() {
             <button
               aria-label={t("header.userProfile")}
               onClick={() => {
-                openCustomerPanel("account");
+                if (customerSession?.phoneNumber) {
+                  openCustomerPanel("account");
+                  return;
+                }
+
+                void navigate({ to: "/login" });
               }}
               className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-card text-foreground transition hover:bg-muted md:inline-flex"
             >
