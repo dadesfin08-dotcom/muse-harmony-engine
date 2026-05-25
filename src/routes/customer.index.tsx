@@ -2739,6 +2739,15 @@ function Index() {
     void navigate({ to: "/login", replace: true });
   }, [location.hash, navigate]);
 
+  useEffect(() => {
+    if (!isCustomerAuthModalOpen || customerSession?.phoneNumber) {
+      return;
+    }
+
+    setIsCustomerAuthModalOpen(false);
+    void navigate({ to: "/login" });
+  }, [customerSession?.phoneNumber, isCustomerAuthModalOpen, navigate, setIsCustomerAuthModalOpen]);
+
   const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
   const accountStatus = customerProfileQuery.data?.status;
   const isAccountRestricted = accountStatus === "blocked" || accountStatus === "suspicious";
