@@ -357,9 +357,39 @@
 
   .login-luxury-bg {
     background-image:
-      radial-gradient(42% 28% at 86% 10%, color-mix(in oklab, var(--color-primary) 24%, transparent), transparent 80%),
-      radial-gradient(36% 24% at 10% 92%, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent 80%),
-      linear-gradient(180deg, #f6f5f1 0%, color-mix(in oklab, #f6f5f1 88%, var(--color-card) 12%) 100%);
+      radial-gradient(44% 30% at 82% 10%, color-mix(in oklab, var(--color-primary) 28%, transparent), transparent 78%),
+      radial-gradient(30% 22% at 14% 88%, color-mix(in oklab, var(--color-primary) 16%, transparent), transparent 82%),
+      radial-gradient(24% 18% at 50% 16%, color-mix(in oklab, var(--color-primary) 20%, white 80%), transparent 85%),
+      linear-gradient(180deg, #f7f6f2 0%, color-mix(in oklab, #f7f6f2 91%, var(--color-card) 9%) 100%);
+  }
+
+  .login-hero-zone {
+    min-height: 11.5rem;
+  }
+
+  .login-logo-glow {
+    background: radial-gradient(circle, color-mix(in oklab, var(--color-primary) 34%, transparent) 0%, transparent 72%);
+    filter: blur(16px);
+    opacity: 0.88;
+  }
+
+  .login-logo-plate {
+    background:
+      radial-gradient(circle at 30% 22%, color-mix(in oklab, white 80%, transparent), transparent 52%),
+      color-mix(in oklab, var(--color-card) 90%, white 10%);
+    border: 1px solid color-mix(in oklab, var(--color-border) 62%, white 38%);
+    box-shadow:
+      0 24px 42px -28px color-mix(in oklab, var(--color-foreground) 34%, transparent),
+      0 14px 22px -20px color-mix(in oklab, var(--color-primary) 42%, transparent),
+      inset 0 1px 0 color-mix(in oklab, white 80%, transparent),
+      inset 0 -12px 20px -20px color-mix(in oklab, var(--color-primary) 32%, transparent);
+    backdrop-filter: blur(10px);
+  }
+
+  .login-logo-image {
+    filter:
+      drop-shadow(0 14px 18px color-mix(in oklab, var(--color-foreground) 20%, transparent))
+      drop-shadow(0 5px 10px color-mix(in oklab, var(--color-primary) 16%, transparent));
   }
 
   .login-glass-card {
@@ -390,7 +420,9 @@
     background: linear-gradient(130deg, color-mix(in oklab, var(--color-primary) 92%, white 8%), color-mix(in oklab, var(--color-primary) 74%, white 26%));
     box-shadow:
       0 16px 24px -20px color-mix(in oklab, var(--color-primary) 70%, transparent),
-      inset 0 1px 0 color-mix(in oklab, white 35%, transparent);
+      0 10px 16px -14px color-mix(in oklab, var(--color-primary) 42%, transparent),
+      inset 0 1px 0 color-mix(in oklab, white 35%, transparent),
+      inset 0 -8px 14px -12px color-mix(in oklab, var(--color-primary) 66%, transparent);
   }
 
   .login-wa-button:active {
@@ -406,6 +438,10 @@
     animation-delay: 1.2s;
   }
 
+  .login-particle {
+    animation: login-drift 9s ease-in-out infinite;
+  }
+
   @keyframes login-float {
     0%,
     100% {
@@ -413,6 +449,16 @@
     }
     50% {
       transform: translateY(-6px);
+    }
+  }
+
+  @keyframes login-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -4px, 0);
     }
   }
 

@@ -139,17 +139,19 @@ function CustomerLoginPage() {
         </Button>
       </div>
 
-      <section className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-10 pt-8">
-        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-          <img
-            src={asugLogo}
-            alt="ASUG logo"
-            className="h-52 w-52 object-contain opacity-55 blur-[0.2px]"
-            loading="lazy"
-          />
+      <section className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-start pb-10 pt-6">
+        <div className="login-hero-zone pointer-events-none relative z-10 mx-auto mb-6 flex w-full justify-center">
+          <div className="login-logo-glow absolute inset-x-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full" />
+          <div className="login-logo-plate login-float relative flex h-44 w-44 items-center justify-center rounded-full">
+            <img
+              src={asugLogo}
+              alt="ASUG logo"
+              className="login-logo-image h-full w-full scale-[2.7] object-cover object-center opacity-95"
+            />
+          </div>
         </div>
 
-        <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2 login-float">
+        <div className="pointer-events-none absolute left-0 top-18 z-20 flex items-start gap-2 login-float">
           <div className="login-soft-orb relative flex h-16 w-16 items-center justify-center">
             <MapPin className="size-8 text-primary" strokeWidth={2.15} />
           </div>
@@ -158,33 +160,33 @@ function CustomerLoginPage() {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -right-1 top-10 z-20 flex h-16 w-16 items-center justify-center rounded-full border border-border/50 bg-card/95 shadow-lg login-float-delayed">
+        <div className="pointer-events-none absolute right-0 top-20 z-20 flex h-16 w-16 items-center justify-center rounded-full border border-border/50 bg-card/95 shadow-lg login-float-delayed">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/80">
             <MessageCircle className="size-6 text-white" />
           </div>
         </div>
 
-        <div className="pointer-events-none absolute -bottom-1 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-3xl border border-border/50 bg-secondary/95 shadow-[0_18px_26px_-22px_rgba(15,23,42,0.6)] login-float">
+        <div className="pointer-events-none absolute bottom-0 left-2 z-20 flex h-24 w-24 items-center justify-center rounded-3xl border border-border/50 bg-secondary/95 shadow-[0_18px_26px_-22px_rgba(15,23,42,0.6)] login-float">
           <Bike className="size-8 text-foreground/70" strokeWidth={2} />
         </div>
 
-        <div className="pointer-events-none absolute -bottom-2 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full border border-border/40 bg-accent/20 shadow-[0_18px_28px_-22px_rgba(15,23,42,0.5)] login-float-delayed">
+        <div className="pointer-events-none absolute -bottom-1 right-0 z-20 flex h-28 w-28 items-center justify-center rounded-full border border-border/40 bg-accent/20 shadow-[0_18px_28px_-22px_rgba(15,23,42,0.5)] login-float-delayed">
           <ShoppingBasket className="size-11 text-accent-foreground/80" strokeWidth={1.8} />
         </div>
 
-        <div className="pointer-events-none absolute left-8 top-32 z-10 opacity-40">
+        <div className="login-particle pointer-events-none absolute left-8 top-30 z-10 opacity-40">
           <Circle className="size-3 fill-primary/30 text-primary/35" strokeWidth={1.2} />
         </div>
-        <div className="pointer-events-none absolute right-8 top-44 z-10 opacity-35">
+        <div className="login-particle pointer-events-none absolute right-8 top-40 z-10 opacity-35">
           <Circle className="size-2.5 fill-muted-foreground/35 text-muted-foreground/40" strokeWidth={1.2} />
         </div>
-        <div className="pointer-events-none absolute right-24 bottom-24 z-10 opacity-30">
+        <div className="login-particle pointer-events-none absolute right-24 bottom-24 z-10 opacity-30">
           <Circle className="size-2 fill-primary/25 text-primary/30" strokeWidth={1.2} />
         </div>
         <div className="pointer-events-none absolute bottom-10 left-14 z-0 h-20 w-20 rounded-full bg-primary/10 blur-2xl" />
-        <div className="pointer-events-none absolute right-6 top-24 z-0 h-24 w-24 rounded-full bg-primary/10 blur-[44px]" />
+        <div className="pointer-events-none absolute right-6 top-22 z-0 h-24 w-24 rounded-full bg-primary/10 blur-[44px]" />
 
-        <div className="login-glass-card w-full rounded-[32px] p-6">
+        <div className="login-glass-card relative z-30 mt-2 w-full rounded-[32px] p-6">
           <div className="mb-6 pt-1 text-center">
             <h1 className="text-[2rem] font-bold leading-[1.05] text-foreground">Welcome Back</h1>
             <p className="mt-2 text-base text-muted-foreground">Enter your phone number to continue</p>
