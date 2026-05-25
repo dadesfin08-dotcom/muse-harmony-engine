@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Bike, Circle, Cloud, MapPin, MessageCircle, ShoppingBasket } from "lucide-react";
 import { toast } from "sonner";
+import asugLogo from "@/assets/asug-logo.png";
 
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -139,6 +140,15 @@ function CustomerLoginPage() {
       </div>
 
       <section className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center pb-10 pt-8">
+        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+          <img
+            src={asugLogo}
+            alt="ASUG logo"
+            className="h-52 w-52 object-contain opacity-55 blur-[0.2px]"
+            loading="lazy"
+          />
+        </div>
+
         <div className="pointer-events-none absolute -left-1 top-8 z-20 flex items-start gap-2 login-float">
           <div className="login-soft-orb relative flex h-16 w-16 items-center justify-center">
             <MapPin className="size-8 text-primary" strokeWidth={2.15} />
