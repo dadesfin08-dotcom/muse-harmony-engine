@@ -446,7 +446,13 @@ export function CustomerLayout({
 
   return (
     <>
-      <main className={shouldHideBottomNav ? "pb-0 md:pb-0" : "pb-24 md:pb-0"}>
+      <main
+        className={
+          shouldHideBottomNav
+            ? "pb-0 md:pb-0"
+            : "pb-[calc(6.25rem+env(safe-area-inset-bottom))] md:pb-0"
+        }
+      >
         <div className="mx-auto w-full max-w-4xl px-4 pt-4 sm:px-6">
           <CustomerStatusAlert />
         </div>
@@ -461,7 +467,7 @@ export function CustomerLayout({
         animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
         exit={{ opacity: 0, y: 10, scale: 0.995, filter: "blur(1px)" }}
         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.35rem)] z-50 grid h-[74px] grid-cols-5 items-center justify-items-center rounded-[30px] border border-border/70 bg-card/90 px-1.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_20px_40px_-26px_rgba(17,24,39,0.45)] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid h-[84px] w-full grid-cols-5 items-center justify-items-center border-t border-border/70 bg-card/90 px-2.5 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 shadow-[0_-10px_30px_-24px_rgba(17,24,39,0.5)] backdrop-blur-xl md:hidden"
       >
           <Link to="/" className={navItemClass(isHomeActive)}>
             <motion.span className={navIconWrapClass(isHomeActive)} {...navIconMotion(isHomeActive)}>
