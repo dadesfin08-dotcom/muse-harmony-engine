@@ -381,7 +381,11 @@ export function CustomerLayout({
     location.pathname === "/customer/all-products";
   const isCartActive = isCartOpen;
   const isProfileActive =
-    isProfileHubOpen || isCustomerAuthModalOpen || customerPanelView === "profile" || location.pathname === "/profile";
+    isProfileHubOpen ||
+    isCustomerAuthModalOpen ||
+    customerPanelView === "profile" ||
+    location.pathname === "/profile" ||
+    location.pathname === "/login";
   const shouldShowBottomNav =
     isHomeRoute &&
     !location.hash &&
@@ -538,6 +542,11 @@ export function CustomerLayout({
           <button
             type="button"
             onClick={() => {
+              if (!customerSessionPhone) {
+                void navigate({ to: "/login" });
+                return;
+              }
+
               setIsProfileHubOpen(true);
             }}
             className={navItemClass(isProfileActive)}
