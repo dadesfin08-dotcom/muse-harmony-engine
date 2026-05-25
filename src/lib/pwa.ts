@@ -1,4 +1,4 @@
-const PWA_WORKER_PATHS = ["/sw.js", "/service-worker.js"];
+const PWA_WORKER_PATHS = ["/sw-push.js", "/sw.js", "/service-worker.js"];
 
 function isPreviewOrIframeContext() {
   const hostname = window.location.hostname;
@@ -42,5 +42,5 @@ export async function registerPwaServiceWorker() {
     return;
   }
 
-  await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
 }
