@@ -4,7 +4,7 @@ function isPreviewOrIframeContext() {
   const hostname = window.location.hostname;
   const isPreviewHost =
     hostname.includes("id-preview--") ||
-    hostname.includes("lovable.app") ||
+    hostname.includes("--dev.lovable.app") ||
     hostname.includes("lovableproject.com");
 
   const isInIframe = (() => {
