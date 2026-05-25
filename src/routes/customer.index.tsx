@@ -3208,7 +3208,10 @@ function Index() {
 
   return (
     <>
-      <main dir={isArabic ? "rtl" : "ltr"} className="app-shell min-h-[100dvh] bg-background pb-24 text-foreground md:pb-0">
+      <main
+        dir={isArabic ? "rtl" : "ltr"}
+        className="app-shell min-h-[100dvh] bg-background pb-[calc(6.25rem+env(safe-area-inset-bottom))] text-foreground md:pb-0"
+      >
         <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl md:z-50">
           <div className="mx-auto flex h-16 w-full max-w-6xl flex-nowrap items-center gap-2 px-[clamp(0.7rem,2.8vw,1.5rem)] sm:h-[4.25rem] sm:gap-2.5">
             <a href="#" className="inline-flex min-w-0 items-center gap-2.5">
@@ -3358,13 +3361,13 @@ function Index() {
         </header>
 
         <section
-          className="overflow-hidden border-b border-border/70 py-2"
+          className="overflow-hidden border-b border-border/70 px-4 py-2 sm:px-6"
           style={{ backgroundColor: tickerBgColor, color: tickerTextColor }}
           aria-label="Global announcement ticker"
         >
           <div className={`marquee-track whitespace-nowrap text-sm font-medium ${isArabic ? "marquee-track-rtl" : ""}`}>
-            <span className="mx-6">{tickerText}</span>
-            <span className="mx-6" aria-hidden="true">
+            <span className="px-6">{tickerText}</span>
+            <span className="px-6" aria-hidden="true">
               {tickerText}
             </span>
           </div>
@@ -3688,6 +3691,7 @@ function Index() {
                     fr: item.name_fr,
                     ar: item.name_ar,
                   });
+                  const isGroceriesCategory = item.name_en.trim().toLowerCase() === "groceries";
 
                   return (
                     <Link
@@ -3697,18 +3701,21 @@ function Index() {
                       className={`mx-1 inline-flex min-w-[96px] snap-start flex-col items-center gap-2 rounded-[22px] border px-2.5 py-2.5 text-center transition-all ${index % categories.length === 0 ? "border-primary/45 bg-primary/10 shadow-[0_10px_24px_-18px_rgba(24,181,106,0.6)]" : "border-border/70 bg-card shadow-[0_10px_24px_-20px_rgba(17,24,39,0.35)]"}`}
                     >
                       <span
-                        className="flex h-14 w-14 items-center justify-center rounded-2xl"
+                        className={`flex items-center justify-center rounded-2xl ${isGroceriesCategory ? "h-16 w-16" : "h-14 w-14"}`}
                         style={{ backgroundColor: item.accent_color || "var(--color-muted)" }}
                       >
                         {item.image_url ? (
                           <img
                             src={item.image_url || fallbackProductImage}
                             alt={categoryName}
-                            className="h-8 w-8 object-contain"
+                            className={isGroceriesCategory ? "h-9 w-9 object-contain" : "h-8 w-8 object-contain"}
                             loading="lazy"
                           />
                         ) : (
-                          <CategoryIcon iconName={item.icon_name} className="h-8 w-8 text-foreground" />
+                          <CategoryIcon
+                            iconName={item.icon_name}
+                            className={isGroceriesCategory ? "h-9 w-9 text-foreground" : "h-8 w-8 text-foreground"}
+                          />
                         )}
                       </span>
                       <span className="line-clamp-1 text-xs font-semibold text-foreground">{categoryName}</span>
