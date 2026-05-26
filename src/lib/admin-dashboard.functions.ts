@@ -959,7 +959,7 @@ const BRAND_ENGINE_DEMO_DATA: Array<{
   },
 ];
 
-export const getBrandEngineAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+export async function computeBrandEngineAnalytics() {
   await (supabaseAdmin as any).rpc("refresh_brand_scores");
 
   const now = Date.now();
@@ -1124,6 +1124,10 @@ export const getBrandEngineAnalytics = createServerFn({ method: "GET" }).handler
     generatedAt: new Date().toISOString(),
     threshold: BRAND_TRENDING_THRESHOLD,
   };
+}
+
+export const getBrandEngineAnalytics = createServerFn({ method: "GET" }).handler(async () => {
+  return computeBrandEngineAnalytics();
 });
 
 export const manualBoostBrandScore = createServerFn({ method: "POST" })
