@@ -34,6 +34,7 @@ import { Route as CustomerPlatformPacksPackIdRouteImport } from './routes/custom
 import { Route as CustomerOrderOrderIdRouteImport } from './routes/customer.order.$orderId'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 import { Route as AdminServiceZonesCommuneIdRouteImport } from './routes/admin.service-zones.$communeId'
+import { Route as ApiPublicMobileAiDashboardRouteImport } from './routes/api.public.mobile.ai-dashboard'
 
 const StaffPortalRoute = StaffPortalRouteImport.update({
   id: '/staff-portal',
@@ -162,6 +163,12 @@ const AdminServiceZonesCommuneIdRoute =
     path: '/service-zones/$communeId',
     getParentRoute: () => AdminRoute,
   } as any)
+const ApiPublicMobileAiDashboardRoute =
+  ApiPublicMobileAiDashboardRouteImport.update({
+    id: '/api/public/mobile/ai-dashboard',
+    path: '/api/public/mobile/ai-dashboard',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
+  '/api/public/mobile/ai-dashboard': typeof ApiPublicMobileAiDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -215,6 +223,7 @@ export interface FileRoutesByTo {
   '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
+  '/api/public/mobile/ai-dashboard': typeof ApiPublicMobileAiDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,6 +252,7 @@ export interface FileRoutesById {
   '/customer/platform-packs/$packId': typeof CustomerPlatformPacksPackIdRoute
   '/customer/product/$id': typeof CustomerProductIdRoute
   '/vendor/order/$orderId': typeof VendorOrderOrderIdRoute
+  '/api/public/mobile/ai-dashboard': typeof ApiPublicMobileAiDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
+    | '/api/public/mobile/ai-dashboard'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
+    | '/api/public/mobile/ai-dashboard'
   id:
     | '__root__'
     | '/'
@@ -325,6 +337,7 @@ export interface FileRouteTypes {
     | '/customer/platform-packs/$packId'
     | '/customer/product/$id'
     | '/vendor/order/$orderId'
+    | '/api/public/mobile/ai-dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -342,6 +355,7 @@ export interface RootRouteChildren {
   VendorLoginRoute: typeof VendorLoginRoute
   VendorWalletRoute: typeof VendorWalletRoute
   VendorOrderOrderIdRoute: typeof VendorOrderOrderIdRoute
+  ApiPublicMobileAiDashboardRoute: typeof ApiPublicMobileAiDashboardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -521,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminServiceZonesCommuneIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/mobile/ai-dashboard': {
+      id: '/api/public/mobile/ai-dashboard'
+      path: '/api/public/mobile/ai-dashboard'
+      fullPath: '/api/public/mobile/ai-dashboard'
+      preLoaderRoute: typeof ApiPublicMobileAiDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -598,6 +619,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendorLoginRoute: VendorLoginRoute,
   VendorWalletRoute: VendorWalletRoute,
   VendorOrderOrderIdRoute: VendorOrderOrderIdRoute,
+  ApiPublicMobileAiDashboardRoute: ApiPublicMobileAiDashboardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
